@@ -5,7 +5,7 @@ Paste this file (or attach it with the zip) as the first message of a new chat.
 ## 1. What it is
 - **Powder Pass**: a mobile-first 3D ski-resort game in **one HTML file** (`powder-pass.html`, ~1.3 MB, ~7,100 lines). It uses Three.js r128, inlined.
 - **Live artifact:** https://claude.ai/artifact/WgdGTKpWU2SoYSF59Fzfp7
-  - Current version: **v23** (round 7). Shared "anyone with the link".
+  - Current version: **v24** (round 8). Shared "anyone with the link".
   - Capabilities: `artifact` (the in-game editor saves by republishing itself) and `downloads` (a fallback that saves the file instead).
 - **Project files** (zip: `powder-pass-project.zip`):
   - `powder-pass.html`: the game.
@@ -61,6 +61,7 @@ node tools/editor-test.js; node tools/editor2-test.js
 node tools/p6-test.js        # hotel, clock, breakfast plate flow
 node tools/p7-test.js; node tools/p8-test.js; node tools/quest-test.js; node tools/cabin-test.js
 node tools/p13-test.js       # jump, ramps, grind, eating anim, elevator
+node tools/audit-trails.js; node tools/audit-props.js; node tools/audit-found.js   # world audits
 node tools/r7-test.js        # spot lights, model doors, diners, real falls, dusk/aurora, warmth, hop, camera lock, HUD
 node tools/soak.js 10 7      # 10 min random play, fails on any page error
 node tools/p13-shots.js      # screenshots -> tools/out/
@@ -74,7 +75,7 @@ node tools/keycheck.js cmp tools/keys-baseline.json /tmp/k.json   # must say "0 
 ("ground moved" lines near ramps are expected: groundY now includes ramp surfaces.)
 
 **Publish** (keeps the same URL):
-1. `Artifact read` the URL with `path: index.html`. If its version is newer than v23, the user saved editor edits: merge its `pp-edits` block into the local file first.
+1. `Artifact read` the URL with `path: index.html`. If its version is newer than v24, the user saved editor edits: merge its `pp-edits` block into the local file first.
 2. Strip the skeleton lines:
    `grep -v -x '<!doctype html><html><head>\|</head><body>\|</body></html>' powder-pass.html > powder-pass-artifact.html`
 3. Publish with `url: https://claude.ai/artifact/WgdGTKpWU2SoYSF59Fzfp7`. Omit `capabilities` so they carry forward.
@@ -104,6 +105,14 @@ node tools/keycheck.js cmp tools/keys-baseline.json /tmp/k.json   # must say "0 
    - Sky: `skyFor` winter curve (dark by 18:00), aurora in the sky shader (`aur`, `time` uniforms). Warmth drain -0.16/s base.
    - Anims: `Hop` / `Land` poses; `userData.snack` overlays eating on any pose. Camera lock: `SK.CAM`, `SK.camLock(on)`, Ctrl key.
    - HUD: CSS block "round 7 HUD" at the end of pp-css; `#sheet[data-kind]` colours; toast classes good/bad/info.
+
+7. **Round 8 (v24):**
+   - Terrain: `TZ1 = 320`, grid 331 x 875. `southH()` shapes the South Range (`hsBase`, park terraces `PARK_T`/`parkH`, `LEDGES`). `trailGrades()` now returns `{ bench, extra }`: bench levels each run and limits shoulders to `BENCH_K` 0.6 with rounded creases (`smin/smax`), skipping pad cores (`padW`); `extra` adds kickers, ledges, moguls after it.
+   - South trails / lifts carry `south: 1`; the normal build loops skip them and `buildSouth(R, tagG)` builds them last (editor keys stable).
+   - Outer land: `buildOuter()` (rows outward from the grid edge), `outerH`, `farH`, `FAR_PEAKS`.
+   - Footprints: `SK.FOOT`, `blocked/clearSpot` in world gen. Elevator: `SK.ELEV` (`press`, `aimed`, `DOORS[f].btn`).
+   - HUD: `#ctl` grid of SVG icon buttons, `#dock` for hint + toast. `SK.EDIT` (`#dev`) gates the editor; `SK.DEV` is now `#gallery`.
+   - Audits: `tools/audit-props.js`, `tools/audit-trails.js`, `tools/audit-found.js`; QA shots: `tools/view.js`, `tools/shot.js`.
 
 ## 7. Known limits / ideas not done
 - Third person is forced off indoors, so seated eating is first person only.
