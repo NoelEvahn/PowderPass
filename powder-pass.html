@@ -3165,6 +3165,45 @@ function trailGrades() {
     return best;
   };
 }
+
+/* ---------- distant landscape around the playable terrain ----------
+   rows of vertices run outward from the grid boundary (rounded at the corners). Row 0 sits 3 m inside the grid just under its
+   surface, the next rows continue the edge height, then a valley at 60-200 m, then the far range (peaks 150-330 m) at 300-700 m. */
+const FAR_PEAKS = (() => { const P = [], r = rng(907); for (let i = 0; i < 26; i++) { const a = i / 26 * TAU + (r() - 0.5) * 0.18, rr = 520 + r() * 260;
+  P.push({ x: Math.cos(a) * rr * 0.95, z: (TZ0 + TZ1) / 2 + Math.sin(a) * rr * 1.25, h: 150 + r() * 180, w: 130 + r() * 110, s: r() * 9 }); } return P; })();
+function farH(x, z) {
+  let h = 40 + 25 * Math.sin(x * 0.006 + 1.3) * Math.sin(z * 0.005 + 0.4);   /* rolling base of the range */
+  for (let i = 0; i < FAR_PEAKS.length; i++) { const p = FAR_PEAKS[i], dx = x - p.x, dz = z - p.z, d = Math.hypot(dx, dz); if (d > p.w) continue;
+    const a = Math.atan2(dz, dx), w = p.w * (1 + 0.16 * Math.sin(3 * a + p.s) + 0.08 * Math.sin(7 * a + p.s * 2)), t = Math.max(0, 1 - d / w);
+    h = Math.max(h, 30 + p.h * Math.pow(t, 1.5)); }
+  return h;
+}
+function outerDist(x, z) { const ex = Math.max(TX0 - x, 0, x - TX1), ez = Math.max(TZ0 - z, 0, z - TZ1); return Math.hypot(ex, ez); }
+function outerH(x, z) {   /* height of the outer land at a point outside (or on) the grid boundary */
+  const cx = Math.max(TX0, Math.min(TX1, x)), cz = Math.max(TZ0, Math.min(TZ1, z)), he = tH(cx, cz), d = outerDist(x, z);
+  const valley = Math.max(he - 30, Math.min(he, -6)), near = he + (valley - he) * sstep(8, 120, d);
+  return near + (farH(x, z) - near) * sstep(150, 420, d);
+}
+function buildOuter() {
+  const per = [], step = 4, cr = 1;   /* boundary walk (counter-clockwise), with outward normals; corners get a fan of normals */
+  const edge = (x0, z0, x1, z1, nx, nz) => { const L = Math.hypot(x1 - x0, z1 - z0), n = Math.max(1, Math.round(L / step)); for (let i = 0; i < n; i++) { const u = i / n; per.push([x0 + (x1 - x0) * u, z0 + (z1 - z0) * u, nx, nz]); } };
+  const corner = (x, z, a0) => { for (let k = 0; k < 12; k++) { const a = a0 + k / 12 * (PI / 2); per.push([x, z, Math.cos(a), Math.sin(a)]); } };
+  edge(TX0, TZ0, TX1, TZ0, 0, -1); corner(TX1, TZ0, -PI / 2); edge(TX1, TZ0, TX1, TZ1, 1, 0); corner(TX1, TZ1, 0); edge(TX1, TZ1, TX0, TZ1, 0, 1); corner(TX0, TZ1, PI / 2); edge(TX0, TZ1, TX0, TZ0, -1, 0); corner(TX0, TZ0, PI);
+  const D = [-3, 0, 4, 10, 18, 30, 46, 66, 92, 125, 165, 215, 275, 345, 425, 515, 615, 730], NP = per.length, ND = D.length;
+  const pos = new Float32Array(NP * ND * 3), col = new Float32Array(NP * ND * 3), idx = [], c = new THREE.Color(), SNOWC = new THREE.Color(0xe4f1ff), ROCKC = new THREE.Color(0x7d8aa6), PINEC = new THREE.Color(0x5f7a6e);
+  for (let a = 0; a < NP; a++) for (let b = 0; b < ND; b++) { const q = per[a], d = D[b], k = (a * ND + b) * 3;
+    const x = q[0] + q[2] * d, z = q[1] + q[3] * d, y = d < 0 ? tH(Math.max(TX0, Math.min(TX1, x)), Math.max(TZ0, Math.min(TZ1, z))) - 0.6 : d === 0 ? tH(q[0], q[1]) - 0.12 : outerH(x, z);
+    pos[k] = x; pos[k + 1] = y; pos[k + 2] = z; }
+  for (let a = 0; a < NP; a++) { const a1 = (a + 1) % NP; for (let b = 0; b < ND - 1; b++) { const p0 = a * ND + b, p1 = a1 * ND + b; idx.push(p0, p1, p0 + 1, p1, p1 + 1, p0 + 1); } }
+  const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(pos, 3)); geo.setIndex(idx); geo.computeVertexNormals();
+  const N = geo.attributes.normal.array;
+  for (let v = 0; v < NP * ND; v++) { const ny = N[v * 3 + 1], y = pos[v * 3 + 1], d = D[v % ND];
+    c.copy(SNOWC); if (d > 20 && d < 260 && y < 70) c.lerp(PINEC, 0.35 * sstep(20, 60, d) * (1 - sstep(170, 260, d)));   /* forested valley sides read as darker */
+    c.lerp(ROCKC, sstep(0.82, 0.6, ny) * 0.75); col[v * 3] = c.r; col[v * 3 + 1] = c.g; col[v * 3 + 2] = c.b; }
+  geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  const m = new THREE.Mesh(geo, new THREE.MeshToonMaterial({ vertexColors: true, gradientMap: gradTex })); m.name = 'outer land'; m.receiveShadow = true; m.userData.noCast = 1;
+  return m;
+}
 function buildTerrain() {
   /* 0.75 m grid baked once; rendered as ~36 m chunks so the camera only draws what it can see */
   const nx = 331, nz = 635, dx = (TX1 - TX0) / nx, dz = (TZ1 - TZ0) / nz, W1 = nx + 1, NV = W1 * (nz + 1);
@@ -3203,13 +3242,9 @@ function buildTerrain() {
     geo.setAttribute('position', new THREE.BufferAttribute(pos, 3)); geo.setAttribute('normal', new THREE.BufferAttribute(nrm, 3)); geo.setAttribute('color', new THREE.BufferAttribute(col, 3)); geo.setAttribute('aPiste', new THREE.BufferAttribute(pm, 1)); geo.setIndex(new THREE.BufferAttribute(idx, 1));
     geo.computeBoundingSphere(); const m = new THREE.Mesh(geo, mat); m.name = 'terrain'; g.add(m); HG.chunks.push({ m: m, ci: ci, cj: cj, w: w, hh: hh });
   }
-  /* skirt (separate mesh so the main grid stays a clean heightfield) */
-  const sp_ = [], sc_ = [], si = [], sc = new THREE.Color(0x9aa6bd);
-  const quad = (p0, p1) => { const k = sp_.length / 3; sp_.push(p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], p0[0], -0.7, p0[2], p1[0], -0.7, p1[2]); for (let n = 0; n < 4; n++) sc_.push(sc.r, sc.g, sc.b); si.push(k, k + 1, k + 2, k + 1, k + 3, k + 2); };
-  for (let i = 0; i < nx; i++) { quad([TX0 + i * dx, at(i, 0), TZ0], [TX0 + (i + 1) * dx, at(i + 1, 0), TZ0]); quad([TX0 + i * dx, at(i, nz), TZ1], [TX0 + (i + 1) * dx, at(i + 1, nz), TZ1]); }
-  for (let j = 0; j < nz; j++) { quad([TX0, at(0, j), TZ0 + j * dz], [TX0, at(0, j + 1), TZ0 + (j + 1) * dz]); quad([TX1, at(nx, j), TZ0 + j * dz], [TX1, at(nx, j + 1), TZ0 + (j + 1) * dz]); }
-  const sg = new THREE.BufferGeometry(); sg.setAttribute('position', new THREE.Float32BufferAttribute(sp_, 3)); sg.setAttribute('color', new THREE.Float32BufferAttribute(sc_, 3)); sg.setIndex(si); sg.computeVertexNormals();
-  g.add(new THREE.Mesh(sg, new THREE.MeshToonMaterial({ vertexColors: true, gradientMap: gradTex, side: THREE.DoubleSide })));
+  /* the land beyond the playable grid (replaces the old vertical skirt): one continuous mesh that starts tucked under the grid edge,
+     falls away into a valley for depth and climbs into a distant range, so you never see an edge, a wall or an underside */
+  g.add(buildOuter());
   return g;
 }
 
@@ -4061,8 +4096,9 @@ function buildResort() {
   SUNO = put(R, sun(), 80, -440, 0, 6, 190);
   [[-60, -120, 2.4, 70], [20, -150, 3.2, 84], [80, -110, 2.0, 64], [-20, -60, 1.6, 58], [-110, -170, 3.4, 92], [120, -170, 3.0, 88], [50, -20, 1.4, 50], [-80, -10, 1.6, 54]].forEach(c => { const z = SLOPE(c[1]); put(R, cloud(c[2]), c[0] * 1.3, z, 0, 1, c[3] + tBase(Math.max(TZ0, z)) * 0.9); });
   /* ===== MOUNTAIN CREST + BACKDROP PEAKS ===== */
-  const mnt = (g, x, z, ry, s) => put(R, g, x, z, ry, s || 1, tH(Math.max(TX0, Math.min(TX1, x)), Math.max(TZ0, Math.min(TZ1, z))) - 3);
-  mnt(mountain(24, 40, 7, 1), -56, -374, 0.2); mnt(mountain(30, 54, 7, 0), 10, -379, 0.6); mnt(mountain(22, 36, 7, 1), 64, -372, 1.1); mnt(mountain(18, 30, 7, 0), -104, -356, 2.0); mnt(mountain(19, 32, 7, 1), 106, -352, 0.4);
+  /* backdrop peaks stand on the distant range (not on the playable crest), their open bases buried well inside it */
+  const mnt = (g, x, z, ry, s) => put(R, g, x, z, ry, s || 1, farH(x, z) - 0.45 * 40 * (s || 1));
+  mnt(mountain(24, 40, 7, 1), -250, -900, 0.2, 3.6); mnt(mountain(30, 54, 7, 0), 60, -960, 0.6, 3.8); mnt(mountain(22, 36, 7, 1), 330, -870, 1.1, 3.4); mnt(mountain(18, 30, 7, 0), -520, -620, 2.0, 3.6); mnt(mountain(19, 32, 7, 1), 520, -640, 0.4, 3.6);
   /* ===== MAIN PISTE: start gate, slalom sets, finish ===== */
   const tagG = (g, id, end, off) => { g.userData.gt = [id, end, +off.toFixed(2)]; return g; };   /* which trail end a gate marks (the editor moves the trail with it) */
   tagG(fit(putC(R, 'Start gate', gate(), PISTE(PISTE_Z0 + 4), PISTE_Z0 + 4, 0, 1.15), 0.8), 'ribbon', 'start', 4); fit(put(R, flags(), PISTE(PISTE_Z0 + 4) + 7.2, PISTE_Z0 + 5, 0, 1), 0.8);
@@ -4291,7 +4327,7 @@ world.root.traverse(o => {
   if (!o.isMesh) return; const m = o.material;
   if (m === undefined || Array.isArray(m)) return;
   if (m.isShaderMaterial || m.transparent) { o.castShadow = false; o.receiveShadow = false; return; }
-  if (o.name === 'terrain') { o.receiveShadow = true; o.castShadow = false; return; }
+  if (o.name === 'terrain' || o.name === 'outer land') { o.receiveShadow = true; o.castShadow = false; return; }
   if (o.parent && o.parent.userData.noCast) { o.castShadow = false; o.receiveShadow = false; return; }
   if (!o.geometry.boundingSphere) o.geometry.computeBoundingSphere();
   const ws = o.getWorldScale(new THREE.Vector3()).x; o.castShadow = o.geometry.boundingSphere.radius * ws > 0.12; o.receiveShadow = !!m.isMeshToonMaterial;
