@@ -30,7 +30,7 @@ const MIN = +(process.argv[2] || 20), SEED = +(process.argv[3] || 7);
         else if (a === 'map') { SK.MAP.show(true); SK.MAP.pickAt(100 + rnd() * 500, 100 + rnd() * 900); SK.MAP.draw(); SK.MAP.show(false); }
         else if (a === 'sheet') { document.getElementById(pick(['bBag', 'bQst', 'bSet'])).click(); const b = [...document.querySelectorAll('#sheet:not(.off) .sh-b button')].filter(x => !x.disabled && !/sound|reset|delete/i.test(x.textContent)); if (b.length && rnd() < 0.5) pick(b).click(); SK.play(10); out.steps += 10; }
         else if (a === 'bag') { const b = [...document.querySelectorAll('#sheet:not(.off) button')]; if (b.length) pick(b).click(); }
-        else if (a === 'editor') { if (W.on && !W.ride) { SK.ED.open(); const u = [...SK.ED.UNITS.values()]; SK.ED.select(pick(u)); SK.ED.S.parts = rnd() < 0.5; SK.ED.S.dirty = false; SK.play(5); window.confirm = () => true; SK.ED.close(); out.steps += 5; } }
+        else if (a === 'editor') { if (W.on && !W.ride && SK.EDIT) { SK.ED.open(); const u = [...SK.ED.UNITS.values()]; SK.ED.select(pick(u)); SK.ED.S.parts = rnd() < 0.5; SK.ED.S.dirty = false; SK.play(5); window.confirm = () => true; SK.ED.close(); out.steps += 5; } }
         else if (a === 'time') { SK.P6.setTime(rnd() * 24 * 60); SK.play(30); out.steps += 30; }
         else if (a === 'weather') { SK.State.day = 1 + Math.floor(rnd() * 60); SK.P7.wxApply(); SK.play(30); out.steps += 30; }
       } catch (e) { out.err = (out.err || []).concat(a + ': ' + e.message); if (out.err.length > 5) break; }

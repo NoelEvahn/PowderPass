@@ -3,7 +3,7 @@ const fs = require('fs'), path = require('path');
 const { boot, check, OUT } = require('./lib');
 (async () => {
   const fails = [];
-  const { browser, page, errors } = await boot({ viewport: { width: 420, height: 820 } });
+  const { browser, page, errors } = await boot(Object.assign({ query: '#dev' }, { viewport: { width: 420, height: 820 } }));
   await page.addStyleTag({ content: '*{transition:none!important}' });
   const ev = (f, a) => page.evaluate(f, a);
   await page.click('#bEd');
