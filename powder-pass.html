@@ -1086,17 +1086,18 @@ function cabinExtras(R, id, x, z, ry, s, o) {
   if (!o.af) { const wx = W * 0.22; b.add(bx(1.0, 0.18, 0.24), C.wood3, wx, FY + 0.72, D / 2 + 0.14); for (let i = 0; i < 5; i++) b.add(sp(0.08), [C.red, C.yellow, C.pink][i % 3], wx - 0.4 + i * 0.2, FY + 0.86, D / 2 + 0.14, { noOutline: 1 }); }
   if (o.tier >= 2) { const kx = o.af ? 1.2 : -W * 0.2 - 0.85, kz = (o.af ? D / 2 + 0.25 : D / 2 + 0.15);
     [-0.08, 0.08].forEach((dx, i) => b.add(bx(0.08, 1.6, 0.03), i ? C.red : C.blue, kx + dx, FY + 0.82, kz, { rx: -0.12 })); }
-  if (o.tier >= 3) { /* hot tub in the side yard: low cedar deck, open basin with tiled walls and a seat ring, clear water, rim, steps, cover, towel */
-    const tx = W / 2 + 1.7, tz = o.af ? D / 2 - 1.0 : D / 2 + 0.3, dk = 0.3, top = dk + 0.75, open = (r, h, sides, inward) => { const g2 = new THREE.CylinderGeometry(r, r, h, sides, 1, true); if (inward) g2.scale(-1, 1, 1); return g2; };
-    b.add(cy(1.6, 1.6, dk, 8), C.wood2, tx, dk / 2, tz); for (let i = 0; i < 6; i++) b.add(bx(3.1, 0.012, 0.03), C.wood3, tx, dk + 0.006, tz - 1.25 + i * 0.5, { noOutline: 1 });
-    b.add(open(1.05, 0.75, 24), C.wood, tx, dk + 0.375, tz); for (let i = 0; i < 24; i++) b.add(bx(0.03, 0.75, 0.03), C.wood3, tx + Math.cos(i * TAU / 24) * 1.06, dk + 0.375, tz + Math.sin(i * TAU / 24) * 1.06, { noOutline: 1 });
-    b.add(open(0.93, 0.72, 24, 1), 0x9fe3f0, tx, dk + 0.39, tz, { noOutline: 1 }); b.add(cy(0.93, 0.93, 0.03, 24), 0xe9f6ff, tx, dk + 0.04, tz, { noOutline: 1 });
-    for (let i = 0; i < 16; i++) { const an = i * TAU / 16; b.add(bx(0.24, 0.08, 0.5), C.white, tx + Math.cos(an) * 0.75, dk + 0.36, tz + Math.sin(an) * 0.75, { ry: -an, noOutline: 1 }); }   /* seat ring */
-    b.add(cy(0.92, 0.92, 0.02, 24), 0x39c6e6, tx, top - 0.14, tz, { alpha: 0.5 });
+  if (o.tier >= 3) { /* hot tub in the side yard, clear of the house and its porch: a square cedar deck with planks that stop at its edge,
+       a stave tub held by two steel hoops, rim, seat ring, water, a two-tread step, the cover folded flat in a deck corner and a towel on the rim */
+    const tx = W / 2 + (o.af ? 2.6 : 2.7), tz = o.af ? D / 2 - 1.6 : 0.2, dk = 0.24, top = dk + 0.8, R0 = 1.0, open = (r, h, sides, inward) => { const g2 = new THREE.CylinderGeometry(r, r, h, sides, 1, true); if (inward) g2.scale(-1, 1, 1); return g2; };
+    b.add(bx(3.4, dk, 3.4), C.wood2, tx, dk / 2, tz); for (let i = 0; i < 7; i++) b.add(bx(3.3, 0.012, 0.04), C.wood3, tx, dk + 0.006, tz - 1.5 + i * 0.5, { noOutline: 1 });
+    b.add(open(R0, 0.8, 28), C.wood, tx, dk + 0.4, tz); [0.14, 0.66].forEach(h => b.add(new THREE.TorusGeometry(R0 + 0.012, 0.022, 6, 32), C.dark, tx, dk + h, tz, { rx: PI / 2, noOutline: 1 }));
+    b.add(open(R0 - 0.08, 0.78, 28, 1), 0x9fe3f0, tx, dk + 0.4, tz, { noOutline: 1 }); b.add(cy(R0 - 0.08, R0 - 0.08, 0.03, 28), 0xe9f6ff, tx, dk + 0.03, tz, { noOutline: 1 });
+    for (let i = 0; i < 14; i++) { const an = i * TAU / 14; b.add(bx(0.26, 0.08, 0.36), C.white, tx + Math.cos(an) * 0.72, dk + 0.36, tz + Math.sin(an) * 0.72, { ry: -an, noOutline: 1 }); }   /* seat ring, inside the liner */
+    b.add(cy(R0 - 0.09, R0 - 0.09, 0.02, 28), 0x39c6e6, tx, top - 0.14, tz, { alpha: 0.5 });
     for (let i = 0; i < 7; i++) b.add(sp(0.035), C.white, tx + Math.cos(i * 2.3) * 0.5, top - 0.12, tz + Math.sin(i * 2.3) * 0.45, { basic: 1, noOutline: 1 });
-    b.add(new THREE.RingGeometry(0.9, 1.12, 24), C.wood3, tx, top + 0.01, tz, { rx: -PI / 2 });
-    b.add(bx(0.8, 0.15, 0.35), C.wood3, tx - 1.45, 0.075, tz); b.add(bx(0.8, 0.15, 0.35), C.wood3, tx - 1.25, dk + 0.075, tz);
-    b.add(bx(1.5, 0.08, 1.0), C.dark, tx + 1.3, 0.55, tz + 1.15, { rz: 0.35, ry: 0.6 }); b.add(bx(0.4, 0.04, 0.3), C.red, tx + 0.7, top + 0.03, tz - 0.75);
+    b.add(new THREE.RingGeometry(R0 - 0.1, R0 + 0.07, 28), C.wood3, tx, top + 0.01, tz, { rx: -PI / 2 });
+    b.add(bx(0.9, 0.2, 0.42), C.wood3, tx, dk + 0.1, tz + R0 + 0.48); b.add(bx(0.9, 0.2, 0.22), C.wood3, tx, dk + 0.3, tz + R0 + 0.15);   /* two treads up to the rim on the open side */
+    b.add(bx(0.78, 0.1, 0.78), C.dark, tx + 1.2, dk + 0.05, tz - 1.2); b.add(bx(0.36, 0.05, 0.24), C.red, tx + 0.8, top + 0.035, tz - 0.55, { ry: 0.6 });
     const p = w(tx, tz); TUBS.push({ id: id, x: p[0], y: tH(p[0], p[1]) + 0.06 + (top - 0.14) * s, z: RES_Z + p[1] });
     if (!o.af) for (let i = 0; i <= 14; i++) { const u = i / 14; b.add(sp(0.07), [C.red, C.yellow, C.blue, C.lime][i % 4], -xe + 2 * xe * u, FY + 2.15 - Math.sin(u * PI) * 0.25, zf, { basic: 1, noOutline: 1 }); } }
   put(R, b.build(), x, z, ry, s); K.forEach(k => { const p = w(k.x, k.z); SOLIDS.push({ x: p[0], z: RES_Z + p[1], a: ry, hw: k.hw * s, hd: k.hd * s }); });
@@ -3797,7 +3798,7 @@ function vending() {
   return b.build();
 }
 /* ===== POWDER PASS: walk-in shops (store buildings + item displays) ===== */
-const STORES = [], CLERKS = []; let SK_GREEN = null;
+const STORES = [], CLERKS = []; let SK_GREEN = null, SK_FOOT = [];
 /* item display models: built at the builder's current origin, standing on y = 0, front = +z */
 const IT = {
   skis(b, col, acc) { [-0.075, 0.075].forEach(x => { b.add(bx(0.085, 1.6, 0.03), col, x, 0.82, 0, { rx: -0.1 }); b.add(bx(0.085, 0.2, 0.03), col, x, 1.68, -0.06, { rx: 0.35 });
@@ -4123,11 +4124,20 @@ function buildResort() {
   putC(R, 'Wood shed', hp(pWoodshed)(), 70, 74, -PI / 2, 1.15); putC(R, 'Log pile', hp(pLogPile)(), 27, 52, 0.2, 1.1); fit(putC(R, 'Stump + axe', hp(pStump)(), 28, 58, 0, 1.2), 0.7);
   put(R, crate(1.2), 44, 52, 0.6, 1); addSolids(collFor('Crate'), 44, RES_Z + 52, 0.6, 0.8); put(R, lantern(), 44, 52, 0, 0.7, 1.2); putC(R, 'Barrel', barrel(), 45.5, 50.6, 0, 1);
   putC(R, 'Lamp post', lamp(), 42, 54, 0, 1.1); putC(R, 'Lamp post', lamp(), 54, 70, PI, 1.1); putC(R, 'Mailbox', hp(pMailbox)(), 26, 64, -0.4, 1.1);
-  /* ===== a few scattered accents (deliberately sparse) ===== */
-  [[-60, 56, 1.2], [8, 54, 1.1], [24, 74, 1.2], [66, 88, 1.1], [-68, 82, 1.2], [8, 88, 1.0]].forEach((t, i) => put(R, bush(i % 2), t[0], t[1], i, t[2]));
-  [[-22, 24], [28, 30], [-64, 64], [70, 40]].forEach((t, i) => { const q = put(R, snowPile(), t[0], t[1], i, 1.6, tH(t[0], t[1]) - 0.05); q.scale.y = 0.45; fit(q, 1); });
-  fit(putC(R, 'Boulders', boulders(), 62, 24, 0.5, 1.3), 0.7); fit(putC(R, 'Boulders', boulders(), -70, 52, 1, 1.1), 0.7); fit(putC(R, 'Boulders', boulders(), -3, -124, 2, 1.2), 0.7);
-  [[-52, -24, 0.4], [60, -30, 1.8], [-80, 62, 2.6], [76, 20, 0.9]].map(t => [t[0], SLOPE(t[1])].concat(t.slice(2))).filter(t => freeSpot(t[0], t[1])).forEach(t => fit(putC(R, 'Dead tree', hp(pDeadTree)(), t[0], t[1], t[2], 1.2), 0.6));
+  /* ===== building footprints: every structure placed so far (houses, shops, stations, hotel, cabins...) as a resort-local box.
+     Vegetation and exterior props keep clear of them, so nothing grows through a wall, roof, floor or shelf. ===== */
+  const FOOT = []; { R.updateMatrixWorld(true); const bb = new THREE.Box3(), sz = new THREE.Vector3();
+    R.children.forEach(o => { if (o.isInstancedMesh || o.userData.person) return; bb.setFromObject(o); if (bb.isEmpty()) return; bb.getSize(sz); const a = sz.x * sz.z;
+      if (a < 6 || a > 1500 || sz.y < 2.0 || bb.min.y > tH((bb.min.x + bb.max.x) / 2 - R.position.x, (bb.min.z + bb.max.z) / 2 - R.position.z) + 3) return;   /* skip small props, terrain-sized meshes and things in the sky */
+      FOOT.push({ x0: bb.min.x - R.position.x, x1: bb.max.x - R.position.x, z0: bb.min.z - R.position.z, z1: bb.max.z - R.position.z }); }); }   /* R may not sit at RES_Z yet: work in its own frame */
+  const blocked = (x, z, r) => FOOT.some(f => x > f.x0 - r && x < f.x1 + r && z > f.z0 - r && z < f.z1 + r);
+  const clearSpot = (x, z, r) => { if (!blocked(x, z, r)) return [x, z]; for (let d = 1; d <= 18; d += 1) for (let k = 0; k < 12; k++) { const a = k / 12 * TAU, px = x + Math.cos(a) * d, pz = z + Math.sin(a) * d; if (!blocked(px, pz, r)) return [px, pz]; } return [x, z]; };
+  SK_FOOT = FOOT;
+  /* ===== a few scattered accents (deliberately sparse), each pushed to the nearest spot with clearance from buildings ===== */
+  [[-60, 56, 1.2], [8, 54, 1.1], [24, 74, 1.2], [66, 88, 1.1], [-68, 82, 1.2], [8, 88, 1.0]].forEach((t, i) => { const p = clearSpot(t[0], t[1], 1.8 * t[2]); put(R, bush(i % 2), p[0], p[1], i, t[2]); });
+  [[-22, 24], [28, 30], [-64, 64], [70, 40]].forEach((t, i) => { const p = clearSpot(t[0], t[1], 3.6); const q = put(R, snowPile(), p[0], p[1], i, 1.6, tH(p[0], p[1]) - 0.05); q.scale.y = 0.45; fit(q, 1); });
+  [[62, 24, 0.5, 1.3], [-70, 52, 1, 1.1], [-3, -124, 2, 1.2]].forEach(t => { const p = clearSpot(t[0], t[1], 2); fit(putC(R, 'Boulders', boulders(), p[0], p[1], t[2], t[3]), 0.7); });
+  [[-52, -24, 0.4], [60, -30, 1.8], [-80, 62, 2.6], [76, 20, 0.9]].map(t => [t[0], SLOPE(t[1])].concat(t.slice(2))).filter(t => freeSpot(t[0], t[1])).forEach(t => { const p = clearSpot(t[0], t[1], 2); fit(putC(R, 'Dead tree', hp(pDeadTree)(), p[0], p[1], t[2], 1.2), 0.6); });
   /* ===== forest: hashed grove centres + a thin scatter over the whole mountain. Trees stay off trails, lift lines, pads,
      building footprints and the village clearings, thin out inside Fir Glades and stop at the treeline. One merged batch. ===== */
   const hs = (a, b) => { const v = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return v - Math.floor(v); }, inR = (x, z, a, b, c, d) => x > a && x < b && z > c && z < d;
@@ -4136,7 +4146,7 @@ function buildResort() {
     || inR(x, z, -74, -40, 10, 48) || inR(x, z, -62, -4, 36, 84) || inR(x, z, 20, 76, 36, 94) || inR(x, z, -14, 6, 26, 56) || inR(x, z, 4, 20, 14, 52)   /* village clearings */
     || TRAILS.some(t => !t.glade && x > t.bx0 && x < t.bx1 && z > t.bz0 && z < t.bz1 && polyDist(x, z, t.pts) < t.hw + 3.5)
     || LIFT_LINES.some(l => segDist(x, z, l.a, l.b) < (l.small ? 3 : 6)) || PADS.some(p => Math.abs(x - p.x) < p.hx + 2 && Math.abs(z - p.z) < p.hz + 2)
-    || MOUND(x, z) > 1 || NOSNOW.some(r => inR(x, z, r.x0 - 3, r.x1 + 3, r.z0 - 3, r.z1 + 3)) || tH(x, z) > TREELINE;
+    || MOUND(x, z) > 1 || NOSNOW.some(r => inR(x, z, r.x0 - 3, r.x1 + 3, r.z0 - 3, r.z1 + 3)) || blocked(x, z, 3.2) || tH(x, z) > TREELINE;   /* 3.2 m: the widest pine canopy plus a gap */
   /* a handful of pine variants drawn as instanced meshes: one draw per colour per variant instead of re-merging 600+ trees */
   const VARS = [{ tiers: 3, snow: 1, seed: 0.21 }, { tiers: 4, snow: 1, seed: 0.47 }, { tiers: 5, snow: 1, seed: 0.73 }, { tiers: 4, snow: 0, seed: 0.9 }].map(o => ({ o: o, at: [] }));
   const MAXT = 640; let nTrees = 0;
@@ -4225,7 +4235,7 @@ function buildWorld() {
 }
 
 const rowZ = (h, k) => -30 + (Math.floor(h.i / 10) + k) * 8.6;
-globalThis.SK = { DEV: DEV, EDIT: EDIT, ALPD: ALPD, ALPP: [ALPX, ALPZ], get SUNO() { return SUNO; }, BEAM: beamMat, FXDOTS: FXDOTS, TUBS: TUBS, CDOORS: CDOORS, LIGHTS: LIGHTS, HOTEL: HOTEL, nodeModels: nodeModels, STORES: STORES, get GREEN() { return SK_GREEN; }, get HG() { return HG; }, LIFTS: LIFTS, LIFTX: {   /* every lift at once, for the player: one ticket, nearest station wins */
+globalThis.SK = { DEV: DEV, EDIT: EDIT, get FOOT() { return SK_FOOT; }, ALPD: ALPD, ALPP: [ALPX, ALPZ], get SUNO() { return SUNO; }, BEAM: beamMat, FXDOTS: FXDOTS, TUBS: TUBS, CDOORS: CDOORS, LIGHTS: LIGHTS, HOTEL: HOTEL, nodeModels: nodeModels, STORES: STORES, get GREEN() { return SK_GREEN; }, get HG() { return HG; }, LIFTS: LIFTS, LIFTX: {   /* every lift at once, for the player: one ticket, nearest station wins */
     state: LIFT_TK, door: GON_DOOR, gonWd: GON_WD, gonFy: GON_FY,
     eye: (o, k) => o.userData.lift.eye(o, k), seat: (o, k) => o.userData.lift.seat(o, k), leaveInfo: o => o.userData.lift.leaveInfo(o),
     setRide: (o, on) => { LIFTS.forEach(l => l.setRide(null, false)); if (o && on) o.userData.lift.setRide(o, true); },
