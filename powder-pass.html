@@ -197,6 +197,17 @@ const gradTex = (function () {
   const t = new THREE.DataTexture(new Uint8Array([90, 170, 255]), 3, 1, THREE.LuminanceFormat);
   t.minFilter = t.magFilter = THREE.NearestFilter; t.generateMipmaps = false; t.needsUpdate = true; return t;
 })();
+/* local lights (lamps, lanterns, fires) must not reach faces turned away from them: the toon ramp's darkest band is 35 %, which made
+   ceilings glow above hanging lamps and lit the outside of walls from rooms behind them. Sun/moon keep the full ramp. */
+(function () {
+  const S = THREE.ShaderChunk, a = S.lights_fragment_begin, i0 = a.indexOf('#if ( NUM_POINT_LIGHTS > 0 )'), i1 = a.indexOf('#if ( NUM_DIR_LIGHTS > 0 )');
+  if (i0 < 0 || i1 < 0 || S.lights_toon_pars_fragment.indexOf('RE_Direct_ToonLocal') >= 0) return;
+  const loc = a.slice(i0, i1 > i0 ? i1 : a.length).split('RE_Direct( directLight').join('RE_DirectLocal( directLight');
+  S.lights_fragment_begin = '#ifndef RE_DirectLocal\n#define RE_DirectLocal RE_Direct\n#endif\n' + a.slice(0, i0) + loc + a.slice(i1 > i0 ? i1 : a.length);
+  S.lights_toon_pars_fragment += '\nvoid RE_Direct_ToonLocal( const in IncidentLight directLight, const in GeometricContext geometry, const in ToonMaterial material, inout ReflectedLight reflectedLight ) {\n' +
+    '\tfloat dNL = dot( geometry.normal, directLight.direction );\n\tif ( dNL <= 0.0 ) return;\n\tvec3 irradiance = getGradientIrradiance( geometry.normal, directLight.direction ) * directLight.color;\n' +
+    '\t#ifndef PHYSICALLY_CORRECT_LIGHTS\n\t\tirradiance *= PI;\n\t#endif\n\treflectedLight.directDiffuse += irradiance * BRDF_Diffuse_Lambert( material.diffuseColor );\n}\n#define RE_DirectLocal RE_Direct_ToonLocal\n';
+})();
 const tm = {}, bm = {};
 const mat = c => tm[c] || (tm[c] = new THREE.MeshToonMaterial({ color: c, gradientMap: gradTex }));
 const bmat = c => bm[c] || (bm[c] = new THREE.MeshBasicMaterial({ color: c }));
@@ -1051,9 +1062,9 @@ function cabinExtras(R, id, x, z, ry, s, o) {
     if (!o.af) for (let i = 0; i <= 14; i++) { const u = i / 14; b.add(sp(0.07), [C.red, C.yellow, C.blue, C.lime][i % 4], -xe + 2 * xe * u, FY + 2.15 - Math.sin(u * PI) * 0.25, zf, { basic: 1, noOutline: 1 }); } }
   put(R, b.build(), x, z, ry, s); K.forEach(k => { const p = w(k.x, k.z); SOLIDS.push({ x: p[0], z: RES_Z + p[1], a: ry, hw: k.hw * s, hd: k.hd * s }); });
   /* the door: hinged panel, closed and solid until you own the cabin (the game opens it) */
-  { const hx = o.af ? 0.37 : -W * 0.2 - 0.48, dw = o.af ? 0.78 : 0.95, dh = o.af ? 2.1 : 1.72, gy = tH(x, z) + 0.06, frame = new THREE.Group(), piv = new THREE.Group(), pb = new B();
-    pb.add(bx(dw, dh, 0.07), o.af ? CEDARG : C.wood3, dw / 2, dh / 2, 0); pb.add(bx(dw - 0.2, 0.05, 0.08), C.wood2, dw / 2, dh * 0.3, 0); pb.add(bx(dw - 0.2, 0.05, 0.08), C.wood2, dw / 2, dh * 0.75, 0); pb.add(sp(0.045), C.yellow, dw - 0.1, dh * 0.5, 0.06, { noOutline: 1 });
-    piv.add(pb.build()); piv.position.set(hx, FY, D / 2); frame.add(piv); frame.position.set(x, gy, z); frame.rotation.y = ry; frame.scale.setScalar(s); R.add(frame);
+  { const hx = o.af ? 0.35 : -W * 0.2 - 0.5, dw = o.af ? 0.8 : 0.95, dh = o.af ? 2.05 : 1.72, gy = tH(x, z) + 0.06, frame = new THREE.Group(), piv = new THREE.Group(), pb = new B();
+    if (o.af) afLeaf(pb); else pb.add(bx(dw, dh, 0.07), C.wood3, dw / 2, dh / 2, 0);   /* exactly the leaf the model would have had (lodge: plain plank leaf; A-frame: clad leaf with glass strip) */
+    piv.add(pb.build()); piv.position.set(hx, FY, o.af ? D / 2 - 0.08 : D / 2); frame.add(piv); frame.position.set(x, gy, z); frame.rotation.y = ry; frame.scale.setScalar(s); R.add(frame);
     const c = w(hx + dw / 2, D / 2), sol = { x: c[0], z: RES_Z + c[1], a: ry, hw: dw / 2 * s, hd: 0.14 * s }; SOLIDS.push(sol);
     CDOORS.push({ id: id, piv: piv, sol: sol, x: c[0], z: RES_Z + c[1], o: 0 });
     const lp = w(o.af ? -W / 2 - 0.4 : -xe, o.af ? D / 2 + 0.6 : zf); LIGHTS.push({ x: lp[0], y: gy + 1.3 * s, z: RES_Z + lp[1], col: 0xffc36b, r: 9, k: 'cabin' }); }
@@ -2619,6 +2630,11 @@ function pGrill(b) { b.add(cy(0.3, 0.26, 0.35, 12), C.dark, 0, 0.85, 0); b.add(c
 function pFirewood(b) { b.add(bx(1.3, 0.1, 0.7), C.wood3, 0, 0.05, 0); for (let r = 0; r < 4; r++) for (let i = 0; i < 4; i++) b.add(cy(0.13, 0.13, 0.6, 8), (r + i) % 2 ? C.wood : C.wood2, (i - 1.5) * 0.29, 0.23 + r * 0.25, 0, { rx: PI / 2 }); }
 
 /* ---------------- A-FRAME CABIN: cedar gables, dark standing-seam roof to the ground, birch-lined interior ---------------- */
+/* the A-frame's door leaf (hinge at local x 0, closed along +x): shared by the model and the working door of a cabin for sale */
+function afLeaf(b) {
+  b.add(bx(0.8, 2.05, 0.06), DCLAD, 0.4, 1.03, 0); b.add(bx(0.14, 1.5, 0.07), 0xbfe6ff, 0.65, 1.12, 0, { alpha: GLA }); b.add(bx(0.8, 0.12, 0.08), CHAR, 0.4, 0.08, 0);
+  b.add(bx(0.03, 0.22, 0.05), C.metal, 0.12, 1.0, 0.05); [0.2, 0.4].forEach(x => b.add(bx(0.03, 1.9, 0.04), 0x2d1f17, x, 1.02, 0.02, { noOutline: 1 }));
+}
 function aframe(o) {
   o = o || {}; const b = new B(), K = [], g = new THREE.Group(), W = 4.8, D = 6.4, Hh = 5.2, T = 0.16, hw = W / 2, zf = D / 2 - T / 2, Ht = Hh - 0.35, zo = zf + T / 2;
   b.add(bx(W + 1.0, 0.2, D + 0.8), C.rock, 0, 0.1, 0); b.add(bx(W - 0.3, 0.03, D - 0.1), TIMB, 0, FY + 0.005, 0);
@@ -2646,9 +2662,7 @@ function aframe(o) {
   grooves(b, 'x', zo, 1, -hw + 0.3, hw - 0.3, 0.3, holes.map(h => [h[0], h[2], FY + h[1], FY + h[3]]), FY + 0.06, FY + Ht, CEDARG, x => FY + topAt(x));
   grooves(b, 'x', -zo, -1, -hw + 0.3, hw - 0.3, 0.3, [], FY + 0.06, FY + Ht, CEDARG, x => FY + topAt(x));
   plateWin(b, -0.85, FY + 2.1, -0.3, FY + 2.75, zf, T, 1); plateWin(b, -1.4, FY + 0.95, -0.6, FY + 1.25, zf, T, 0);
-  b.push(0.35, FY, zf, -1.3);
-  b.add(bx(0.8, 2.05, 0.06), DCLAD, 0.4, 1.03, 0); b.add(bx(0.14, 1.5, 0.07), 0xbfe6ff, 0.65, 1.12, 0, { alpha: GLA }); b.add(bx(0.8, 0.12, 0.08), CHAR, 0.4, 0.08, 0);
-  b.add(bx(0.03, 0.22, 0.05), C.metal, 0.12, 1.0, 0.05); [0.2, 0.4].forEach(x => b.add(bx(0.03, 1.9, 0.04), 0x2d1f17, x, 1.02, 0.02, { noOutline: 1 })); b.pop();
+  if (!o.noLeaf) { b.push(0.35, FY, zf, -1.3); afLeaf(b); b.pop(); }   /* cabins for sale get this same leaf on a working hinge instead */
   [0.35, 1.15].forEach(x => b.add(bx(0.06, 2.12, T + 0.04), CHAR, x, FY + 1.1, zf)); b.add(bx(0.86, 0.06, T + 0.04), CHAR, 0.75, FY + 2.15, zf);
   b.add(bx(1.7, 0.14, 0.7), C.wood3, 0.75, 0.13, D / 2 + 0.25); b.add(bx(1.7, 0.06, 0.7), C.wood2, 0.75, 0.2, D / 2 + 0.25);
   b.push(0.0, 0, D / 2 + 0.62, 0); b.add(bx(1.5, 0.1, 0.4), C.wood2, 0.75, 0.1, 0.24); b.add(bx(1.5, 0.05, 0.04), C.dark, 0.75, 0.04, 0.46); b.pop();
@@ -2700,6 +2714,8 @@ function aSlide(g, list, cx, cy0, cz, ax, w, h, slide) {
 }
 
 /* ---------------- ALPINE MOUNTAIN HOTEL ---------------- */
+/* the Alpine Cabin's front door leaf (hinge at local x 0, closed along +x) */
+function alpLeaf(b) { b.add(bx(0.8, 2.15, 0.07), BRZD, 0.4, 1.08, 0); b.add(bx(0.03, 1.9, 0.04), 0x24180f, 0.25, 1.08, 0.04, { noOutline: 1 }); b.add(bx(0.03, 1.9, 0.04), 0x24180f, 0.55, 1.08, 0.04, { noOutline: 1 }); b.add(bx(0.03, 0.3, 0.06), C.metal, 0.7, 1.05, 0.05); }
 function alpine() {
   const b = new B(), r = new B(), K = [], K2 = [], K3 = [], F = [], DR = [], g = new THREE.Group();
   const H1 = 2.6, S = 0.3, Y2 = FY + H1 + S, UP = Y2 + 0.03 - 0.23, T = 0.2, zF = 3.6, xL = -4.0, xR = 4.6, H2 = 3.4, VX = 1.4;
@@ -2720,7 +2736,7 @@ function alpine() {
   [0.6, 1.2, 1.8].forEach(yy => { const hs = [[2.75, 3.65]]; if (yy > 0.95 && yy < 1.75) hs.push([3.8, 4.55]); let u = 2.6; hs.concat([[4.6, 4.6]]).forEach(h => { if (h[0] - u > 0.05) b.add(bx(h[0] - u, 0.025, 0.03), CONCGD, (u + h[0]) / 2, FY + yy, zfo + 0.012, { noOutline: 1 }); u = h[1]; }); });
   // entrance: framed doorway, dark door ajar, mat, step, lantern
   [2.835, 3.565].forEach(x => b.add(bx(0.07, 2.2, T + 0.04), CHAR, x, FY + 1.1, zF)); b.add(bx(0.8, 0.07, T + 0.04), CHAR, 3.2, FY + 2.165, zF); b.add(bx(0.8, 0.04, T + 0.12), CONCGD, 3.2, FY + 0.02, zF);
-  b.push(2.8, FY, zF, -1.3); b.add(bx(0.8, 2.15, 0.07), BRZD, 0.4, 1.08, 0); b.add(bx(0.03, 1.9, 0.04), 0x24180f, 0.25, 1.08, 0.04, { noOutline: 1 }); b.add(bx(0.03, 1.9, 0.04), 0x24180f, 0.55, 1.08, 0.04, { noOutline: 1 }); b.add(bx(0.03, 0.3, 0.06), C.metal, 0.7, 1.05, 0.05); b.pop();
+  g.userData.entry = { hx: 2.8, z: zF, w: 0.8 };   /* the front door leaf (alpLeaf) hangs on a working hinge here, added by putAlpine */
   b.add(bx(1.7, 0.1, 0.5), CONCG, 3.2, 0.1, zF + 0.6); b.push(4.15, FY, zfo, 0); pWallLantern(b); b.pop();
   b.add(bx(1.0, 0.025, 0.6), 0x3b3f4a, 3.2, FY + 0.03, 3.0);
   [[-2.8, 1.4], [-1.0, 1.6]].forEach(p => b.add(bx(p[1], 0.05, 0.12), C.wood3, p[0], FY + 0.87, zfo + 0.05));
@@ -2858,6 +2874,11 @@ function putAlpine(R, g, x, z) {
   U.K.forEach(k => SOLIDS.push(W(k, { top: gy + ALP_LV }))); U.K2.forEach(k => SOLIDS.push(W(k, { bot: gy + ALP_LV }))); U.K3.forEach(k => SOLIDS.push(W(k, {})));
   (U.KS || []).forEach(k => SOLIDS.push(W(k, { top: gy + k.top })));
   U.F.forEach(f => FLOORS.push({ x0: x + f.x0, x1: x + f.x1, z0: wz + f.z0, z1: wz + f.z1, y0: gy + f.y0, y1: gy + f.y1, ax: f.ax, min: f.min === undefined ? undefined : (f.min < 0 ? gy - 1 : gy + f.min) }));
+  if (U.entry) {   /* front door: the model's own leaf on a hinge, shut and locked until the cabin is yours (doorTick opens it for the owner) */
+    const E = U.entry, piv = new THREE.Group(), pb = new B(); alpLeaf(pb); piv.add(pb.build()); piv.position.set(E.hx, FY, E.z); g.add(piv);
+    const sol = { x: x + E.hx + E.w / 2, z: wz + E.z, a: 0, hw: E.w / 2, hd: 0.16, top: gy + ALP_LV }; SOLIDS.push(sol);
+    CDOORS.push({ id: 'alpine', piv: piv, sol: sol, x: sol.x, z: sol.z, o: 0 });
+  }
   (U.doors || []).forEach(d => {
     const wx = x + d.cx, wzz = wz + d.cz, fy = gy + (d.fy || 0);
     const sol = Object.assign({ x: wx, z: wzz, a: d.ax === 'x' ? 0 : PI / 2, hw: 0.8, hd: 0.14 }, fy - gy > 1 ? { bot: gy + ALP_LV } : { top: gy + ALP_LV }); SOLIDS.push(sol); ALPD.push({ x: wx, z: wzz, y: fy, sol: sol, d: d });
@@ -2961,7 +2982,8 @@ function fit(g, k) { g.quaternion.premultiply(new THREE.Quaternion().setFromUnit
 /* put() + collision, for resort assets (resort group sits at z = RES_Z) */
 function putC(R, name, g, x, z, ry, s, y) { put(R, g, x, z, ry, s, y); g.userData.ename = name; addSolids(collFor(name), x, RES_Z + z, ry || 0, s || 1);
   const bulb = name === 'Lamp post' ? [1.2, 3.62, 0, 0xffe2a8, 14, 'street'] : name === 'Floodlight' ? [0, 4.5, 0.66, 0xf4f8ff, 22, 'flood'] : null;
-  if (bulb) { const sc = s || 1, c = Math.cos(ry || 0), n = Math.sin(ry || 0); LIGHTS.push({ x: x + (bulb[0] * c + bulb[2] * n) * sc, y: (y === undefined ? tH(x, z) : y) + 0.06 + bulb[1] * sc, z: RES_Z + z + (-bulb[0] * n + bulb[2] * c) * sc, col: bulb[3], r: bulb[4], k: bulb[5] }); }
+  if (bulb) { const sc = s || 1, c = Math.cos(ry || 0), n = Math.sin(ry || 0); LIGHTS.push({ x: x + (bulb[0] * c + bulb[2] * n) * sc, y: (y === undefined ? tH(x, z) : y) + 0.06 + bulb[1] * sc, z: RES_Z + z + (-bulb[0] * n + bulb[2] * c) * sc, col: bulb[3], r: bulb[4], k: bulb[5],
+    dir: name === 'Floodlight' ? [1.84 * n, -4.5, 1.84 * c] : undefined }); }   /* floods aim forward-down along their beam; everything else shines straight down */
   return g; }
 
 
@@ -4045,7 +4067,7 @@ function buildResort() {
   [[-30, -20, 0.6], [34, 6, 1.9], [-52, -60, 2.2], [56, -60, 1.0]].map(t => [t[0], SLOPE(t[1])].concat(t.slice(2))).filter(t => freeSpot(t[0], t[1])).forEach(t => fit(put(R, hp(pSnowDrift)(), t[0], t[1], t[2], 1.4), 1));
   /* ===== CABIN HAMLET (south-east): cabins spaced round a campfire clearing ===== */
   putCab(R, logCabin(), 34, 46, 0, 1.3); putCab(R, chalet(), 52, 44, 0, 1.15); putCab(R, hut({ noLeaf: 1 }), 64, 60, -PI / 2, 1.2);
-  putCab(R, aframe(), 38, 86, PI, 1); putCab(R, aframe({ blanket: C.blue }), 56, 86, PI, 1);
+  putCab(R, aframe({ noLeaf: 1 }), 38, 86, PI, 1); putCab(R, aframe({ blanket: C.blue, noLeaf: 1 }), 56, 86, PI, 1);
   cabinExtras(R, 'stone', 64, 60, -PI / 2, 1.2, { W: 2.8, D: 2.6, dk: 1.2, tier: 1 }); cabinExtras(R, 'logcab', 34, 46, 0, 1.3, { W: 3.6, D: 3.0, dk: 1.6, tier: 2 });
   cabinExtras(R, 'chalet', 52, 44, 0, 1.15, { W: 4.8, D: 3.6, dk: 1.9, tier: 3 }); cabinExtras(R, 'af1', 38, 86, PI, 1, { W: 4.8, D: 6.4, dk: 0.6, tier: 4, af: 1 }); cabinExtras(R, 'af2', 56, 86, PI, 1, { W: 4.8, D: 6.4, dk: 0.6, tier: 4, af: 1 });
   put(R, stonePath(), 34, 53, 0, 0.85); put(R, plankPath(), 52, 52.5, 0, 0.85); put(R, gravelPath(), 58.5, 60, -PI / 2, 0.85); put(R, stonePath(), 38, 79.5, PI, 0.5); put(R, stonePath(), 56, 79.5, PI, 0.5);
@@ -5791,19 +5813,25 @@ function lookFor() {
   const n = NIGHT; GLASSM.forEach(m => { m.color.set(m.userData.c0).lerp(tc3.set(0xffd89a), n * 0.55); m.opacity = m.userData.o0 + n * 0.12; });
   GLOWM.forEach(m => { m.opacity = m.userData.o0 * (0.15 + 0.85 * n); }); if (SK.BEAM) SK.BEAM.opacity = 0.12 * n; SK.FXDOTS.forEach(m => { m.opacity = 0.57 * n * (SK.QDUST === 0 ? 0 : 1); });
 }
-/* ---- real lights: a fixed pool (no shader rebuilds) handed to the nearest fixtures. 2 shadow-casting spots for the nearest street / flood lights, 6 points for the rest ---- */
-const PTS = [], SPS = [];
-for (let i = 0; i < 6; i++) { const l = new THREE.PointLight(0xffd9a0, 0, 8, 2); scene.add(l); PTS.push(l); }
-for (let i = 0; i < 2; i++) { const l = new THREE.SpotLight(0xffe2a8, 0, 18, 1.0, 0.6, 2); l.castShadow = true; l.shadow.mapSize.set(512, 512); l.shadow.camera.near = 0.5; l.shadow.camera.far = 20; l.shadow.bias = -0.002; scene.add(l); scene.add(l.target); SPS.push(l); }
+/* ---- real lights: a fixed pool (no shader rebuilds) handed to the nearest fixtures. Every lamp is a spot cone that matches its visible
+   beam (straight down, floods forward-down), so light lands where the fixture points and never on the ceiling above it; the 2 nearest
+   cast shadows so a lamp can't shine through a wall. One point light is kept for the campfire, which glows all round. ---- */
+const PTS = [], SPS = [], SPOTN = 8;
+{ const l = new THREE.PointLight(0xff9a40, 0, 12, 2); scene.add(l); PTS.push(l); }
+for (let i = 0; i < SPOTN; i++) { const l = new THREE.SpotLight(0xffe2a8, 0, 10, 0.7, 0.35, 1.6); l.castShadow = i < 2; l.shadow.mapSize.set(512, 512); l.shadow.camera.near = 0.3; l.shadow.camera.far = 24; l.shadow.bias = -0.0015; scene.add(l); scene.add(l.target); SPS.push(l); }
+const SPOT_K = { in: [0.78, 0.35, 1.3, 1.7], cabin: [0.8, 0.4, 0.75, 0.85], street: [0.52, 0.3, 1.2, 1.5], flood: [0.42, 0.25, 1.15, 2.2] };   /* kind: cone half-angle, penumbra, reach x radius, intensity (snow is white: outdoor lamps stay gentler) */
 const level = L => L.k === 'in' ? 0.35 + 0.65 * NIGHT : L.k === 'fire' ? 0.4 + 0.6 * NIGHT : NIGHT;   /* indoor lights are on all day, outdoor ones after dark */
+const camFwd = new THREE.Vector3();
 function lightsFor() {
-  const c = camera.position, cand = [];
-  SK.LIGHTS.forEach(L => { if (L.off) return; const lv = level(L); if (lv < 0.05) return; const d = Math.hypot(L.x - c.x, L.y - c.y, L.z - c.z); if (d < 70) cand.push({ L: L, d: d, lv: lv }); });
+  const c = camera.position, cand = []; camera.getWorldDirection(camFwd);
+  SK.LIGHTS.forEach(L => { if (L.off) return; const lv = level(L); if (lv < 0.05) return; const dx = L.x - c.x, dy = L.y - c.y, dz = L.z - c.z, d = Math.hypot(dx, dy, dz);
+    if (d < 70) cand.push({ L: L, d: d * ((dx * camFwd.x + dy * camFwd.y + dz * camFwd.z) < -L.r ? 1.8 : 1), lv: lv }); });   /* lamps well behind you rank lower */
   cand.sort((a, b) => a.d - b.d); const used = new Set();
-  SPS.forEach(s => { const q = cand.find(x => !used.has(x) && (x.L.k === 'street' || x.L.k === 'flood')); if (!q) { s.intensity = 0; return; } used.add(q);
-    s.position.set(q.L.x, q.L.y, q.L.z); s.target.position.set(q.L.x, q.L.y - 5, q.L.z); s.target.updateMatrixWorld(); s.color.set(q.L.col); s.distance = q.L.r * 1.4; s.intensity = 2.6 * q.lv; });
-  PTS.forEach(p => { if (p.userData.off) { p.intensity = 0; return; } const q = cand.find(x => !used.has(x)); if (!q) { p.intensity = 0; return; } used.add(q);
-    p.position.set(q.L.x, q.L.y, q.L.z); p.color.set(q.L.col); p.distance = q.L.r; p.intensity = (q.L.k === 'fire' ? 2.2 + Math.random() * 0.4 : 1.6) * q.lv; });
+  PTS.forEach(p => { const q = cand.find(x => x.L.k === 'fire'); if (!q) { p.intensity = 0; return; } used.add(q); p.position.set(q.L.x, q.L.y, q.L.z); p.color.set(q.L.col); p.distance = q.L.r; p.intensity = (2.2 + Math.random() * 0.4) * q.lv; });
+  SPS.forEach(s => { if (s.userData.off) { s.intensity = 0; return; } const q = cand.find(x => !used.has(x) && x.L.k !== 'fire'); if (!q) { s.intensity = 0; return; } used.add(q);
+    const L = q.L, K = SPOT_K[L.k] || SPOT_K.in, dv = L.dir || [0, -1, 0];
+    s.position.set(L.x, L.y, L.z); s.target.position.set(L.x + dv[0], L.y + dv[1], L.z + dv[2]); s.target.updateMatrixWorld();
+    s.angle = K[0]; s.penumbra = K[1]; s.distance = L.r * K[2]; s.shadow.camera.far = s.distance + 1; s.color.set(L.col); s.intensity = K[3] * q.lv; });
 }
 /* ---- hotel: rooms, who is staying tonight (seeded per day), your key ---- */
 const ROOMS = HXd.rooms.map(r => r);
@@ -6090,7 +6118,7 @@ SK.TICK.push(dt => {
   doorTick(dt);
   p6Acc += dt; if (p6Acc > 0.4) { p6Acc = 0; skyFor(State.time); if (SK.P7) SK.P7.wxApply(); lookFor(); lightsFor();
     const rv = roomValid(); if (roomWas && !rv && State.room) { SK.toast('Checked out of room ' + State.room.no + '. Thanks for staying!'); State.room = null; } roomWas = rv; }
-  else if (NIGHT > 0) PTS.forEach(p => { if (p.color.getHex() === 0xff9a40) p.intensity = (2.2 + Math.random() * 0.4) * (0.4 + 0.6 * NIGHT); });   /* campfire flicker */
+  else if (NIGHT > 0) PTS.forEach(p => { if (p.intensity > 0 && p.color.getHex() === 0xff9a40) p.intensity = (2.2 + Math.random() * 0.4) * (0.4 + 0.6 * NIGHT); });   /* campfire flicker */
 });
 /* ===================== POWDER PASS: weather, sound, haptics, graphics quality (Phase 6) ===================== */
 /* ---- weather: one seeded forecast per day; snow builds and eases through the day on the existing snowfall system ---- */
@@ -6233,11 +6261,10 @@ function soundTick(dt) {
   if (!ski && W.on && !W.ride && W.bp) { const st = Math.floor(W.bp / PI); if (st !== lastStep) { lastStep = st; if (Math.hypot(W.vx || 0, W.vz || 0) > 0.5) step(inside); } }
 }
 /* ---- graphics quality: high / balanced / low trade lights, shadows, snow and resolution for frame rate ---- */
-const QUAL = { high: { pts: 6, spotSh: true, snow: 1, dpr: 2, sh: 2048, dust: 1 }, balanced: { pts: 4, spotSh: false, snow: 0.6, dpr: 1.5, sh: 1024, dust: 1 }, low: { pts: 2, spotSh: false, snow: 0.35, dpr: 1, sh: 512, dust: 0 } };
+const QUAL = { high: { pts: 8, spotSh: true, snow: 1, dpr: 2, sh: 2048, dust: 1 }, balanced: { pts: 6, spotSh: true, snow: 0.6, dpr: 1.5, sh: 1024, dust: 1 }, low: { pts: 4, spotSh: false, snow: 0.35, dpr: 1, sh: 512, dust: 0 } };
 const qual = () => State.settings.gfx || (coarse ? 'balanced' : 'high');
 function qualApply() {
-  const Q = QUAL[qual()]; SK.P6.SPS.forEach(l => { if (l.castShadow !== Q.spotSh) { l.castShadow = Q.spotSh; } });   /* one shader rebuild when it changes */
-  SK.P6.PTS.forEach((p, i) => { p.userData.off = i >= Q.pts; }); SK.QMAXDPR = Q.dpr; SK.QDUST = Q.dust;
+  const Q = QUAL[qual()]; SK.P6.SPS.forEach((l, i) => { const sh = Q.spotSh && i < 2; if (l.castShadow !== sh) l.castShadow = sh; l.userData.off = i >= Q.pts; });   /* one shader rebuild when it changes */ SK.QMAXDPR = Q.dpr; SK.QDUST = Q.dust;
   const nd = Math.max(Math.min(1, DPR0), Math.min(DPR0, Q.dpr)); if (nd !== dpr) { dpr = nd; renderer.setPixelRatio(dpr); resize(); }   /* resolution changes now, not after the next slow frame */
   if (sunL.shadow.mapSize.x !== Q.sh) { sunL.shadow.mapSize.set(Q.sh, Q.sh); if (sunL.shadow.map) { sunL.shadow.map.dispose(); sunL.shadow.map = null; } }
   SK.P6.lightsFor();
