@@ -4205,14 +4205,20 @@ scene.fog = new THREE.Fog(0xeef6ff, 170, 950);
 /* sky dome: smooth gradient from a pale haze at the horizon (matches the fog) to deep blue overhead, with a soft glow round the sun. Follows the camera */
 if (!SK.DEV) {
   const skyM = new THREE.ShaderMaterial({ side: THREE.BackSide, depthWrite: false, depthTest: false, fog: false,
-    uniforms: { zen: { value: new THREE.Color(0x1f74d6) }, mid: { value: new THREE.Color(0x5db8ff) }, hor: { value: new THREE.Color(0xe6f4ff) }, sunD: { value: new THREE.Vector3(80, 210, -470).normalize() }, night: { value: 0 }, glow: { value: 1 } },
+    uniforms: { zen: { value: new THREE.Color(0x1f74d6) }, mid: { value: new THREE.Color(0x5db8ff) }, hor: { value: new THREE.Color(0xe6f4ff) }, sunD: { value: new THREE.Vector3(80, 210, -470).normalize() }, night: { value: 0 }, glow: { value: 1 }, aur: { value: 0 }, time: { value: 0 } },
     vertexShader: 'varying vec3 vD; void main(){ vD = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
-    fragmentShader: 'uniform vec3 zen; uniform vec3 mid; uniform vec3 hor; uniform vec3 sunD; uniform float night; uniform float glow; varying vec3 vD;' +
+    fragmentShader: 'uniform vec3 zen; uniform vec3 mid; uniform vec3 hor; uniform vec3 sunD; uniform float night; uniform float glow; uniform float aur; uniform float time; varying vec3 vD;' +
+      /* northern lights: two folded curtains over the northern sky, bright green lower edge fading to violet tops, fine vertical rays, slow drift */
+      'vec3 aurora(vec3 d, float h){ float a = atan(d.z, d.x), cov = smoothstep(-0.35, 0.35, -d.z); vec3 o = vec3(0.0);' +
+      ' for (int i = 0; i < 2; i++) { float fi = float(i), yc = 0.3 + 0.13 * fi + 0.07 * sin(a * 3.0 + time * 0.07 + fi * 2.1) + 0.035 * sin(a * 7.0 - time * 0.11 + fi);' +
+      '  float v = h - yc, edge = smoothstep(-0.012, 0.012, v) * exp(-max(v, 0.0) * (4.5 + 2.0 * fi)), ray = 0.55 + 0.45 * sin(a * 90.0 + 5.0 * sin(a * 11.0 + time * 0.23 + fi * 3.0));' +
+      '  float pulse = 0.65 + 0.35 * sin(time * 0.31 + a * 2.0 + fi * 1.7); o += mix(vec3(0.15, 1.0, 0.55), vec3(0.62, 0.32, 1.0), smoothstep(0.02, 0.22, v)) * edge * ray * pulse * (1.0 - 0.35 * fi); }' +
+      ' return o * cov * smoothstep(0.03, 0.12, h); }' +
       'void main(){ vec3 d = normalize(vD); float h = d.y; vec3 c = h > 0.0 ? mix(mix(hor, mid, smoothstep(0.0, 0.22, h)), zen, smoothstep(0.18, 0.85, h)) : hor;' +
       ' float s = max(dot(d, sunD), 0.0); c += vec3(1.0, 0.93, 0.72) * glow * (0.32 * pow(s, 12.0) + 0.5 * pow(s, 90.0));' +
-      ' vec3 q = floor(d * 380.0); float st = step(0.9975, fract(sin(dot(q, vec3(12.9898, 78.233, 45.164))) * 43758.5453)); c += vec3(st) * night * smoothstep(0.02, 0.25, h) * 0.9; gl_FragColor = vec4(c, 1.0); }' });
+      ' vec3 q = floor(d * 380.0); float st = step(0.9975, fract(sin(dot(q, vec3(12.9898, 78.233, 45.164))) * 43758.5453)); c += vec3(st) * night * smoothstep(0.02, 0.25, h) * 0.9; if (aur > 0.001 && h > 0.0) c += aurora(d, h) * aur * 1.1; gl_FragColor = vec4(c, 1.0); }' });
   const sky = new THREE.Mesh(new THREE.SphereGeometry(900, 32, 20), skyM); sky.frustumCulled = false; sky.renderOrder = -10;
-  sky.onBeforeRender = (r, sc, cam) => { sky.position.copy(cam.position); sky.updateMatrixWorld(); }; scene.add(sky); SK.SKY = skyM;
+  sky.onBeforeRender = (r, sc, cam) => { sky.position.copy(cam.position); sky.updateMatrixWorld(); if (skyM.uniforms.aur.value > 0) skyM.uniforms.time.value = performance.now() / 1000; }; scene.add(sky); SK.SKY = skyM;
 }
 /* real-time sun shadows: one 2048 map in a box that follows what you are looking at */
 renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -5032,7 +5038,7 @@ function meterTick(dt) {
   const sp = ski ? PL.spd : Math.hypot(W.vx || 0, W.vz || 0), dy = lastY === null ? 0 : W.y - lastY, climb = !ride && !ski && dy > 0 && dy < 1 ? dy : 0; lastY = W.y;   /* teleports (skip, rescue) are not climbing */
   const en = gear('boots').en, warm = gear('jacket').warm, inside = !ride && isIndoors();
   const dE = ride ? 0.08 : inside ? 0.05 : -(ski ? 0.05 + 0.006 * sp : 0.02 + 0.012 * sp) * en;   /* per second; climbing costs 0.8 Energy per metre on top */
-  let dW = -0.09 * alt * (SK.wxCold ? SK.wxCold() : SK.SNPFX.snowing() ? 1.3 : 1) * warm;
+  let dW = -0.16 * alt * (SK.wxCold ? SK.wxCold() : SK.SNPFX.snowing() ? 1.3 : 1) * warm * (1 + 0.35 * (SK.P6 ? SK.P6.night() : 0));   /* about 10 min from full to empty in the cold, quicker after dark */
   if (inside) dW = 2; else if (gond) dW = 0.4;
   if (Math.hypot(W.x - CAMPFIRE[0], lz - CAMPFIRE[1]) < 6) dW = 2.5; if (Math.hypot(W.x - HOTPOOL[0], lz - HOTPOOL[1]) < 6.5) dW = 4;
   if ((SK.TUBS || []).some(t => State.cabins.indexOf(t.id) >= 0 && Math.hypot(W.x - t.x, W.z - t.z) < 1.6)) dW = 5;   /* your own hot tub */
@@ -5792,7 +5798,9 @@ const tc1 = new THREE.Color(), tc2 = new THREE.Color(), tc3 = new THREE.Color();
 const mixC = (a, b, t, out) => out.set(a).lerp(tc3.set(b), t);
 let NIGHT = 0;   /* 0 = full day, 1 = full night */
 function skyFor(min) {
-  const h = min / 60, el = Math.sin((h - 6.5) / 12 * PI), day = Math.max(0, Math.min(1, (el + 0.08) / 0.3)), dusk = Math.max(0, 1 - Math.abs(el) / 0.25) * (h > 4 && h < 21 ? 1 : 0);
+  /* winter day: the sun rises ~6:45 and sets ~17:30. Light fades slowly from 16:30 to full night at 18:00 and comes back 6:00-7:30 */
+  const h = min / 60, el = Math.sin((h - 6.75) / 10.75 * PI), ss = x => { x = Math.max(0, Math.min(1, x)); return x * x * (3 - 2 * x); };
+  const day = h < 12 ? ss((h - 6) / 1.5) : 1 - ss((h - 16.5) / 1.5), dusk = Math.max(0, 1 - Math.abs(h - 17.1) / 1.1) + Math.max(0, 1 - Math.abs(h - 6.8) / 0.9);
   NIGHT = 1 - day; if (SK.SUNO) SK.SUNO.visible = day > 0.15;
   const az = (h - 12) / 12 * PI;   /* east in the morning, south at noon, west in the evening */
   if (el > -0.05) SUND.set(Math.sin(az) * 0.7 - 0.25, Math.max(0.12, el), 0.45 + Math.cos(az) * 0.3).normalize(); else SUND.set(0.35, 0.75, -0.3).normalize();   /* moon */
@@ -5801,6 +5809,7 @@ function skyFor(min) {
   const U = SK.SKY && SK.SKY.uniforms; if (U) {
     ['zen', 'mid', 'hor'].forEach(k => { mixC(cNight[k], cDay[k], day, tc1); tc1.lerp(tc2.set(cDusk[k]), dusk * 0.75); U[k].value.copy(tc1); });
     U.night.value = NIGHT; U.glow.value = day; U.sunD.value.copy(SUND);
+    U.aur.value = ss((NIGHT - 0.55) / 0.45) * (0.65 + 0.35 * Math.abs(Math.sin(State.day * 12.9898)));   /* aurora every clear night after full dark, stronger some nights (weather dims it) */
     scene.fog.color.copy(U.hor.value); scene.background.copy(U.hor.value);
   }
 }
@@ -6176,7 +6185,7 @@ const grey = new THREE.Color();
 function wxApply() {
   wxNow(); const Q = QUAL[qual()], snowAmt = Math.min(Q.snow, WX.amt);
   SK.SNPFX.setSnowfall(snowAmt); SK.SNPFX.wind.set(0.55 + WX.windX, 0, 0.18 + WX.windZ);
-  const U = SK.SKY && SK.SKY.uniforms, o = WX.over; if (U && o > 0) { grey.set(NIGHT > 0.5 ? 0x1c2230 : 0xaeb8c6); ['zen', 'mid', 'hor'].forEach(k => U[k].value.lerp(grey, o * (k === 'zen' ? 0.6 : 0.8))); U.glow.value *= 1 - o; U.night.value *= 1 - o; scene.fog.color.copy(U.hor.value); scene.background.copy(U.hor.value); }
+  const U = SK.SKY && SK.SKY.uniforms, o = WX.over; if (U && o > 0) { U.aur.value *= Math.max(0, 1 - o * 1.5); grey.set(NIGHT > 0.5 ? 0x1c2230 : 0xaeb8c6); ['zen', 'mid', 'hor'].forEach(k => U[k].value.lerp(grey, o * (k === 'zen' ? 0.6 : 0.8))); U.glow.value *= 1 - o; U.night.value *= 1 - o; scene.fog.color.copy(U.hor.value); scene.background.copy(U.hor.value); }
   sunL.intensity *= 1 - 0.6 * o;
   const vis = WX.fog * (goggles() ? 0.6 : 1); scene.fog.near = 170 - 150 * vis; scene.fog.far = 950 - 820 * vis;   /* storm: about 130 m of visibility, ~460 m with goggles */
 }
