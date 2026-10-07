@@ -3038,7 +3038,7 @@ function putC(R, name, g, x, z, ry, s, y) { put(R, g, x, z, ry, s, y); g.userDat
 /* ===== POWDER PASS terrain =====
    Village (z > 14) is the original asset terrain. The slope is the same function family stretched 2x along z and widened,
    with a TRAILS table (centre-lines + half-widths) that grooms, grades and clears the snow. */
-const TX0 = -124, TX1 = 124, TZ0 = -380, TZ1 = 96, LIFTX = 12, LIFT_ZS = 26, LIFT_L = 228, TOPZ = LIFT_ZS - LIFT_L;
+const TX0 = -124, TX1 = 124, TZ0 = -380, TZ1 = 320, LIFTX = 12, LIFT_ZS = 26, LIFT_L = 228, TOPZ = LIFT_ZS - LIFT_L;
 const c01 = v => v < 0 ? 0 : v > 1 ? 1 : v;
 const sstep = (a, b, x) => { const t = c01((x - a) / (b - a)); return t * t * (3 - 2 * t); };
 const ZS_ = 14, SLOPE = z => z >= ZS_ ? z : ZS_ + (z - ZS_) * 2, UNSL = z => z >= ZS_ ? z : ZS_ + (z - ZS_) / 2;   /* asset-file slope z <-> stretched z */
@@ -3053,19 +3053,29 @@ const RIBBON = []; for (let z = PISTE_Z0; z <= PISTE_Z1 + 0.01; z += 4) RIBBON.p
 /* grade: green | blue | black | dbl (backcountry) | conn (connector). lift = the lift that serves the top. built = has geometry today */
 const TRAILS = [
   { id: 'bunny', name: 'Snowdrop', grade: 'green', hw: 6, lift: 'M', pts: [[-29, 2], [-29, 10], [-29.5, 18], [-30, 28]] },
-  { id: 'meadow', name: 'Meadow Wander', grade: 'green', hw: 5, lift: 'A', pts: [[24, -212], [48, -202], [22, -190], [48, -176], [22, -162], [48, -148], [22, -134], [46, -120], [24, -106], [30, -92], [22, -80], [31, -68], [20, -56], [34, -44], [20, -32], [34, -20], [20, -8], [26, 8], [26, 22]] },
+  { id: 'meadow', name: 'Meadow Wander', grade: 'green', hw: 5, lift: 'A', pts: [[24, -212], [48, -202], [26, -190], [48, -176], [22, -162], [48, -148], [22, -134], [46, -120], [24, -106], [30, -92], [22, -80], [31, -68], [20, -56], [34, -44], [20, -32], [34, -20], [20, -8], [26, 8], [26, 22]] },
   { id: 'ribbon', name: 'Pine Ribbon', grade: 'blue', hw: PISTE_W, lift: 'A', built: 1, pts: RIBBON },
   { id: 'lodge', name: 'Lodge Line', grade: 'green', hw: 6, lift: 'B', pts: [[58, -70], [66, -58], [72, -34], [64, -8], [54, 12], [42, 24]] },
   { id: 'timber', name: 'Timberline', grade: 'blue', hw: 6, lift: 'D', pts: [[-84, -222], [-68, -200], [-62, -170], [-70, -140], [-60, -110], [-64, -78], [-54, -46], [-50, -16], [-62, 2], [-76, 8]] },
   { id: 'skyline', name: 'Skyline', grade: 'blue', hw: 5.5, lift: 'C', pts: [[4, -348], [22, -338], [10, -322], [28, -306], [16, -288], [30, -268], [18, -250], [28, -234], [20, -222]] },
   { id: 'couloir', name: 'Crest Couloir', grade: 'black', hw: 5, lift: 'C', pts: [[-10, -344], [-26, -326], [-40, -300], [-48, -268], [-44, -238], [-34, -208], [-22, -176]] },
-  { id: 'eagle', name: 'Eagle Chute', grade: 'black', hw: 5, lift: 'C', pts: [[24, -352], [42, -330], [52, -300], [58, -270], [56, -238], [60, -206], [62, -172], [62, -140], [64, -112]] },
-  { id: 'mogul', name: 'Mogul Ridge', grade: 'black', hw: 5, lift: 'E', groomed: 0, pts: [[100, -248], [102, -226], [101, -200], [100, -168], [96, -136], [90, -112], [80, -100]] },
-  { id: 'glades', name: 'Fir Glades', grade: 'black', hw: 6, lift: 'D', glade: 1, groomed: 0, pts: [[-99, -194], [-101, -172], [-102, -150], [-100, -110], [-98, -70], [-96, -36], [-92, 8]] },
+  { id: 'eagle', name: 'Eagle Chute', grade: 'black', hw: 5, lift: 'C', pts: [[24, -352], [42, -330], [52, -300], [58, -270], [56, -238], [60, -206], [62, -172], [58, -140], [58, -112]] },
+  { id: 'mogul', name: 'Mogul Ridge', grade: 'black', hw: 5, lift: 'E', groomed: 0, pts: [[100, -248], [102, -226], [101, -200], [100, -168], [97, -136], [99, -120], [95, -104], [86, -96]] },   /* swings east of the Eagle Lift station cut, then down to the valley */
+  { id: 'glades', name: 'Fir Glades', grade: 'black', hw: 6, lift: 'D', glade: 1, groomed: 0, pts: [[-99, -194], [-101, -172], [-102, -150], [-100, -110], [-98, -70], [-99, -36], [-101, -10], [-96, 8]] },
   { id: 'bowlexit', name: 'Bowl Exit', grade: 'dbl', hw: 6, lift: 'C', groomed: 0, pts: [[-78, -318], [-86, -286], [-90, -256], [-92, -228]] },
   { id: 'runout', name: 'Village Cat Track', grade: 'conn', hw: 3.5, built: 1, pts: RUNOUT },
   { id: 'east', name: 'East Cat Track', grade: 'conn', hw: 3.5, pts: [[40, 26], [31, 36], [24, 44], [15, 47]] },
+  /* South Range (built at the end of world generation, see buildSouth: their gates and lifts must not shift the editor's asset keys) */
+  { id: 'hface', name: 'Hotel Face', grade: 'dbl', hw: 9, lift: 'S1', south: 1, groomed: 0, pts: [[-47, 292], [-49, 266], [-50, 238], [-51, 208], [-52, 176], [-50, 144], [-46, 114]] },
+  { id: 'knife', name: 'Knife Ridge', grade: 'black', hw: 5, lift: 'S1', south: 1, groomed: 0, pts: [[-92, 296], [-98, 270], [-100, 240], [-100, 210], [-98, 182], [-92, 156], [-82, 132], [-70, 114]] },
+  { id: 'ledges', name: 'The Ledges', grade: 'dbl', hw: 6, lift: 'S1', south: 1, groomed: 0, pts: [[-8, 294], [-9, 272], [-8, 250], [-8, 230], [-10, 214], [-12, 196], [-12, 178]] },
+  { id: 'dtimber', name: 'Deep Timber', grade: 'black', hw: 5, lift: 'S2', south: 1, glade: 1, groomed: 0, pts: [[32, 290], [36, 262], [30, 236], [38, 208], [42, 180], [34, 152], [36, 128], [38, 114]] },
+  { id: 'sbowl', name: 'South Bowl', grade: 'dbl', hw: 12, lift: 'S2', south: 1, groomed: 0, pts: [[94, 292], [94, 268], [90, 242], [87, 218], [85, 198]] },
+  { id: 'gully', name: 'Bowl Gully', grade: 'black', hw: 5, lift: 'S2', south: 1, groomed: 0, moguls: 1, pts: [[85, 198], [83, 172], [80, 148], [76, 126], [72, 114]] },
+  { id: 'spark', name: 'Southside Park', grade: 'blue', hw: 10, lift: 'S3', south: 1, park: 1, pts: [[0, 222], [0, 204], [0, 186], [0, 166], [0, 148], [-2, 130], [-4, 114]] },
+  { id: 'straverse', name: 'Mid Traverse', grade: 'conn', hw: 4, south: 1, pts: [[-104, 172], [-70, 170], [-36, 171], [-14, 172], [16, 170], [50, 168], [82, 166]] },
 ];
+TRAILS.find(t => t.id === 'mogul').moguls = 1;   /* Mogul Ridge gets real moguls (it had none) */
 TRAILS.forEach(t => { if (t.groomed === undefined) t.groomed = 1; const xs = t.pts.map(p => p[0]), zs = t.pts.map(p => p[1]), m = t.hw + 9;
   t.bx0 = Math.min.apply(null, xs) - m; t.bx1 = Math.max.apply(null, xs) + m; t.bz0 = Math.min.apply(null, zs) - m; t.bz1 = Math.max.apply(null, zs) + m; });
 const BOWL = [[-122, -376], [-58, -378], [-48, -352], [-60, -322], [-88, -304], [-120, -312]];
@@ -3077,6 +3087,9 @@ const LIFT_LINES = [
   { id: 'D', name: 'West Ridge', a: [-80, -16], b: [-90, -200] },
   { id: 'E', name: 'Eagle Lift', a: [78, -128], b: [90, -258] },
   { id: 'M', name: 'Magic Carpet', a: [-38, 28], b: [-38, 4], small: 1 },
+  { id: 'S1', name: 'South Chair', a: [-24, 118], b: [-24, 284], south: 1, kind: 0 },
+  { id: 'S2', name: 'Bowl Chair', a: [62, 120], b: [66, 282], south: 1, kind: 0 },
+  { id: 'S3', name: 'Park Chair', a: [18, 124], b: [18, 222], south: 1, kind: 0 },
 ];
 /* one pass over the trails: g = groomed snow (0..1), n = near a groomed trail (wider falloff, used to calm the noise) */
 const TF = { g: 0, n: 0 };
@@ -3093,7 +3106,7 @@ function nearLift(x, z, m) { return LIFT_LINES.some(l => segDist(x, z, l.a, l.b)
 const freeSpot = (x, z) => !onTrail(x, z, 3) && !nearLift(x, z, 7);
 function liftClear(x, z) { let c = 1; for (let i = 0; i < LIFT_LINES.length; i++) { const l = LIFT_LINES[i]; if (l.small) continue; const d = segDist(x, z, l.a, l.b); if (d < 14) c = Math.min(c, sstep(7, 14, d)); } return c; }
 /* Air Line park: snow kickers on Timberline. u = along the run (lip at 0), v = across. Part of the terrain, so skis launch off them. */
-const KICKERS = [[-65.33, -126, 0.316, 0.949], [-62.0, -116, 0.316, 0.949], [-60.88, -103, -0.124, 0.992], [-62.13, -93, -0.124, 0.992]].map(k => ({ x: k[0], z: k[1], dx: k[2], dz: k[3], H: 2.4, L: 6, w: 2.6 }));
+const KICKERS = [[-65.33, -126, 0.316, 0.949], [-62.0, -116, 0.316, 0.949], [-60.88, -103, -0.124, 0.992], [-62.13, -93, -0.124, 0.992], [-4.5, 196.5, 0, -1], [4.5, 196.5, 0, -1], [0, 170.5, 0, -1]].map(k => ({ x: k[0], z: k[1], dx: k[2], dz: k[3], H: 2.4, L: 6, w: 2.6 }));
 function kickers(x, z) {
   let h = 0;
   for (let i = 0; i < KICKERS.length; i++) { const k = KICKERS[i], rx = x - k.x, rz = z - k.z; if (rx > 8 || rx < -8 || rz > 8 || rz < -8) continue;
@@ -3101,6 +3114,32 @@ function kickers(x, z) {
     h += k.H * (u < 0 ? Math.pow((u + k.L) / k.L, 2.2) : 1 - u) * (1 - sstep(k.w, k.w + 1.5, v)); }
   return h;
 }
+/* ===== SOUTH RANGE: across the valley from the main mountain, so the village sits at the bottom of a V. Land first, runs second.
+   The base rises from the valley floor (z 104) to a crest at z ~296 (+115 m), steepest near the top. On top of it: a wavy crest with
+   South Peak, the Knife Ridge spine, South Bowl draining north into Bowl Gully, and Southside Park cut into three terraces. ===== */
+const S0 = 104, SL = 192;
+const hsBase = z => { const p = c01((z - S0) / SL); return 115 * Math.pow(p, 1.25) * (1 - 0.1 * sstep(300, 320, z)); };
+const PARK_T = [[144, 152], [170, 178], [196, 204]];   /* park terraces (z ranges), each tilted 0.1 downhill */
+const PARK_K = (() => { const K = [[118, hsBase(118)]]; PARK_T.forEach(t => { const h1 = hsBase((t[0] + t[1]) / 2); K.push([t[0], h1 - 0.4], [t[1], h1 + 0.4]); }); K.push([226, hsBase(226)]); return K; })();
+function parkH(z) { const K = PARK_K; if (z <= K[0][0]) return hsBase(z); for (let i = 0; i < K.length - 1; i++) { const a = K[i], b = K[i + 1]; if (z <= b[0]) { const u = (z - a[0]) / (b[0] - a[0]), e = 0.55 * sstep(0, 1, u) + 0.45 * u; return a[1] + (b[1] - a[1]) * e; } } return hsBase(z); }
+function southH(x, z) {
+  if (z <= S0 - 1) return 0;
+  const p = c01((z - S0) / SL);
+  let h = hsBase(z);
+  const pk = (1 - sstep(10, 18, Math.abs(x))) * sstep(112, 122, z) * (1 - sstep(220, 232, z)); if (pk > 0) h += (parkH(z) - h) * pk;   /* Southside Park terraces */
+  h += p * (8 * Math.sin(x * 0.03 + 0.5) + 10 * Math.exp(-((x + 20) * (x + 20)) / 625));                       /* wavy crest + South Peak */
+  h += 12 * Math.exp(-((x + 100) * (x + 100)) / 144) * sstep(112, 190, z);                                      /* Knife Ridge spine */
+  h -= 18 * Math.exp(-((x - 90) * (x - 90)) / 676) * sstep(298, 238, z) * (1 - 0.6 * sstep(200, 150, z));     /* South Bowl, draining north */
+  h -= 5 * Math.exp(-((x - 84) * (x - 84)) / 64) * sstep(110, 130, z) * sstep(205, 185, z);                     /* Bowl Gully */
+  h += 1.8 * tNoise(x * 0.5, z * 0.5) * p * (1 - pk);                                                           /* natural roll */
+  return Math.max(-1.5, h);
+}
+/* The Ledges: three natural rock drops on the west half of the run (the east half is the bypass). Added after the run bench, like the kickers */
+const LEDGES = [[-9, 236, 2.2], [-9, 248, 3.0], [-9, 260, 1.6]];
+function ledges(x, z) { let h = 0; for (let i = 0; i < LEDGES.length; i++) { const L = LEDGES[i], dz = z - L[1]; if (dz < -7 || dz > 7) continue; const w = 1 - sstep(3, 5, Math.abs(x - L[0]));
+  if (w <= 0) continue; h += L[2] * w * (sstep(-0.5, 0.5, dz) - c01((dz + 7) / 14)); } return h; }
+/* moguls: staggered bumps on ungroomed mogul runs, added after the bench so the run keeps them */
+function moguls(x, z, t, s, v) { const a = 0.55 * (1 - sstep(t.hw - 1.5, t.hw, Math.abs(v))), row = Math.floor(s / 4.2); return a * (Math.cos(s / 4.2 * TAU) * 0.5 + 0.5) * (Math.cos((v + (row % 2) * 1.6) / 3.2 * TAU) * 0.5 + 0.5) - a * 0.25; }
 const MOUND = (x, z) => 3.4 * Math.exp(-((x + 29) * (x + 29)) / 162 - ((z - 2) * (z - 2)) / 288);   /* nursery mound for Snowdrop */
 const tNoise = (x, z) => Math.sin(x * 0.13 + z * 0.09) + 0.7 * Math.sin(x * 0.07 - z * 0.15) + 0.35 * Math.sin(x * 0.31 + z * 0.23) + 0.2 * Math.sin(x * 0.53 - z * 0.47);
 function tH0(x, z) {
@@ -3112,7 +3151,7 @@ function tH0(x, z) {
   h += 4.5 * Math.sin(x * 0.055 + 0.8) * sstep(6, -50, z) * (1 - sstep(-320, -350, z)) * (1 - 0.8 * near);   /* spurs, graded flat under pistes */
   const gate = z < ZS_ ? (1 - near) * sstep(14, 4, z) * liftClear(x, z) : 0;
   h += tNoise(x * 0.8, z * 0.8) * (1.3 * gate + 0.6 * sstep(62, 76, ax) * sstep(4, 14, z));
-  h += MOUND(x, z) + kickers(x, z);
+  h += MOUND(x, z) + southH(x, z);   /* kickers, ledges and moguls are added after the run bench (buildTerrain) so it doesn't flatten them */
   return h;
 }
 const AX = 46, AZ = -82;
@@ -3141,8 +3180,13 @@ function tH(x, z) {
       return (H[k] * (1 - u) + H[k + 1] * u) * (1 - v) + (H[k + W1] * (1 - u) + H[k + W1 + 1] * u) * v; } }
   return tHx(x, z);
 }
-/* every trail must run downhill: sample each centre-line, build a non-increasing profile halfway between "cut the bumps" and
-   "fill the dips" (flat stretches such as station pads stay flat), and blend that correction across the corridor */
+/* every trail must run downhill and have real mountain under it. Per trail: sample the centre-line, build a non-increasing profile
+   halfway between "cut the bumps" and "fill the dips" (flat stretches such as station pads stay flat). Then the run bench: across the run
+   the ground is levelled to that profile, and beyond its edges the land is cut or filled so it never rises or falls faster than
+   0.6 m per metre (about 30 degrees). Steepness down the fall line is untouched: hard runs stay hard, they just never ski over air. */
+function padW(x, z) { let w = 0; for (let i = 0; i < PADS.length; i++) { const p = PADS[i], ex = Math.abs(x - p.x) - p.hx, ez = Math.abs(z - p.z) - p.hz; if (ex > p.b || ez > p.b) continue; w = Math.max(w, 1 - sstep(0, p.b, Math.hypot(Math.max(0, ex), Math.max(0, ez)))); } return w; }
+const BENCH_K = 0.6, BENCH_R = 32;
+const smin = (a, b, k) => { const t = Math.max(k - Math.abs(a - b), 0) / k; return Math.min(a, b) - t * t * k * 0.25; }, smax = (a, b, k) => -smin(-a, -b, k);   /* rounded creases where cut / fill meets the natural slope */
 function trailGrades() {
   const G = [];
   TRAILS.forEach(t => {
@@ -3152,17 +3196,24 @@ function trailGrades() {
     const cut = Float32Array.from(raw), fill = Float32Array.from(raw);
     for (let i = 1; i < n; i++) cut[i] = Math.min(raw[i], cut[i - 1]);
     for (let i = n - 2; i >= 0; i--) fill[i] = Math.max(raw[i], fill[i + 1]);
-    const corr = new Float32Array(n); let mx = 0; for (let i = 0; i < n; i++) { corr[i] = (cut[i] + fill[i]) / 2 - raw[i]; mx = Math.max(mx, Math.abs(corr[i])); }
-    if (mx < 0.05) return;
-    const m = t.hw + 8, xs = P.map(p => p[0]), zs = P.map(p => p[1]);
-    G.push({ seg: seg, corr: corr, hw: t.hw, x0: Math.min.apply(null, xs) - m, x1: Math.max.apply(null, xs) + m, z0: Math.min.apply(null, zs) - m, z1: Math.max.apply(null, zs) + m });
+    const hc = new Float32Array(n); for (let i = 0; i < n; i++) hc[i] = (cut[i] + fill[i]) / 2;
+    const m = t.hw + BENCH_R, xs = P.map(p => p[0]), zs = P.map(p => p[1]);
+    G.push({ t: t, seg: seg, hc: hc, hw: t.hw, x0: Math.min.apply(null, xs) - m, x1: Math.max.apply(null, xs) + m, z0: Math.min.apply(null, zs) - m, z1: Math.max.apply(null, zs) + m });
   });
-  return (x, z) => {
-    let best = 0, bw = 0;
+  const Q = { T: null, d: 0, s: 0, v: 0 };
+  const near = (x, z) => {   /* the trail whose edge is closest (inside its bench reach), with distance, run position and signed offset */
+    let best = null, bk = 1e9;
     for (let g = 0; g < G.length; g++) { const T = G[g]; if (x < T.x0 || x > T.x1 || z < T.z0 || z > T.z1) continue;
-      let bd = 1e9, bs = 0; for (let i = 0; i < T.seg.length; i++) { const q = T.seg[i], dx = q.b[0] - q.a[0], dz = q.b[1] - q.a[1], u = Math.max(0, Math.min(1, ((x - q.a[0]) * dx + (z - q.a[1]) * dz) / (q.l * q.l || 1))), d = Math.hypot(x - q.a[0] - dx * u, z - q.a[1] - dz * u); if (d < bd) { bd = d; bs = q.s0 + q.l * u; } }
-      const w = 1 - sstep(T.hw * 0.8, T.hw + 8, bd); if (w > bw) { bw = w; const i = Math.min(T.corr.length - 1, Math.round(bs)); best = T.corr[i] * w; } }
-    return best;
+      let bd = 1e9, bs = 0, bv = 0; for (let i = 0; i < T.seg.length; i++) { const q = T.seg[i], dx = q.b[0] - q.a[0], dz = q.b[1] - q.a[1], u = Math.max(0, Math.min(1, ((x - q.a[0]) * dx + (z - q.a[1]) * dz) / (q.l * q.l || 1))), ox = x - q.a[0] - dx * u, oz = z - q.a[1] - dz * u, d = Math.hypot(ox, oz); if (d < bd) { bd = d; bs = q.s0 + q.l * u; bv = (ox * dz - oz * dx) / (q.l || 1); } }
+      const k = bd - T.hw; if (k < BENCH_R && k < bk) { bk = k; best = T; Q.d = bd; Q.s = bs; Q.v = bv; } }
+    Q.T = best; return best ? Q : null;
+  };
+  /* bench(x, z, h): ground height after the run bench; extra(x, z): kickers, ledges and moguls laid on top of it */
+  return {
+    bench(x, z, h) { const q = near(x, z); if (!q) return h; const T = q.T, H = T.hc, fs = Math.max(0, Math.min(H.length - 1.001, q.s)), i0 = fs | 0, c = H[i0] + (H[Math.min(H.length - 1, i0 + 1)] - H[i0]) * (fs - i0), e = Math.max(0, q.d - T.hw);   /* interpolated: a stepped profile would terrace steep runs */
+      const inner = q.d < T.hw ? Math.max(-0.4, Math.min(0.4, 0.15 * (h - c))) * (1 - (q.d / T.hw) * (q.d / T.hw)) : 0;   /* a little natural roll left inside the run */
+      const tgt = e > 0 ? smax(c - BENCH_K * e, smin(c + BENCH_K * e, h, 3), 3) : c + inner; return h + (tgt - h) * (1 - sstep(0.35, 0.9, padW(x, z))); },   /* station pads keep their own level core */
+    extra(x, z) { let h = kickers(x, z) + ledges(x, z); const q = near(x, z); if (q && q.T.t.moguls && q.d < q.T.hw) h += moguls(x, z, q.T, q.s, q.v) * (1 - padW(x, z)); return h; }
   };
 }
 
@@ -3189,7 +3240,7 @@ function buildOuter() {
   const edge = (x0, z0, x1, z1, nx, nz) => { const L = Math.hypot(x1 - x0, z1 - z0), n = Math.max(1, Math.round(L / step)); for (let i = 0; i < n; i++) { const u = i / n; per.push([x0 + (x1 - x0) * u, z0 + (z1 - z0) * u, nx, nz]); } };
   const corner = (x, z, a0) => { for (let k = 0; k < 12; k++) { const a = a0 + k / 12 * (PI / 2); per.push([x, z, Math.cos(a), Math.sin(a)]); } };
   edge(TX0, TZ0, TX1, TZ0, 0, -1); corner(TX1, TZ0, -PI / 2); edge(TX1, TZ0, TX1, TZ1, 1, 0); corner(TX1, TZ1, 0); edge(TX1, TZ1, TX0, TZ1, 0, 1); corner(TX0, TZ1, PI / 2); edge(TX0, TZ1, TX0, TZ0, -1, 0); corner(TX0, TZ0, PI);
-  const D = [-3, 0, 4, 10, 18, 30, 46, 66, 92, 125, 165, 215, 275, 345, 425, 515, 615, 730], NP = per.length, ND = D.length;
+  const D = [-3, 0, 2, 5, 9, 14, 20, 28, 38, 50, 66, 86, 110, 140, 175, 215, 260, 315, 380, 455, 540, 630, 730], NP = per.length, ND = D.length;
   const pos = new Float32Array(NP * ND * 3), col = new Float32Array(NP * ND * 3), idx = [], c = new THREE.Color(), SNOWC = new THREE.Color(0xe4f1ff), ROCKC = new THREE.Color(0x7d8aa6), PINEC = new THREE.Color(0x5f7a6e);
   for (let a = 0; a < NP; a++) for (let b = 0; b < ND; b++) { const q = per[a], d = D[b], k = (a * ND + b) * 3;
     const x = q[0] + q[2] * d, z = q[1] + q[3] * d, y = d < 0 ? tH(Math.max(TX0, Math.min(TX1, x)), Math.max(TZ0, Math.min(TZ1, z))) - 0.6 : d === 0 ? tH(q[0], q[1]) - 0.12 : outerH(x, z);
@@ -3206,10 +3257,10 @@ function buildOuter() {
 }
 function buildTerrain() {
   /* 0.75 m grid baked once; rendered as ~36 m chunks so the camera only draws what it can see */
-  const nx = 331, nz = 635, dx = (TX1 - TX0) / nx, dz = (TZ1 - TZ0) / nz, W1 = nx + 1, NV = W1 * (nz + 1);
+  const nx = 331, nz = 875, dx = (TX1 - TX0) / nx, dz = (TZ1 - TZ0) / nz, W1 = nx + 1, NV = W1 * (nz + 1);
   const Hh = new Float32Array(NV), PM = new Float32Array(NV), COL = new Float32Array(NV * 3), NRM = new Float32Array(NV * 3), tc = new THREE.Color();
   const grade = trailGrades();
-  for (let j = 0; j <= nz; j++) for (let i = 0; i <= nx; i++) { const x = TX0 + i * dx, z = TZ0 + j * dz, k = j * W1 + i; Hh[k] = tHx(x, z) + grade(x, z); PM[k] = z < ZS_ ? TF.g : pisteMask(x, z); }
+  for (let j = 0; j <= nz; j++) for (let i = 0; i <= nx; i++) { const x = TX0 + i * dx, z = TZ0 + j * dz, k = j * W1 + i; Hh[k] = grade.bench(x, z, tHx(x, z)) + grade.extra(x, z); PM[k] = z < ZS_ ? TF.g : pisteMask(x, z); }
   HG = { h: Hh, nx: nx, nz: nz, dx: dx, dz: dz, W1: W1 };
   const at = (i, j) => Hh[Math.max(0, Math.min(nz, j)) * W1 + Math.max(0, Math.min(nx, i))];
   const SNOW = new THREE.Color(0xe4f1ff), WHITE = new THREE.Color(0xffffff), ROCK = new THREE.Color(0x8592ad), SHADE = new THREE.Color(0xc9dcf5), WIND = new THREE.Color(0xf2f8ff), PACK = new THREE.Color(0xdbe7f5);
@@ -4113,7 +4164,7 @@ function buildResort() {
       while (acc >= 1) { acc--; const sp = 5 + Math.random() * 3; SNPFX.powder(wp.x + (Math.random() - 0.5) * 0.6, wp.y + (Math.random() - 0.5) * 0.6, wp.z + (Math.random() - 0.5) * 0.6, dir.x * sp * 1.6 + (Math.random() - 0.5), dir.y * sp * 1.6 + (Math.random() - 0.5), dir.z * sp * 1.6 + (Math.random() - 0.5), 0.16 + Math.random() * 0.14, 3.2 + Math.random() * 1.5, 4.5, 0.12); } }); });
   putC(R, 'Snow groomer', groomer(), LIFTX + 38, LIFT_ZS + 4, -PI / 2 + 0.2, 1);
   /* ===== LIFT BASE + SKI SCHOOL ===== */
-  LIFT_LINES.filter(l => !l.small).forEach(l => { const dx = l.b[0] - l.a[0], dz = l.b[1] - l.a[1]; buildLift2(R, l.a[0], l.a[1], Math.hypot(dx, dz), { id: l.id, name: l.name, ry: Math.atan2(-dx, -dz) }); }); liftArea(R, LIFTX, LIFT_ZS);
+  LIFT_LINES.filter(l => !l.small && !l.south).forEach(l => { const dx = l.b[0] - l.a[0], dz = l.b[1] - l.a[1]; buildLift2(R, l.a[0], l.a[1], Math.hypot(dx, dz), { id: l.id, name: l.name, ry: Math.atan2(-dx, -dz) }); }); liftArea(R, LIFTX, LIFT_ZS);
   buildCarpet(R); buildPlaces(R); buildAirLine(R);
   TRAILS.filter(t => t.grade !== 'conn').forEach(t => { const p = t.pts[0]; PLACE_LABELS.push({ t: t.name, x: p[0], y: tH(p[0], p[1]) + 3.4, z: RES_Z + p[1], h: 0.95 }); });
   fit(putC(R, 'Signpost', signpost(), LIFTX - 9, LIFT_ZS + 22, 0.3, 1), 0.8); fit(putC(R, 'Trail signs', trailSigns(), LIFTX - 9.5, LIFT_ZS + 3, -0.2, 0.9), 0.8);
@@ -4178,7 +4229,7 @@ function buildResort() {
      building footprints and the village clearings, thin out inside Fir Glades and stop at the treeline. One merged batch. ===== */
   const hs = (a, b) => { const v = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return v - Math.floor(v); }, inR = (x, z, a, b, c, d) => x > a && x < b && z > c && z < d;
   const TREELINE = 74, glades = TRAILS.filter(t => t.glade);
-  const clear = (x, z) => z > 91 || Math.abs(x) > 121 || z < -366
+  const clear = (x, z) => (z > 91 && z < 110) || z > 314 || Math.abs(x) > 121 || z < -366
     || inR(x, z, -74, -40, 10, 48) || inR(x, z, -62, -4, 36, 84) || inR(x, z, 20, 76, 36, 94) || inR(x, z, -14, 6, 26, 56) || inR(x, z, 4, 20, 14, 52)   /* village clearings */
     || TRAILS.some(t => !t.glade && x > t.bx0 && x < t.bx1 && z > t.bz0 && z < t.bz1 && polyDist(x, z, t.pts) < t.hw + 3.5)
     || LIFT_LINES.some(l => segDist(x, z, l.a, l.b) < (l.small ? 3 : 6)) || PADS.some(p => Math.abs(x - p.x) < p.hx + 2 && Math.abs(z - p.z) < p.hz + 2)
@@ -4201,6 +4252,15 @@ function buildResort() {
   for (let gx = -118; gx <= 118; gx += 9) for (let gz = -360; gz <= 90; gz += 9) {   /* thin scatter between groves */
     if (nTrees >= MAXT || hs(gx * 1.3, gz * 0.7) > 0.1) continue; const x = gx + (hs(gx, gz) - 0.5) * 6, z = gz + (hs(gz, gx) - 0.5) * 6; if (clear(x, z)) continue;
     plant(x, z, 1.1 + hs(x, z) * 0.7, { tiers: 4, snow: 1, seed: hs(z, x) }); }
+  /* South Range forest (own budget, so the main mountain keeps its trees): dense timber between Deep Timber's tree gaps, a scattered
+     lower forest elsewhere, none above the treeline (the open high-alpine crest, South Bowl). */
+  { const CAP = nTrees + 460;
+    for (let gx = -120; gx <= 120; gx += 4.2) for (let gz = 110; gz <= 312; gz += 4.2) {
+      if (nTrees >= CAP) break; const x = gx + (hs(gx, gz) - 0.5) * 3.4, z = gz + (hs(gz, gx) - 0.5) * 3.4, inT = x > 8 && x < 62;
+      const dens = inT ? 0.7 : (Math.abs(x + 75) < 18 || x < -112 ? 0.3 : 0.12); if (hs(x * 1.7, z * 0.9) > dens || clear(x, z)) continue;
+      if (glades.some(t => polyDist(x, z, t.pts) < 1.6)) continue;   /* the tree gap itself */
+      if (glades.some(t => polyDist(x, z, t.pts) < t.hw + 2) && hs(z, x) > 0.55) continue;   /* thinned to 3-5 m gaps, not cleared */
+      plant(x, z, 1.0 + hs(z, x) * 0.8, { tiers: 3 + Math.floor(hs(x, z) * 3), snow: hs(x * 2, z) > 0.2 ? 1 : 0, seed: hs(x * 3, z) }); } }
   const mI = new THREE.Matrix4(), qI = new THREE.Quaternion(), vP = new THREE.Vector3(), vS = new THREE.Vector3(), YAX = new THREE.Vector3(0, 1, 0);
   VARS.forEach(v => { if (!v.at.length) return; const b = new B(); pineInto(b, 0, 0, 0, 1, v.o); b.build().children.forEach(ch => {
     const im = new THREE.InstancedMesh(ch.geometry, ch.material, v.at.length); im.frustumCulled = false; im.name = 'forest';
@@ -4214,7 +4274,7 @@ function buildResort() {
     const inOther = (t, x, z) => TRAILS.some(o => o !== t && o.grade !== 'conn' && x > o.bx0 && x < o.bx1 && z > o.bz0 && z < o.bz1 && polyDist(x, z, o.pts) < o.hw + 1);
     TRAILS.forEach(t => { t.cum = cumL(t.pts); t.len = t.cum[t.cum.length - 1]; });
     TRAILS.filter(t => t.grade !== 'conn').forEach(t => { const e = t.pts[t.pts.length - 1], nearLift = LIFT_LINES.some(l => Math.hypot(l.a[0] - e[0], l.a[1] - e[1]) < 22); t.finS = t.len - (nearLift ? 16 : 4); });   /* finish lines stay clear of lift entrances */
-    TRAILS.filter(t => !t.built && t.grade !== 'conn').forEach(t => [[Math.min(3, t.len * 0.1), 1], [t.finS + 1, 0]].forEach(g => {
+    TRAILS.filter(t => !t.built && !t.south && t.grade !== 'conn').forEach(t => [[Math.min(3, t.len * 0.1), 1], [t.finS + 1, 0]].forEach(g => {
       const p = ptAt(t.pts, t.cum, g[0]); if (inOther(t, p.x, p.z) && !g[1]) return;   /* merging trails: no arch in the middle of someone else's piste */
       tagG(fit(putC(R, 'Start gate', gate(), p.x, p.z, p.ry, Math.min(1.15, t.hw / 5.2)), 0.5), t.id, g[1] ? 'start' : 'finish', g[1] ? g[0] : t.len - g[0]); }));
     const trapG = W => { const b = new B(); [-1, 1].forEach(s => { b.add(bx(0.3, 3.4, 0.3), C.dark, s * W, 1.7, 0); b.add(sp(0.45, 1, 0.35, 1), C.snow, s * W, 0.12, 0); });
@@ -4226,7 +4286,21 @@ function buildResort() {
       const g = fit(put(R, trapG(W), p.x, p.z, p.ry, 1), 0.3); addSolids([[-W, 0, 0.25, 0.25], [W, 0, 0.25, 0.25]], p.x, RES_Z + p.z, p.ry, 1); SK.TRAPS.push({ trail: tp.id, x: p.x, z: p.z }); });
   }
   makeCrowd(R, HOTX, HOTZ);
+  buildSouth(R, tagG);
   return R;
+}
+/* South Range structures, appended after everything else so the editor's asset keys for the rest of the resort stay put:
+   three chairlifts, start / finish gates, Southside Park features on its terraces, rock bands beside The Ledges and Knife Ridge */
+function buildSouth(R, tagG) {
+  LIFT_LINES.filter(l => l.south).forEach(l => { const dx = l.b[0] - l.a[0], dz = l.b[1] - l.a[1]; buildLift2(R, l.a[0], l.a[1], Math.hypot(dx, dz), { id: l.id, name: l.name, ry: Math.atan2(-dx, -dz), kind: 0 }); });
+  const ptAt = (t, s) => { const P = t.pts, c = t.cum; s = Math.max(0, Math.min(t.len, s)); let i = 0; while (i < P.length - 2 && c[i + 1] < s) i++; const l = c[i + 1] - c[i] || 1, u = (s - c[i]) / l; return { x: P[i][0] + (P[i + 1][0] - P[i][0]) * u, z: P[i][1] + (P[i + 1][1] - P[i][1]) * u, ry: Math.atan2(P[i + 1][0] - P[i][0], P[i + 1][1] - P[i][1]) }; };
+  TRAILS.filter(t => t.south && t.grade !== 'conn').forEach(t => [[Math.min(3, t.len * 0.1), 1], [t.finS + 1, 0]].forEach(g => { const p = ptAt(t, g[0]);
+    tagG(fit(putC(R, 'Start gate', gate(), p.x, p.z, p.ry, Math.min(1.15, t.hw / 5.2)), 0.5), t.id, g[1] ? 'start' : 'finish', g[1] ? g[0] : t.len - g[0]); }));
+  /* park: terrace 2 rails + box either side of the middle kicker, terrace 1 a kink rail and a kicker ramp (terrace 3's two kickers are terrain) */
+  putC(R, 'Grind rail', rail(0), -5.5, 175, PI / 2, 1); putC(R, 'Fun box', funbox(), 5.5, 175, PI / 2, 1);
+  putC(R, 'Kink rail', rail(1), -5.5, 149, PI / 2, 1); putC(R, 'Kicker ramp', kicker(), 6, 149, PI / 2, 1.1);
+  [[-19, 238, 0.2], [-18, 252, -0.3], [-110, 236, 1.2], [-88, 214, -1.1], [-111, 262, 0.7]].forEach(q => fit(putC(R, 'Cliff face', hp(pCliff)(), q[0], q[1], q[2], 1.1), 0.8));
+  [[-104, 196, 0.4], [-86, 250, 2.2], [104, 278, 1.0], [74, 286, 2.6]].forEach(q => fit(putC(R, 'Rock outcrop', hp(pRockOutcrop)(), q[0], q[1], q[2], 1.2), 0.8));
 }
 
 function buildWorld() {
