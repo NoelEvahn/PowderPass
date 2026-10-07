@@ -4123,7 +4123,7 @@ function buildPlaces(R) {
     const gy = tH(x, z) + 0.06; [[-3.3, -0.5], [3.3, -0.5]].forEach(q => { const p = tw(q[0], q[1]); LIGHTS.push({ x: p[0], y: gy + 3.0, z: RES_Z + p[1], col: 0xffd28a, r: 9, k: 'in' }); });
     SK_GREEN = { trees: g.userData.trees.map(t => { const p = tw(t[0], t[2]); return { x: p[0], y: gy + t[1], z: p[1] }; }), fern: tw(g.userData.fern[0], g.userData.fern[1]), door: tw(0, 5.2), ry: ry }; }
   { const x = -26, z = 52.5; fit(put(R, questBoard(), x, z, PI, 1), 0.6); addSolids([[0, 0, 1.6, 0.2]], x, RES_Z + z, 0, 1); lab('Quest Board', x, z, 4); }
-  { const x = 97, z = -283; fit(put(R, vending(), x, z, -0.6, 1), 0.5); addSolids([[0, 0, 0.7, 0.5]], x, RES_Z + z, -0.6, 1); lab('Vending', x, z, 3.4); }
+  { const x = 83.5, z = -262, ry = PI / 2; put(R, vending(), x, z, ry, 1); addSolids([[0, 0, 0.7, 0.5]], x, RES_Z + z, ry, 1); lab('Vending', x, z, 3.4); }   /* on the Eagle Lift top-station pad, level, not on the bank */
 }
 function buildAirLine(R) {
   const b = new B();
