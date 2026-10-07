@@ -543,7 +543,6 @@ function lamp() {
   b.rod([0, 3.7, 0], [0.55, 4.0, 0], 0.09, C.dark); b.rod([0.55, 4.0, 0], [1.2, 3.85, 0], 0.09, C.dark);
   b.add(cy(0.14, 0.5, 0.3, 12), C.metal, 1.2, 3.92, 0);
   b.add(sp(0.3), 0xffe98a, 1.2, 3.62, 0, { alpha: 0.45 });
-  b.add(cy(1.6, 1.6, 0.05, 28), 0xffe98a, 1.2, 0.03, 0, { alpha: 0.21 });
   const g = b.build(); lightFx(g, [1.2, 3.62, 0], [1.2, 0.05, 0], 1.6, { n: 14 }); return g;
 }
 function floodlight() {
@@ -5883,7 +5882,7 @@ scene.traverse(o => { if (!o.isMesh) return; (Array.isArray(o.material) ? o.mate
   if (hx === 0xffe98a && GLOWM.indexOf(m) < 0 && m !== SK.BEAM) { m.userData.o0 = m.opacity; GLOWM.push(m); } }); });
 function lookFor() {
   const n = NIGHT; GLASSM.forEach(m => { m.color.set(m.userData.c0).lerp(tc3.set(0xffd89a), n * 0.55); m.opacity = m.userData.o0 + n * 0.12; });
-  GLOWM.forEach(m => { m.opacity = m.userData.o0 * (0.15 + 0.85 * n); }); if (SK.BEAM) SK.BEAM.opacity = 0.12 * n; SK.FXDOTS.forEach(m => { m.opacity = 0.57 * n * (SK.QDUST === 0 ? 0 : 1); });
+  GLOWM.forEach(m => { m.opacity = m.userData.o0 * (0.15 + 0.85 * n); }); if (SK.BEAM) SK.BEAM.opacity = 0.05 * n; SK.FXDOTS.forEach(m => { m.opacity = 0.57 * n * (SK.QDUST === 0 ? 0 : 1); });
 }
 /* ---- real lights: a fixed pool (no shader rebuilds) handed to the nearest fixtures. Every lamp is a spot cone that matches its visible
    beam (straight down, floods forward-down), so light lands where the fixture points and never on the ceiling above it; the 2 nearest
@@ -5891,7 +5890,8 @@ function lookFor() {
 const PTS = [], SPS = [], SPOTN = 8;
 { const l = new THREE.PointLight(0xff9a40, 0, 12, 2); scene.add(l); PTS.push(l); }
 for (let i = 0; i < SPOTN; i++) { const l = new THREE.SpotLight(0xffe2a8, 0, 10, 0.7, 0.35, 1.6); l.castShadow = i < 2; l.shadow.mapSize.set(512, 512); l.shadow.camera.near = 0.3; l.shadow.camera.far = 24; l.shadow.bias = -0.0015; scene.add(l); scene.add(l.target); SPS.push(l); }
-const SPOT_K = { in: [0.78, 0.35, 1.3, 1.7], cabin: [0.8, 0.4, 0.75, 0.85], street: [0.52, 0.3, 1.2, 1.5], flood: [0.42, 0.25, 1.15, 2.2] };   /* kind: cone half-angle, penumbra, reach x radius, intensity (snow is white: outdoor lamps stay gentler) */
+const SPOT_K = { in: [1.0, 1, 1.5, 1.0], cabin: [1.05, 1, 0.9, 0.5], street: [0.95, 1, 1.0, 0.6], flood: [0.6, 1, 1.0, 0.9] };   /* kind: cone half-angle, penumbra (1 = no hard edge), reach x radius, intensity. Subtle warm pools that fade out gradually; snow never washes to white */
+const LCOL = { in: 0xffd49a, cabin: 0xffb85c, street: 0xffc46e, flood: 0xffdca0 };   /* warm yellow tints, never pure white */
 const level = L => L.k === 'in' ? 0.35 + 0.65 * NIGHT : L.k === 'fire' ? 0.4 + 0.6 * NIGHT : NIGHT;   /* indoor lights are on all day, outdoor ones after dark */
 const camFwd = new THREE.Vector3();
 function lightsFor() {
@@ -5903,7 +5903,7 @@ function lightsFor() {
   SPS.forEach(s => { if (s.userData.off) { s.intensity = 0; return; } const q = cand.find(x => !used.has(x) && x.L.k !== 'fire'); if (!q) { s.intensity = 0; return; } used.add(q);
     const L = q.L, K = SPOT_K[L.k] || SPOT_K.in, dv = L.dir || [0, -1, 0];
     s.position.set(L.x, L.y, L.z); s.target.position.set(L.x + dv[0], L.y + dv[1], L.z + dv[2]); s.target.updateMatrixWorld();
-    s.userData.k = L.k; s.angle = K[0]; s.penumbra = K[1]; s.distance = L.r * K[2]; s.shadow.camera.far = s.distance + 1; s.color.set(L.col); s.intensity = K[3] * q.lv; });
+    s.userData.k = L.k; s.angle = K[0]; s.penumbra = K[1]; s.distance = L.r * K[2]; s.shadow.camera.far = s.distance + 1; s.color.set(LCOL[L.k] || L.col); s.decay = 2; s.intensity = K[3] * q.lv; });
 }
 /* ---- hotel: rooms, who is staying tonight (seeded per day), your key ---- */
 const ROOMS = HXd.rooms.map(r => r);
