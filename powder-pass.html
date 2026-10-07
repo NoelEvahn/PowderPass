@@ -164,6 +164,25 @@ body.ed #gh,body.ed #qt,body.ed #qb,body.ed #pad,body.ed #stick,body.ed #trick,b
 body.game.qtrk #hint{top:calc(max(14px,env(safe-area-inset-top)) + 118px)}
 #sheet .key{display:flex;flex-direction:column;gap:2px;margin:10px 0 4px;padding:12px 14px;border:3px solid #0e0f16;border-radius:14px;background:#ffd21f;box-shadow:0 3px 0 #0e0f16}
 #sheet .key b{font:900 26px/1.1 "Trebuchet MS",Arial,sans-serif}#sheet .key span{font-weight:800;font-size:13.5px}#sheet .key small{font-size:12px;color:#3b4252}
+
+/* ---- round 7 HUD: panels dock to the sides instead of stacking in the middle, each kind has its own colour ---- */
+#ctl #bSki{background:#7fd3ff}#ctl #bCam{background:#c9a7ff}#ctl #bBag{background:#ffb36b}#ctl #bQst{background:#ffd21f}#ctl #bMap{background:#8fe39a}#ctl #bSet{background:#d7dde8}#ctl #bEd{background:#ffb3cf}
+#gh span{background:#f4f8ff}#gh span.mt{background:#e9fbe4}
+#sheet{left:max(14px,env(safe-area-inset-left));top:calc(max(14px,env(safe-area-inset-top)) + 64px);transform:none;max-height:calc(100vh - 110px);overflow:hidden}
+#sheet.off{transform:translateX(-24px)}
+#sheet .sh-h{border-radius:16px 16px 0 0;background:var(--shc,#fff)}
+#sheet[data-kind=bag]{--shc:#ffd8b0}#sheet[data-kind=log]{--shc:#fff0a8}#sheet[data-kind=set]{--shc:#e3e8f2}#sheet[data-kind=shop]{--shc:#c9f2c4}#sheet[data-kind=place]{--shc:#e4d6ff}
+#sheet[data-kind=cabin]{--shc:#f0d2b0}#sheet[data-kind=elev]{--shc:#bfeff0}#sheet[data-kind=hotel]{--shc:#cfe4ff}#sheet[data-kind=store]{--shc:#c9f2c4}
+#toast{left:max(14px,env(safe-area-inset-left));transform:none;top:calc(max(14px,env(safe-area-inset-top)) + 108px);max-width:min(380px,calc(100vw - 190px));text-align:left;z-index:5}
+#toast.good{background:#a6e22e}#toast.bad{background:#ff9b9b}#toast.info{background:#9fd8ff}
+#res{left:auto;right:max(14px,env(safe-area-inset-right));transform:translateY(-50%);top:55%}#res.off{transform:translate(24px,-50%)}
+@media (pointer:fine){body.game #hint{left:max(14px,env(safe-area-inset-left));top:auto;bottom:max(14px,env(safe-area-inset-bottom));transform:none;background:#e9f1ff;max-width:min(460px,50vw)}}
+@media (max-width:560px){#sheet{left:8px;right:8px;width:auto;top:auto;bottom:max(8px,env(safe-area-inset-bottom));max-height:70vh}#sheet.off{transform:translateY(24px)}#toast{max-width:calc(100vw - 150px)}}
+/* camera lock (Ctrl): crosshair in the middle of the screen while the mouse steers the camera */
+#camlock{position:fixed;left:50%;top:50%;width:26px;height:26px;margin:-13px 0 0 -13px;border:3px solid #fff;border-radius:50%;box-shadow:0 0 0 2px #0e0f16,inset 0 0 0 2px #0e0f16;pointer-events:none;z-index:4;display:none}
+#camlock::after{content:"";position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px 0 0 -3px;border-radius:50%;background:#ffd21f;box-shadow:0 0 0 2px #0e0f16}
+#camlock b{position:absolute;left:50%;top:34px;transform:translateX(-50%);white-space:nowrap;font:800 12px "Trebuchet MS",Arial,sans-serif;color:#0e0f16;background:#ffd21f;border:2px solid #0e0f16;border-radius:99px;padding:1px 8px}
+body.camlock #camlock{display:block}body.ed #camlock{display:none!important}
 </style>
 </head><body>
 <canvas id="c"></canvas>
@@ -2861,7 +2880,7 @@ function alpine() {
   [[-1.7, 2.4], [1.0, 0.05]].forEach(p => { b.push(p[0], FY + 0.35, p[1], 0); pPendant(b); b.pop(); });
   b.add(bx(2.2, 0.5, 0.06), BRZD, -1.7, FY + 2.35, zfo + 0.03); hText(b, 'ALPINE', -1.7, FY + 2.35, zfo + 0.08, 0.075, C.white);
   [[-5.2, 0.2, 2.5, 1.2], [5.6, 0.2, -2.5, 1.2], [-1.0, 0.2, 4.9, 1.0]].forEach(p => b.add(sp(p[3], 1, 0.4, 1), C.snow, p[0], p[1], p[2]));
-  g.add(b.build()); const rf = r.build(); g.add(rf); ROOFS.push(rf);
+  g.add(g.userData.body = b.build()); const rf = r.build(); g.add(rf); ROOFS.push(rf);
   g.userData.K = K; g.userData.K2 = K2; g.userData.K3 = K3; g.userData.F = (function () {
     F.push({ x0: -3.95, x1: -2.35, z0: -3.5, z1: 3.5, y0: UP, y1: UP, ax: 0, min: UP - 0.7 }, { x0: -2.35, x1: VX, z0: -2.0, z1: 3.5, y0: UP, y1: UP, ax: 0, min: UP - 0.7 }, { x0: VX, x1: 4.55, z0: -3.5, z1: 3.5, y0: UP, y1: UP, ax: 0, min: UP - 0.7 },
       { x0: -5.8, x1: -3.95, z0: 0.9, z1: 4.2, y0: UP, y1: UP, ax: 0, min: UP - 0.7 });
@@ -2881,7 +2900,7 @@ function putAlpine(R, g, x, z) {
   (U.KS || []).forEach(k => SOLIDS.push(W(k, { top: gy + k.top })));
   U.F.forEach(f => FLOORS.push({ x0: x + f.x0, x1: x + f.x1, z0: wz + f.z0, z1: wz + f.z1, y0: gy + f.y0, y1: gy + f.y1, ax: f.ax, min: f.min === undefined ? undefined : (f.min < 0 ? gy - 1 : gy + f.min) }));
   if (U.entry) {   /* front door: the model's own leaf on a hinge, shut and locked until the cabin is yours (doorTick opens it for the owner) */
-    const E = U.entry, piv = new THREE.Group(), pb = new B(); alpLeaf(pb); piv.add(pb.build()); piv.position.set(E.hx, FY, E.z); g.add(piv);
+    const E = U.entry, piv = new THREE.Group(), pb = new B(); alpLeaf(pb); piv.add(pb.build()); piv.position.set(E.hx, FY, E.z); (U.body || g).add(piv);   /* on the body mesh group: a new child of the cabin itself would change the editor's asset keys */
     const sol = { x: x + E.hx + E.w / 2, z: wz + E.z, a: 0, hw: E.w / 2, hd: 0.16, top: gy + ALP_LV }; SOLIDS.push(sol);
     CDOORS.push({ id: 'alpine', piv: piv, sol: sol, x: sol.x, z: sol.z, o: 0 });
   }
@@ -4421,7 +4440,7 @@ document.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', 
   const k = b.getAttribute('data-go'); if (W.on) W.toggle(false); go(k === 'reset' ? HOME : VIEWS[k]); hideHint();
 }));
 const toastEl = document.getElementById('toast'), actEl = document.getElementById('act'), hudEl = document.getElementById('hud'); let toastT = 0;
-SK.toast = m => { toastEl.textContent = m; toastEl.classList.remove('off'); clearTimeout(toastT); toastT = setTimeout(() => toastEl.classList.add('off'), 2600); };
+SK.toast = m => { toastEl.textContent = m; toastEl.classList.remove('good', 'bad', 'info'); const tc = /^Locked|locked|can't|cannot|Not enough|need|Too fast|cold|tired|left .* behind/i.test(m) ? 'bad' : /\+\s?\d|coins!|Thanks|done|Checked in|bought|Bon app/i.test(m) ? 'good' : /^Chapter|Midnight|Elevator|Breakfast/i.test(m) ? 'info' : ''; if (tc) toastEl.classList.add(tc); toastEl.classList.remove('off'); clearTimeout(toastT); toastT = setTimeout(() => toastEl.classList.add('off'), 2600); };
 function startRide(o) { W.ride = o; W.yaw = o.userData.kind ? PI / 2 : 0; W.pitch = o.userData.kind ? -0.12 : -0.05;   /* gondola: look out of the side window, not at the door */ SK.LIFTX.setRide(o, true); hint.textContent = 'Drag to look | press Leave when the doors / bar open at a station'; hint.classList.remove('off'); hintOn = true; setTimeout(hideHint, 6000); }
 function startBoard(o, k) {
   const U = o.userData, L = SK.LIFT; U.seats[k] = 'player'; W.seatK = k; W.ptr.clear(); W.vx = W.vz = 0;
@@ -4569,6 +4588,20 @@ W.move = e => {
   if (PL.mode === 'ski') { PL.lookOff -= dx * 0.006; PL.lookPitch = clamp(PL.lookPitch - dy * 0.004, -1.0, 0.6); }
   else { W.yaw -= dx * 0.005; W.pitch = clamp(W.pitch - dy * 0.004, -1.2, 1.2); }
 };
+/* camera lock: Ctrl (on its own) toggles it. The mouse steers the camera without dragging (pointer lock where the page allows it),
+   a crosshair marks the middle of the screen, and in third person you face where the camera looks. Ctrl again or Esc unlocks. */
+const CAM = { on: false, solo: false, got: false }, camEl = document.createElement('div'); camEl.id = 'camlock'; camEl.innerHTML = '<b>Camera locked · Ctrl</b>'; document.body.appendChild(camEl);
+function camLock(on) {
+  CAM.on = !!on && W.on; document.body.classList.toggle('camlock', CAM.on);
+  if (CAM.on) { try { const r = cvs.requestPointerLock && cvs.requestPointerLock(); if (r && r.catch) r.catch(() => {}); } catch (e) { /* sandboxed: the plain mousemove fallback still steers */ } }
+  else { CAM.got = false; try { if (document.pointerLockElement === cvs) document.exitPointerLock(); } catch (e) {} }
+}
+addEventListener('keydown', e => { if (e.key === 'Control') { if (!e.repeat) CAM.solo = true; } else CAM.solo = false; });
+addEventListener('keyup', e => { if (e.key !== 'Control' || !CAM.solo) return; CAM.solo = false; if (!W.on || document.body.classList.contains('ed') || SH) return; camLock(!CAM.on); });
+document.addEventListener('pointerlockchange', () => { if (document.pointerLockElement === cvs) CAM.got = true; else if (CAM.got) camLock(false); });   /* Esc leaves pointer lock: unlock too */
+addEventListener('mousemove', e => { if (!CAM.on || !W.on) return; const dx = e.movementX || 0, dy = e.movementY || 0; if (Math.abs(dx) > 300 || Math.abs(dy) > 300) return;   /* ignore the jump some browsers report on lock */
+  if (PL.mode === 'ski') { PL.lookOff -= dx * 0.004; PL.lookPitch = clamp(PL.lookPitch - dy * 0.003, -1.0, 0.6); } else { W.yaw -= dx * 0.004; W.pitch = clamp(W.pitch - dy * 0.003, -1.2, 1.2); } });
+SK.camLock = camLock; SK.CAM = CAM;
 W.up = e => {
   if (IN.stick && e.pointerId === IN.stick.id) { IN.stick = null; IN.sx = IN.sy = IN.mag = 0; stickEl.classList.remove('on'); knobEl.style.transform = ''; }
   if (IN.look && e.pointerId === IN.look.id) IN.look = null;
@@ -4783,7 +4816,7 @@ PL.walkPost = dt => {
   if (!third) return;
   if (W.sit) { AVW.wrap.position.set(W.x, W.sit.fy + 0.06, W.z); qT.setFromAxisAngle(YUP, W.sit.yaw + PI); AVW.wrap.quaternion.copy(qT); AVW.p.userData.seatH = 1.02; AVW.p.userData.rate = 1; AVW.p.userData.snack = PL.snackT > 0; AVW.p.userData.play('Sit on chair');
     const yw = W.yaw; vT2.set(W.x + Math.sin(yw) * 2.6, W.sit.fy + 1.9, W.z + Math.cos(yw) * 2.6); camera.position.copy(vT2); camera.lookAt(W.x, W.sit.fy + 0.8, W.z); return; }
-  const sp = Math.hypot(W.vx || 0, W.vz || 0); if (sp > 0.3) PL.walkFace = Math.atan2(-W.vx, -W.vz);
+  const sp = Math.hypot(W.vx || 0, W.vz || 0); if (CAM.on) PL.walkFace = W.yaw; else if (sp > 0.3) PL.walkFace = Math.atan2(-W.vx, -W.vz);   /* camera lock: face where you look */
   AVW.wrap.position.set(W.x, W.y + 0.06 + (W.jy || 0), W.z); qT.setFromAxisAngle(YUP, PL.walkFace + PI); AVW.wrap.quaternion.slerp(qT, Math.min(1, dt * 10));
   if (W.jy > 0) PL.landT = 0.2; else PL.landT = Math.max(0, (PL.landT || 0) - dt);
   AVW.p.userData.jv = W.jv || 0; AVW.p.userData.snack = PL.snackT > 0;
@@ -5076,7 +5109,7 @@ let SH = null;   /* { kind, id, at:[x,z] } */
 const coin = n => n.toLocaleString('en-US');
 function closeSheet() { sheet.classList.add('off'); SH = null; }
 sheet.querySelector('.sh-x').addEventListener('click', closeSheet);
-function openSheet(kind, id, at) { SH = { kind: kind, id: id, at: at }; renderSheet(); sheet.classList.remove('off'); hideHint(); }
+function openSheet(kind, id, at) { if (SK.CAM && SK.CAM.on) SK.camLock(false); SH = { kind: kind, id: id, at: at }; sheet.dataset.kind = kind; renderSheet(); sheet.classList.remove('off'); hideHint(); }
 const row = (name, small, btns) => '<div class="row"><div><b>' + name + '</b>' + (small ? '<small>' + small + '</small>' : '') + '</div>' + btns + '</div>';
 const btn = (label, act, dis, alt) => '<button data-a="' + act + '"' + (dis ? ' disabled' : '') + (alt ? ' class="alt"' : '') + '>' + label + '</button>';
 function priceTag(k) { const p = PRICES[k], b = ITEMS[k].base; return p + (p > b ? ' <span class="up">▲</span>' : p < b ? ' <span class="dn">▼</span>' : ''); }
@@ -5848,7 +5881,7 @@ function lightsFor() {
   SPS.forEach(s => { if (s.userData.off) { s.intensity = 0; return; } const q = cand.find(x => !used.has(x) && x.L.k !== 'fire'); if (!q) { s.intensity = 0; return; } used.add(q);
     const L = q.L, K = SPOT_K[L.k] || SPOT_K.in, dv = L.dir || [0, -1, 0];
     s.position.set(L.x, L.y, L.z); s.target.position.set(L.x + dv[0], L.y + dv[1], L.z + dv[2]); s.target.updateMatrixWorld();
-    s.angle = K[0]; s.penumbra = K[1]; s.distance = L.r * K[2]; s.shadow.camera.far = s.distance + 1; s.color.set(L.col); s.intensity = K[3] * q.lv; });
+    s.userData.k = L.k; s.angle = K[0]; s.penumbra = K[1]; s.distance = L.r * K[2]; s.shadow.camera.far = s.distance + 1; s.color.set(L.col); s.intensity = K[3] * q.lv; });
 }
 /* ---- hotel: rooms, who is staying tonight (seeded per day), your key ---- */
 const ROOMS = HXd.rooms.map(r => r);
@@ -6603,7 +6636,7 @@ const MAP = (() => {
   }
   const vM = new THREE.Vector3();
   function resize() { dpr = Math.min(2, devicePixelRatio || 1); const r = cv.getBoundingClientRect(); cv.width = Math.max(1, Math.round(r.width * dpr)); cv.height = Math.max(1, Math.round(r.height * dpr)); }
-  function show(on) {
+  function show(on) { if (on && SK.CAM && SK.CAM.on) SK.camLock(false);
     if (on === open) return; open = on; SK.mapOpen = on; el.hidden = !on;
     if (on) { if (typeof closeSheet === 'function' && SH) closeSheet(); if (!base || SK.mapDirty) { SK.mapDirty = 0; bake(); } resize(); fit(); center(); sel = null; info.hidden = true; loop(); if (SK.sfx) SK.sfx('click'); }
   }
