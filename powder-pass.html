@@ -1231,8 +1231,11 @@ function hotel() {
   hCouch(b, K, rx, 0.9, 2.4, 0x596579, 0, -1); b.add(bx(1.2, 0.06, 0.6), GLASS, rx, WY + 0.4, -0.3); [-0.5, 0.5].forEach(t => b.add(bx(0.06, 0.4, 0.06), C.metal, rx + t, WY + 0.2, -0.3)); K.push({ x: rx, z: -0.3, ry: 0, hw: 0.65, hd: 0.35 });
   [[-4.0, 0.6, 0.5, 0.7, C.red], [-3.5, 0.9, 0.4, 0.6, C.blue]].forEach(p => { b.add(bx(p[2], p[3], 0.25), p[4], p[0], WY + p[3] / 2, p[1]); K.push({ x: p[0], z: p[1], ry: 0, hw: 0.3, hd: 0.2 }); });
   // ---- TV lounge (center): TV on slat wall, couch + armchairs facing it
-  for (let i = 0; i < 26; i++) b.add(bx(0.12, 2.9, 0.1), i % 3 ? 0x6b4226 : TIMB, -3.75 + i * 0.3, WY + 1.45, -hz + 0.2);
-  hTV(b, 0, WY + 1.9, -hz + 0.4, 0, 1, 2.8); b.add(bx(3.4, 0.5, 0.45), 0x33200f, 0, WY + 0.25, -hz + 0.6); K.push({ x: 0, z: -hz + 0.6, ry: 0, hw: 1.7, hd: 0.25 });
+  /* slat panels either side of the breakfast archway, each a framed piece of the wall (plinth, top rail, end posts), the arch itself left open */
+  [-1, 1].forEach(sd => { const x0 = sd * 2.5, x1 = sd * 3.95, cx = (x0 + x1) / 2, ww = Math.abs(x1 - x0);
+    for (let i = 0; i < 5; i++) b.add(bx(0.12, 2.62, 0.1), i % 3 ? 0x6b4226 : TIMB, x0 + sd * (0.12 + i * 0.3), WY + 1.47, -hz + 0.2);
+    b.add(bx(ww + 0.12, 0.14, 0.2), 0x33200f, cx, WY + 0.07, -hz + 0.2); b.add(bx(ww + 0.12, 0.16, 0.2), TIMB, cx, WY + 2.86, -hz + 0.2); b.add(bx(0.16, 2.94, 0.24), TIMB, x1, WY + 1.47, -hz + 0.2); });
+  hTV(b, 3.22, WY + 1.75, -hz + 0.33, 0, 1, 1.25);   /* lounge TV on the right-hand slat panel, clear of the archway */
   b.add(bx(6.2, 0.02, 3.6), RUGC, 0, WY + 0.045, -2.5);
   hCouch(b, K, 0, -0.6, 3.2, LEATH, 0, -1); hCouch(b, K, -2.9, -2.4, 1.2, LEATH, 1, 0); hCouch(b, K, 2.9, -2.4, 1.2, LEATH, -1, 0);
   b.add(bx(1.4, 0.06, 0.8), GLASS, 0, WY + 0.4, -2.4); [-0.6, 0.6].forEach(t => b.add(bx(0.06, 0.4, 0.06), C.metal, t, WY + 0.2, -2.4)); K.push({ x: 0, z: -2.4, ry: 0, hw: 0.7, hd: 0.4 });
@@ -6175,42 +6178,69 @@ const VM = (() => {
 })();
 SK.VM = VM;
 
-/* ---------- working elevator: a cab that rides the shaft, sliding doors on every floor ---------- */
+/* ---------- working elevator: a cab that rides the shaft, sliding doors on every floor, physical buttons ----------
+   Outside each floor: a wall call button (it lights while the cab is on its way, clicks when pressed). Inside: a panel of G / 1 / 2
+   buttons: look at one and press F (or tap). Doors are fitted to the real opening (slab to header) and move in under half a second. */
 const ELEV = (() => {
   const H = SK.HOTEL, X = H && H.HX, sh = X && X.shaft; if (!sh) return null;
-  const FL = X.floors.map(v => H.gy + v), cxl = (sh.x0 + sh.x1) / 2, czl = (sh.z0 + sh.z1) / 2, w = sh.x1 - sh.x0, d = sh.z1 - sh.z0, EXl = -11.0;
+  const FL = X.floors.map(v => H.gy + v), SLAB = X.floors.map((v, f) => H.gy + (f ? v + 0.23 : v)), OPEN_H = 2.25;   /* walk heights vs the slab the doorway is built on */
+  const cxl = (sh.x0 + sh.x1) / 2, czl = (sh.z0 + sh.z1) / 2, w = sh.x1 - sh.x0, d = sh.z1 - sh.z0, EXl = -11.0, DOOR_T = 0.42, HOLD = 3.2, ARRIVE = 0.3;
   const M = c => new THREE.MeshLambertMaterial({ color: c }), box = (gx, gy, gz, m) => new THREE.Mesh(new THREE.BoxGeometry(gx, gy, gz), m);
+  const ez = x => x * x * (3 - 2 * x);
+  const labelTex = (txt, fg, bg) => { const c = document.createElement('canvas'); c.width = c.height = 64; const x = c.getContext('2d'); x.fillStyle = bg; x.beginPath(); x.arc(32, 32, 30, 0, 7); x.fill(); x.lineWidth = 5; x.strokeStyle = '#14161c'; x.stroke();
+    x.fillStyle = fg; x.font = '900 34px Trebuchet MS, Arial, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(txt, 32, 35); const t = new THREE.CanvasTexture(c); return t; };
+  const btnMats = txt => ({ off: new THREE.MeshBasicMaterial({ map: labelTex(txt, '#14161c', '#e9edf3') }), on: new THREE.MeshBasicMaterial({ map: labelTex(txt, '#14161c', '#ffd21f') }) });
   const cab = new THREE.Group(); scene.add(cab);
   const wall = M(0x8a6a4a), steel = M(0xbcc6d2), dark = M(0x2a2f3a);
   { const fl = box(w, 0.1, d, M(0x3b4252)); fl.position.y = -0.05; cab.add(fl); }
   [[0, 1.15, -d / 2 + 0.03, w, 2.3, 0.05], [-w / 2 + 0.03, 1.15, 0, 0.05, 2.3, d], [w / 2 - 0.03, 1.15, 0, 0.05, 2.3, d], [0, 2.32, 0, w, 0.05, d]].forEach(q => { const m = box(q[3], q[4], q[5], wall); m.position.set(q[0], q[1], q[2]); cab.add(m); });
   { const lt = box(0.9, 0.02, 0.9, new THREE.MeshBasicMaterial({ color: 0xfff4d6 })); lt.position.set(0, 2.29, 0); cab.add(lt); const rail = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, w - 0.2, 8), steel); rail.rotation.z = Math.PI / 2; rail.position.set(0, 0.95, -d / 2 + 0.1); cab.add(rail);
-    const mir = box(w - 0.4, 1.0, 0.02, M(0xcfe3f2)); mir.position.set(0, 1.55, -d / 2 + 0.06); cab.add(mir);
-    const pan = box(0.04, 0.55, 0.26, dark); pan.position.set(w / 2 - 0.07, 1.25, d / 2 - 0.35); cab.add(pan);
-    [0, 1, 2].forEach(i => { const bt = box(0.02, 0.06, 0.06, new THREE.MeshBasicMaterial({ color: 0xffd21f })); bt.position.set(w / 2 - 0.1, 1.08 + i * 0.13, d / 2 - 0.35); cab.add(bt); }); }
+    const mir = box(w - 0.4, 1.0, 0.02, M(0xcfe3f2)); mir.position.set(0, 1.55, -d / 2 + 0.06); cab.add(mir); }
+  /* cab panel: G / 1 / 2 at shoulder height on the right-hand wall as you face the doors */
+  const pan = box(0.04, 0.62, 0.3, dark); pan.position.set(w / 2 - 0.07, 1.3, d / 2 - 0.35); cab.add(pan);
+  const CB = [0, 1, 2].map(i => { const mats = btnMats(i ? String(i) : 'G'), b = new THREE.Mesh(new THREE.CircleGeometry(0.055, 20), mats.off); b.rotation.y = -Math.PI / 2; b.position.set(w / 2 - 0.095, 1.12 + i * 0.17, d / 2 - 0.35); cab.add(b); return { m: b, mats: mats, f: i, push: 0 }; });
   const lamp = new THREE.PointLight(0xfff1d0, 0.6, 4); lamp.position.set(0, 2.1, 0); cab.add(lamp);
-  /* outer doors on each floor (two panels sliding apart) + a collision bar while they are shut */
-  const DOORS = FL.map((y, f) => { const L = box(0.6, 2.2, 0.05, steel), Rr = box(0.6, 2.2, 0.05, M(0x9aa3b2)); [L, Rr].forEach(m => { m.position.y = y + 1.1; m.position.z = H.z + sh.door; scene.add(m); });
-    const sol = { x: H.x + EXl, z: H.z + sh.door, a: 0, hw: 0.62, hd: 0.07, bot: y - 1.2, top: y + 1.8 }; SK.SOLIDS.push(sol); return { L: L, R: Rr, sol: sol, y: y }; });
+  /* outer doors on each floor: two panels that exactly fill the opening (slab to header), a steel header track over them, a solid bar while shut,
+     and a call button on the wall to the right */
+  const DOORS = FL.map((y, f) => { const yb = SLAB[f], dh = OPEN_H - 0.03, L = box(0.6, dh, 0.05, steel), Rr = box(0.6, dh, 0.05, M(0x9aa3b2));
+    [L, Rr].forEach(m => { m.position.y = yb + dh / 2; m.position.z = H.z + sh.door; scene.add(m); });
+    const hd = box(1.34, 0.09, 0.12, dark); hd.position.set(H.x + EXl, yb + OPEN_H - 0.02, H.z + sh.door); scene.add(hd);
+    const sill = box(1.3, 0.025, 0.14, steel); sill.position.set(H.x + EXl, yb + 0.012, H.z + sh.door); scene.add(sill);
+    const plate = box(0.16, 0.26, 0.03, dark); plate.position.set(H.x + EXl + 0.8, yb + 1.2, H.z + sh.door + 0.1); scene.add(plate);
+    const mats = btnMats('▲'), btn = new THREE.Mesh(new THREE.CircleGeometry(0.05, 20), mats.off); btn.position.set(H.x + EXl + 0.8, yb + 1.22, H.z + sh.door + 0.118); scene.add(btn);
+    const sol = { x: H.x + EXl, z: H.z + sh.door, a: 0, hw: 0.62, hd: 0.07, bot: y - 1.2, top: y + 1.8 }; SK.SOLIDS.push(sol);
+    return { L: L, R: Rr, sol: sol, y: y, btn: { m: btn, mats: mats, push: 0, z0: btn.position.z } }; });
   const S = { at: 0, y: FL[0], target: null, door: 0, phase: 'idle', t: 0, queue: [] };
   const inside = (wx, wz, wy) => { const lx = wx - H.x, lz = wz - H.z; return lx > sh.x0 && lx < sh.x1 && lz > sh.z0 && lz < sh.z1 + 0.05 && wy > S.y - 0.8 && wy < S.y + 1.6; };
-  function go(f) { if (f < 0 || f > 2) return; if (S.queue.indexOf(f) < 0 && !(S.at === f && S.phase !== 'moving' && S.target === null)) S.queue.push(f); else if (S.at === f) { S.phase = 'opening'; } }
+  const wanted = f => S.queue.indexOf(f) >= 0 || (S.target === f && S.phase !== 'open' && S.phase !== 'opening');
+  function go(f) { if (f < 0 || f > 2) return; if (S.at === f && S.phase !== 'moving' && S.target === null) { if (S.phase !== 'open') S.phase = 'opening'; else S.t = HOLD; return; }
+    if (S.queue.indexOf(f) < 0 && S.target !== f) S.queue.push(f); if (S.phase === 'open') S.t = Math.min(S.t, 0.45); }   /* chosen a floor: a short pause, then the doors close */
+  function press(btn, f) { btn.push = 0.16; if (SK.sfx) SK.sfx('click'); go(f); }
   SK.TICK.push(dt => {
     const was = S.phase;
-    if (S.phase === 'idle' && S.queue.length) { S.target = S.queue.shift(); S.phase = S.door > 0.01 ? 'closing' : (S.target === S.at ? 'opening' : 'moving'); if (S.phase === 'moving' && SK.sfx) SK.sfx('click'); }
+    if (S.phase === 'idle' && S.queue.length) { S.target = S.queue.shift(); S.phase = S.door > 0.01 ? 'closing' : (S.target === S.at ? 'opening' : 'moving'); }
     if (S.phase === 'open') { S.door = 1; S.t -= dt; if (S.t <= 0 && (S.queue.length || !inside(W.x, W.z, W.y))) S.phase = 'closing'; }
-    if (S.phase === 'closing') { S.door = Math.max(0, S.door - dt / 0.9); if (inside(W.x, W.z, W.y) && S.target === null && !S.queue.length && Math.abs(W.z - (H.z + sh.door)) < 0.5) { S.phase = 'opening'; }   /* someone in the doorway */
+    if (S.phase === 'closing') { S.door = Math.max(0, S.door - dt / DOOR_T); if (inside(W.x, W.z, W.y) && S.target === null && !S.queue.length && Math.abs(W.z - (H.z + sh.door)) < 0.5) { S.phase = 'opening'; }   /* someone in the doorway */
       else if (S.door <= 0) { if (S.target === null && S.queue.length) S.target = S.queue.shift(); S.phase = S.target !== null && S.target !== S.at ? 'moving' : 'idle'; if (S.target === S.at) S.target = null; } }
-    if (S.phase === 'moving') { const dy = FL[S.target] - S.y, v = Math.min(1.5, 0.35 + Math.abs(dy) * 1.2); if (Math.abs(dy) < 0.004) { S.y = FL[S.target]; S.at = S.target; S.target = null; S.phase = 'opening'; if (SK.sfx) SK.sfx('ding'); } else S.y += Math.sign(dy) * Math.min(Math.abs(dy), v * dt); }
-    if (S.phase === 'opening') { S.door = Math.min(1, S.door + dt / 0.9); if (S.door >= 1) { S.phase = 'open'; S.t = 6; } }
+    if (S.phase === 'moving') { const dy = FL[S.target] - S.y, v = Math.min(1.8, 0.4 + Math.abs(dy) * 1.4); if (Math.abs(dy) < 0.004) { S.y = FL[S.target]; S.at = S.target; S.target = null; S.phase = 'arrive'; S.t = ARRIVE; if (SK.sfx) SK.sfx('ding'); } else S.y += Math.sign(dy) * Math.min(Math.abs(dy), v * dt); }
+    if (S.phase === 'arrive') { S.t -= dt; if (S.t <= 0) S.phase = 'opening'; }
+    if (S.phase === 'opening') { S.door = Math.min(1, S.door + dt / DOOR_T); if (S.door >= 1) { S.phase = 'open'; S.t = HOLD; } }
     if (was !== S.phase && (S.phase === 'opening' || S.phase === 'closing') && SK.sfx) SK.sfx('door');
     cab.position.set(H.x + cxl, S.y, H.z + czl);
-    DOORS.forEach((D, f) => { const o = S.at === f && S.phase !== 'moving' ? S.door : 0, k = 0.6 * o; D.L.position.x = H.x + EXl - 0.3 - k; D.R.position.x = H.x + EXl + 0.3 + k; D.sol.off = o > 0.75; });
+    DOORS.forEach((D, f) => { const o = S.at === f && S.phase !== 'moving' ? ez(S.door) : 0, k = 0.58 * o; D.L.position.x = H.x + EXl - 0.3 - k; D.R.position.x = H.x + EXl + 0.3 + k; D.sol.off = o > 0.75;
+      const B = D.btn; B.m.material = wanted(f) ? B.mats.on : B.mats.off; B.push = Math.max(0, B.push - dt); B.m.position.z = B.z0 - (B.push > 0 ? 0.012 : 0); });
+    CB.forEach(B => { B.m.material = (S.queue.indexOf(B.f) >= 0 || S.target === B.f) ? B.mats.on : B.mats.off; B.push = Math.max(0, B.push - dt); B.m.position.x = w / 2 - 0.095 + (B.push > 0 ? 0.012 : 0); });
   });
-  return { S, FL, go, inside, cab, floorAt: (wx, wz, wy) => inside(wx, wz, wy) ? S.y : null, nearest: wy => { let b = 0; FL.forEach((y, i) => { if (Math.abs(wy - y) < Math.abs(wy - FL[b])) b = i; }); return b; },
+  /* which cab button the camera is looking at (within reach) */
+  const vB = new THREE.Vector3(), vF = new THREE.Vector3();
+  function aimed() { camera.getWorldDirection(vF); let best = null, ba = 0.32; CB.forEach(B => { B.m.getWorldPosition(vB); vB.sub(camera.position); const dd = vB.length(); if (dd > 1.9) return; const a = vF.angleTo(vB.normalize()); if (a < ba) { ba = a; best = B; } }); return best; }
+  return { S, FL, go, inside, cab, aimed, floorAt: (wx, wz, wy) => inside(wx, wz, wy) ? S.y : null, nearest: wy => { let b = 0; FL.forEach((y, i) => { if (Math.abs(wy - y) < Math.abs(wy - FL[b])) b = i; }); return b; },
     prompt(lx, lz) {
-      if (inside(W.x, W.z, W.y)) return S.phase === 'moving' ? { text: 'Going to ' + FLOORN[S.target].toLowerCase() + '…', act: null } : { text: 'Elevator: choose a floor', act: () => openSheet('elev', null, [H.x + EXl, H.z - SK.RES_Z - 6]) };
-      if (Math.hypot(lx - EXl, lz - (sh.door + 0.75)) < 1.4) { const f = ELEV.nearest(W.y), here = S.at === f && S.door > 0.6; return here ? { text: 'Elevator is here: step in', act: null } : { text: 'Call the elevator (' + FLOORN[f].toLowerCase() + ')', act: () => { go(f); SK.toast('Elevator called'); } }; }
+      if (inside(W.x, W.z, W.y)) { if (S.phase === 'moving') return { text: 'Going to ' + FLOORN[S.target].toLowerCase() + '…', act: null };
+        const B = aimed(); return B ? { text: 'Press ' + (B.f ? B.f : 'G') + ' (' + FLOORN[B.f].toLowerCase() + ')', act: () => press(B, B.f) } : { text: 'Floor buttons beside the door: look at G, 1 or 2', act: null }; }
+      const f = ELEV.nearest(W.y), D = DOORS[f], bx_ = EXl + 0.8, bz_ = sh.door + 0.1;
+      if (Math.hypot(lx - bx_, lz - bz_) < 1.5 && Math.abs(W.y - FL[f]) < 1.2) { const here = S.at === f && S.door > 0.6;
+        return here ? { text: 'Elevator is here: step in', act: null } : { text: wanted(f) ? 'Called: on its way' : 'Press the call button ▲', act: () => press(D.btn, f) }; }
       return null; } };
 })();
 SK.ELEV = ELEV;
