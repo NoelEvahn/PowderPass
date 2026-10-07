@@ -18,7 +18,7 @@ const { boot, check, OUT } = require('./lib');
   let r = await ev(() => ({ ch: T.q().ch, tr: T.track(), lockA: SK.liftLock('A'), lockB: SK.liftLock('B'), lockE: SK.liftLock('E'), medals: SK.State.medals, daily: T.q().daily.list.length, sk: T.q().help.sk.length, lost: T.q().help.lost.length }));
   check(r.ch === 0 && /Coach Bo/.test(r.tr), 'fresh save starts chapter 1: ' + r.tr, fails);
   check(r.lockA === null && /3 medals/.test(r.lockB) && /15 medals/.test(r.lockE), 'locks: A open, B ' + r.lockB, fails);
-  check(r.daily === 3 && r.sk === 4 && r.lost === 3, 'day rolled: 3 board quests, 4 fallen skiers, 3 lost items', fails);
+  check(r.daily === 3 && r.sk === 0 && r.lost === 3, 'day rolled: 3 board quests, no pre-placed fallen skiers (real skiers crash), 3 lost items', fails);
   await page.screenshot({ path: OUT + '/q-start.png' });
 
   /* --- chapter 1: talk to Coach Bo, ride the carpet, ski Snowdrop --- */
@@ -40,9 +40,15 @@ const { boot, check, OUT } = require('./lib');
   /* --- chapter 3: Rex, then help 3 fallen skiers --- */
   r = await ev(() => { const P = SK.QX.QP.patrol; T.go(P.at[0] - 1.6, P.at[1]); const p = T.act(); const s = T.q().chP.s; T.close(); return { p: p, s: s }; });
   check(/Rex/.test(r.p) && r.s === 1, 'talking to Rex starts the patrol step (' + r.p + ')', fails);
-  r = await ev(() => { const out = []; const H = T.q().help; for (let i = 0; i < 3; i++) { const k = H.sk[i]; T.go(k.x + 1.2, k.z); const c0 = SK.State.coins; const p = T.act(); out.push([p, SK.State.coins - c0, k.done]); } return { out: out, ch: T.q().ch }; });
+  r = await ev(() => { const out = [], H = T.q().help, down = () => H.sk.find(k => !k.done); let maxDown = 0;
+    for (let i = 0; i < 3; i++) { let k = null; for (let n = 0; n < 120 && !(k = down()); n++) { SK.play(300, 1 / 30); maxDown = Math.max(maxDown, H.sk.filter(q => !q.done).length); }
+      if (!k) { out.push(['none down', 0, false]); continue; } const f = SK.QX.FALLEN.find(q => q.k === k), real = !!f && SK.P8.TSK.some(t => t.g === f.g);
+      T.go(k.x + 1.2, k.z); const c0 = SK.State.coins; const p = T.act(); out.push([p, SK.State.coins - c0, k.done, real]); SK.play(200, 1 / 30); }
+    return { out: out, ch: T.q().ch, maxDown: maxDown }; });
+  check(r.maxDown <= 2, 'never more than 2 skiers down at once (' + r.maxDown + ')', fails);
+  check(r.out.every(o => o[3]), 'every fallen skier is a real trail skier', fails);
   check(r.out.every(o => /Help the fallen skier/.test(o[0]) && o[1] >= 40 && o[2]) && r.ch === 3, 'helped 3 fallen skiers, paid by grade, chapter 3 done (' + JSON.stringify(r.out.map(o => o[1])) + ')', fails);
-  await ev(() => { const k = T.q().help.sk[3]; if (k) T.go(k.x + 3, k.z + 3); SK.W.yaw = Math.atan2(-(k.x - SK.W.x), -(k.z + SK.RES_Z - SK.W.z)); SK.sim(2); });
+  await ev(() => { for (let n = 0; n < 120 && !T.q().help.sk.find(q => !q.done); n++) SK.play(300, 1 / 30); const k = T.q().help.sk.find(q => !q.done); if (!k) return; T.go(k.x + 3, k.z + 3); SK.W.yaw = Math.atan2(-(k.x - SK.W.x), -(k.z + SK.RES_Z - SK.W.z)); SK.sim(2); });
   await page.waitForTimeout(400); await page.screenshot({ path: OUT + '/q-fallen.png' });
 
   /* --- chapter 4: firewood to the hotel --- */

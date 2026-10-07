@@ -5401,7 +5401,7 @@ const DAILY = {
   cacao: { make: R => ({ n: 3 + Math.floor(R() * 3) }), def: p => ({ n: 'Café cacao', c: 30 * p.n + 20, steps: [{ give: ['cafe', 'cacao', p.n], txt: 'Bring ' + p.n + ' cacao pods to the Lodge Café' }] }) },
   lost: { ok: H => H.lost.length > 0, make: () => ({ i: 0 }),
     def: p => { const L = State.q.help.lost[p.i] || { it: 'item', t: '' }, t = trailBy(L.t); return { n: 'Lost & Found', c: 110, steps: [{ test: () => L.st === 2, txt: 'Return the lost ' + L.it + ' dropped on ' + (t ? t.name : 'the mountain'), at: () => L.st === 0 ? [L.x, L.z] : L.st === 1 ? QP.hotel.at : null }] }; } },
-  rescue: { ok: H => State.q.ch > 2 && H.sk.some(k => k.g === 'black'), make: (R, H) => ({ n: Math.min(1 + Math.floor(R() * 2), H.sk.filter(k => k.g === 'black').length) }),
+  rescue: { ok: H => State.q.ch > 2 && SKT.some(t => t.grade === 'black' && t.id !== 'bunny' && t.id !== 'ribbon' && liftOpen(t.lift)), make: (R, H) => ({ n: 1 + Math.floor(R() * 2) }),
     def: p => ({ n: 'Patrol job', c: 120 * p.n, steps: [{ ev: 'help', ok: e => e.kind === 'skier' && e.grade === 'black', n: p.n, txt: 'Help ' + p.n + ' fallen skier' + (p.n > 1 ? 's' : '') + ' on black trails', at: () => nearestHelp('sk', 'black') }] }) },
   score: { make: R => { const T = SKT.filter(t => t.grade !== 'dbl' && liftOpen(t.lift)), t = T[Math.floor(R() * T.length)]; return { t: t.id, s: Math.round(t.gold * 0.6 / 100) * 100 }; },
     def: p => { const t = trailBy(p.t) || SKT[0]; return { n: 'Score run', c: t.grade === 'black' ? 220 : t.grade === 'blue' ? 150 : 90, steps: [{ ev: 'runend', ok: e => e.finished && e.trail === t.id && e.result && e.result.score >= p.s, txt: 'Score ' + fmtN(p.s) + ' points on ' + t.name, at: () => t.pts[0] }] }; } },
@@ -5496,8 +5496,7 @@ function rollDay() {
   const q = State.q, R = lcg(State.day * 7907 + 3), open = SKT.filter(t => liftOpen(t.lift)), WG = { green: 1, blue: 2, black: 3, dbl: 3 }, pool = [];
   open.forEach(t => { for (let i = 0; i < WG[t.grade]; i++) pool.push(t); });
   const H = { day: State.day, sk: [], lost: [], cocoa: [], guide: 0 };
-  for (let i = 0; i < 4 && pool.length; i++) { const t = pool[Math.floor(R() * pool.length)], p = pointAt(t, t.len * (0.2 + 0.6 * R())), o = (R() - 0.5) * t.hw;
-    H.sk.push({ x: p.x - p.dz * o, z: p.z + p.dx * o, g: t.grade, t: t.id, ry: R() * TAU, done: false }); }
+  /* fallen skiers are not seeded: trail skiers really crash during the day (skierTick), at most FALL_MAX down at once */
   for (let i = 0; i < 3 && open.length; i++) { const t = open[Math.floor(R() * open.length)], p = pointAt(t, t.len * (0.15 + 0.7 * R())), o = (R() - 0.5) * t.hw;
     H.lost.push({ x: p.x - p.dz * o, z: p.z + p.dx * o, g: t.grade, t: t.id, it: LOST_ITEMS[Math.floor(R() * LOST_ITEMS.length)], st: 0 }); }
   q.help = H;
@@ -5528,7 +5527,9 @@ function pickPod(i) {
 }
 const REX = npc(P5.staff, { jacket: 0xff3232, hatc: 0xffffff, hat: 'helmet' }, QP.patrol.at[0], QP.patrol.at[1], -PI / 2 - 0.4);
 SK.SOLIDS.push({ x: QP.patrol.at[0], z: QP.patrol.at[1] + SK.RES_Z, a: 0, hw: 0.3, hd: 0.3 });
-const FALLEN = [[P5.man, { jacket: 0x12c9b8 }], [P5.woman, {}], [P5.teen, { jacket: 0xff8a1f }], [P5.man, { jacket: 0x8b3dff, beard: false, skin: 0x8d5a3b }]].map(q => { const g = npc(q[0], q[1], 0, 0, 0); g.visible = false; return { g: g, k: null, t: 0 }; });
+/* fallen skiers: slots filled by real trail skiers when they crash (see skierTick). g is that skier's model, sk the skier */
+const FALL_MAX = 2, FALLEN = Array.from({ length: FALL_MAX }, () => ({ g: null, k: null, t: 0, sk: null }));
+function fallRelease(f, got) { if (f.sk) { f.sk.down = null; f.sk.resume = got ? 1 : 0; } f.g = null; f.k = null; f.sk = null; f.t = 0; }
 const KID = { g: npc(P5.boy, { jacket: 0xffd21f }, -33, 3, 0), x: 0, z: 0, s: 0, v: 0, crumbs: [], lost: 0, wait: 0 }; KID.g.visible = false;
 const KID_HOME = [-33.2, 2.6];
 /* lost item models (plain lit meshes) + a glow ring so they read on snow */
@@ -5547,8 +5548,7 @@ function lostModel(it) {
 const LOSTG = []; let mittenG = null;
 function placeHelp() {
   const H = State.q.help;
-  FALLEN.forEach((f, i) => { const k = H.sk[i]; f.k = k || null; f.t = 0; if (!k || k.done) { f.g.visible = false; return; }
-    f.g.visible = true; f.g.position.set(k.x, SK.groundY(k.x, k.z + SK.RES_Z) + 0.05, k.z + SK.RES_Z); f.g.rotation.y = k.ry; f.g.userData.play('Lying on back', true); });
+  H.sk = H.sk.filter(k => k.done); FALLEN.forEach(f => { if (f.sk) { f.sk.down = null; f.sk.resume = 1; if (f.g) f.g.userData.play('Carving turns', true); } fallRelease(f, 0); });   /* who is down is not saved: skiers get up on load */
   LOSTG.forEach(g => scene.remove(g)); LOSTG.length = 0;
   H.lost.forEach(L => { const g = lostModel(L.it); g.position.set(L.x, SK.groundY(L.x, L.z + SK.RES_Z) + 0.04, L.z + SK.RES_Z); g.rotation.y = L.x * 7.1; g.visible = L.st === 0; g.userData.L = L; scene.add(g); LOSTG.push(g); });
 }
@@ -5694,7 +5694,7 @@ SK.QX = {
       const R2 = L.filter(a => a.kind === 'req' || a.kind === 'lesson'); if (R2.length) { o += '<h4>Requests and lessons</h4>'; R2.forEach(a => { o += qRow(a, true); }); }
       o += '<h4>Quest Board · Day ' + State.day + '</h4>'; q.daily.list.forEach((it, i) => { o += it.done ? row(tick + esc(dailyDef(it).n), esc(dailyDef(it).steps[0].txt), '') : qRow({ key: 'd:' + i, kind: 'daily', def: dailyDef(it), pr: it }, true); });
       const H = q.help, sk = H.sk.filter(k => k.done).length, lf = H.lost.filter(L2 => L2.st > 0).length, lr = H.lost.filter(L2 => L2.st === 2).length;
-      o += '<h4>Helping today</h4>' + row('Fallen skiers', sk + ' of ' + H.sk.length + ' helped · 40 to 150 each by trail', q.ch > 2 && sk < H.sk.length ? btn(q.track === 'help' ? 'Tracking' : 'Track', 'q:track:help', q.track === 'help', true) : '')
+      o += '<h4>Helping today</h4>' + row('Fallen skiers', sk + ' helped today · ' + (H.sk.length - sk) + ' down right now · 40 to 150 each by trail', q.ch > 2 && sk < H.sk.length ? btn(q.track === 'help' ? 'Tracking' : 'Track', 'q:track:help', q.track === 'help', true) : '')
         + row('Lost items', lf + ' of ' + H.lost.length + ' found, ' + lr + ' returned · hand in at the Hotel', H.lost.some(L2 => L2.st === 0) ? btn(q.track === 'lost' ? 'Tracking' : 'Track', 'q:track:lost', q.track === 'lost', true) : '')
         + row('Cocoa round', H.cocoa.length + ' of ' + COCOA.length + ' in the Lift A queue warmed up · 25 + tips', '')
         + row('Guide a beginner', H.guide === 3 ? 'Done today' : q.ch > 0 ? 'Ask Coach Bo at the Ski School · 80' : 'After chapter 1', '');
@@ -5725,7 +5725,7 @@ SK.QX = {
         f = 'Cocoa mix: 3 pods at the Lodge Café or your cabin stove.';
       } else if (pl === 'patrol') {
         o += '<p class="qsay">Rex: "' + (q.ch < 2 ? 'Patrol\'s busy. Come back when you know the mountain a little better.' : q.ch === 2 ? 'Ready to help? Skiers go down every day.' : 'Good work out there, patroller. The radio shows who\'s down.') + '"</p>' + giveRows(pl);
-        const H = q.help; o += '<h4>Today</h4>' + row('Fallen skiers', H.sk.filter(k => k.done).length + ' of ' + H.sk.length + ' helped', q.ch > 2 && H.sk.some(k => !k.done) ? btn(q.track === 'help' ? 'Tracking' : 'Track nearest', 'q:track:help', q.track === 'help', true) : '');
+        const H = q.help; o += '<h4>Today</h4>' + row('Fallen skiers', H.sk.filter(k => k.done).length + ' helped today · ' + H.sk.filter(k => !k.done).length + ' down now', q.ch > 2 && H.sk.some(k => !k.done) ? btn(q.track === 'help' ? 'Tracking' : 'Track nearest', 'q:track:help', q.track === 'help', true) : '');
         f = 'Stop next to a fallen skier and press F (or tap the prompt) to help them up.';
       }
       return { title: P.n, h: o, foot: f };
@@ -5764,7 +5764,7 @@ SK.TICK.push((dt, t) => {
   /* opening a place's sheet counts as talking to it */
   const sh = SH, sk = sh ? sh.kind + ':' + sh.id : ''; if (sk !== lastSh) { lastSh = sk; if (sh) { onTalk(placeOf(sh)); if (SH) renderSheet(); } }
   kidTick(dt);
-  FALLEN.forEach(f => { if (f.t > 0) { f.t -= dt; if (f.t < 3.5 && f.t + dt >= 3.5) f.g.userData.play('Victory pose', true); if (f.t <= 0) f.g.visible = false; } });
+  FALLEN.forEach(f => { if (f.t > 0 && f.g) { f.t -= dt; if (f.t < 3.5 && f.t + dt >= 3.5) f.g.userData.play('Victory pose', true); if (f.t <= 0) fallRelease(f, 1); } });   /* helped up: a wave, then they ski on */
   qAcc += dt; if (qAcc > 0.5 || dirty) { qAcc = 0;
     if (State.medals !== lastMed) { if (lastMed >= 0) Object.keys(LOCKS).forEach(id => { if (lastMed < LOCKS[id] && State.medals >= LOCKS[id]) setTimeout(() => SK.toast(LIFTN[id] + ' is open! (' + LOCKS[id] + ' medals)'), 2800); }); lastMed = State.medals; }
     checkTests(); TR = tracked();
@@ -5772,7 +5772,7 @@ SK.TICK.push((dt, t) => {
     { const te = document.getElementById('toast'); te.style.top = qtEl.hidden ? '' : Math.round(qtEl.getBoundingClientRect().bottom + 10) + 'px'; }   /* toasts sit below the tracker */
     const now = t, bob = y => y + 0.18 * Math.sin(now * 3);
     Object.keys(QP).forEach(k => { const P = QP[k], m = markOf(k), s = PMK[k]; s.visible = !!m; if (m) { s.material = MK[m]; s.position.set(P.at[0], bob(SK.groundY(P.at[0], P.at[1] + SK.RES_Z) + P.y), P.at[1] + SK.RES_Z); } });
-    FALLEN.forEach((f, i) => { const s = FMK[i]; s.visible = !!f.k && !f.k.done; if (s.visible) s.position.set(f.k.x, bob(f.g.position.y + 1.5), f.k.z + SK.RES_Z); });
+    FALLEN.forEach((f, i) => { const s = FMK[i]; s.visible = !!f.k && !f.k.done && !!f.g; if (s.visible) s.position.set(f.k.x, bob(f.g.position.y + 1.5), f.k.z + SK.RES_Z); });
     LOSTG.forEach((g, i) => { const s = LMK[i]; if (!s) return; const L = g.userData.L; s.visible = L.st === 0; if (s.visible) s.position.set(L.x, bob(g.position.y + 1.2), L.z + SK.RES_Z); });
     MMK.visible = !!mittenG && mittenG.visible; if (MMK.visible) MMK.position.set(mittenG.position.x, bob(mittenG.position.y + 1.2), mittenG.position.z);
     const H = State.q.help; KMK.visible = H.guide === 1; if (KMK.visible) KMK.position.set(KID.x, bob(KID.g.position.y + 1.4), KID.z + SK.RES_Z);
@@ -6336,11 +6336,26 @@ const SKIT = SKT.filter(t => t.id !== 'bunny' && t.id !== 'ribbon');
 const PEO = [P5.man, P5.woman, P5.teen, P5.boy, P5.girl, P5.instructor], JK = [0xff3232, 0x2f7bff, 0x14b13c, 0xff8a1f, 0x8b3dff, 0x12c9b8, 0xffd21f, 0xff5fa2];
 const TSK = [];
 for (let i = 0; i < QN[0]; i++) { const g = npc(PEO[i % PEO.length], { jacket: JK[i % JK.length] }, 0, 0, 0); g.visible = false; TSK.push({ g: g, t: null, s: 0, v: 0, wait: 1 + i * 1.7, ph: Math.random() * TAU, amp: 1.5 + Math.random() * 2 }); }
+/* a crash: tumble to a stop, then lie on the snow as a fallen skier until you help them up (or, after ~4 min, they manage alone) */
+function fallTick(k, dt) {
+  const H = State.q && State.q.help; if (!H) return false;
+  if (k.down) { k.downT += dt; const f = k.down; if (f.k && !f.k.done && k.downT > 240) { H.sk.splice(H.sk.indexOf(f.k), 1); f.t = 1.5; f.k = null; k.g.userData.play('Getting up', true); } return true; }
+  if (k.resume) { k.resume = 0; k.v = 1.2; k.fall = 0; k.g.userData.play('Carving turns', true); }
+  if (k.fall > 0) { k.v = Math.max(0, k.v - dt * 7); k.fall -= dt;
+    if (k.fall <= 0) { const f = FALLEN.find(q => !q.k && !q.g); if (!f) { k.resume = 1; return false; }
+      const p = k.g.position, rec = { x: p.x, z: p.z - SK.RES_Z, g: k.t.grade, t: k.t.id, ry: k.g.rotation.y, done: false }; H.sk.push(rec);
+      f.k = rec; f.g = k.g; f.sk = k; f.t = 0; k.down = f; k.downT = 0; k.g.userData.play('Lying on back', true); dirty = true; return true; }
+    return false; }
+  if (k.crashAt > 0 && k.s >= k.crashAt) { k.crashAt = -1; if (FALLEN.some(q => !q.k && !q.g) && H.sk.filter(q => !q.done).length < FALL_MAX) { k.fall = 1.4; k.g.userData.play('Crash tumble', true); } }
+  return false;
+}
 function skierTick(dt) {
   TSK.forEach(k => {
     if (k.custom) return;
-    if (!k.t) { k.wait -= dt; if (k.wait > 0) return; k.t = SKIT[Math.floor(Math.random() * SKIT.length)]; k.s = 0; k.v = 3; k.vmax = 6 + Math.random() * 4 + (k.t.grade === 'black' ? 2 : 0); k.g.visible = true; k.g.userData.play('Carving turns'); }
-    const t = k.t; k.v += (k.vmax - k.v) * Math.min(1, dt * 0.6); k.s += k.v * dt;
+    if (!k.t) { k.wait -= dt; if (k.wait > 0) return; k.t = SKIT[Math.floor(Math.random() * SKIT.length)]; k.s = 0; k.v = 3; k.vmax = 6 + Math.random() * 4 + (k.t.grade === 'black' ? 2 : 0); k.g.visible = true; k.g.userData.play('Carving turns');
+      k.fall = 0; k.crashAt = Math.random() < (k.t.grade === 'green' ? 0.1 : 0.18) ? k.t.len * (0.2 + 0.6 * Math.random()) : -1; }   /* some runs end in a fall part-way down */
+    if (fallTick(k, dt)) return;
+    const t = k.t; k.v += (k.vmax - k.v) * Math.min(1, dt * (k.fall > 0 ? 0 : 0.6)); k.s += k.v * dt;
     if (k.s >= t.len - 2) { k.t = null; k.g.visible = false; k.wait = 6 + Math.random() * 10; return; }   /* off to queue for the lift */
     const p = pointAt(t, k.s), w = k.amp * Math.sin(k.s * 0.32 + k.ph) * Math.min(1, k.s / 10, (t.len - k.s) / 10), x = p.x - p.dz * w, z = p.z + p.dx * w;
     const p2 = pointAt(t, k.s + 1), w2 = k.amp * Math.sin((k.s + 1) * 0.32 + k.ph), x2 = p2.x - p2.dz * w2, z2 = p2.z + p2.dx * w2;
