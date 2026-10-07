@@ -6033,12 +6033,43 @@ const BF = (() => {
   const B = { plate: null, seat: null, eaten: 0, onTable: null };
   const EFF = { eggs: [11, 4], bacon: [11, 4], pancakes: [12, 3], croissant: [9, 2], fruit: [8, 2], juice: [7, 3], coffee: [6, 9] };
   const open = () => { const h = State.time / 60; return h >= 6 && h < 11; };
-  /* guests (a chef and people eating) make the hall lively */
-  const guests = [];
-  { const P = SK.PEOPLE, mk = (b, o, s, anim) => { const g = npc(b, Object.assign({ npc: 1, item: null }, o), 0, 0, 0); g.position.set(H.x + s.x, H.gy + X.floors[0] - 0.23, H.z + s.z); g.rotation.y = s.yaw; g.userData.seatH = 1.02; g.userData.play(anim, true); guests.push({ g: g, s: s }); s.taken = 1; return g; };
-    [[2, P.lady, { jacket: 0x8b3dff }], [5, P.man, { jacket: 0x2f7bff }], [10, P.teen, {}], [13, P.man, { jacket: 0x14b13c, beard: false }], [16, P.lady, { jacket: 0xff8a1f }]].forEach(q => { const s = SEATS[q[0]]; if (s) { mk(q[1], q[2], s, 'Eating'); const pl = VM.FOOD.pancakes(); pl.scale.setScalar(2); pl.position.set(H.x + s.tx, H.gy + X.floors[0] + 0.58, H.z + s.tz + (s.yaw ? 0.25 : -0.25)); pl.traverse(m => { if (m.material) m.material.depthTest = true; m.renderOrder = 0; }); scene.add(pl); } });
-    const chef = npc(P.staff, { npc: 1, item: null, jacket: 0xffffff }, 0, 0, 0); chef.position.set(H.x + 1, H.gy + X.floors[0] - 0.23, H.z + bz - 0.75); chef.rotation.y = 0; chef.userData.play('Standing', true); guests.push({ g: chef, chef: 1 }); }
-  let gT = 0; SK.TICK.push(dt => { gT += dt; if (gT < 3) return; gT = 0; guests.forEach(q => { if (q.chef) { q.g.userData.play(Math.random() < 0.35 ? 'Waving' : 'Standing', true); return; } if (Math.random() < 0.2) q.g.userData.play('Eating', true); }); });
+  /* guests: a chef at the west end of the buffet and diners who walk in from the lobby archway during breakfast (6-11), take a free seat,
+     eat for a while and walk out again. The hall is empty the rest of the day. Positions are hall-local; y is the hall floor. */
+  const guests = [], FLY = H.gy + X.floors[0], GX = (x, z, o) => o.position.set(H.x + x, FLY, H.z + z), ENTRY = [0, -5.6], LOBBY = [0, -3.2];
+  const DINERS = [];
+  { const P = SK.PEOPLE, looks = [[P.lady, { jacket: 0x8b3dff }], [P.man, { jacket: 0x2f7bff }], [P.teen, {}], [P.man, { jacket: 0x14b13c, beard: false }], [P.lady, { jacket: 0xff8a1f }], [P.man, { jacket: 0xc8553d }]];
+    looks.forEach(q => { const g = npc(q[0], Object.assign({ npc: 1, item: null }, q[1]), 0, 0, 0); g.visible = false; g.userData.seatH = 1.02;
+      const pl = VM.FOOD.pancakes(); pl.scale.setScalar(2); pl.traverse(m => { if (m.material) m.material.depthTest = true; m.renderOrder = 0; }); pl.visible = false; scene.add(pl);
+      const d = { g: g, plate: pl, st: 'out', path: [], seat: null, t: 0 }; DINERS.push(d); guests.push(d); });
+    const chef = npc(P.staff, { npc: 1, item: null, jacket: 0xffffff }, 0, 0, 0); GX(-3.8, -10.3, chef); chef.rotation.y = 0.35; chef.userData.play('Standing', true); chef.visible = false; guests.push({ g: chef, chef: 1 }); }
+  /* a route that never cuts through a table: down the column beside the seat's table (x +-2 sits between tables), then along the chair row */
+  const route = s => { const tx = TAB[s.tab][0], gx = tx + (s.x > tx ? 2 : -2); return [[gx, -5.8], [gx, s.z], [s.x, s.z]]; };
+  const seatFree = q => !q.taken && !DINERS.some(d => d.seat === q);
+  let nextIn = 0, gAcc = 0;
+  function dinerTick(dt) {
+    const h = State.time / 60, isOpen = open(), busy = DINERS.filter(d => d.st !== 'out').length, want = !isOpen ? 0 : (h > 7.3 && h < 9.7 ? DINERS.length : 3);
+    const chef = guests.find(q => q.chef); if (chef) chef.g.visible = h >= 5.75 && h < 11.25;
+    if (isOpen && busy < want && h < 10.6 && State.time >= nextIn) {   /* someone walks in every 6-18 game minutes while there is room */
+      const d = DINERS.find(x => x.st === 'out'), free = SEATS.filter(seatFree);
+      if (d && free.length) { const s = free[Math.floor(Math.random() * free.length)]; d.seat = s; d.path = [ENTRY].concat(route(s)); d.st = 'in'; d.g.visible = true; GX(LOBBY[0], LOBBY[1], d.g); d.g.userData.play('Walking', true); d.g.userData.rate = 1; }
+      nextIn = State.time + 6 + Math.random() * 12;
+    }
+    DINERS.forEach(d => {
+      if (d.st === 'out') return; const g = d.g, s = d.seat;
+      if (d.st === 'in' || d.st === 'leave') {
+        const tgt = d.path[0]; if (!tgt) { if (d.st === 'in') { d.st = 'sit'; d.t = 0; g.rotation.y = s.yaw + PI; g.userData.play('Sit on chair', true); GX(s.x, s.z, g); } else { d.st = 'out'; g.visible = false; d.seat = null; } return; }
+        const lx = g.position.x - H.x, lz = g.position.z - H.z, dx = tgt[0] - lx, dz = tgt[1] - lz, dd = Math.hypot(dx, dz), v = 1.25 * dt;
+        if (dd <= v) { GX(tgt[0], tgt[1], g); d.path.shift(); } else { GX(lx + dx / dd * v, lz + dz / dd * v, g); g.rotation.y = Math.atan2(dx, dz); }
+        return;
+      }
+      d.t += dt;
+      if (d.st === 'sit' && d.t > 0.8) { d.st = 'eat'; d.t = 0; d.until = State.time + 20 + Math.random() * 25; d.plate.position.set(H.x + s.tx, FLY + 0.58, H.z + s.tz + (s.yaw ? -0.22 : 0.22)); d.plate.visible = true; g.userData.play('Eating', true); }
+      if (d.st === 'eat') { if (d.t > 3) { d.t = 0; g.userData.play(Math.random() < 0.35 ? 'Sit on chair' : 'Eating', true); }   /* bite, pause, bite */
+        if (State.time >= d.until || State.time < 5 * 60 || h >= 11.4) { d.st = 'leave'; d.plate.visible = false; d.path = route(s).reverse().slice(1).concat([ENTRY, LOBBY]); g.userData.play('Walking', true); } }
+    });
+  }
+  SK.TICK.push(dt => { if (SK.DEV) return; gAcc += dt; if (gAcc < 0.033) return; dinerTick(gAcc); gAcc = 0;
+    if (Math.random() < dt * 0.3) { const c = guests.find(q => q.chef); if (c && c.g.visible) c.g.userData.play(Math.random() < 0.35 ? 'Waving' : 'Standing', true); } });
   function prompt(lx, lz) {
     if (B.seat) return { text: B.eaten < (B.onTable ? B.onTable.length : 0) ? 'Eating breakfast…' : 'Stand up', act: B.eaten < (B.onTable ? B.onTable.length : 0) ? null : standUp };
     if (Math.abs(lz - sz) < 1.1 && lx > -3.3 && lx < 5.4) { let st = null, bd = 0.7; ST.forEach(s => { const dd = Math.abs(lx - s.x); if (dd < bd) { bd = dd; st = s; } }); if (st) {
@@ -6048,7 +6079,7 @@ const BF = (() => {
       if (!B.plate) return { text: st.n + ': take a plate first (far right)', act: null };
       if (B.plate.length >= 5) return { text: 'Your plate is full: find a seat', act: null };
       return { text: 'Add ' + st.n.toLowerCase() + ' (' + B.plate.length + '/5)', act: () => { B.plate.push(st.k); VM.showPlate(B.plate); if (SK.sfx) SK.sfx('coin'); } }; } }
-    if (B.plate && B.plate.length) { let s = null, bd = 0.85; SEATS.forEach(q => { const dd = Math.hypot(lx - q.x, lz - q.z); if (!q.taken && dd < bd) { bd = dd; s = q; } }); if (s) return { text: 'Sit down and eat', act: () => sit(s) }; }
+    if (B.plate && B.plate.length) { let s = null, bd = 0.85; SEATS.forEach(q => { const dd = Math.hypot(lx - q.x, lz - q.z); if (seatFree(q) && dd < bd) { bd = dd; s = q; } }); if (s) return { text: 'Sit down and eat', act: () => sit(s) }; }
     return null;
   }
   function sit(s) {
@@ -6057,7 +6088,7 @@ const BF = (() => {
     /* the plate on the table in front of you */
     const g = new THREE.Group(), pm = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.14, 0.015, 22), new THREE.MeshLambertMaterial({ color: 0xffffff })); g.add(pm);
     B.onTable.forEach((k, i) => { const o = VM.FOOD[k](); o.scale.setScalar(1.3); o.position.set([-0.06, 0.06, 0, -0.08, 0.08][i], 0.01, [-0.05, -0.05, 0.07, 0.06, 0.06][i]); o.traverse(m => { if (m.material) m.material.depthTest = true; m.renderOrder = 0; }); g.add(o); });
-    g.position.set(H.x + s.x, fy + 0.58, H.z + s.tz + (s.yaw ? 0.22 : -0.22)); scene.add(g); B.tableG = g; SK.toast('Bon appétit!'); next();
+    g.position.set(H.x + s.x, fy + 0.58, H.z + s.tz + (s.yaw ? -0.22 : 0.22)); scene.add(g); B.tableG = g; SK.toast('Bon appétit!'); next();
   }
   function next() {   /* eat what is on the plate, one item at a time */
     if (!B.seat) return; if (B.eaten >= B.onTable.length) { const tot = B.onTable.reduce((a, k) => [a[0] + EFF[k][0], a[1] + EFF[k][1]], [0, 0]); SK.toast('Breakfast done! +' + tot[0] + ' Energy, +' + tot[1] + ' Warmth. Tap to stand up.'); writeSave(); return; }
