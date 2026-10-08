@@ -26,10 +26,12 @@ const { boot, check } = require('./lib');
     const air = (hold) => { PL.y += 6; PL.vy = 6; PL.air = true; PL.airT = 0; PL.flip = 0; PL.crash = 0; K.w = 1; K[' '] = hold ? 1 : 0; for (let i = 0; i < 12; i++) SK.play(1); const f = PL.flip; K.w = 0; K[' '] = 0; return f; };
     out.plain = +air(false).toFixed(2); out.held = +air(true).toFixed(2); out.body = SK.State.cam.ski !== 'third' ? 'n/a' : 'third'; SK.play(90); PL.exitSki(); return out; });
   check(r.plain === 0 && r.held > 1, 'flips need jump held with W (' + JSON.stringify(r) + ')', fails);
-  /* first-person body shows in the air */
-  r = await ev(() => { const PL = SK.PL, S = SK.State; T.go(-30, SK.RES_Z + 52); PL.tryToggle(); SK.play(2); const was = S.cam.ski; S.cam.ski = 'first'; PL.y += 6; PL.vy = 6; PL.air = true; SK.play(3);
-    let vis = false; SK.cam.children.forEach(c => { if (c.visible && c.children.length >= 3) vis = true; }); S.cam.ski = was; SK.play(90); PL.exitSki(); return vis; });
-  check(r, 'first person in the air shows your mittens and skis', fails);
+  /* first-person body: in the world at your feet, not pinned to the screen. Looking straight ahead the skis are out of view; looking down they're in it */
+  r = await ev(() => { const PL = SK.PL, S = SK.State, cam = SK.cam; T.go(-30, SK.RES_Z + 52); PL.tryToggle(); SK.play(2); const was = S.cam.ski; S.cam.ski = 'first'; PL.y += 6; PL.vy = 6; PL.air = true; SK.play(2);
+    const inView = () => { SK.PRE.forEach(f => f()); cam.updateMatrixWorld(true); const fr = new THREE.Frustum(), m = new THREE.Matrix4().multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse); fr.setFromProjectionMatrix(m);
+      let n = 0; SK.VM.skis.traverse(o => { if (o.isMesh) { o.geometry.computeBoundingSphere(); const sph = o.geometry.boundingSphere.clone().applyMatrix4(o.matrixWorld); if (fr.intersectsSphere(sph)) n++; } }); return n; };
+    PL.lookPitch = 0.1; SK.play(1); const ahead = inView(); PL.lookPitch = -1.0; SK.play(1); const down = inView(); PL.lookPitch = 0; S.cam.ski = was; SK.play(90); PL.exitSki(); return { rig: SK.VM.rig.visible !== undefined, ahead: ahead, down: down }; });
+  check(r.ahead === 0 && r.down > 0, 'first-person skis are out of view looking ahead, in view looking down (' + JSON.stringify(r) + ')', fails);
   /* breakfast: a diner racks their skis in the ski room on the way in */
   r = await ev(() => { const BF = SK.BF; SK.P6.setTime(8 * 60); let d = null, carried = 0, racked = 0;
     for (let i = 0; i < 900 && !racked; i++) { SK.play(1); if (!d) d = BF.guests.find(q => q.carry && q.st === 'in' && q.carry.visible && !q.rack.visible); if (d) { if (d.carry.visible) carried++; if (d.rack.visible && !d.carry.visible) racked = i; } }

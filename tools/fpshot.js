@@ -6,6 +6,9 @@ const STATES = {
   grab: `PL.y += 7; PL.vy = 5; PL.air = true; PL.airT = 0.3; PL.grabT = 0.4; SK.keys.shift = 1; SK.play(2);`,
   flip: `PL.y += 7; PL.vy = 5; PL.air = true; PL.airT = 0.3; PL.flip = 2.2; SK.play(1);`,
   crash: `PL.crash = 1.6; PL.crashAnim = 'Crash tumble'; SK.play(2);`,
+  down: `PL.lookPitch = -1.0; SK.play(2);`,
+  airdown: `PL.y += 7; PL.vy = 5; PL.air = true; PL.airT = 0.3; PL.lookPitch = -1.0; SK.play(2);`,
+  platedown: `SK.PL.exitSki(); SK.State.cam.walk = 'first'; SK.VM.showPlate(['eggs', 'bacon', 'fruit']); SK.W.pitch = -0.9; SK.play(2);`,
   plate: `SK.PL.exitSki(); SK.State.cam.walk = 'first'; SK.VM.showPlate(['eggs', 'bacon', 'fruit']); SK.play(2);`,
   bite: `SK.PL.exitSki(); SK.State.cam.walk = 'first'; SK.VM.consume('croissant', null, 3); SK.play(9);`
 };

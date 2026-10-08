@@ -1306,7 +1306,7 @@ function hotel() {
   b.add(bx(1.6, 0.08, 0.8), TIMB, 7.4, WY + 0.42, 2.75); [-0.7, 0.7].forEach(t => [-0.3, 0.3].forEach(u => b.add(bx(0.06, 0.38, 0.06), CHAR, 7.4 + t, WY + 0.19, 2.75 + u))); K.push({ x: 7.4, z: 2.75, ry: 0, hw: 0.8, hd: 0.4 });
   b.add(cy(0.12, 0.12, 0.08, 10), 0x2f9e6b, 7.0, WY + 0.5, 2.7); b.add(bx(0.3, 0.05, 0.22), C.red, 7.8, WY + 0.48, 2.8);
   b.push(4.9, WY, 4.3, 0); pFloorLamp(b); b.pop(); K.push({ x: 4.9, z: 4.3, ry: 0, hw: 0.2, hd: 0.2 });
-  [[-9.0, 4.35], [-4.4, 4.35], [4.4, -0.2], [11.2, -4.2]].forEach(p => { b.add(bx(0.5, 0.5, 0.5), CHAR, p[0], WY + 0.25, p[1]); b.add(sp(0.45, 1, 1.4, 1), C.grass2, p[0], WY + 1.1, p[1]); K.push({ x: p[0], z: p[1], ry: 0, hw: 0.3, hd: 0.3 }); });
+  [[-9.0, 4.35], [-4.4, 4.35], [4.4, -0.2], [11.2, -4.2]].forEach(p => { topiaryInto(b, p[0], WY, p[1], 1, 0.6); K.push({ x: p[0], z: p[1], ry: 0, hw: 0.3, hd: 0.3 }); });
   [[-6, 2], [-6, -1], [0, 2], [0, -3], [6, 2], [6, -1], [9.5, 2]].forEach(p => { hLight(b, p[0], WY + 2.95, p[1]); lightFx(g, [p[0], WY + 2.95, p[1]], [p[0], WY + 0.05, p[1]], 1.1, { n: 8, size: 0.09 }); });
   // ---- boot room: the entrance vestibule. Skis go in the racks here before anyone walks into the lobby (the game racks yours for you)
   { const zi = 2.2, zf = hz - T / 2, zc = (zi + zf) / 2, dz = zf - zi;
@@ -1356,7 +1356,7 @@ function hotel() {
   hArt(b, -6.53, WY + 1.55, 1.4, -PI / 2, 1.5, 1.0, 0); hPlant(b, K2, -6.95, WY, 4.3); hPlant(b, K2, -6.95, WY, -2.9);
   b.push(-6.85, WY, 1.4, -PI / 2); pBench(b); b.pop(); K2.push({ x: -6.85, z: 1.4, ry: 0, hw: 0.25, hd: 0.8 });
   b.push(-6.8, WY, 0.2, 0); pFloorLamp(b); b.pop(); K2.push({ x: -6.8, z: 0.2, ry: 0, hw: 0.2, hd: 0.2 });
-  b.add(bx(0.5, 0.5, 0.5), CHAR, -11.0, WY + 0.25, 4.4); b.add(sp(0.45, 1, 1.4, 1), C.grass2, -11.0, WY + 1.1, 4.4);
+  topiaryInto(b, -11.0, WY, 4.4, 1, 0.6);
   /* ===== EXPANSION: north wing (z -11..-5) on three levels + a second floor on the main block ===== */
   const ZN = -11, ZC = -6.4;   /* wing outer wall, wing corridor wall */
   /* suite furnishing, laid out in room coordinates: u from the door-side wall (x0), v from the corridor wall (zc) into the room.
@@ -1492,7 +1492,7 @@ function hotel() {
     b.push(-6.6, Y3, -2.3, -PI / 2); pBookshelf(b); b.pop(); K4.push({ x: -6.6, z: -2.3, ry: 0, hw: 0.17, hd: 0.66 });
     b.push(-7.7, Y3, -2.2, -PI / 2); pArm(b, LEATH); b.pop(); K4.push({ x: -7.7, z: -2.2, ry: 0, hw: 0.43, hd: 0.48 }); b.push(-7.65, Y3, -1.3, 0); pFloorLamp(b); b.pop();
     hArt(b, -6.53, Y3 + 1.6, 3.4, -PI / 2, 1.3, 0.9, 1); hPlant(b, K4, -6.95, Y3, 4.5);
-    b.add(bx(0.5, 0.5, 0.5), CHAR, -11.2, Y3 + 0.25, 4.3); b.add(sp(0.45, 1, 1.4, 1), C.grass2, -11.2, Y3 + 1.1, 4.3); K4.push({ x: -11.2, z: 4.3, ry: 0, hw: 0.3, hd: 0.3 });
+    topiaryInto(b, -11.2, Y3, 4.3, 1, 0.6); K4.push({ x: -11.2, z: 4.3, ry: 0, hw: 0.3, hd: 0.3 });
     [-9, -3, 4].forEach(x => { hLight(b, x, Y3 + 2.6, -4.3); HX.L.push([x, Y3 + 2.6, -4.3, 0, 'soft', 0.9]); }); }
   /* main block floor 1 rooms keep their bathrooms (hInside); they become rooms 101-104 with doors on the corridor */
   RC.forEach((c, i) => { HX.rooms.push({ no: 101 + i, type: 'normal', floor: 1, hx: c + 0.8, z: -3.6, y: Y2, w: 0.8, sg: 1, cx: c, cz: 0.7 }); HX.beds.push({ no: 101 + i, x: c, z: 3.2, y: Y2 }); });
@@ -1503,12 +1503,18 @@ function hotel() {
   b.add(bx(W + 0.6, 0.3, 1.4), CHAR, 0, sy, hz + 1.0); b.add(bx(W + 0.6, 0.9, 0.05), GLASS, 0, Y2 + 0.45, hz + 1.7); [-1, 1].forEach(t => b.add(bx(0.05, 0.9, 1.4), GLASS, t * (hx + 0.3), Y2 + 0.45, hz + 1.0));
   [-6.4, -1.8, 2.8, 7.4].forEach(x => { b.add(bx(0.06, 1.0, 1.4), CHAR, x, Y2 + 0.5, hz + 1.0); K2.push({ x: x, z: hz + 1.0, ry: 0, hw: 0.06, hd: 0.7 }); });
   K2.push({ x: 0, z: hz + 1.72, ry: 0, hw: 12.3, hd: 0.06 }, { x: -hx - 0.3, z: hz + 1.0, ry: 0, hw: 0.06, hd: 0.7 }, { x: hx + 0.3, z: hz + 1.0, ry: 0, hw: 0.06, hd: 0.7 });
-  b.add(bx(5.4, 0.16, 3.0), CHAR, 0, FY + 3.05, hz + 1.5); [-1, 1].forEach(t => { b.add(bx(0.16, 3.0, 0.16), CHAR, t * 2.5, FY + 1.5, hz + 2.8); b.add(bx(0.3, 3.1, 0.3), TIMB, t * 1.6, FY + 1.55, hz + 0.2); b.add(bx(0.7, 0.6, 0.7), CHAR, t * 3.4, FY + 0.3, hz + 1.7); b.add(sp(0.45, 1, 1.3, 1), C.grass2, t * 3.4, FY + 0.95, hz + 1.7); });
+  b.add(bx(5.4, 0.16, 3.0), CHAR, 0, FY + 3.05, hz + 1.5); [-1, 1].forEach(t => { b.add(bx(0.16, 3.0, 0.16), CHAR, t * 2.5, FY + 1.5, hz + 2.8); b.add(bx(0.3, 3.1, 0.3), TIMB, t * 1.6, FY + 1.55, hz + 0.2); topiaryInto(b, t * 3.4, FY, hz + 1.7, 1.25, 0.6); });
   [-1.8, 0, 1.8].forEach(x => { b.add(sp(0.18), 0xffe98a, x, FY + 2.9, hz + 2.0, { alpha: 0.45 }); lightFx(g, [x, FY + 2.9, hz + 2.0], [x, FY + 0.05, hz + 2.0], 0.9, { n: 8, size: 0.1 }); }); b.add(bx(5.4, 0.05, 7.2), LIN, 0, 0.025, hz + 4.3);
   [-5.5, 5.5].forEach(x => { const l = lamp(); l.position.set(x, 0, hz + 5.5); l.rotation.y = PI / 2; /* heads turned toward the hotel */ g.add(l); });
   // ---- roof + sign
   r.add(bx(W + 1.6, 0.3, D + 7.6), CHAR, 0, Y3 + H2 + 0.15, -3); r.add(bx(W + 1.4, 0.1, D + 7.4), C.snow, 0, Y3 + H2 + 0.35, -3);
   r.add(bx(7.4, 1.5, 0.15), CHAR, 0, Y3 + H2 + 1.6, hz + 0.5); hText(r, 'HOTEL', 0, Y3 + H2 + 2.05, hz + 0.62, 0.26, C.yellow);
+  { /* winter dressing: a snow roll with icicles round the roof edge, a fieldstone plinth along the front */
+    const yR = Y3 + H2, x0 = -(W + 1.6) / 2, x1 = (W + 1.6) / 2, z0 = -3 - (D + 7.6) / 2, z1 = -3 + (D + 7.6) / 2, R = rng(77);
+    const eave = (ax, az, bx2, bz) => { const L = Math.hypot(bx2 - ax, bz - az), ry = Math.atan2(-(bz - az), bx2 - ax); r.add(cy(0.16, 0.16, L, 8), C.snow, (ax + bx2) / 2, yR + 0.42, (az + bz) / 2, { rz: PI / 2, ry: ry, noOutline: 1 });
+      for (let u = 0.3; u < L - 0.2; u += 0.35 + 0.3 * R()) { const t = u / L, len = 0.15 + 0.55 * R() * R(); r.add(cn(0.045, len, 5), ICE, ax + (bx2 - ax) * t, yR - len / 2, az + (bz - az) * t, { rx: PI, noOutline: 1 }); } };
+    eave(x0, z1, x1, z1); eave(x0, z0, x1, z0); eave(x0, z0, x0, z1); eave(x1, z0, x1, z1);
+    [[-hx - 0.1, -3.7], [3.7, hx + 0.1]].forEach(q => { const L = q[1] - q[0], n = Math.round(L / 0.55); for (let i = 0; i <= n; i++) b.add(stoneGeo(0.22 + 0.06 * R(), 1.3, 0.75, 1, 300 + i), i % 3 ? C.stone : C.rock, q[0] + L * i / n, 0.16, hz + 0.2, { ry: R() * 3 }); }); }
   // ---- pool terrace (right), steaming
   const OX = 23.35, OZ = 2, pg = pool(); pg.position.set(OX, 0, OZ); g.add(pg);
   pg.userData.K.forEach(k => K.push({ x: k.x + OX, z: k.z + OZ, ry: 0, hw: k.hw, hd: k.hd }));
@@ -1722,9 +1728,20 @@ function pReception(b) {
   b.add(sp(0.07, 1, 0.6, 1), C.yellow, 0.05, 1.2, 0.3);
   hText(b, 'HOTEL', 0, 2.0, -0.66, 0.085, C.white);
 }
-function pPlanter(b) {
-  b.add(bx(0.5, 0.5, 0.5), CHAR, 0, 0.25, 0); b.add(sp(0.45, 1, 1.4, 1), C.grass2, 0, 1.1, 0); b.add(sp(0.26, 1, 1.2, 1), C.grass, 0.15, 1.6, 0.05);
+/* clipped topiary in a planter: a tapered square planter on little feet with a top rim and a band, a short trunk, then a sculpted
+   cone-on-ball of tight leaf clumps (dark inside, lighter crown). Colours stay CHAR / grass2 / grass, as before. */
+function topiaryInto(b, x, y, z, s, ph) {
+  s = s || 1; ph = ph || 0.5; const P = (g, c, px, py, pz, o) => b.add(g, c, x + px * s, y + py * s, z + pz * s, o);
+  P(cy(0.27 * s * 1.41, 0.21 * s * 1.41, 0.5 * s, 4), CHAR, 0, 0.29, 0, { ry: PI / 4 }); P(bx(0.6 * s, 0.06 * s, 0.6 * s), CHAR, 0, 0.56, 0); P(bx(0.5 * s, 0.05 * s, 0.5 * s), CHAR, 0, 0.12, 0);
+  [-1, 1].forEach(a => [-1, 1].forEach(c => P(bx(0.08 * s, 0.05 * s, 0.08 * s), CHAR, a * 0.19, 0.025, c * 0.19)));
+  P(cy(0.035 * s, 0.045 * s, 0.4 * s, 6), C.wood3, 0, 0.76, 0);
+  const r = rng(Math.floor(ph * 1000) + 5), ball = (cx, cyv, R, n, c1, c2) => { for (let i = 0; i < n; i++) { const t = (i + 0.5) / n, el = Math.acos(1 - 2 * t), a = i * 2.39996 + r();
+      P(sp(R * (0.42 + 0.12 * r()) * s, 1, 0.9, 1, 7, 5), el < 1.0 ? c2 : c1, cx + Math.sin(el) * Math.cos(a) * R * 0.82, cyv + Math.cos(el) * R * 0.82, Math.sin(el) * Math.sin(a) * R * 0.82, { ry: a }); }
+    P(sp(R * 0.85 * s, 1, 1, 1, 9, 7), c1, cx, cyv, 0); };
+  ball(0, 1.15, 0.42, 18, C.grass2, C.grass);
+  if (ph > 0.4) ball(0, 1.68, 0.24, 10, C.grass2, C.grass);   /* two-tier topiary */
 }
+function pPlanter(b) { topiaryInto(b, 0, 0, 0, 1, 0.5); }
 function pPendant(b) {
   b.add(bx(1.0, 0.06, 1.0), CONC, 0, 2.45, 0); b.rod([0, 2.42, 0], [0, 1.95, 0], 0.02, C.metal); b.add(cy(0.12, 0.3, 0.22, 12), CHAR, 0, 1.85, 0); b.add(sp(0.12), WARM, 0, 1.75, 0, { basic: 1 });
 }
@@ -4141,7 +4158,43 @@ function storeShell(b, r, K, o) {
     r.add(bx(Wd + 0.9, 0.14, vd + 0.5), o.roof, 0, FY + 2.62, zc + 0.1, { rx: 0.16 }); r.add(bx(Wd + 0.7, 0.08, vd + 0.35), C.snow, 0, FY + 2.71, zc + 0.1, { rx: 0.16 });
     [[-Wd / 2 + 0.6, 1], [Wd / 2 - 0.6, 0]].forEach(q => { b.add(cy(0.24, 0.24, 0.7, 12), C.wood2, q[0], 0.53, z0 + 0.5); [0.33, 0.73].forEach(y => b.add(cy(0.25, 0.25, 0.05, 12), C.dark, q[0], y, z0 + 0.5)); });
   }
+  storeDress(b, r, K, o, Wd, D, H, rise, hw, st);
   WY = sv[0]; WF = sv[1]; WG = sv[2];
+}
+/* exterior dressing shared by every shop (after the reference art): a fieldstone plinth round the base, a soft snow roll with a curled
+   lip and icicles along each eave, rafter tails under gable eaves, a stone chimney (smoking), sills and flower boxes under solid-wall
+   windows, a rooftop vent and snow-capped parapet on flat roofs, a lantern by the door. */
+function storeDress(b, r, K, o, Wd, D, H, rise, hw, st) {
+  const R = rng(Math.floor((o.x * 7 + o.z * 13) & 0xffff) + 3);
+  /* plinth */
+  const ring = (x0, z0, x1, z1) => { const L = Math.hypot(x1 - x0, z1 - z0), n = Math.max(2, Math.round(L / 0.55));
+    for (let i = 0; i <= n; i++) { const t = i / n, sz = 0.2 + 0.07 * R(); b.add(stoneGeo(sz, 1.3, 0.75, 1, 90 + i + Math.floor(o.x)), i % 3 ? C.stone : C.rock, x0 + (x1 - x0) * t, 0.16, z0 + (z1 - z0) * t, { ry: R() * 3 }); } };
+  const ex = Wd / 2 + 0.24, ez = D / 2 + 0.24, dw = 0.95;
+  ring(-ex, ez, -dw, ez); ring(dw, ez, ex, ez); ring(-ex, -ez, ex, -ez); ring(-ex, -ez, -ex, ez); ring(ex, -ez, ex, ez);
+  /* eave snow roll + icicles: eave lines in the shell's frame */
+  const eave = (x0, z0, x1, z1, y, ox, oz) => { const L = Math.hypot(x1 - x0, z1 - z0), cx = (x0 + x1) / 2 + ox, cz = (z0 + z1) / 2 + oz, ry = Math.atan2(-(z1 - z0), x1 - x0);
+    r.add(cy(0.13, 0.13, L, 8), C.snow, cx, y + 0.1, cz, { rz: PI / 2, ry: ry, noOutline: 1 });
+    for (let u = 0.2; u < L - 0.1; u += 0.32 + 0.25 * R()) { const len = 0.12 + 0.38 * R() * R(), t = u / L; r.add(cn(0.035, len, 5), ICE, x0 + (x1 - x0) * t + ox, y - len / 2 + 0.02, z0 + (z1 - z0) * t + oz, { rx: PI, noOutline: 1 }); } };
+  if (st === 'flat') {
+    r.add(bx(Wd + 0.5, 0.12, 0.3), C.snow, 0, FY + H + 0.9, D / 2 + 0.2, { noOutline: 1 }); r.add(bx(Wd + 0.5, 0.12, 0.3), C.snow, 0, FY + H + 0.9, -D / 2 - 0.2, { noOutline: 1 });
+    r.add(bx(1.0, 0.5, 0.8), C.metal, -Wd / 4, FY + H + 0.55, -D / 4); r.add(cy(0.28, 0.28, 0.06, 12), C.dark, -Wd / 4, FY + H + 0.83, -D / 4); r.add(bx(1.0, 0.08, 0.8), C.snow, -Wd / 4, FY + H + 0.86, -D / 4, { noOutline: 1 });
+    eave(-Wd / 2 - 0.25, D / 2 + 0.25, Wd / 2 + 0.25, D / 2 + 0.25, FY + H + 0.25, 0, 0);
+  } else if (st === 'stone') {
+    const hd2 = D / 2 + 0.45; [-1, 1].forEach(sg => eave(-Wd / 2 - 0.35, sg * hd2, Wd / 2 + 0.35, sg * hd2, FY + H - 0.02, 0, sg * 0.05));
+  } else {
+    [-1, 1].forEach(sg => { eave(sg * (hw + 0.02), -D / 2 - 0.35, sg * (hw + 0.02), D / 2 + 0.35, FY + H - 0.02, sg * 0.05, 0);
+      for (let z = -D / 2; z <= D / 2 + 0.01; z += 0.7) b.add(bx(0.55, 0.12, 0.1), o.trim, sg * (Wd / 2 + 0.22), FY + H - 0.1, z, { rz: -sg * Math.atan2(rise, hw) }); });   /* rafter tails */
+  }
+  /* chimney (pitched roofs): stone stack, cap, snow, smoke */
+  if (st !== 'flat' && st !== 'stone') { const cx = -Wd / 4, cz = -D / 4, top = FY + H + rise * (1 - Math.abs(cx) / hw) + 0.9;
+    b.add(bx(0.7, top - FY - H + 0.4, 0.7), C.stone, cx, (top + FY + H - 0.4) / 2, cz); b.add(bx(0.86, 0.12, 0.86), C.rock, cx, top + 0.06, cz); r.add(bx(0.7, 0.08, 0.7), C.snow, cx, top + 0.16, cz, { noOutline: 1 });
+    b.userDataChim = [cx, top + 0.2, cz]; }
+  /* windows in solid walls: sill + flower box */
+  if (!o.glass && st !== 'chalet') [[-Wd / 2 + 1.4, 1.6], [Wd / 2 - 1.4, 1.6]].forEach(w => { const zf = D / 2 + 0.12;
+    b.add(bx(w[1] + 0.2, 0.06, 0.18), o.trim, w[0], FY + 0.92, zf); b.add(bx(w[1], 0.2, 0.22), C.wood3, w[0], FY + 0.8, zf + 0.06);
+    for (let i = 0; i < 6; i++) b.add(sp(0.075, 1, 1, 1, 6, 4), [C.red, C.yellow, C.pink, C.grass][i % 4], w[0] - w[1] / 2 + 0.15 + i * (w[1] - 0.3) / 5, FY + 0.96, zf + 0.06, { noOutline: 1 }); });
+  /* door lantern */
+  b.add(bx(0.06, 0.3, 0.12), C.dark, 1.15, FY + 2.05, D / 2 + 0.14); b.add(bx(0.18, 0.26, 0.18), C.dark, 1.15, FY + 1.82, D / 2 + 0.3); b.add(sp(0.07), WARM, 1.15, FY + 1.8, D / 2 + 0.3, { basic: 1 });
 }
 function makeStore(R, o) {
   const b = new B(), r = new B(), K = [], D = [], g = new THREE.Group();
@@ -4152,6 +4205,7 @@ function makeStore(R, o) {
     solid(x, z, hw, hd, ry) { K.push({ x: x, z: z, ry: ry || 0, hw: hw, hd: hd }); }
   };
   o.fill(S);
+  if (b.userDataChim) g.userData.chim = b.userDataChim;   /* putCab turns it into chimney smoke */
   g.add(b.build()); const rf = r.build(); rf.userData.noCast = 1; g.add(rf); g.userData.K = K;   /* roof casts no shadow, so the shop floor stays bright */
   putCab(R, g, o.x, o.z, o.ry, 1);
   const c = Math.cos(o.ry), n = Math.sin(o.ry), gy = tH(o.x, o.z), y0 = gy + 0.06, tr = (lx, lz) => [o.x + lx * c + lz * n, o.z - lx * n + lz * c];
@@ -4784,7 +4838,7 @@ const POST = (() => {
       ' float ao = clamp(1.0 - occ / 24.0 * 4.2, 0.0, 1.0); ao = mix(ao, 1.0, smoothstep(45.0, 130.0, -P.z)); gl_FragColor = vec4(ao, ao, ao, 1.0); }' });
   const brightMat = new THREE.ShaderMaterial({ depthTest: false, depthWrite: false, uniforms: { tSrc: { value: null }, texel: { value: new THREE.Vector2() }, thr: { value: 0.86 } }, vertexShader: VS,
     fragmentShader: 'varying vec2 vUv; uniform sampler2D tSrc; uniform vec2 texel; uniform float thr;' +
-      'vec3 s(vec2 o){ vec3 c = texture2D(tSrc, vUv + o * texel).rgb; float l = max(c.r, max(c.g, c.b)); return c * smoothstep(thr, thr + 0.12, l); }' +
+      'vec3 s(vec2 o){ vec3 c = texture2D(tSrc, vUv + o * texel).rgb; float l = dot(c, vec3(0.299, 0.587, 0.114)); return c * smoothstep(thr, thr + 0.1, l); }'   /* luminance: saturated colours don\'t bloom, only real highlights */ +
       'void main(){ gl_FragColor = vec4((s(vec2(-1.0, -1.0)) + s(vec2(1.0, -1.0)) + s(vec2(-1.0, 1.0)) + s(vec2(1.0, 1.0))) * 0.25, 1.0); }' });
   const blurMat = new THREE.ShaderMaterial({ depthTest: false, depthWrite: false, uniforms: { tSrc: { value: null }, dir: { value: new THREE.Vector2() } }, vertexShader: VS,
     fragmentShader: 'varying vec2 vUv; uniform sampler2D tSrc; uniform vec2 dir;' +
@@ -4846,6 +4900,7 @@ function frame(now) {
   const raw = Math.min(0.1, Math.max(0, (now - last) / 1000)); last = now; dtS += (raw - dtS) * (raw > dtS * 2.5 ? 0.12 : 0.3); const dt = Math.min(0.05, dtS);
   simStep(dt, raw);
   shF++; renderer.shadowMap.needsUpdate = W.on || cur.r < 110 || shF % 3 === 0;
+  if (SK.PRE) SK.PRE.forEach(f => f());
   if (!SK.mapOpen) POST.render();   /* the map covers the screen: skip drawing the 3D view */
   requestAnimationFrame(frame);
 }
@@ -5182,7 +5237,7 @@ function camSki(dt) {
     camera.position.copy(PL.camPos); camera.lookAt(PL.x - Math.sin(yaw) * 2.5, PL.y + 1.2 + PL.lookPitch * 1.5, PL.z - Math.cos(yaw) * 2.5);
   } else {
     /* first person follows the body: flips pitch the view round, spins turn it, a crash tumbles and drops it */
-    let px = -0.12 + PL.lookPitch * 0.8, py = yaw, rz = 0, hy = 1.62;
+    let px = -0.12 + PL.lookPitch * 0.8, py = yaw, rz = 0, hy = 1.62; PL.fpLook = px;
     if (PL.air && PL.crash <= 0) { px -= PL.flip; py += PL.spin; }
     if (PL.crash > 0) { const e = Math.sin(clamp(PL.crash / 2.8, 0, 1) * PI); rz = 0.9 * Math.sin(PL.crash * 6.5) * e; px -= 0.55 * e; hy = 1.62 - 1.0 * e; }
     camera.position.set(PL.x, PL.y + hy, PL.z); camera.rotation.set(px, py, rz, 'YXZ');
@@ -6258,6 +6313,9 @@ scene.traverse(o => { if (!o.isMesh) return; (Array.isArray(o.material) ? o.mate
 /* the fake light is gone: no beam cones, no dust motes, no see-through glow globes. Those meshes stay in the scene (editor keys count
    them) but never draw. Every fixture's globe is a solid frosted bulb that lights up (and blooms) when its light is on. */
 scene.traverse(o => { if ((o.isMesh && o.material === SK.BEAM) || (o.isPoints && SK.FXDOTS.indexOf(o.material) >= 0)) o.visible = false; });
+/* faint ones (floodlight beam cone, glow halos, ground discs) are fake light too: hide them. Only the bulbs themselves (opacity >= 0.4) become solid */
+scene.traverse(o => { if (o.isMesh && GLOWM.indexOf(o.material) >= 0 && o.material.userData.o0 < 0.4) o.visible = false; });
+for (let i = GLOWM.length - 1; i >= 0; i--) if (GLOWM[i].userData.o0 < 0.4) GLOWM.splice(i, 1);
 GLOWM.forEach(m => { m.transparent = false; m.opacity = 1; m.depthWrite = true; m.needsUpdate = true; });
 const BULB_OFF = new THREE.Color(0xd9d4c4), BULB_ON = new THREE.Color(0xfff2c8);
 function lookFor() {
@@ -6406,7 +6464,11 @@ SK.GRIND = GRIND;
 
 /* ---------- eating and drinking: the food is in your hands (first person) or your avatar lifts it (third person) ---------- */
 const VM = (() => {
-  const VS = 0.3, root = new THREE.Group(); root.scale.setScalar(VS); root.position.set(0.24 * VS, -0.27 * VS, -0.55 * VS); camera.add(root); root.visible = false;   /* shrunk toward the camera: depth-tested, yet never inside a table or wall */
+  /* your body in the world: a rig at your hips that turns with you (yaw, flips, spins, tumbles) but not with where you look. Skis are on
+     the snow at your feet, mittens at your sides, a plate at your chest: nothing is pinned to the screen, so looking straight ahead you
+     can't see them; look down and they are there. */
+  const rig = new THREE.Group(); scene.add(rig); rig.visible = false;
+  const root = new THREE.Group(); root.position.set(0.06, 0.28, -0.36); rig.add(root); root.visible = false;
   const M = c => new THREE.MeshLambertMaterial({ color: c }), Bm = c => new THREE.MeshBasicMaterial({ color: c });
   const mesh = (g, m, x, y, z, r) => { const o = new THREE.Mesh(g, m); o.position.set(x || 0, y || 0, z || 0); if (r) o.rotation.set(r[0], r[1], r[2]); o.renderOrder = 30; return o; };
   const FOOD = {   /* small models, metres */
@@ -6436,9 +6498,8 @@ const VM = (() => {
     anim = { t: 0, k: k, n: bites || 3, drink: !!DRINK[k], done: onDone }; PL.snackT = anim.n * 0.8 + 0.2;
   }
   SK.TICK.push(dt => {
-    const asp = Math.min(1, camera.aspect * 1.4); root.position.set(0.24 * asp, -0.29 + 0.06 * (1 - asp), -0.55).multiplyScalar(VS);
     if (!anim) return; const a = anim; a.t += dt; const per = 0.8, i = Math.floor(a.t / per), f = (a.t % per) / per, up = Math.sin(Math.min(1, f / 0.55) * Math.PI);
-    if (held) { held.position.set(-0.08 * up, 0.1 * up, 0.1 * up); held.rotation.set(a.drink ? -1.1 * up : 0.3 * up, 0.3 * up, a.drink ? 0 : -0.3 * up); if (f > 0.5 && a.last !== i) { a.last = i; if (!a.drink) held.scale.multiplyScalar(0.72); if (SK.sfx) SK.sfx('click'); } }
+    if (held) { held.position.set(-0.05 * up, 0.2 * up, 0.18 * up);   /* up to the chin, below your line of sight */ held.rotation.set(a.drink ? -1.1 * up : 0.3 * up, 0.3 * up, a.drink ? 0 : -0.3 * up); if (f > 0.5 && a.last !== i) { a.last = i; if (!a.drink) held.scale.multiplyScalar(0.72); if (SK.sfx) SK.sfx('click'); } }
     root.visible = held && (W.on && !W.ride && State.cam.walk !== 'third');
     if (i >= a.n) { clear(); anim = null; if (a.done) a.done(); }
   });
@@ -6448,7 +6509,7 @@ const VM = (() => {
      protectors, a binding (toe, heel, brake) and a buckled boot. Mittens: rounded mitt, thumb, knit cuff and a sleeve that leaves the
      frame at the corner. Shown while eating (holding the plate / bringing food up), in the air (arms out, a hand down for a grab) and
      tumbling in a crash. */
-  const KIT = SK.KIT, LK = LOOK, S = 0.3, vmMats = new Set();
+  const KIT = SK.KIT, LK = LOOK, vmMats = new Set();
   function vmBuild(fill) { const b = new KIT.B(); fill(b); const g = b.build(); g.traverse(o => { if (o.isMesh) { o.renderOrder = 25; o.frustumCulled = false; o.castShadow = o.receiveShadow = false; vmMats.add(o.material); } }); return g; }
   const bxg = KIT.bx, cyg = KIT.cy, spg = KIT.sp, NO = { noOutline: 1 };
   function skiModel(b) {
@@ -6479,33 +6540,34 @@ const VM = (() => {
     const gc = LK.glove; b.add(spg(0.058, 1.0, 0.72, 1.3, 14, 10), gc, 0, 0, -0.01, NO); b.add(spg(0.024, 0.9, 0.85, 1.5, 10, 8), gc, -sd * 0.05, 0.012, -0.03, Object.assign({ ry: sd * 0.5 }, NO));
     b.add(bxg(0.07, 0.006, 0.05), 0x3b4252, 0, -0.04, -0.02, NO);   /* palm grip patch */
     b.add(cyg(0.052, 0.055, 0.06, 14), 0x3b4252, 0, 0, 0.075, Object.assign({ rx: PI / 2 }, NO)); b.add(cyg(0.056, 0.056, 0.012, 14), 0xf2f4f8, 0, 0, 0.095, Object.assign({ rx: PI / 2 }, NO));   /* knit cuff + stripe */
-    b.add(cyg(0.066, 0.078, 0.32, 14), LK.jacket, 0, 0, 0.27, Object.assign({ rx: PI / 2 }, NO)); b.add(cyg(0.07, 0.07, 0.02, 14), 0x232a4a, 0, 0, 0.115, Object.assign({ rx: PI / 2 }, NO));   /* sleeve + cuff band */
+    b.add(cyg(0.066, 0.074, 0.16, 14), LK.jacket, 0, 0, 0.19, Object.assign({ rx: PI / 2 }, NO)); b.add(cyg(0.07, 0.07, 0.02, 14), 0x232a4a, 0, 0, 0.115, Object.assign({ rx: PI / 2 }, NO));   /* sleeve + cuff band */
   }
-  const body = new THREE.Group(); body.scale.setScalar(S); camera.add(body); body.visible = false;
-  const skis = new THREE.Group(); body.add(skis); [-1, 1].forEach(sd => { const k = vmBuild(skiModel); k.position.x = sd * 0.12; skis.add(k); });
-  const mitts = [-1, 1].map(sd => { const m = vmBuild(b => mittModel(b, sd)); body.add(m); return m; });
-  let bt = 0; const vT = new THREE.Vector3();
+  const skis = new THREE.Group(); rig.add(skis); [-1, 1].forEach(sd => { const k = vmBuild(skiModel); k.position.x = sd * 0.13; skis.add(k); });
+  const mitts = [-1, 1].map(sd => { const m = vmBuild(b => mittModel(b, sd)); rig.add(m); return m; });
+  let bt = 0; const vT = new THREE.Vector3(), HIP = 0.72;
   const place = (m, x, y, z, rx, ry, rz) => { m.position.set(x, y, z); m.rotation.set(rx, ry, rz); };
   SK.TICK.push(dt => {
-    bt += dt; const fpWalk = W.on && !W.ride && State.cam.walk !== 'third' && PL.mode !== 'ski', eat = root.visible && fpWalk;
-    const fpSki = PL.mode === 'ski' && State.cam.ski !== 'third' && (PL.air || PL.crash > 0), asp = Math.min(1.3, camera.aspect);
-    body.visible = eat || fpSki; skis.visible = fpSki; if (!body.visible) return;
-    const [L, R] = mitts;
-    if (eat) {   /* hands under the plate rim, or one bringing food up while the other rests low */
-      const rp = root.position;
-      if (held && anim) { vT.copy(rp).divideScalar(VS).add(held.position); place(R, vT.x + 0.03, vT.y - 0.07, vT.z + 0.05, 0.25 + held.rotation.x * 0.5, 0.15, -0.35); place(L, -0.62 * asp, -0.55, -0.95, 0.2, 0.3, 0.5); }
-      else { const px = rp.x / VS, py = rp.y / VS - 0.06, pz = rp.z / VS + 0.04; place(L, px - 0.1, py, pz, 0.6, 0.35, 0.9); place(R, px + 0.1, py, pz, 0.6, -0.35, -0.9); }   /* thumbs over the rim */
+    bt += dt; const fpWalk = W.on && !W.ride && !W.sit && State.cam.walk !== 'third' && PL.mode !== 'ski' && !(SK.inStore && SK.inStore() && false), fpSki = W.on && PL.mode === 'ski' && State.cam.ski !== 'third';
+    rig.visible = fpWalk || fpSki || (root.visible && W.sit && State.cam.walk !== 'third'); skis.visible = fpSki; if (!rig.visible) return;
+    const [L, R] = mitts, eat = root.visible;
+    if (eat && !fpSki) {   /* left hand under the plate rim, right one bringing food to your chin */
+      const rp = root.position; place(L, rp.x - 0.13, rp.y - 0.03, rp.z + 0.05, 0.9, 0.3, 0.9);
+      if (held && anim) { vT.copy(rp).add(held.position); place(R, vT.x + 0.04, vT.y - 0.06, vT.z + 0.06, 0.6 + held.rotation.x * 0.5, 0.15, -0.4); } else place(R, rp.x + 0.13, rp.y - 0.03, rp.z + 0.05, 0.9, -0.3, -0.9);
       return;
     }
-    if (PL.crash > 0) { const f = Math.min(1, PL.crash);
-      place(L, -0.5 * asp + 0.12 * Math.sin(bt * 13), -0.3 + 0.14 * Math.sin(bt * 11), -0.75, Math.sin(bt * 9), 0.3, bt * 4); place(R, 0.5 * asp + 0.12 * Math.sin(bt * 12 + 1), -0.28 + 0.14 * Math.sin(bt * 10 + 2), -0.75, Math.sin(bt * 8), -0.3, -bt * 4);
-      skis.position.set(0.1 * Math.sin(bt * 5), -0.95 - 0.1 * f, -0.3); skis.rotation.set(0.35 + 0.35 * Math.sin(bt * 7), 0.35 * Math.sin(bt * 5), 0.8 * Math.sin(bt * 9)); return; }
-    const bob = 0.015 * Math.sin(bt * 6), grab = PL.grabT > 0 && inp().grab;
-    place(L, -0.78 * asp, -0.62 + bob, -1.2, 0.45, 0.55, 0.75);   /* arms out for balance, hands at the lower corners */
-    if (grab) place(R, 0.24, -0.7, -1.3, 0.9, -0.2, -0.3); else place(R, 0.78 * asp, -0.62 - bob, -1.2, 0.45, -0.55, -0.75);
-    skis.position.set(0, -1.08, -0.55); skis.rotation.set(0.3, 0, 0);   /* tips raised toward you: the topsheets read */
+    if (!fpSki) { const sw = Math.sin(W.bp || 0) * Math.min(1, Math.hypot(W.vx || 0, W.vz || 0) / 4);   /* walking: arms hang and swing at your sides */
+      place(L, -0.3, -0.08, -0.05 + 0.12 * sw, -1.3 + 0.3 * sw, 0, 0.12); place(R, 0.3, -0.08, -0.05 - 0.12 * sw, -1.3 - 0.3 * sw, 0, -0.12); return; }
+    skis.position.set(0, -0.88, 0); skis.rotation.set(0, 0, 0);
+    if (PL.crash > 0) { place(L, -0.45 + 0.1 * Math.sin(bt * 13), 0.2 + 0.15 * Math.sin(bt * 11), -0.2, Math.sin(bt * 9), 0.3, bt * 4); place(R, 0.45 + 0.1 * Math.sin(bt * 12 + 1), 0.2 + 0.15 * Math.sin(bt * 10 + 2), -0.2, Math.sin(bt * 8), -0.3, -bt * 4);
+      skis.rotation.set(0.3 * Math.sin(bt * 7), 0.3 * Math.sin(bt * 5), 0.5 * Math.sin(bt * 9)); return; }
+    const grab = PL.air && PL.grabT > 0 && inp().grab;
+    if (PL.air) { place(L, -0.55, 0.32, -0.2, -0.3, 0.6, 0.9); if (grab) place(R, 0.15, -0.72, -0.35, 1.2, 0, 0); else place(R, 0.55, 0.32, -0.2, -0.3, -0.6, -0.9); }   /* arms out for balance, a hand down to the ski for a grab */
+    else { place(L, -0.33, -0.04, -0.5, -0.3, 0.25, 0.3); place(R, 0.33, -0.04, -0.5, -0.3, -0.25, -0.3); }   /* ready stance: hands in front of the hips */
   });
-  return { consume, showPlate, clear, FOOD, get busy() { return !!anim; } };
+  /* the rig follows the camera's body orientation without its look pitch, every drawn frame */
+  SK.PRE = SK.PRE || []; SK.PRE.push(() => { if (!rig.visible) return; const ski = PL.mode === 'ski', look = ski ? (PL.fpLook || 0) : (W.pitch || 0);
+    rig.rotation.set(camera.rotation.x - look, camera.rotation.y, camera.rotation.z, 'YXZ'); rig.position.copy(camera.position); rig.position.y = ski ? PL.y + 0.9 : camera.position.y - HIP; rig.updateMatrixWorld(true); });
+  return { consume, showPlate, clear, FOOD, rig, skis, get busy() { return !!anim; } };
 })();
 SK.VM = VM;
 
