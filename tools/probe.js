@@ -24,9 +24,27 @@ function client(route, body) {
 async function serve() {
   const { boot, OUT } = require('./lib');
   fs.mkdirSync(OUT, { recursive: true });
-  let s = await boot({ viewport: { width: 900, height: 600 } });
+  /* render pause: with PP_PAUSE set, rAF callbacks are parked (the GPU idles between snippets); a shot releases a few frames */
+  const init = () => { const raf = window.requestAnimationFrame.bind(window); let parked = [];
+    window.PP_PAUSE = false; window.PP_FLUSH = () => { const p = parked; parked = []; p.forEach(f => raf(f)); };
+    window.requestAnimationFrame = f => { if (window.PP_PAUSE && window.SK && SK.W && SK.W.on !== undefined && !document.getElementById('load')) { parked.push(f); return 0; } return raf(f); }; };
+  let s = await boot({ viewport: { width: +process.env.PP_W || 900, height: +process.env.PP_H || 600 }, init });
   console.log('booted ms', s.bootMs);
-  const ready = () => s.page.waitForFunction(() => window.SK && SK.State && SK.W && SK.W.on && !document.getElementById('load'), null, { timeout: 180000 });
+  /* in-page helpers: PQ.stand(x, y|null, z, yaw, pitch, minutes) puts the walker there (as tools/shot.js does);
+     PQ.orbit(x, zWorld, r, thetaDeg, phiDeg, minutes, y) frees the orbit camera (as tools/view.js does) */
+  const helpers = () => s.page.evaluate(() => {
+    window.PQ = {
+      stand(x, y, z, yaw, pitch, min) { if (min != null) SK.P6.setTime(min); const W = SK.W; W.on = true; document.body.classList.remove('ed');
+        W.x = x; W.z = z; W.y = y == null ? SK.groundY(x, z) : y; W.yaw = yaw || 0; W.pitch = pitch || 0; W.vx = W.vz = 0; SK.play(10); SK.P6.lightsFor(); SK.play(2);
+        return { x: W.x, y: +W.y.toFixed(3), z: W.z }; },
+      orbit(x, z, r, th, ph, min, y) { if (min != null) SK.P6.setTime(min); SK.W.on = false; document.body.classList.add('ed');
+        const gy = y != null ? y : SK.groundY(x, z); SK.snap({ tx: x, ty: gy, tz: z, r, theta: th * Math.PI / 180, phi: ph * Math.PI / 180 }); SK.P6.lightsFor(); return gy; },
+    };
+    window.PP_PAUSE = true;
+  });
+  const ready = async () => { await s.page.waitForFunction(() => window.SK && SK.State && SK.W && SK.W.on && !document.getElementById('load'), null, { timeout: 180000 }); await helpers(); };
+  await s.page.addStyleTag({ content: '*{transition:none!important}' }); await helpers();
+  await s.page.evaluate(() => { window.PP_PAUSE = true; });
   const srv = http.createServer((q, r) => {
     let body = ''; q.on('data', c => body += c);
     q.on('end', async () => {
@@ -37,7 +55,8 @@ async function serve() {
           send(200, { ok: true, out });
         } else if (q.url === '/shot') {
           const f = path.join(OUT, 'p-' + (body || 'shot') + '.png');
-          await s.page.evaluate(() => new Promise(requestAnimationFrame));
+          await s.page.evaluate(() => new Promise(res => { const was = window.PP_PAUSE; window.PP_PAUSE = false; window.PP_FLUSH();
+            requestAnimationFrame(() => requestAnimationFrame(() => requestAnimationFrame(() => { window.PP_PAUSE = was; res(); }))); }));
           await s.page.screenshot({ path: f }); send(200, { ok: true, out: f });
         } else if (q.url === '/reload') {
           s.errors.length = 0; const t = Date.now(); await s.page.reload(); await ready(); send(200, { ok: true, out: 'reloaded ms ' + (Date.now() - t) });
@@ -54,9 +73,9 @@ async function serve() {
 
 (async () => {
   if (mode === 'serve') return serve();
-  const map = { eval: ['/eval', process.argv[3]], file: ['/eval', process.argv[3] && fs.readFileSync(process.argv[3], 'utf8')],
-    shot: ['/shot', process.argv[3]], reload: ['/reload'], errors: ['/errors'], quit: ['/quit'] };
-  const m = map[mode];
+  const map = { eval: () => ['/eval', process.argv[3]], file: () => ['/eval', fs.readFileSync(process.argv[3], 'utf8')],
+    shot: () => ['/shot', process.argv[3]], reload: () => ['/reload'], errors: () => ['/errors'], quit: () => ['/quit'] };
+  const m = map[mode] && map[mode]();
   if (!m) { console.error('usage: probe.js serve|eval|file|shot|reload|errors|quit'); process.exit(2); }
   try {
     const { code, d } = await client(m[0], m[1]);

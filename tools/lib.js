@@ -13,6 +13,7 @@ async function boot(opts) {
      (file:// pages are opaque origins: window.name and sessionStorage can't be trusted to survive a reload, so the flag lives here) */
   if (opts.save !== undefined) { let first = true; await page.exposeFunction('ppFirstLoad', () => { const f = first; first = false; return f; });
     await page.addInitScript(s => { window.ppFirstLoad().then(f => { if (f) try { localStorage.setItem('powderpass.save', s); } catch (e) {} }); }, opts.save); }
+  if (opts.init) await page.addInitScript(opts.init);
   const t0 = Date.now();
   await page.goto((opts.file ? 'file://' + path.resolve(opts.file) : FILE) + (opts.query || ''));
   await page.waitForFunction(() => window.SK && SK.State && SK.W && SK.W.on && !document.getElementById('load'), null, { timeout: 180000 });
