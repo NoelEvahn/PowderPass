@@ -119,6 +119,8 @@ node tools/keycheck.js cmp tools/keys-baseline.json /tmp/k.json   # must say "0 
 
 8. **Round 9 (v25):** hotel revamp. Ski room vestibule (`zi = 2.2` local, second sliding door added last in `hotel()` so part keys stay put), lobby lounge east, runner on the axis, core wall at x -9.85, wing rooms 5.5 m (`wingFloor` lists), carpets in `room()` / `hInside()`. Skis auto-rack: TICK after `SK.ELEV`. Third-person camera collision: `camClear()` before `PL.walkPost`; `W.sit.yaw` set in `BF.sit`. `occupied()` keeps 2 normal + 1 suite free. `SK.AVW` getter. Floor plans: `node tools/plan.js <name> <x> <zLocal> <r> <floorY>`.
 
+9. **Round 10:** stairs to floor 2 (second flight stacked in the same well, `stairGlass()` sheared panels), upstairs z -5 wall removed (one hallway, `hArt` prints, `hPlant`), reception desk `rz` -2.95, breakfast table 4 removed (`TAB` has 4), near plane 0.1 first person + outline discard < 0.6 m, camera lock `CAM.held` / `SK.camHold`, SVG close icons. Test: `tools/r10-test.js`.
+
 ## 7. Open items / ideas not done
 - **Camp Lakeview art style (Coolbug, unreleased Steam game):** the user wants Powder Pass to borrow its look. Steam, YouTube and their image CDNs are blocked from the sandbox, so the style was never inspected. Next step: ask the user for 3–5 screenshots, then break the style down and map it onto ours (toon shading + outlines already exist).
 - **Physical interactions** (the user's stated rule: prefer modelled objects over GUIs): elevator done; reception, shops and the vending machine still open sheets on approach.

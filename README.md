@@ -235,5 +235,15 @@ New:
 - **Third person indoors:** the camera now collides with walls and furniture and stays under the ceiling, so third person works everywhere in the hotel. Seated at breakfast you see yourself eating (the seated body had a NaN rotation, which made it invisible). The near plane drops to 0.12 m in third person.
 - Breakfast diners route along the free side of the tables; lobby walkers and sitters were moved onto the new furniture. `tools/plan.js` renders cut-away floor plans.
 
+## Hotel fixes (tenth round)
+- **Stairs to floor 2:** a second flight is stacked over the first in the same well (floor 1 south landing up to floor 2 north landing), with a hole in the floor-2 slab, a glass balustrade round it and walkable floors for both. The floor-1 reading nook (sofas in the way between the flights) is replaced by a long rug, a print and plants; the floor-2 lounge moved off the well.
+- **One hallway upstairs:** the main block's north wall on floors 1 and 2 (it split the wing corridor from the room corridor) is gone; one wide runner covers the whole hallway, with framed prints between the doors and plants at the east end.
+- **Lobby:** the reception desk moved back 0.75 m to the receptionist (who stands 0.35 m further back). The stair glass follows the slope with plumb ends (the tilted panel stuck out past the bottom tread like a floating plate).
+- **Breakfast:** the table crammed behind table 1 by the window is gone (four tables, 16 seats); the centre rug is bigger.
+- **Near-wall glitch:** first person on foot uses a 0.1 m near plane (was 0.5, so walls at arm's length were cut open), and outline hull pixels within 0.6 m of the camera are discarded (no black sheets when hugging a wall or prop).
+- **Camera lock (Ctrl):** no text label, just the crosshair. Actions no longer turn it off: a sheet or the map only holds it (cursor freed to click, crosshair dimmed) and it resumes on close. Only Ctrl or Esc unlocks.
+- **Close buttons:** the sheet, map and editor-panel X are SVG icons with an explicit colour (the ✕ glyph showed an empty box under a dark host colour scheme); the page forces `color-scheme: light`.
+- Tests: `tools/r10-test.js`. `p13-test` walks a shorter way out of the floor-2 elevator (a long walk now goes down the new flight).
+
 ## Not yet
 - Terrain distance LOD; real-phone frame-rate check (only tested in headless software rendering). Breakfast diners and fallen skiers ignore collisions with the player.

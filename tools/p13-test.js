@@ -33,7 +33,8 @@ const { boot, check, OUT } = require('./lib');
     return { call: call && call.text, open0: +open0.toFixed(2), inCab: inCab, pr: pr && pr.text, at: E.S.at, phase: E.S.phase, dy: +(W.y - E.FL[2]).toFixed(2) }; });
   check(/call/i.test(r.call) && r.open0 > 0.9 && r.inCab && /floor/i.test(r.pr) && r.at === 2 && r.phase === 'open' && Math.abs(r.dy) < 0.1, 'elevator: call, doors open, step in, ride to floor 2 (' + JSON.stringify(r) + ')', fails);
   await page.waitForTimeout(500); await page.screenshot({ path: OUT + '/p13-elev.png' });
-  r = await ev(() => { const W = SK.W, E = SK.ELEV, H = SK.HOTEL; W.yaw = Math.PI; for (let i = 0; i < 45; i++) { SK.keys.w = 1; SK.play(1); } SK.keys.w = 0; SK.play(5); return { out: !E.inside(W.x, W.z, W.y), y: +(W.y - H.gy).toFixed(2), z: +(W.z - H.z).toFixed(2) }; });
+  /* (18 steps: the floor-2 hallway is open now, so a long walk south carries on down the new second flight) */
+  r = await ev(() => { const W = SK.W, E = SK.ELEV, H = SK.HOTEL; W.yaw = Math.PI; for (let i = 0; i < 18; i++) { SK.keys.w = 1; SK.play(1); } SK.keys.w = 0; SK.play(5); return { out: !E.inside(W.x, W.z, W.y), y: +(W.y - H.gy).toFixed(2), z: +(W.z - H.z).toFixed(2) }; });
   check(r.out && Math.abs(r.y - await ev(() => SK.HOTEL.HX.floors[2])) < 0.2, 'walk out of the cab onto floor 2 (' + JSON.stringify(r) + ')', fails);
   check(errors.length === 0, 'no page errors ' + errors.slice(0, 5).join(' | '), fails);
   await browser.close(); console.log(fails.length ? 'FAILED ' + fails.length : 'ALL OK'); process.exit(fails.length ? 1 : 0);

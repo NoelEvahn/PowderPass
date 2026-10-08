@@ -4,6 +4,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>Powder Pass</title>
 <style id="pp-css">
+:root{color-scheme:light}
 html,body{margin:0;height:100%;background:#fff;overflow:hidden;overscroll-behavior:none;-webkit-user-select:none;user-select:none;font-family:"Trebuchet MS",Arial,sans-serif}
 #c{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;outline:none}
 #ui{position:fixed;left:0;right:0;bottom:max(14px,env(safe-area-inset-bottom));display:flex;gap:10px;justify-content:center;flex-wrap:wrap;pointer-events:none}
@@ -64,6 +65,9 @@ body.walkjump #pad{display:block}body.walkjump #bGrab,body.walkjump #bBrake{disp
 #sheet .sh-h b{font:900 19px "Trebuchet MS",Arial,sans-serif;flex:1}
 #sheet .sh-c{font:800 14px "Trebuchet MS",Arial,sans-serif;display:flex;align-items:center;gap:5px}#sheet .sh-c i{display:inline-block;width:12px;height:12px;border-radius:50%;background:#ffc21a;border:2.5px solid #0e0f16}
 #sheet .sh-x{width:40px;height:40px;border:3px solid #0e0f16;border-radius:12px;background:#fff;font:900 16px "Trebuchet MS",Arial,sans-serif;cursor:pointer}
+/* close buttons draw their X as an SVG stroke with an explicit colour, so a dark host colour-scheme (white button text) or a font without the glyph never leaves the box empty */
+#sheet .sh-x,#map button,#ed button[data-e=pclose]{color:#0e0f16;display:inline-flex;align-items:center;justify-content:center;padding:0;flex:none}
+svg.ix{width:20px;height:20px;fill:none;stroke:#0e0f16;stroke-width:3;stroke-linecap:round;pointer-events:none}#ed button[data-e=pclose] svg.ix{width:16px;height:16px}
 #sheet .sh-b{overflow-y:auto;padding:4px 12px 8px 16px;-webkit-overflow-scrolling:touch}
 #sheet .sh-f{padding:8px 16px 12px;font-size:12.5px;color:#56627a;border-top:1px dashed #c9d3e2}#sheet .sh-f:empty{display:none}
 #sheet h4{margin:10px 0 2px;font:900 12px "Trebuchet MS",Arial,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#56627a}
@@ -181,8 +185,7 @@ body.game.qtrk #hint{top:calc(max(14px,env(safe-area-inset-top)) + 118px)}
 /* camera lock (Ctrl): crosshair in the middle of the screen while the mouse steers the camera */
 #camlock{position:fixed;left:50%;top:50%;width:26px;height:26px;margin:-13px 0 0 -13px;border:3px solid #fff;border-radius:50%;box-shadow:0 0 0 2px #0e0f16,inset 0 0 0 2px #0e0f16;pointer-events:none;z-index:4;display:none}
 #camlock::after{content:"";position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px 0 0 -3px;border-radius:50%;background:#ffd21f;box-shadow:0 0 0 2px #0e0f16}
-#camlock b{position:absolute;left:50%;top:34px;transform:translateX(-50%);white-space:nowrap;font:800 12px "Trebuchet MS",Arial,sans-serif;color:#0e0f16;background:#ffd21f;border:2px solid #0e0f16;border-radius:99px;padding:1px 8px}
-body.camlock #camlock{display:block}body.ed #camlock{display:none!important}
+body.camlock #camlock{display:block}body.camheld #camlock{opacity:.4}body.ed #camlock{display:none!important}
 
 /* ---- round 8 HUD ---- */
 /* secondary controls: one square icon grid, top right */
@@ -207,7 +210,7 @@ body.ed #dock{display:none}
 </head><body>
 <canvas id="c"></canvas>
 <div id="hint">1 finger: orbit &nbsp;|&nbsp; pinch: zoom &nbsp;|&nbsp; 2 fingers: move</div>
-<div id="gh" hidden></div><div id="stick"><i></i></div><div id="ctl" hidden><button id="bSki"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20 L19 4 M8 21 L21 7"/><circle cx="7" cy="6" r="2"/></svg><span>Skis on</span><kbd>K</kbd></button><button id="bCam"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12 C5 6 19 6 22 12 C19 18 5 18 2 12Z"/><circle cx="12" cy="12" r="3"/></svg><span>1st person</span><kbd>V</kbd></button><button id="bBag"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 9 h14 l-1 12 H6Z"/><path d="M9 9 V7 a3 3 0 0 1 6 0 V9"/></svg><span>Bag</span><kbd>I</kbd></button><button id="bQst"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 21 V4"/><path d="M6 4 h11 l-2.5 4 2.5 4 H6"/></svg><span>Quests</span><kbd>J</kbd></button><button id="bMap"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6 l6-2 6 2 6-2 v14 l-6 2 -6-2 -6 2Z"/><path d="M9 4 v14 M15 6 v14"/></svg><span>Map</span><kbd>M</kbd></button><button id="bSet"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M12 2 v3 M12 19 v3 M2 12 h3 M19 12 h3 M4.9 4.9 l2.1 2.1 M17 17 l2.1 2.1 M4.9 19.1 l2.1-2.1 M17 7 l2.1-2.1"/></svg><span>Settings</span><kbd></kbd></button><button id="bEd" title="Editor (dev)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20 l1-5 11-11 4 4 -11 11Z"/><path d="M14 6 l4 4"/></svg><span>Editor</span><kbd></kbd></button></div><div id="dock"></div><div id="map" hidden><canvas></canvas><div class="mp-h"><b>Trail map</b><span class="mp-k"><i class="g"></i>Easy <i class="b"></i>Intermediate <i class="k"></i>Expert <i class="kk"></i>Backcountry <i class="lf"></i>Lift <i class="st">★</i>Quest</span><button class="mp-c" aria-label="Center on me">◎</button><button class="mp-x" aria-label="Close">✕</button></div><div class="mp-i" hidden></div></div><div id="ed" hidden><div class="et"><button data-e="exit">✕ Exit</button><b id="edT">Editor</b><button data-e="undo" title="Undo (Ctrl+Z)">↶ Undo</button><button data-e="list">☰ Objects</button><button data-e="add">＋ Add</button><button data-e="save" class="pri">Save</button></div><div class="ei" id="edI"></div><div class="eb" id="edB"></div><div class="ep" id="edP" hidden><div class="eph"><input id="edQ" type="search" placeholder="Search…" autocomplete="off"><button data-e="pclose">✕</button></div><div class="epl" id="edL"></div></div><div class="ebox" id="edX" hidden></div></div><div id="qt" hidden><i></i><div><small></small><b></b></div><em></em></div><div id="qb" class="off"></div><div id="pad"><button id="bBrake">BRAKE</button><button id="bGrab">GRAB</button><button id="bJump">JUMP</button></div><div id="trick" class="off"></div><button id="skip">Skip ride  »<kbd>X</kbd></button><div id="fade"></div><div id="ptags"></div><div id="pcard"><div><b></b><small></small></div><button></button></div><div id="sheet" class="off"><div class="sh-h"><b></b><span class="sh-c"></span><button class="sh-x" aria-label="Close">✕</button></div><div class="sh-b"></div><div class="sh-f"></div></div><div id="sc"><b>0</b><span></span><div class="bar"><i></i></div><em></em></div><div id="res" class="off"></div><div id="load"><b>Powder Pass</b><span>Grooming the slopes…</span></div><div id="toast" class="off"></div><div id="hud" style="display:none"></div><button id="act" style="display:none"></button><button id="leave" style="display:none">Leave</button><div id="ui"><button data-go="gallery">Gallery</button><button data-go="scene">Ski resort</button><button data-go="lift">Ski lift</button><button data-go="hotel">Hotel</button><button data-go="alpine">Alpine hotel</button><button data-go="people">People</button><button data-go="moves">Moves</button><button data-go="fx">FX</button><button data-go="parts">Lift parts</button><button data-go="reset">Reset</button><button id="walkBtn">Walk</button><button id="walkLiftBtn">Walk to lift</button><button id="walkGalBtn">Walk gallery</button><button id="snowBtn">Snowfall</button></div>
+<div id="gh" hidden></div><div id="stick"><i></i></div><div id="ctl" hidden><button id="bSki"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20 L19 4 M8 21 L21 7"/><circle cx="7" cy="6" r="2"/></svg><span>Skis on</span><kbd>K</kbd></button><button id="bCam"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12 C5 6 19 6 22 12 C19 18 5 18 2 12Z"/><circle cx="12" cy="12" r="3"/></svg><span>1st person</span><kbd>V</kbd></button><button id="bBag"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 9 h14 l-1 12 H6Z"/><path d="M9 9 V7 a3 3 0 0 1 6 0 V9"/></svg><span>Bag</span><kbd>I</kbd></button><button id="bQst"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 21 V4"/><path d="M6 4 h11 l-2.5 4 2.5 4 H6"/></svg><span>Quests</span><kbd>J</kbd></button><button id="bMap"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6 l6-2 6 2 6-2 v14 l-6 2 -6-2 -6 2Z"/><path d="M9 4 v14 M15 6 v14"/></svg><span>Map</span><kbd>M</kbd></button><button id="bSet"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M12 2 v3 M12 19 v3 M2 12 h3 M19 12 h3 M4.9 4.9 l2.1 2.1 M17 17 l2.1 2.1 M4.9 19.1 l2.1-2.1 M17 7 l2.1-2.1"/></svg><span>Settings</span><kbd></kbd></button><button id="bEd" title="Editor (dev)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20 l1-5 11-11 4 4 -11 11Z"/><path d="M14 6 l4 4"/></svg><span>Editor</span><kbd></kbd></button></div><div id="dock"></div><div id="map" hidden><canvas></canvas><div class="mp-h"><b>Trail map</b><span class="mp-k"><i class="g"></i>Easy <i class="b"></i>Intermediate <i class="k"></i>Expert <i class="kk"></i>Backcountry <i class="lf"></i>Lift <i class="st">★</i>Quest</span><button class="mp-c" aria-label="Center on me">◎</button><button class="mp-x" aria-label="Close"><svg class="ix" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6 L18 18 M18 6 L6 18"/></svg></button></div><div class="mp-i" hidden></div></div><div id="ed" hidden><div class="et"><button data-e="exit">✕ Exit</button><b id="edT">Editor</b><button data-e="undo" title="Undo (Ctrl+Z)">↶ Undo</button><button data-e="list">☰ Objects</button><button data-e="add">＋ Add</button><button data-e="save" class="pri">Save</button></div><div class="ei" id="edI"></div><div class="eb" id="edB"></div><div class="ep" id="edP" hidden><div class="eph"><input id="edQ" type="search" placeholder="Search…" autocomplete="off"><button data-e="pclose" aria-label="Close"><svg class="ix" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6 L18 18 M18 6 L6 18"/></svg></button></div><div class="epl" id="edL"></div></div><div class="ebox" id="edX" hidden></div></div><div id="qt" hidden><i></i><div><small></small><b></b></div><em></em></div><div id="qb" class="off"></div><div id="pad"><button id="bBrake">BRAKE</button><button id="bGrab">GRAB</button><button id="bJump">JUMP</button></div><div id="trick" class="off"></div><button id="skip">Skip ride  »<kbd>X</kbd></button><div id="fade"></div><div id="ptags"></div><div id="pcard"><div><b></b><small></small></div><button></button></div><div id="sheet" class="off"><div class="sh-h"><b></b><span class="sh-c"></span><button class="sh-x" aria-label="Close"><svg class="ix" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6 L18 18 M18 6 L6 18"/></svg></button></div><div class="sh-b"></div><div class="sh-f"></div></div><div id="sc"><b>0</b><span></span><div class="bar"><i></i></div><em></em></div><div id="res" class="off"></div><div id="load"><b>Powder Pass</b><span>Grooming the slopes…</span></div><div id="toast" class="off"></div><div id="hud" style="display:none"></div><button id="act" style="display:none"></button><button id="leave" style="display:none">Leave</button><div id="ui"><button data-go="gallery">Gallery</button><button data-go="scene">Ski resort</button><button data-go="lift">Ski lift</button><button data-go="hotel">Hotel</button><button data-go="alpine">Alpine hotel</button><button data-go="people">People</button><button data-go="moves">Moves</button><button data-go="fx">FX</button><button data-go="parts">Lift parts</button><button data-go="reset">Reset</button><button id="walkBtn">Walk</button><button id="walkLiftBtn">Walk to lift</button><button id="walkGalBtn">Walk gallery</button><button id="snowBtn">Snowfall</button></div>
 <script id="pp-pre">window.PP_PRE=(function(me){var o=[],n=me.previousSibling;for(;n;n=n.previousSibling){if(n.nodeType===1&&(n.id==="pp-css"||/^(META|TITLE|STYLE|HEAD)$/.test(n.tagName)))break;o.unshift(n.nodeType===1?n.outerHTML:n.nodeType===3?n.textContent.replace(/&/g,"&amp;").replace(/</g,"&lt;"):n.nodeType===8?"<!--"+n.data+"-->":"")}return o.join("")})(document.currentScript)</script>
 <script type="application/json" id="pp-edits">{"v":1,"obj":{"r.66":{"p":[-42.083,0.161,26.02],"q":[0,0.29552,0,0.95534],"s":[1.1,1.1,1.1]},"r.37":{"p":[-0.02,-0.012,0.06],"q":[0,0,0,1],"s":[1,1,1]},"r.172":{"p":[-31.134,0.305,29.993],"q":[0.06189,-0.03114,-0.00066,0.9976],"s":[1.15,1.15,1.15]},"r.178":{"p":[-58.779,1.213,4.069],"q":[-0.10441,-0.54745,-0.01007,0.83024],"s":[1.15,1.15,1.15],"del":1},"r.187":{"p":[-92.272,6.345,5.012],"q":[-0.10113,0.04292,-0.30469,0.94609],"s":[1.15,1.15,1.15],"del":1}},"add":[{"id":3,"g":"Start gate","p":[-61.816,1.355,0.063],"q":[0,-0.38268,0,0.92388],"s":[1,1,1],"del":0}],"groups":[],"labels":{},"npc":{}}</script>
 <script id="pp-three">/**
@@ -262,7 +265,7 @@ const OUT = Object.assign({
 const outlineMat = new THREE.ShaderMaterial({
   uniforms: OUT, side: THREE.BackSide, fog: true,
   vertexShader: [
-    'attribute vec3 sn; uniform vec2 uRes; uniform float uFocal, uW, uMin, uMax;', '#include <fog_pars_vertex>',
+    'attribute vec3 sn; uniform vec2 uRes; uniform float uFocal, uW, uMin, uMax; varying float vOD;', '#include <fog_pars_vertex>',
     'void main(){',
     ' vec4 lp = vec4(position,1.0); vec3 sn2 = sn;', '#ifdef USE_INSTANCING', ' lp = instanceMatrix * lp; sn2 = mat3(instanceMatrix) * sn;', '#endif',
     ' vec4 mv = modelViewMatrix * lp; mv.z -= min(0.08, 0.01 + 0.01 * -mv.z);',
@@ -271,9 +274,10 @@ const outlineMat = new THREE.ShaderMaterial({
     ' vec2 d = vn.xy; float l = length(d); d = l > 1e-4 ? d / l : vec2(0.0);',
     ' float px = clamp(uW * uFocal / pow(max(clip.w, 0.001), 0.75), uMin, uMax);',
     ' clip.xy += d * px * 2.0 / uRes * clip.w;',
-    ' gl_Position = clip; vec4 mvPosition = mv;', '#include <fog_vertex>', '}'
+    ' gl_Position = clip; vOD = -mv.z; vec4 mvPosition = mv;', '#include <fog_vertex>', '}'
   ].join('\n'),
-  fragmentShader: ['#include <fog_pars_fragment>', 'void main(){ gl_FragColor = vec4(0.055,0.06,0.085,1.0);', '#include <fog_fragment>', '}'].join('\n')
+  /* hull faces right at the lens (hugging a wall, or the eye inside a prop) would fill the screen with black: skip them */
+  fragmentShader: ['#include <fog_pars_fragment>', 'varying float vOD;', 'void main(){ if (vOD < 0.6) discard; gl_FragColor = vec4(0.055,0.06,0.085,1.0);', '#include <fog_fragment>', '}'].join('\n')
 });
 
 const hullCache = new WeakMap();
@@ -1212,6 +1216,17 @@ function pool() {
   let n = 0; [-6.5, -3.6, -0.7, 2.2, 5.1, 8].forEach(x => [cz - 1.2, cz + 1.2].forEach(z => steam(g, x, 0.9, z, n++, 1))); [0, 1, 2].forEach(i => steam(g, 9 + (i - 1) * 0.3, 1.0, 4.2, n++, 0.9));
   g.userData.K = K; return g;
 }
+/* a glass balustrade panel that follows a stair's slope with plumb ends (a tilted box poked out past the treads like a floating plate) */
+function stairGlass(len, rise) { const g = bx(0.03, 0.9, len); g.applyMatrix4(new THREE.Matrix4().set(1, 0, 0, 0, 0, 1, -rise / len, 0, 0, 0, 1, 0, 0, 0, 0, 1)); return g; }
+/* framed print for corridor walls: wood frame, pale mount, colour blocks and a sun. Front faces local +z (ry turns it) */
+function hArt(b, x, y, z, ry, w, h, k) {
+  const P = [[0x2f7bff, 0xffd21f, 0xc8553d], [0x14b13c, 0xf2c14e, 0x2c3140], [0x8b3dff, 0xff8a1f, 0x3fb6ff]][k % 3];
+  b.push(x, y, z, ry); b.add(bx(w, h, 0.05), 0x33200f, 0, 0, 0); b.add(bx(w - 0.12, h - 0.12, 0.02), 0xf6eedc, 0, 0, 0.03, { noOutline: 1 });
+  b.add(bx((w - 0.2) * 0.55, (h - 0.2) * 0.45, 0.012), P[0], -w * 0.12, -h * 0.15, 0.045, { noOutline: 1 }); b.add(bx((w - 0.2) * 0.35, (h - 0.2) * 0.3, 0.012), P[2], w * 0.2, -h * 0.22, 0.047, { noOutline: 1 });
+  b.add(cy(h * 0.12, h * 0.12, 0.012, 14), P[1], w * 0.22, h * 0.18, 0.047, { rx: PI / 2, noOutline: 1 }); b.pop();
+}
+/* potted plant with a collision box */
+function hPlant(b, KK, x, y, z) { b.add(cy(0.28, 0.22, 0.5, 12), 0xb4603e, x, y + 0.25, z); b.add(sp(0.42, 1, 1.5, 1), C.grass2, x, y + 0.95, z); b.add(sp(0.3, 1, 1.2, 1), C.grass, x + 0.1, y + 1.35, z + 0.05); KK.push({ x: x, z: z, ry: 0, hw: 0.3, hd: 0.3 }); }
 function hotel() {
   const b = new B(), r = new B(), K = [], K2 = [], K3 = [], K4 = [], F = [], g = new THREE.Group(), W = 24, D = 10, H = 3.4, H2 = 3.0, S = 0.3, hz = D / 2, hx = W / 2, Y2 = FY + H + S, T = 0.22, UP = Y2 + 0.03 - 0.23;
   const Y3 = Y2 + H2 + S, UP2 = Y3 + 0.03 - 0.23, HX = { rooms: [], beds: [], L: [], floors: [0.23, UP, UP2] };   /* second floor + north wing (rooms, suites, breakfast hall, elevator) */
@@ -1224,7 +1239,7 @@ function hotel() {
   b.add(bx(3.3, 0.5, 0.06), 0x33200f, 0, FY + 3.25, -hz + 0.24); hText(b, 'BREAKFAST', 0, FY + 3.36, -hz + 0.28, 0.055, 0xffd21f); wall(b, K, -hx, 0, PI / 2, D, H, T, CONC, [[-3.5, -1.5, 0.9, 2.6, 1], [0.5, 2.5, 0.9, 2.6, 1]]);   /* doorway at x -11.4..-10 into the wing */
   wall(b, K, hx, 0, PI / 2, D, H, T, CONC, [[-3.8, -1.2, 0, 2.7], [0, 4.2, 0.1, 3.0, 1]]);
   // ---- reception bay (back-left)
-  const rx = -6.6, rz = -2.2;
+  const rx = -6.6, rz = -2.95;   /* desk pushed back toward the wall so the receptionist stands right behind it */
   b.add(bx(5.6, 1.1, 0.9), CHAR, rx, WY + 0.55, rz); b.add(bx(5.6, 0.9, 0.05), TIMB, rx, WY + 0.5, rz + 0.47); b.add(bx(5.8, 0.08, 1.1), C.white, rx, WY + 1.14, rz);
   [-1.6, 1.4].forEach(t => { b.add(bx(0.55, 0.34, 0.04), 0x101218, rx + t, WY + 1.45, rz - 0.1); b.add(bx(0.06, 0.16, 0.06), C.metal, rx + t, WY + 1.26, rz - 0.1); b.add(bx(0.4, 0.02, 0.15), C.dark, rx + t, WY + 1.2, rz + 0.12); });
   b.add(sp(0.08), C.yellow, rx + 0.3, WY + 1.22, rz + 0.3); K.push({ x: rx, z: rz, ry: 0, hw: 2.9, hd: 0.55 });
@@ -1277,9 +1292,16 @@ function hotel() {
   const n = 16, run = 0.375, rv = UP / n, sxc = -10.7;
   for (let i = 1; i <= n; i++) b.add(bx(1.6, 0.1, run + 0.02), TIMB, sxc, 0.23 + i * rv - 0.05, 2.6 - (i - 0.5) * run);
   b.beam([sxc, 0.08, 2.6], [sxc, Y2 - 0.15, -3.4], 0.18, CHAR);
-  b.add(bx(0.03, 0.9, Math.hypot(6, UP)), GLASS, -9.85, (0.23 + Y2 + 0.03) / 2 + 0.45, -0.4, { rx: Math.atan2(UP, 6) }); b.rod([-9.85, 0.23 + 0.95, 2.6], [-9.85, Y2 + 0.03 + 0.95, -3.4], 0.04, CHAR);
-  b.add(bx(0.03, 0.9, 6.05), GLASS, -9.85, Y2 + 0.45, -0.375); b.add(bx(1.75, 0.9, 0.03), GLASS, sxc, Y2 + 0.45, 2.68);
-  K.push({ x: -9.85, z: -0.4, ry: 0, hw: 0.06, hd: 3.0 }); K2.push({ x: -9.85, z: -0.4, ry: 0, hw: 0.06, hd: 3.0 }, { x: sxc, z: 2.68, ry: 0, hw: 0.9, hd: 0.06 });   /* stair glass: ground + floor 1 only */
+  b.add(stairGlass(6, UP), GLASS, -9.85, (0.23 + Y2 + 0.03) / 2 + 0.45, -0.4); b.rod([-9.85, 0.23 + 0.95, 2.6], [-9.85, Y2 + 0.03 + 0.95, -3.4], 0.04, CHAR);
+  b.add(bx(0.03, 0.9, 6.05), GLASS, -9.85, Y2 + 0.45, -0.375);
+  K.push({ x: -9.85, z: -0.4, ry: 0, hw: 0.06, hd: 3.0 }); K2.push({ x: -9.85, z: -0.4, ry: 0, hw: 0.06, hd: 3.0 });   /* stair glass on the ground floor and floor 1 */
+  /* second flight, stacked over the first in the same well: floor 1 (south landing) up to floor 2 (north landing). 3.3 m of headroom over flight one */
+  { const rise = UP2 - UP, rv2 = rise / n, y1 = UP + 0.23;
+    for (let i = 1; i <= n; i++) b.add(bx(1.6, 0.1, run + 0.02), TIMB, sxc, y1 + i * rv2 - 0.05, 2.6 - (i - 0.5) * run);
+    b.beam([sxc, y1 - 0.15, 2.6], [sxc, Y3 - 0.15, -3.4], 0.18, CHAR);
+    b.add(stairGlass(6, rise), GLASS, -9.85, (y1 + Y3 + 0.03) / 2 + 0.45, -0.4); b.rod([-9.85, y1 + 0.95, 2.6], [-9.85, Y3 + 0.03 + 0.95, -3.4], 0.04, CHAR);
+    b.add(bx(0.03, 0.9, 6.05), GLASS, -9.85, Y3 + 0.45, -0.375); b.add(bx(1.75, 0.9, 0.03), GLASS, sxc, Y3 + 0.45, 2.68);   /* floor 2 balustrade round the well */
+    K4.push({ x: -9.85, z: -0.4, ry: 0, hw: 0.06, hd: 3.0 }, { x: sxc, z: 2.68, ry: 0, hw: 0.9, hd: 0.06 }); }
   // ---- upper slab (stair hole cut out) + trim
   const sy = FY + H + S / 2;
   [[-12.3, -11.6, -5.3, 5.3], [-11.6, -9.85, -5.3, -3.4], [-11.6, -9.85, 2.65, 5.3], [-9.85, 12.3, -5.3, 5.3]].forEach(p => b.add(bx(p[1] - p[0], S, p[3] - p[2]), CONC, (p[0] + p[1]) / 2, sy, (p[2] + p[3]) / 2));
@@ -1288,15 +1310,15 @@ function hotel() {
   // ---- upper floor: sky lounge + corridor + 4 rooms
   WY = Y2; const RC = [-4.1, 0.5, 5.1, 9.7];
   wall(b, K2, 0, hz, 0, W, H2, T, CONC, [[-11.5, -7, 0.1, 2.7, 1]].concat(RC.reduce((a, c) => a.concat([[c - 2.1, c - 0.5, 0.1, 2.7, 1], [c - 0.5, c + 0.5, 0, 2.4], [c + 0.5, c + 2.1, 0.1, 2.7, 1]]), [])));
-  wall(b, K2, 0, -hz, PI, W, H2, T, CONC, [[-11.6, -10.4, 0, 2.3]]);
+  /* (no wall at z -5 upstairs: the wing corridor and the room corridor are one wide hallway) */
   wall(b, K2, -hx, 0, PI / 2, D, H2, T, CONC, [[-3.5, -1.5, 0.9, 2.6, 1], [0.5, 2.5, 0.9, 2.6, 1]]); wall(b, K2, hx, 0, PI / 2, D, H2, T, CONC, [[-2.5, -0.5, 0.9, 2.6, 1], [3.8, 4.6, 0.8, 2.4, 1]]);
   wall(b, K2, 2.8, -3.6, 0, 18.4, H2, 0.2, CONC, RC.map(c => [c + 0.8 - 2.8, c + 1.6 - 2.8, 0, 2.1]));
   [-6.4, -1.8, 2.8, 7.4].forEach(x => wall(b, K2, x, 0.7, PI / 2, 8.6, H2, 0.2, CONC, []));
   RC.forEach(c => hInside(b, K2, c, 4.6, -3.6, 5.0, H2));
-  /* west end of floor 1: a reading nook by the south window (the lockers moved down to the boot room) */
-  b.add(bx(3.0, 0.014, 4.2), 0x6a4e3a, -8.1, WY + 0.04, 2.0, { noOutline: 1 }); b.add(bx(2.6, 0.016, 3.8), 0xa07a58, -8.1, WY + 0.042, 2.0, { noOutline: 1 });
-  hCouch(b, K2, -8.1, 0.45, 2.2, FAB2, 0, 1); [-1, 1].forEach(t => hCouch(b, K2, -8.1 + t * 1.0, 3.55, 0.95, LEATH, 0, -1));
-  b.add(bx(1.1, 0.06, 0.6), TIMB, -8.1, WY + 0.42, 2.0); [-0.5, 0.5].forEach(t => b.add(bx(0.05, 0.4, 0.05), CHAR, -8.1 + t, WY + 0.2, 2.0)); K2.push({ x: -8.1, z: 2.0, ry: 0, hw: 0.55, hd: 0.3 });
+  RC.forEach((c, i) => hArt(b, c - 1.1, WY + 1.55, -3.73, PI, 1.1, 0.8, i + 1));   /* prints between the room doors, facing the hallway */
+  /* west end of floor 1: the landing between the two flights. Kept clear (the reading nook's sofas blocked it): a long rug, a print and plants along the room wall */
+  b.add(bx(3.1, 0.014, 8.0), 0x6a4e3a, -8.15, WY + 0.04, 0.6, { noOutline: 1 }); b.add(bx(2.7, 0.016, 7.6), 0xa07a58, -8.15, WY + 0.042, 0.6, { noOutline: 1 });
+  hArt(b, -6.53, WY + 1.55, 1.4, -PI / 2, 1.5, 1.0, 0); hPlant(b, K2, -6.95, WY, 4.3); hPlant(b, K2, -6.95, WY, -2.9);
   b.push(-6.8, WY, 0.2, 0); pFloorLamp(b); b.pop(); K2.push({ x: -6.8, z: 0.2, ry: 0, hw: 0.2, hd: 0.2 });
   b.add(bx(0.5, 0.5, 0.5), CHAR, -11.0, WY + 0.25, 4.4); b.add(sp(0.45, 1, 1.4, 1), C.grass2, -11.0, WY + 1.1, 4.4);
   /* ===== EXPANSION: north wing (z -11..-5) on three levels + a second floor on the main block ===== */
@@ -1334,8 +1356,8 @@ function hotel() {
     b.add(bx(0.5, 0.55, 0.45), C.dark, 3.9, y + 1.29, bz - 0.05); b.add(bx(0.2, 0.14, 0.02), 0x5dff8a, 3.9, y + 1.42, bz + 0.18, { basic: 1 });
     for (let i = 0; i < 6; i++) { b.add(cy(0.17, 0.17, 0.02, 14), C.white, 4.7, y + 1.02 + i * 0.025, bz); b.add(cy(0.05, 0.04, 0.09, 8), C.white, 5.1 + (i % 3) * 0.12, y + 1.05, bz - 0.15 + Math.floor(i / 3) * 0.2); }
     K.push({ x: 1, z: bz, ry: 0, hw: 4.3, hd: 0.45 }); HX.buffet = { x: 1, z: bz + 1.0 }; }
-  [[-7.5, -7.6], [-3.5, -7.6], [5.5, -7.6], [-7.5, -9.6], [9.5, -7.6]].forEach(p => { b.push(p[0], WY, p[1], 0); pDiningTable(b); b.pop(); b.add(cy(0.12, 0.1, 0.12, 10), C.white, p[0] - 0.4, WY + 0.86, p[1]); b.add(cy(0.15, 0.15, 0.02, 12), C.white, p[0] + 0.4, WY + 0.8, p[1]); K.push({ x: p[0], z: p[1], ry: 0, hw: 0.97, hd: 0.55 }); });
-  [[-7.5, -7.6], [-3.5, -7.6], [5.5, -7.6], [-7.5, -9.6], [9.5, -7.6]].forEach((p, i) => {   /* tablecloth, runner, flowers, pendant lamp */
+  [[-7.5, -7.6], [-3.5, -7.6], [5.5, -7.6], [9.5, -7.6]].forEach(p => { b.push(p[0], WY, p[1], 0); pDiningTable(b); b.pop(); b.add(cy(0.12, 0.1, 0.12, 10), C.white, p[0] - 0.4, WY + 0.86, p[1]); b.add(cy(0.15, 0.15, 0.02, 12), C.white, p[0] + 0.4, WY + 0.8, p[1]); K.push({ x: p[0], z: p[1], ry: 0, hw: 0.97, hd: 0.55 }); });
+  [[-7.5, -7.6], [-3.5, -7.6], [5.5, -7.6], [9.5, -7.6]].forEach((p, i) => {   /* tablecloth, runner, flowers, pendant lamp */
     b.add(bx(2.0, 0.012, 1.05), 0xf6eedc, p[0], WY + 0.805, p[1], { noOutline: 1 }); b.add(bx(0.5, 0.014, 1.06), [0xc8553d, 0x2f7bff, 0x14b13c][i % 3], p[0], WY + 0.81, p[1], { noOutline: 1 });
     b.add(cy(0.05, 0.06, 0.18, 8), 0x9fd6ff, p[0], WY + 0.9, p[1], { alpha: 0.6 }); [0, 1, 2].forEach(k2 => b.add(sp(0.05), [C.red, C.yellow, 0xff5fa2][k2], p[0] + (k2 - 1) * 0.05, WY + 1.02 + (k2 % 2) * 0.03, p[1], { noOutline: 1 }));
     b.add(cy(0.008, 0.008, 0.85, 4), C.dark, p[0], WY + 2.97, p[1]); b.add(cn(0.3, 0.26, 12), 0xffb02e, p[0], WY + 2.45, p[1]); b.add(sp(0.08), 0xfff1c4, p[0], WY + 2.32, p[1], { basic: 1 }); });
@@ -1346,7 +1368,7 @@ function hotel() {
     for (let i = 0; i < 4; i++) b.add(bx(1.0 - (i % 2) * 0.3, 0.025, 0.02), 0xe8eef6, 7.2, WY + 1.82 - i * 0.16, zb + 0.03, { noOutline: 1 });
     [[11.3, -10.4], [11.3, -5.7], [-8.6, -10.4]].forEach(q => { b.add(cy(0.28, 0.22, 0.5, 12), 0xb4603e, q[0], WY + 0.25, q[1]); b.add(sp(0.42, 1, 1.5, 1), C.grass2, q[0], WY + 0.95, q[1]); b.add(sp(0.3, 1, 1.2, 1), C.grass, q[0] + 0.1, WY + 1.35, q[1] + 0.05); K.push({ x: q[0], z: q[1], ry: 0, hw: 0.3, hd: 0.3 }); });
     /* (no art over the side windows) */
-    b.add(bx(2.2, 0.014, 4.0), RUGC, 0, WY + 0.235, -7.4, { noOutline: 1 }); }
+    b.add(bx(3.0, 0.014, 4.4), RUGC, 0, WY + 0.235, -7.5, { noOutline: 1 }); }
   [[-6, -6.0], [-1, -6.0], [4, -6.0], [9, -6.0], [-1.5, -9.9], [6.8, -9.9]].forEach(p => HX.L.push([p[0], WY + 2.95, p[1]]));
   [[-6, -6.0], [4, -6.0]].forEach(p => hLight(b, p[0], WY + 2.95, p[1]));
   /* -- elevator: a shaft at the wing's west end on every floor, doors to the south -- */
@@ -1369,24 +1391,30 @@ function hotel() {
     wall(b, KK, 1, ZC, 0, 22, hh, 0.2, CONC, list.map(q => [q[2] + 0.3 - 1, q[2] + 1.1 - 1, 0, 2.1]));
     list.forEach(q => wall(b, KK, q[2], (ZN + ZC) / 2, PI / 2, ZC - ZN, hh, 0.2, CONC, []));
     b.add(bx(2, hh, 0.2), CONC, -11, Y + hh / 2, -9.8); KK.push({ x: -11, z: -9.8, ry: 0, hw: 1, hd: 0.1 });
-    b.add(bx(21.9, 0.03, ZC - ZN), LIN, 0.95, Y + 0.015, (ZN + ZC) / 2); b.add(bx(1.9, 0.03, -8.55 - ZN), LIN, -10.95, Y + 0.015, (ZN - 8.55) / 2); b.add(bx(W - 0.2, 0.03, -hz - ZC), 0x3b4a6b, 0, Y + 0.02, (ZC - hz) / 2); b.add(bx(W - 0.8, 0.032, -hz - ZC - 0.5), 0x5a6d94, 0, Y + 0.022, (ZC - hz) / 2, { noOutline: 1 }); for (let x = -10.5; x < 11.6; x += 1.5) b.add(bx(0.5, 0.034, 0.5), 0xc9a14a, x, Y + 0.024, (ZC - hz) / 2, { ry: PI / 4, noOutline: 1 });
+    b.add(bx(21.9, 0.03, ZC - ZN), LIN, 0.95, Y + 0.015, (ZN + ZC) / 2); b.add(bx(1.9, 0.03, -8.55 - ZN), LIN, -10.95, Y + 0.015, (ZN - 8.55) / 2); { const zr = -3.7, zm = (ZC + zr) / 2;   /* one wide runner over the whole hallway (wing corridor + room corridor) */
+      b.add(bx(W - 0.2, 0.03, zr - ZC), 0x3b4a6b, 0, Y + 0.02, zm); b.add(bx(W - 0.8, 0.032, zr - ZC - 0.5), 0x5a6d94, 0, Y + 0.022, zm, { noOutline: 1 }); for (let x = -10.5; x < 11.6; x += 1.5) b.add(bx(0.6, 0.034, 0.6), 0xc9a14a, x, Y + 0.024, zm, { ry: PI / 4, noOutline: 1 });
+      list.forEach((q, i) => hArt(b, q[2] + 3.2, Y + 1.55, ZC + 0.13, 0, 1.2, 0.85, i)); if (list.length < 4) hArt(b, 9.6, Y + 1.55, ZC + 0.13, 0, 1.2, 0.85, 2);   /* prints between the wing doors */
+      hPlant(b, KK, 11.45, Y, -4.2); }
     list.forEach(q => room(KK, q[0], q[1], q[2], q[3], ZC, ZN, Y)); [-6, 0, 6].forEach(x => { hLight(b, x, Y + 2.6, -5.7); HX.L.push([x, Y + 2.6, -5.7]); });
   };
   /* slabs between the wing's floors, and the main block's new floor 2 slab */
-  [[Y2, (ZN - hz) / 2, -ZN - hz], [Y3, (ZN + hz) / 2, -ZN + hz]].forEach(q => { const y = q[0] - S / 2 + 0.03, z0 = q[1] - (q[2] + 0.4) / 2, z1 = q[1] + (q[2] + 0.4) / 2;   /* slab with the elevator shaft left open */
-    b.add(bx(22.2, S, q[2] + 0.4), CONC, 1.1, y, q[1]); b.add(bx(2.2, S, -8.55 - z0), CONC, -11.1, y, (z0 - 8.55) / 2); b.add(bx(2.2, S, z1 + 6.45), CONC, -11.1, y, (z1 - 6.45) / 2); });
+  [[Y2, (ZN - hz) / 2, -ZN - hz], [Y3, (ZN + hz) / 2, -ZN + hz]].forEach((q, qi) => { const y = q[0] - S / 2 + 0.03, z0 = q[1] - (q[2] + 0.4) / 2, z1 = q[1] + (q[2] + 0.4) / 2;   /* slab with the elevator shaft left open */
+    if (!qi) { b.add(bx(22.2, S, q[2] + 0.4), CONC, 1.1, y, q[1]); b.add(bx(2.2, S, -8.55 - z0), CONC, -11.1, y, (z0 - 8.55) / 2); b.add(bx(2.2, S, z1 + 6.45), CONC, -11.1, y, (z1 - 6.45) / 2); return; }
+    /* floor 2 also leaves the stair well open (x -11.6..-9.85, z -3.4..2.65) */
+    b.add(bx(22.05, S, q[2] + 0.4), CONC, 1.175, y, q[1]); b.add(bx(2.35, S, -8.55 - z0), CONC, -11.025, y, (z0 - 8.55) / 2);
+    b.add(bx(2.35, S, 3.05), CONC, -11.025, y, -4.925); b.add(bx(2.35, S, z1 - 2.65), CONC, -11.025, y, (z1 + 2.65) / 2); b.add(bx(0.6, S, 6.05), CONC, -11.9, y, -0.375); });
   wingFloor(Y2, K2, [[105, 'normal', -10, -4.5], [106, 'normal', -4.5, 1], [107, 'normal', 1, 6.5], [108, 'normal', 6.5, 12]]);   /* four 5.5 m rooms (were five 4.4 m) */
   wingFloor(Y3, K4, [[205, 'normal', -10, -4.5], [206, 'normal', -4.5, 1], [207, 'suite', 1, 12]]);
   { WY = Y3; const hh = H2;
     wall(b, K4, 0, hz, 0, W, hh, T, CONC, [[-11.5, -7, 0.1, 2.7, 1], [-5.4, -0.6, 0.1, 2.7, 1], [0.6, 2.2, 0.1, 2.7, 1], [3.6, 8.4, 0.1, 2.7, 1], [9.6, 11.5, 0.1, 2.7, 1]]);
-    wall(b, K4, 0, -hz, PI, W, hh, T, CONC, [[-11.6, -10.4, 0, 2.3]]);
     wall(b, K4, -hx, 0, PI / 2, D, hh, T, CONC, [[-3.5, -1.5, 0.9, 2.6, 1], [0.5, 2.5, 0.9, 2.6, 1]]); wall(b, K4, hx, 0, PI / 2, D, hh, T, CONC, [[-2.5, -0.5, 0.9, 2.6, 1], [1.5, 3.5, 0.9, 2.6, 1]]);
     wall(b, K4, 2.8, -3.6, 0, 18.4, hh, 0.2, CONC, [[-8.9, -8.1, 0, 2.1], [0.3, 1.1, 0, 2.1]]);
     [-6.4, 2.8].forEach(x => wall(b, K4, x, 0.7, PI / 2, 8.6, hh, 0.2, CONC, []));
-    b.add(bx(W - 0.2, 0.03, D - 0.2), LIN, 0, Y3 + 0.015, 0);
+    [[-9.85, 11.9, -4.9, 4.9], [-11.9, -9.85, -4.9, -3.4], [-11.9, -9.85, 2.65, 4.9]].forEach(p => b.add(bx(p[1] - p[0], 0.03, p[3] - p[2]), LIN, (p[0] + p[1]) / 2, Y3 + 0.015, (p[2] + p[3]) / 2));
     room(K4, 201, 'suite', -6.4, 2.8, -3.6, hz, Y3); room(K4, 202, 'suite', 2.8, 12, -3.6, hz, Y3);
-    b.add(bx(3.4, 0.014, 3.6), 0x6a4e3a, -9.9, Y3 + 0.04, 1.0, { noOutline: 1 }); b.add(bx(3.0, 0.016, 3.2), 0xa07a58, -9.9, Y3 + 0.042, 1.0, { noOutline: 1 });
-    b.push(-9.2, Y3, 1.0, PI / 2); pCouch(b, 2.4, LEATH); b.pop(); K4.push({ x: -9.2, z: 1.0, ry: 0, hw: 0.45, hd: 1.2 }); b.push(-10.6, Y3, 1.0, 0); pCoffeeTable(b); b.pop();
+    [[-2.0, 0], [7.5, 1], [10.6, 2]].forEach(q => hArt(b, q[0], Y3 + 1.55, -3.73, PI, 1.1, 0.8, q[1]));
+    b.add(bx(3.0, 0.014, 4.4), 0x6a4e3a, -8.15, Y3 + 0.04, 1.0, { noOutline: 1 }); b.add(bx(2.6, 0.016, 4.0), 0xa07a58, -8.15, Y3 + 0.042, 1.0, { noOutline: 1 });   /* lounge moved off the stair well */
+    b.push(-6.95, Y3, 1.0, -PI / 2); pCouch(b, 2.4, LEATH); b.pop(); K4.push({ x: -6.95, z: 1.0, ry: 0, hw: 0.45, hd: 1.2 }); b.push(-8.05, Y3, 1.0, PI / 2); pCoffeeTable(b); b.pop();
     b.add(bx(0.5, 0.5, 0.5), CHAR, -11.2, Y3 + 0.25, 4.3); b.add(sp(0.45, 1, 1.4, 1), C.grass2, -11.2, Y3 + 1.1, 4.3); K4.push({ x: -11.2, z: 4.3, ry: 0, hw: 0.3, hd: 0.3 });
     [-9, -3, 4].forEach(x => { hLight(b, x, Y3 + 2.6, -4.3); HX.L.push([x, Y3 + 2.6, -4.3]); }); }
   /* main block floor 1 rooms keep their bathrooms (hInside); they become rooms 101-104 with doors on the corridor */
@@ -1409,9 +1437,10 @@ function hotel() {
   pg.userData.K.forEach(k => K.push({ x: k.x + OX, z: k.z + OZ, ry: 0, hw: k.hw, hd: k.hd }));
   const DR = []; hSlideDoor(g, DR, 0, hz - T / 2 - 0.04, 'x', 1.3, 2.55, 1.2); hSlideDoor(g, DR, hx - T / 2 - 0.04, 2.5, 'z', 1.3, 2.55, 1.2); g.userData.doors = DR;
   g.add(b.build()); flushWind(g); const rf = r.build(); g.add(rf); ROOFS.push(rf); hSlideDoor(g, DR, 0, 2.2, 'x', 1.3, 2.55, 1.2);   /* ski room -> lobby door, added last so the editor's keys for the hotel's parts don't shift */ g.userData.K = K; g.userData.K2 = K2; g.userData.K3 = K3; g.userData.K4 = K4; g.userData.HX = HX; HX.lv2 = (UP + UP2) / 2;
-  F.push({ x0: -12, x1: 12, z0: ZN, z1: -5, y0: UP, y1: UP, ax: 0, min: UP - 0.7 }, { x0: -12, x1: 12, z0: ZN, z1: 5.3, y0: UP2, y1: UP2, ax: 0, min: UP2 - 0.7 });
+  F.push({ x0: -12, x1: 12, z0: ZN, z1: -5, y0: UP, y1: UP, ax: 0, min: UP - 0.7 }, { x0: -12, x1: 12, z0: ZN, z1: -5, y0: UP2, y1: UP2, ax: 0, min: UP2 - 0.7 });
+  F.push({ x0: -9.85, x1: 12, z0: -5, z1: 5.3, y0: UP2, y1: UP2, ax: 0, min: UP2 - 0.7 }, { x0: -12, x1: -9.85, z0: -5, z1: -3.4, y0: UP2, y1: UP2, ax: 0, min: UP2 - 0.7 }, { x0: -12, x1: -9.85, z0: 2.65, z1: 5.3, y0: UP2, y1: UP2, ax: 0, min: UP2 - 0.7 });
   F.push({ x0: -9.85, x1: 12, z0: -5, z1: 6.6, y0: UP, y1: UP, ax: 0, min: UP - 0.7 }, { x0: -12, x1: -9.85, z0: -5, z1: -3.4, y0: UP, y1: UP, ax: 0, min: UP - 0.7 }, { x0: -12, x1: -9.85, z0: 2.65, z1: 6.6, y0: UP, y1: UP, ax: 0, min: UP - 0.7 });
-  F.push({ x0: -11.6, x1: -9.85, z0: -3.4, z1: 2.6, y0: UP, y1: 0, ax: 'z', min: -1 }); g.userData.F = F; g.userData.KS = stairWedge('z', -3.4, 2.6, UP, 0, -11.6, -9.85);
+  F.push({ x0: -11.6, x1: -9.85, z0: -3.4, z1: 2.6, y0: UP, y1: 0, ax: 'z', min: -1 }, { x0: -11.6, x1: -9.85, z0: -3.4, z1: 2.6, y0: UP2, y1: UP, ax: 'z', min: -1 }); g.userData.F = F; g.userData.KS = stairWedge('z', -3.4, 2.6, UP, 0, -11.6, -9.85);
   WF = C.wood3; WG = C.sky; WY = FY; WAL = 0; return g;
 }
 function putHotel(R, g, x, z) {
@@ -3631,7 +3660,7 @@ function makeCrowd(R, HX, HZ) {
   CLERKS.forEach(c => fixed(PEOPLE.staff, { jacket: c.col, hatc: C.white }, c.x, c.z, c.ry, c.y, 'Standing', ['Standing', 'Standing', 'Waving', 'Standing']));
   const wy = tH(HX, HZ) + FY;
   let q;
-  q = hx(-6.0, -3.5); fixed(PEOPLE.ticketer, {}, q[0], q[1], 0, wy + 0.02, 'Standing', ['Standing', 'Standing', 'Waving', 'Standing', 'Cheering']);
+  q = hx(-6.0, -3.85); fixed(PEOPLE.ticketer, {}, q[0], q[1], 0, wy + 0.02, 'Standing', ['Standing', 'Standing', 'Waving', 'Standing', 'Cheering']);
   q = hx(8.5, -3.5); fixed(PEOPLE.staff, { hat: 'cap' }, q[0], q[1], 0, wy + 0.02, 'Standing', ['Standing', 'Standing', 'Standing', 'Waving']);
   q = hx(7.8, -1.7); fixed(PEOPLE.guy, { jacket: 0x2f7bff }, q[0], q[1], PI, wy + 0.02, 'Sit on chair', null, 1.62);
   q = hx(9.8, -1.7); fixed(PEOPLE.lady, { jacket: 0xff8a1f }, q[0], q[1], PI, wy + 0.02, 'Sit on chair', null, 1.62);
@@ -4547,7 +4576,7 @@ W.toggle = (on, where) => {
   W.board = null; W.unboard = null; W.ride = null; if (PL.mode === 'ski') PL.exitSki();
   W.on = on; W.ptr.clear(); document.getElementById('walkBtn').textContent = on ? 'Exit' : 'Walk';
   ['walkGalBtn', 'walkLiftBtn'].forEach(id => { document.getElementById(id).style.display = on ? 'none' : ''; });
-  camera.fov = on ? 68 : 48; camera.near = on ? 0.08 : 0.5; resize();
+  camera.fov = on ? 68 : 48; camera.near = on ? 0.1 : 0.5; resize();
   if (on) {
     W.y = 0; W.pitch = -0.05; W.yaw = 0; W.vx = W.vz = 0;
     if (where === 'gal') { W.x = 0; W.z = -44; W.yaw = PI; } else if (where === 'village') { W.x = -30; W.z = SK.RES_Z + 46; W.yaw = PI * 0.15; } else if (where === 'lift') { W.x = SK.LIFT.xs; W.z = SK.RES_Z + SK.LIFT.zs + 11; } else { W.x = -30; W.z = SK.RES_Z + 50; }
@@ -4759,19 +4788,22 @@ W.move = e => {
   else { W.yaw -= dx * 0.005; W.pitch = clamp(W.pitch - dy * 0.004, -1.2, 1.2); }
 };
 /* camera lock: Ctrl (on its own) toggles it. The mouse steers the camera without dragging (pointer lock where the page allows it),
-   a crosshair marks the middle of the screen, and in third person you face where the camera looks. Ctrl again or Esc unlocks. */
-const CAM = { on: false, solo: false, got: false }, camEl = document.createElement('div'); camEl.id = 'camlock'; camEl.innerHTML = '<b>Camera locked · Ctrl</b>'; document.body.appendChild(camEl);
+   a crosshair marks the middle of the screen, and in third person you face where the camera looks. Only Ctrl again or Esc unlocks:
+   actions never do. A sheet or the map only holds the lock (CAM.held): the cursor is freed to click it, then the lock resumes on close. */
+const CAM = { on: false, solo: false, got: false, held: false }, camEl = document.createElement('div'); camEl.id = 'camlock'; camEl.setAttribute('aria-label', 'Camera locked (Ctrl)'); document.body.appendChild(camEl);
+function camGrab() { try { const r = cvs.requestPointerLock && cvs.requestPointerLock(); if (r && r.catch) r.catch(() => {}); } catch (e) { /* sandboxed: the plain mousemove fallback still steers */ } }
+function camFree() { CAM.got = false; try { if (document.pointerLockElement === cvs) document.exitPointerLock(); } catch (e) {} }
 function camLock(on) {
-  CAM.on = !!on && W.on; document.body.classList.toggle('camlock', CAM.on);
-  if (CAM.on) { try { const r = cvs.requestPointerLock && cvs.requestPointerLock(); if (r && r.catch) r.catch(() => {}); } catch (e) { /* sandboxed: the plain mousemove fallback still steers */ } }
-  else { CAM.got = false; try { if (document.pointerLockElement === cvs) document.exitPointerLock(); } catch (e) {} }
+  CAM.on = !!on && W.on; CAM.held = false; document.body.classList.toggle('camlock', CAM.on); document.body.classList.remove('camheld');
+  if (CAM.on) camGrab(); else camFree();
 }
+function camHold(h) { if (!CAM.on || CAM.held === !!h) return; CAM.held = !!h; document.body.classList.toggle('camheld', CAM.held); if (CAM.held) camFree(); else camGrab(); }
 addEventListener('keydown', e => { if (e.key === 'Control') { if (!e.repeat) CAM.solo = true; } else CAM.solo = false; });
 addEventListener('keyup', e => { if (e.key !== 'Control' || !CAM.solo) return; CAM.solo = false; if (!W.on || document.body.classList.contains('ed') || SH) return; camLock(!CAM.on); });
 document.addEventListener('pointerlockchange', () => { if (document.pointerLockElement === cvs) CAM.got = true; else if (CAM.got) camLock(false); });   /* Esc leaves pointer lock: unlock too */
-addEventListener('mousemove', e => { if (!CAM.on || !W.on) return; const dx = e.movementX || 0, dy = e.movementY || 0; if (Math.abs(dx) > 300 || Math.abs(dy) > 300) return;   /* ignore the jump some browsers report on lock */
+addEventListener('mousemove', e => { if (!CAM.on || CAM.held || !W.on) return; const dx = e.movementX || 0, dy = e.movementY || 0; if (Math.abs(dx) > 300 || Math.abs(dy) > 300) return;   /* ignore the jump some browsers report on lock */
   if (PL.mode === 'ski') { PL.lookOff -= dx * 0.004; PL.lookPitch = clamp(PL.lookPitch - dy * 0.003, -1.0, 0.6); } else { W.yaw -= dx * 0.004; W.pitch = clamp(W.pitch - dy * 0.003, -1.2, 1.2); } });
-SK.camLock = camLock; SK.CAM = CAM;
+SK.camLock = camLock; SK.camHold = camHold; SK.CAM = CAM;
 W.up = e => {
   if (IN.stick && e.pointerId === IN.stick.id) { IN.stick = null; IN.sx = IN.sy = IN.mag = 0; stickEl.classList.remove('on'); knobEl.style.transform = ''; }
   if (IN.look && e.pointerId === IN.look.id) IN.look = null;
@@ -4991,7 +5023,7 @@ function camClear(hx, hy, hz, cx, cy, cz, fy) {
 PL.walkPost = dt => {
   if (!W.ride && !W.board && !W.unboard && onCarpet(W.x, W.z)) { const Cp = SK.CARPET, dir = Math.sign(Cp.z1 - Cp.z0); W.z += dir * Cp.speed * dt; if (dir * (W.z - SK.RES_Z - Cp.z1) > -0.4) W.z += dir * 1.2; }
   const busy = W.ride || W.board || W.unboard, third = State.cam.walk === 'third' && !busy && W.on && !(SK.inStore && SK.inStore());
-  AVW.wrap.visible = third; AVS.wrap.visible = false; uiFrame(); { const nr = third ? 0.12 : 0.5; if (camera.near !== nr) { camera.near = nr; camera.updateProjectionMatrix(); } }
+  AVW.wrap.visible = third; AVS.wrap.visible = false; uiFrame(); { const nr = third ? 0.12 : 0.1; if (camera.near !== nr) { camera.near = nr; camera.updateProjectionMatrix(); } }
   const wj = !!(W.on && !busy && !W.sit && PL.mode !== 'ski'); if (document.body.classList.contains('walkjump') !== wj) document.body.classList.toggle('walkjump', wj);
   PL.snackT = Math.max(0, (PL.snackT || 0) - dt);
   if (!third) return;
@@ -5291,9 +5323,9 @@ SK.events.on('crash', () => { if (gear('helmet').id !== 'helmet') State.energy =
 const sheet = document.getElementById('sheet'), shBody = sheet.querySelector('.sh-b'), shTitle = sheet.querySelector('.sh-h b'), shCoins = sheet.querySelector('.sh-c'), shFoot = sheet.querySelector('.sh-f');
 let SH = null;   /* { kind, id, at:[x,z] } */
 const coin = n => n.toLocaleString('en-US');
-function closeSheet() { sheet.classList.add('off'); SH = null; }
+function closeSheet() { sheet.classList.add('off'); SH = null; if (SK.camHold && !SK.mapOpen) SK.camHold(false); }
 sheet.querySelector('.sh-x').addEventListener('click', closeSheet);
-function openSheet(kind, id, at) { if (SK.CAM && SK.CAM.on) SK.camLock(false); SH = { kind: kind, id: id, at: at }; sheet.dataset.kind = kind; renderSheet(); sheet.classList.remove('off'); hideHint(); }
+function openSheet(kind, id, at) { if (SK.camHold) SK.camHold(true); SH = { kind: kind, id: id, at: at }; sheet.dataset.kind = kind; renderSheet(); sheet.classList.remove('off'); hideHint(); }
 const row = (name, small, btns) => '<div class="row"><div><b>' + name + '</b>' + (small ? '<small>' + small + '</small>' : '') + '</div>' + btns + '</div>';
 const btn = (label, act, dis, alt) => '<button data-a="' + act + '"' + (dis ? ' disabled' : '') + (alt ? ' class="alt"' : '') + '>' + label + '</button>';
 function priceTag(k) { const p = PRICES[k], b = ITEMS[k].base; return p + (p > b ? ' <span class="up">▲</span>' : p < b ? ' <span class="dn">▼</span>' : ''); }
@@ -6295,7 +6327,7 @@ const BF = (() => {
   const H = SK.HOTEL, X = H.HX, bz = -10.25, sz = bz + 0.85;
   const ST = [{ x: 4.75, k: 'plate', n: 'Take a plate' }, { x: -2.6, k: 'eggs', n: 'Scrambled eggs' }, { x: -1.6, k: 'bacon', n: 'Bacon' }, { x: -0.6, k: 'pancakes', n: 'Pancakes' },
     { x: 0.5, k: 'croissant', n: 'Croissant' }, { x: 1.6, k: 'fruit', n: 'Fresh fruit' }, { x: 2.8, k: 'juice', n: 'Orange juice' }, { x: 3.9, k: 'coffee', n: 'Coffee' }];
-  const TAB = [[-7.5, -7.6], [-3.5, -7.6], [5.5, -7.6], [-7.5, -9.6], [9.5, -7.6]], SEATS = [];
+  const TAB = [[-7.5, -7.6], [-3.5, -7.6], [5.5, -7.6], [9.5, -7.6]], SEATS = [];
   TAB.forEach((t, i) => [-0.45, 0.45].forEach(x => { SEATS.push({ x: t[0] + x, z: t[1] - 0.78, yaw: Math.PI, tz: t[1], tx: t[0] + x, tab: i }); SEATS.push({ x: t[0] + x, z: t[1] + 0.78, yaw: 0, tz: t[1], tx: t[0] + x, tab: i }); }));
   const B = { plate: null, seat: null, eaten: 0, onTable: null };
   const EFF = { eggs: [11, 4], bacon: [11, 4], pancakes: [12, 3], croissant: [9, 2], fruit: [8, 2], juice: [7, 3], coffee: [6, 9] };
@@ -6853,8 +6885,8 @@ const MAP = (() => {
   }
   const vM = new THREE.Vector3();
   function resize() { dpr = Math.min(2, devicePixelRatio || 1); const r = cv.getBoundingClientRect(); cv.width = Math.max(1, Math.round(r.width * dpr)); cv.height = Math.max(1, Math.round(r.height * dpr)); }
-  function show(on) { if (on && SK.CAM && SK.CAM.on) SK.camLock(false);
-    if (on === open) return; open = on; SK.mapOpen = on; el.hidden = !on;
+  function show(on) {
+    if (on === open) return; open = on; SK.mapOpen = on; el.hidden = !on; if (SK.camHold) SK.camHold(on || !!SH);
     if (on) { if (typeof closeSheet === 'function' && SH) closeSheet(); if (!base || SK.mapDirty) { SK.mapDirty = 0; bake(); } resize(); fit(); center(); sel = null; info.hidden = true; loop(); if (SK.sfx) SK.sfx('click'); }
   }
   function loop() { if (!open) return; draw(); requestAnimationFrame(loop); }
