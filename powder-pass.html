@@ -4475,7 +4475,7 @@ function buildWorld() {
 }
 
 const rowZ = (h, k) => -30 + (Math.floor(h.i / 10) + k) * 8.6;
-globalThis.SK = { DEV: DEV, EDIT: EDIT, get FOOT() { return SK_FOOT; }, ALPD: ALPD, ALPP: [ALPX, ALPZ], get SUNO() { return SUNO; }, BEAM: beamMat, FXDOTS: FXDOTS, TUBS: TUBS, CDOORS: CDOORS, LIGHTS: LIGHTS, HOTEL: HOTEL, nodeModels: nodeModels, STORES: STORES, get GREEN() { return SK_GREEN; }, get HG() { return HG; }, LIFTS: LIFTS, LIFTX: {   /* every lift at once, for the player: one ticket, nearest station wins */
+globalThis.SK = { KIT: { B: B, bx: bx, cy: cy, cn: cn, sp: sp, mat: mat, C: C }, DEV: DEV, EDIT: EDIT, get FOOT() { return SK_FOOT; }, ALPD: ALPD, ALPP: [ALPX, ALPZ], get SUNO() { return SUNO; }, BEAM: beamMat, FXDOTS: FXDOTS, TUBS: TUBS, CDOORS: CDOORS, LIGHTS: LIGHTS, HOTEL: HOTEL, nodeModels: nodeModels, STORES: STORES, get GREEN() { return SK_GREEN; }, get HG() { return HG; }, LIFTS: LIFTS, LIFTX: {   /* every lift at once, for the player: one ticket, nearest station wins */
     state: LIFT_TK, door: GON_DOOR, gonWd: GON_WD, gonFy: GON_FY,
     eye: (o, k) => o.userData.lift.eye(o, k), seat: (o, k) => o.userData.lift.seat(o, k), leaveInfo: o => o.userData.lift.leaveInfo(o),
     setRide: (o, on) => { LIFTS.forEach(l => l.setRide(null, false)); if (o && on) o.userData.lift.setRide(o, true); },
@@ -6291,9 +6291,9 @@ SK.GRIND = GRIND;
 
 /* ---------- eating and drinking: the food is in your hands (first person) or your avatar lifts it (third person) ---------- */
 const VM = (() => {
-  const root = new THREE.Group(); root.position.set(0.24, -0.27, -0.55); camera.add(root); root.visible = false;
+  const VS = 0.3, root = new THREE.Group(); root.scale.setScalar(VS); root.position.set(0.24 * VS, -0.27 * VS, -0.55 * VS); camera.add(root); root.visible = false;   /* shrunk toward the camera: depth-tested, yet never inside a table or wall */
   const M = c => new THREE.MeshLambertMaterial({ color: c }), Bm = c => new THREE.MeshBasicMaterial({ color: c });
-  const mesh = (g, m, x, y, z, r) => { const o = new THREE.Mesh(g, m); o.position.set(x || 0, y || 0, z || 0); if (r) o.rotation.set(r[0], r[1], r[2]); o.renderOrder = 30; o.material.depthTest = false; return o; };
+  const mesh = (g, m, x, y, z, r) => { const o = new THREE.Mesh(g, m); o.position.set(x || 0, y || 0, z || 0); if (r) o.rotation.set(r[0], r[1], r[2]); o.renderOrder = 30; return o; };
   const FOOD = {   /* small models, metres */
     eggs: () => { const g = new THREE.Group(); g.add(mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.012, 12), M(0xffffff))); g.add(mesh(new THREE.SphereGeometry(0.016, 8, 6), M(0xffc21a), 0, 0.008, 0)); return g; },
     bacon: () => { const g = new THREE.Group(); [-0.015, 0.015].forEach(x => g.add(mesh(new THREE.BoxGeometry(0.018, 0.006, 0.08), M(0xc8553d), x, 0.004, 0))); return g; },
@@ -6314,42 +6314,81 @@ const VM = (() => {
   let held = null, anim = null, plateItems = [];
   function clear() { root.remove(plate); if (held) root.remove(held); held = null; root.visible = false; }
   function showPlate(items) { clear(); plateItems.forEach(o => plate.remove(o)); plateItems = items.map((k, i) => { const o = FOOD[k](); o.position.set(slots[i][0], 0.008, slots[i][1]); plate.add(o); return o; });
-    plate.position.set(0, -0.02, 0.0); plate.rotation.set(0.5, 0, 0); root.add(plate); root.visible = items !== null; }
+    plate.position.set(0, -0.03, 0.0); plate.rotation.set(0.5, 0, 0); plate.scale.setScalar(0.82); root.add(plate); root.visible = items !== null; }
   /* a few bites / sips: up to the mouth and back, the food shrinking each time */
   function consume(k, onDone, bites) {
     const mk = FOOD[k] || FOOD.granola; if (anim) { anim.done && anim.done(); } clear(); held = mk(); held.scale.setScalar(0.8); root.add(held); root.visible = true;
     anim = { t: 0, k: k, n: bites || 3, drink: !!DRINK[k], done: onDone }; PL.snackT = anim.n * 0.8 + 0.2;
   }
   SK.TICK.push(dt => {
-    const asp = Math.min(1, camera.aspect * 1.4); root.position.set(0.24 * asp, -0.27 + 0.06 * (1 - asp), -0.55);
+    const asp = Math.min(1, camera.aspect * 1.4); root.position.set(0.24 * asp, -0.29 + 0.06 * (1 - asp), -0.55).multiplyScalar(VS);
     if (!anim) return; const a = anim; a.t += dt; const per = 0.8, i = Math.floor(a.t / per), f = (a.t % per) / per, up = Math.sin(Math.min(1, f / 0.55) * Math.PI);
     if (held) { held.position.set(-0.08 * up, 0.1 * up, 0.1 * up); held.rotation.set(a.drink ? -1.1 * up : 0.3 * up, 0.3 * up, a.drink ? 0 : -0.3 * up); if (f > 0.5 && a.last !== i) { a.last = i; if (!a.drink) held.scale.multiplyScalar(0.72); if (SK.sfx) SK.sfx('click'); } }
     root.visible = held && (W.on && !W.ride && State.cam.walk !== 'third');
     if (i >= a.n) { clear(); anim = null; if (a.done) a.done(); }
   });
-  /* first-person body: mittens (sleeve cuff, mitt, thumb) and your skis. Mittens hold the plate and bring food up while eating; in the air
-     they spread for balance (one reaches down for a grab) with the ski tips in view, and in a crash they flail while the skis tumble */
-  const LK = LOOK, mitt = sd => { const g = new THREE.Group(); g.add(mesh(new THREE.CylinderGeometry(0.048, 0.055, 0.15, 10), M(LK.jacket), 0, 0, 0.1, [Math.PI / 2, 0, 0]));
-    g.add(mesh(new THREE.BoxGeometry(0.085, 0.055, 0.105), M(LK.glove), 0, 0, -0.02)); g.add(mesh(new THREE.BoxGeometry(0.03, 0.035, 0.055), M(LK.glove), -sd * 0.047, 0.012, -0.012, [0, sd * 0.45, 0])); return g; };
-  const handsE = [mitt(-1), mitt(1)]; handsE.forEach(h => { h.visible = false; root.add(h); });
-  const body = new THREE.Group(); camera.add(body); body.visible = false; const handsS = [mitt(-1), mitt(1)]; handsS.forEach(h => body.add(h));
-  const skis = new THREE.Group(); body.add(skis);
-  [-1, 1].forEach(sd => { const k = new THREE.Group(); k.position.x = sd * 0.15; k.add(mesh(new THREE.BoxGeometry(0.1, 0.022, 1.25), M(LK.ski), 0, 0, -0.45)); k.add(mesh(new THREE.BoxGeometry(0.1, 0.022, 0.22), M(LK.ski), 0, 0.04, -1.13, [0.45, 0, 0]));
-    k.add(mesh(new THREE.BoxGeometry(0.13, 0.15, 0.3), M(LK.boot), 0, 0.085, 0.02)); k.add(mesh(new THREE.BoxGeometry(0.14, 0.03, 0.12), M(0x2a2f3a), 0, 0.02, -0.15)); skis.add(k); });
-  let bt = 0;
+  /* ---- first-person body: your skis and mittens ----
+     Built in "virtual" metres and shrunk (S) toward the camera, so the parts sort with a real depth test (no full-screen slabs, no
+     wrong-way overlaps) yet sit nearer than any wall. Skis: base, metal edges, topsheet with pinstripes and a chevron, rockered tips with
+     protectors, a binding (toe, heel, brake) and a buckled boot. Mittens: rounded mitt, thumb, knit cuff and a sleeve that leaves the
+     frame at the corner. Shown while eating (holding the plate / bringing food up), in the air (arms out, a hand down for a grab) and
+     tumbling in a crash. */
+  const KIT = SK.KIT, LK = LOOK, S = 0.3, vmMats = new Set();
+  function vmBuild(fill) { const b = new KIT.B(); fill(b); const g = b.build(); g.traverse(o => { if (o.isMesh) { o.renderOrder = 25; o.frustumCulled = false; o.castShadow = o.receiveShadow = false; vmMats.add(o.material); } }); return g; }
+  const bxg = KIT.bx, cyg = KIT.cy, spg = KIT.sp, NO = { noOutline: 1 };
+  function skiModel(b) {
+    const N = 18, L = 1.62, z0 = 0.36, top = LK.ski, dark = 0x1b1f2a, edge = 0xb8c2cf;
+    let px = 0, py = 0, pz = z0;
+    for (let i = 0; i < N; i++) {
+      const t0 = i / N, t1 = (i + 1) / N, tm2 = (t0 + t1) / 2, wd = (0.082 + 0.036 * Math.pow(2 * tm2 - 1, 2)) * (tm2 > 0.93 ? 1 - (tm2 - 0.93) * 5 : 1);
+      const rk = t => t > 0.78 ? 0.16 * Math.pow((t - 0.78) / 0.22, 2.2) : 0, y0 = rk(t0), y1 = rk(t1), zA = z0 - t0 * L, zB = z0 - t1 * L, len = Math.hypot(zB - zA, y1 - y0), a = Math.atan2(y1 - y0, zA - zB);
+      const cx = 0, cyv = (y0 + y1) / 2, cz = (zA + zB) / 2, o = r => Object.assign({ rx: a }, NO, r || {});
+      b.add(bxg(wd, 0.012, len + 0.004), dark, cx, cyv + 0.006, cz, o());   /* base */
+      [-1, 1].forEach(sd => b.add(bxg(0.006, 0.013, len + 0.004), edge, sd * (wd / 2 - 0.002), cyv + 0.007, cz, o()));   /* steel edges */
+      b.add(bxg(wd - 0.01, 0.012, len + 0.004), top, cx, cyv + 0.017, cz, o());   /* topsheet */
+      if (tm2 > 0.12 && tm2 < 0.9) [-1, 1].forEach(sd => b.add(bxg(0.006, 0.002, len + 0.004), 0xf2f4f8, sd * wd * 0.28, cyv + 0.0235, cz, o()));   /* pinstripes */
+      if (tm2 > 0.62 && tm2 < 0.8 && i % 2 === 0) b.add(bxg(wd - 0.02, 0.002, 0.03), 0xffd21f, cx, cyv + 0.0236, cz, o());   /* chevron bars */
+      if (i === N - 1) b.add(bxg(wd + 0.004, 0.014, 0.03), 0x2a2f3a, cx, y1 + 0.01, zB + 0.012, o());   /* tip protector */
+      if (i === 0) b.add(bxg(wd + 0.004, 0.016, 0.03), 0x2a2f3a, cx, 0.011, zA - 0.012, o());   /* tail protector */
+    }
+    /* binding: plate, toe piece, heel piece, brake arms */
+    b.add(bxg(0.075, 0.012, 0.42), 0x2a2f3a, 0, 0.03, 0.02, NO); b.add(bxg(0.07, 0.05, 0.08), 0x9aa3b2, 0, 0.055, -0.19, NO); b.add(bxg(0.06, 0.018, 0.02), 0xff3232, 0, 0.083, -0.21, NO);
+    b.add(bxg(0.075, 0.07, 0.1), 0x9aa3b2, 0, 0.065, 0.2, NO); b.add(bxg(0.05, 0.02, 0.06), 0x2a2f3a, 0, 0.105, 0.24, NO);
+    [-1, 1].forEach(sd => b.add(bxg(0.006, 0.006, 0.12), 0x5d6675, sd * 0.05, 0.035, 0.14, Object.assign({ rx: 0.4 }, NO)));
+    /* boot: sole, lower shell, upper cuff, three buckles, power strap */
+    const bc = LK.boot; b.add(bxg(0.1, 0.03, 0.34), 0x2a2f3a, 0, 0.07, 0.0, NO); b.add(spg(0.065, 0.85, 0.75, 2.4, 12, 8), bc, 0, 0.12, -0.02, NO);
+    b.add(bxg(0.104, 0.17, 0.15), bc, 0, 0.22, 0.07, NO); b.add(bxg(0.108, 0.04, 0.152), 0x3b4252, 0, 0.3, 0.07, NO);
+    [[0.12, -0.06], [0.2, 0.05], [0.26, 0.07]].forEach(q => b.add(bxg(0.112, 0.012, 0.03), 0xc9d1dc, 0, q[0], q[1], NO)); b.add(bxg(0.11, 0.03, 0.16), 0xff3232, 0, 0.33, 0.07, NO);
+  }
+  function mittModel(b, sd) {
+    const gc = LK.glove; b.add(spg(0.058, 1.0, 0.72, 1.3, 14, 10), gc, 0, 0, -0.01, NO); b.add(spg(0.024, 0.9, 0.85, 1.5, 10, 8), gc, -sd * 0.05, 0.012, -0.03, Object.assign({ ry: sd * 0.5 }, NO));
+    b.add(bxg(0.07, 0.006, 0.05), 0x3b4252, 0, -0.04, -0.02, NO);   /* palm grip patch */
+    b.add(cyg(0.052, 0.055, 0.06, 14), 0x3b4252, 0, 0, 0.075, Object.assign({ rx: PI / 2 }, NO)); b.add(cyg(0.056, 0.056, 0.012, 14), 0xf2f4f8, 0, 0, 0.095, Object.assign({ rx: PI / 2 }, NO));   /* knit cuff + stripe */
+    b.add(cyg(0.066, 0.078, 0.32, 14), LK.jacket, 0, 0, 0.27, Object.assign({ rx: PI / 2 }, NO)); b.add(cyg(0.07, 0.07, 0.02, 14), 0x232a4a, 0, 0, 0.115, Object.assign({ rx: PI / 2 }, NO));   /* sleeve + cuff band */
+  }
+  const body = new THREE.Group(); body.scale.setScalar(S); camera.add(body); body.visible = false;
+  const skis = new THREE.Group(); body.add(skis); [-1, 1].forEach(sd => { const k = vmBuild(skiModel); k.position.x = sd * 0.12; skis.add(k); });
+  const mitts = [-1, 1].map(sd => { const m = vmBuild(b => mittModel(b, sd)); body.add(m); return m; });
+  let bt = 0; const vT = new THREE.Vector3();
+  const place = (m, x, y, z, rx, ry, rz) => { m.position.set(x, y, z); m.rotation.set(rx, ry, rz); };
   SK.TICK.push(dt => {
     bt += dt; const fpWalk = W.on && !W.ride && State.cam.walk !== 'third' && PL.mode !== 'ski', eat = root.visible && fpWalk;
-    handsE.forEach(h => { h.visible = eat; });
-    if (eat) { const [hl, hr] = handsE;
-      if (held && anim) { hr.position.set(held.position.x + 0.02, held.position.y - 0.05, held.position.z + 0.06); hr.rotation.set(held.rotation.x * 0.6, 0, -0.3); hl.position.set(-0.46, -0.06, 0.02); hl.rotation.set(0.2, 0, 0.3); }
-      else { hl.position.set(-0.15, -0.055, 0.07); hr.position.set(0.15, -0.055, 0.07); hl.rotation.set(0.5, 0, 0.5); hr.rotation.set(0.5, 0, -0.5); } }
-    const fpSki = PL.mode === 'ski' && State.cam.ski !== 'third' && (PL.air || PL.crash > 0); body.visible = fpSki; if (!fpSki) return;
-    const [L, R] = handsS, asp = Math.min(1, camera.aspect * 1.4);
-    if (PL.crash > 0) { const f = Math.min(1, PL.crash); L.position.set(-0.3 * asp + 0.1 * Math.sin(bt * 13), -0.12 + 0.12 * Math.sin(bt * 11), -0.5); R.position.set(0.3 * asp + 0.1 * Math.sin(bt * 12 + 1), -0.1 + 0.12 * Math.sin(bt * 10 + 2), -0.5);
-      L.rotation.set(Math.sin(bt * 9), 0, bt * 5); R.rotation.set(Math.sin(bt * 8), 0, -bt * 5); skis.position.set(0, -0.5 - 0.1 * f, -0.4); skis.rotation.set(0.5 + 0.4 * Math.sin(bt * 7), 0.3 * Math.sin(bt * 5), 0.7 * Math.sin(bt * 9)); }
-    else { const bob = 0.02 * Math.sin(bt * 6), grab = PL.grabT > 0 && inp().grab; L.position.set(-0.33 * asp, -0.16 + bob, -0.5); L.rotation.set(0.3, 0, 0.6);
-      if (grab) { R.position.set(0.12, -0.4, -0.7); R.rotation.set(1.1, 0, 0); } else { R.position.set(0.33 * asp, -0.16 - bob, -0.5); R.rotation.set(0.3, 0, -0.6); }
-      skis.position.set(0, -0.5, -0.4); skis.rotation.set(0.42, 0, 0); }
+    const fpSki = PL.mode === 'ski' && State.cam.ski !== 'third' && (PL.air || PL.crash > 0), asp = Math.min(1.3, camera.aspect);
+    body.visible = eat || fpSki; skis.visible = fpSki; if (!body.visible) return;
+    const [L, R] = mitts;
+    if (eat) {   /* hands under the plate rim, or one bringing food up while the other rests low */
+      const rp = root.position;
+      if (held && anim) { vT.copy(rp).divideScalar(VS).add(held.position); place(R, vT.x + 0.03, vT.y - 0.07, vT.z + 0.05, 0.25 + held.rotation.x * 0.5, 0.15, -0.35); place(L, -0.62 * asp, -0.55, -0.95, 0.2, 0.3, 0.5); }
+      else { const px = rp.x / VS, py = rp.y / VS - 0.06, pz = rp.z / VS + 0.04; place(L, px - 0.1, py, pz, 0.6, 0.35, 0.9); place(R, px + 0.1, py, pz, 0.6, -0.35, -0.9); }   /* thumbs over the rim */
+      return;
+    }
+    if (PL.crash > 0) { const f = Math.min(1, PL.crash);
+      place(L, -0.5 * asp + 0.12 * Math.sin(bt * 13), -0.3 + 0.14 * Math.sin(bt * 11), -0.75, Math.sin(bt * 9), 0.3, bt * 4); place(R, 0.5 * asp + 0.12 * Math.sin(bt * 12 + 1), -0.28 + 0.14 * Math.sin(bt * 10 + 2), -0.75, Math.sin(bt * 8), -0.3, -bt * 4);
+      skis.position.set(0.1 * Math.sin(bt * 5), -0.95 - 0.1 * f, -0.3); skis.rotation.set(0.35 + 0.35 * Math.sin(bt * 7), 0.35 * Math.sin(bt * 5), 0.8 * Math.sin(bt * 9)); return; }
+    const bob = 0.015 * Math.sin(bt * 6), grab = PL.grabT > 0 && inp().grab;
+    place(L, -0.78 * asp, -0.62 + bob, -1.2, 0.45, 0.55, 0.75);   /* arms out for balance, hands at the lower corners */
+    if (grab) place(R, 0.24, -0.7, -1.3, 0.9, -0.2, -0.3); else place(R, 0.78 * asp, -0.62 - bob, -1.2, 0.45, -0.55, -0.75);
+    skis.position.set(0, -1.08, -0.55); skis.rotation.set(0.3, 0, 0);   /* tips raised toward you: the topsheets read */
   });
   return { consume, showPlate, clear, FOOD, get busy() { return !!anim; } };
 })();
