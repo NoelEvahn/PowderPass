@@ -1298,7 +1298,7 @@ function hDoorFrame(b, hx, y, z, sd) {
 function hPlant(b, KK, x, y, z) { b.add(cy(0.28, 0.22, 0.5, 12), 0xb4603e, x, y + 0.25, z); b.add(sp(0.42, 1, 1.5, 1), C.grass2, x, y + 0.95, z); b.add(sp(0.3, 1, 1.2, 1), C.grass, x + 0.1, y + 1.35, z + 0.05); KK.push({ x: x, z: z, ry: 0, hw: 0.3, hd: 0.3 }); }
 function hotel() {
   const b = new B(), r = new B(), K = [], K2 = [], K3 = [], K4 = [], F = [], g = new THREE.Group(), W = 24, D = 10, H = 3.4, H2 = 3.0, S = 0.3, hz = D / 2, hx = W / 2, Y2 = FY + H + S, T = 0.22, UP = Y2 + 0.03 - 0.23;
-  const Y3 = Y2 + H2 + S, UP2 = Y3 + 0.03 - 0.23, HX = { rooms: [], beds: [], L: [], floors: [0.23, UP, UP2] };   /* second floor + north wing (rooms, suites, breakfast hall, elevator) */
+  const Y3 = Y2 + H2 + S, UP2 = Y3 + 0.03 - 0.23, HX = { rooms: [], beds: [], L: [], floors: [0.23, UP, UP2], walk: [0.23, UP + 0.23, UP2 + 0.23] };   /* floors: room/wall base levels; walk: the visible slab tops you stand on */   /* second floor + north wing (rooms, suites, breakfast hall, elevator) */
   WF = CHAR; WG = GLASS; WY = FY; WAL = GLA;
   b.add(bx(W + 0.4, 0.2, D + 0.4), CHAR, 0, 0.1, 0); b.add(bx(W - 0.1, 0.03, D - 0.1), LIN, 0, 0.215, 0);
   wall(b, K, 0, hz, 0, W, H, T, CONC, [[-11.6, -1.9, 0.1, 3.0, 1], [-1.3, 1.3, 0, 2.6], [1.9, 11.6, 0.1, 3.0, 1]]);
@@ -1584,10 +1584,13 @@ function hotel() {
   pg.userData.K.forEach(k => K.push({ x: k.x + OX, z: k.z + OZ, ry: 0, hw: k.hw, hd: k.hd }));
   const DR = []; hSlideDoor(g, DR, 0, hz - T / 2 - 0.04, 'x', 1.3, 2.55, 1.2); hSlideDoor(g, DR, hx - T / 2 - 0.04, 2.5, 'z', 1.3, 2.55, 1.2); g.userData.doors = DR;
   g.add(b.build()); flushWind(g); const rf = r.build(); g.add(rf); ROOFS.push(rf); hSlideDoor(g, DR, 0, 2.2, 'x', 1.3, 2.55, 1.2);   /* ski room -> lobby door, added last so the editor's keys for the hotel's parts don't shift */ g.userData.K = K; g.userData.K2 = K2; g.userData.K3 = K3; g.userData.K4 = K4; g.userData.KR = KR; g.userData.HX = HX; HX.lv2 = (UP + UP2) / 2;
-  F.push({ x0: -12, x1: 12, z0: ZN, z1: -5, y0: UP, y1: UP, ax: 0, min: UP - 0.7 }, { x0: -12, x1: 12, z0: ZN, z1: -5, y0: UP2, y1: UP2, ax: 0, min: UP2 - 0.7 });
-  F.push({ x0: -9.85, x1: 12, z0: -5, z1: 5.3, y0: UP2, y1: UP2, ax: 0, min: UP2 - 0.7 }, { x0: -12, x1: -9.85, z0: -5, z1: -3.4, y0: UP2, y1: UP2, ax: 0, min: UP2 - 0.7 }, { x0: -12, x1: -9.85, z0: 2.65, z1: 5.3, y0: UP2, y1: UP2, ax: 0, min: UP2 - 0.7 });
-  F.push({ x0: -9.85, x1: 12, z0: -5, z1: 6.6, y0: UP, y1: UP, ax: 0, min: UP - 0.7 }, { x0: -12, x1: -9.85, z0: -5, z1: -3.4, y0: UP, y1: UP, ax: 0, min: UP - 0.7 }, { x0: -12, x1: -9.85, z0: 2.65, z1: 6.6, y0: UP, y1: UP, ax: 0, min: UP - 0.7 });
-  F.push({ x0: -11.6, x1: -9.85, z0: -3.4, z1: 2.6, y0: UP, y1: 0, ax: 'z', min: -1 }, { x0: -11.6, x1: -9.85, z0: -3.4, z1: 2.6, y0: UP2, y1: UP, ax: 'z', min: -1 }); g.userData.F = F; g.userData.KS = stairWedge('z', -3.4, 2.6, UP, 0, -11.6, -9.85);
+  /* walk floors at the visible slab tops (they used to sit 0.23 lower, so boots sank into every hotel floor); ground floor included */
+  const WU = HX.walk[1], WU2 = HX.walk[2];
+  F.push({ x0: -12, x1: 12, z0: ZN, z1: hz, y0: 0.23, y1: 0.23, ax: 0, min: -1 });
+  F.push({ x0: -12, x1: 12, z0: ZN, z1: -5, y0: WU, y1: WU, ax: 0, min: WU - 0.7 }, { x0: -12, x1: 12, z0: ZN, z1: -5, y0: WU2, y1: WU2, ax: 0, min: WU2 - 0.7 });
+  F.push({ x0: -9.85, x1: 12, z0: -5, z1: 5.3, y0: WU2, y1: WU2, ax: 0, min: WU2 - 0.7 }, { x0: -12, x1: -9.85, z0: -5, z1: -3.4, y0: WU2, y1: WU2, ax: 0, min: WU2 - 0.7 }, { x0: -12, x1: -9.85, z0: 2.65, z1: 5.3, y0: WU2, y1: WU2, ax: 0, min: WU2 - 0.7 });
+  F.push({ x0: -9.85, x1: 12, z0: -5, z1: 6.6, y0: WU, y1: WU, ax: 0, min: WU - 0.7 }, { x0: -12, x1: -9.85, z0: -5, z1: -3.4, y0: WU, y1: WU, ax: 0, min: WU - 0.7 }, { x0: -12, x1: -9.85, z0: 2.65, z1: 6.6, y0: WU, y1: WU, ax: 0, min: WU - 0.7 });
+  F.push({ x0: -11.6, x1: -9.85, z0: -3.4, z1: 2.6, y0: WU, y1: 0.23, ax: 'z', min: -1 }, { x0: -11.6, x1: -9.85, z0: -3.4, z1: 2.6, y0: WU2, y1: WU, ax: 'z', min: -1 }); g.userData.F = F; g.userData.KS = stairWedge('z', -3.4, 2.6, UP, 0, -11.6, -9.85);
   WF = C.wood3; WG = C.sky; WY = FY; WAL = 0; return g;
 }
 function putHotel(R, g, x, z) {
@@ -2040,7 +2043,7 @@ function person(o) {
   const N = { noOutline: 1 };
 
   /* skis + boots: one rigid group per foot (the legs are solved onto it) */
-  const SOLE = skis ? 0.2 : 0.05, AY = SOLE + 0.27, SL = 2.9 * (kid ? 0.82 : 1);
+  const SOLE = skis ? 0.2 : 0.0875, AY = SOLE + 0.27,   /* snow boots: the lugged rubber sole (bottom at SOLE - 0.0825) rests on the ground, not 2 cm under it */ SL = 2.9 * (kid ? 0.82 : 1);
   const sk = [-1, 1].map(s => {
     const gq = grp(s * 0.34 * (kid ? 0.85 : 1), 0, 0); gq.rotation.order = 'YZX';
     mk(b => {
@@ -2241,6 +2244,21 @@ function person(o) {
     arms.forEach(a => { const d = D.arm[a.s < 0 ? 0 : 1]; a.sh.rotation.set(d[0], 0, a.s * 0.2); a.el.rotation.x = d[1]; a.pp = D.pp; if (a.pole) a.pole.rotation.x = (D.pp || 0.32) - (tor.rotation.x + d[0] + d[1]); });
   };
   const fx = sd => sd * 0.34 * (kid ? 0.85 : 1);
+  /* boots on uneven snow: on a slope the feet used to stay level with the body, burying the uphill sole up to 20 cm. Each foot is
+     lifted to the terrain under it and pitched to the slope along its length; the hips drop for the downhill foot and the leg IK
+     (below) follows. Only on open terrain (not floors, decks or seats) and only in upright moves */
+  const CONF = { Standing: 1, Walking: 1, Sprinting: 1, Waving: 1, Cheering: 1, Snacking: 1, Land: 1, 'Getting up': 0 }, vC = V(0, 0, 0), vG = V(0, 0, 0), vW = V(0, 0, 0);
+  const terr = (wx, wz) => { const z = wz - RES_Z; return (z < TZ0 || z > TZ1 || wx < TX0 || wx > TX1) ? 0 : tH(wx, z); };
+  function footConform() {
+    const nm = ctl ? ctl.nm : 'Standing'; if (!CONF[nm] || g.userData.conform === false) return;
+    g.getWorldPosition(vG); const base = terr(vG.x, vG.z); if (Math.abs(vG.y - base) > 0.2) return;   /* indoors, on a deck, riding: flat floor */
+    const s = root.getWorldScale(vW).y; if (s < 1e-4) return; let lo = 0;
+    sk.forEach(q => { q.getWorldPosition(vC); const h = terr(vC.x, vC.z) - base; if (Math.abs(h) > 0.6) return;
+      vW.set(0, 0, 1).transformDirection(q.matrixWorld); const e = 0.16, dh = terr(vC.x + vW.x * e, vC.z + vW.z * e) - terr(vC.x - vW.x * e, vC.z - vW.z * e);
+      q.position.y += h / s; q.rotation.x -= Math.atan2(dh, 2 * e); lo = Math.min(lo, h); });
+    if (lo < 0) pel.position.y += lo / s;
+    g.updateMatrixWorld(true);
+  }
   /* seatH is the hip height (body-group units) of an unscaled adult on that seat: the seat surface is seatH - SEAT_T. Hips go on that
      surface for any body size (kids, women and the 0.9 HUMAN_K scale included), so nobody floats above or sinks into the seat */
   function seatPel() { const SEAT_T = 0.37, s = Math.max(0.43, (g.userData.seatH || 1.02) - SEAT_T); return s / RS + SEAT_T; }
@@ -2268,6 +2286,7 @@ function person(o) {
     });
     if (dmo) demoPose(dt, t0);
     g.updateMatrixWorld(true);
+    if (!skis) footConform();
     /* 3D two-bone IK: each ankle sits on its ski, knee bends forward */
     legs.forEach((l, i) => {
       vA.set(0, AY, -0.03).applyMatrix4(sk[i].matrixWorld); pel.worldToLocal(vA); vH.copy(l.th.position);
@@ -4716,6 +4735,56 @@ SK.makeLabel = makeLabel; SK.LABELS = [];
 const DSPR = []; world.labels.forEach((l, i) => { const s = makeLabel(l.t, l.h); s.position.set(l.x, l.y, l.z); scene.add(s); if (!l.demo) { s.userData.ltxt = l.t; s.userData.lh = l.h; s.userData.lk = 'L' + i; SK.LABELS.push(s); } if (l.demo) { s.visible = false; DSPR.push({ s: s, d: l.demo, i: l.i }); } });
 SK.TICK.push(() => DSPR.forEach(x => { x.s.visible = (globalThis.DEMOS || {})[x.d] === x.i; }));
 
+/* ---- walk surfaces: the top of the visible floor under your feet ----
+   Walk heights used to come from the terrain and a few hand-made floor rects, so boots sank into hotel planks, shop carpets and café
+   boards (the hotel's floors sat 23 cm above every walk height). SURF reads the real geometry instead: inside each building footprint
+   (NOSNOW rect) it collects the flat, up-facing triangles of the static placed assets (no people, carriers, outlines or glass), bins
+   them per metre, and answers "highest surface between lo and hi under (x, z)" with point-in-triangle tests. Built lazily per footprint
+   the first time someone walks into it; the editor drops the cache when it closes (assets may have moved). */
+const SURF = (() => {
+  const BIN = 1, bins = new Map(), built = new Set(); let unitBoxes = null;
+  const rects = () => SK.NOSNOW || [], inRect = (r, x, lz, m) => x > r.x0 - m && x < r.x1 + m && lz > r.z0 - m && lz < r.z1 + m;
+  const skip = o => { for (let p = o; p; p = p.parent) { const u = p.userData; if (u && (u.person || u.seats || u.noSurf)) return true; } return false; };
+  const va = new THREE.Vector3(), vb = new THREE.Vector3(), vc = new THREE.Vector3();
+  function boxes() { if (unitBoxes) return unitBoxes; const U = SK.ED && SK.ED.UNITS; if (!U) return [];   /* editor not built yet: try again later */ unitBoxes = [];
+    U.forEach(u => { if (!u || skip(u)) return; const bb = new THREE.Box3().setFromObject(u); if (bb.isEmpty() || bb.max.x - bb.min.x > 90 || bb.max.z - bb.min.z > 90) return; unitBoxes.push({ u: u, bb: bb }); });
+    return unitBoxes; }
+  function build(ri) {
+    built.add(ri); const r = rects()[ri], z0 = r.z0 + SK.RES_Z, z1 = r.z1 + SK.RES_Z;
+    boxes().forEach(e => { const bb = e.bb; if (bb.max.x < r.x0 || bb.min.x > r.x1 || bb.max.z < z0 || bb.min.z > z1) return;
+      e.u.updateMatrixWorld(true);
+      e.u.traverse(o => { if (!o.isMesh || o.isInstancedMesh || !o.visible || skip(o)) return; const m = o.material; if (!m || m.type === 'ShaderMaterial' || (m.transparent && m.opacity < 0.99)) return;
+        const P = o.geometry.attributes.position, I = o.geometry.index, n = I ? I.count : P.count, mw = o.matrixWorld;
+        for (let t = 0; t < n; t += 3) {
+          const ia = I ? I.getX(t) : t, ib = I ? I.getX(t + 1) : t + 1, ic = I ? I.getX(t + 2) : t + 2;
+          va.fromBufferAttribute(P, ia).applyMatrix4(mw); vb.fromBufferAttribute(P, ib).applyMatrix4(mw); vc.fromBufferAttribute(P, ic).applyMatrix4(mw);
+          const ux = vb.x - va.x, uy = vb.y - va.y, uz = vb.z - va.z, wx = vc.x - va.x, wy = vc.y - va.y, wz = vc.z - va.z;
+          const nx = uy * wz - uz * wy, ny = uz * wx - ux * wz, nz = ux * wy - uy * wx, nl = Math.hypot(nx, ny, nz); if (nl < 1e-9 || ny / nl < 0.97) continue;
+          const mnx = Math.min(va.x, vb.x, vc.x), mxx = Math.max(va.x, vb.x, vc.x), mnz = Math.min(va.z, vb.z, vc.z), mxz = Math.max(va.z, vb.z, vc.z);
+          if (mxx < r.x0 || mnx > r.x1 || mxz < z0 || mnz > z1) continue;
+          const tri = [va.x, va.y, va.z, vb.x, vb.y, vb.z, vc.x, vc.y, vc.z];
+          for (let ix = Math.floor(Math.max(mnx, r.x0) / BIN); ix <= Math.floor(Math.min(mxx, r.x1) / BIN); ix++)
+            for (let iz = Math.floor(Math.max(mnz, z0) / BIN); iz <= Math.floor(Math.min(mxz, z1) / BIN); iz++) { const k = ix + ',' + iz; let L = bins.get(k); if (!L) bins.set(k, L = []); L.push(tri); }
+        } }); });
+  }
+  /* highest flat surface top under (x, z) with lo <= y <= hi, or null */
+  function at(x, z, lo, hi) {
+    const R = rects(), lz = z - SK.RES_Z; let any = false;
+    for (let i = 0; i < R.length; i++) if (inRect(R[i], x, lz, 0.3)) { any = true; if (!built.has(i) && SK.ED && SK.ED.UNITS) build(i); }
+    if (!any) return null;
+    const L = bins.get(Math.floor(x / BIN) + ',' + Math.floor(z / BIN)); if (!L) return null; let best = null;
+    for (let i = 0; i < L.length; i++) { const t = L[i];
+      const d = (t[5] - t[8]) * (t[0] - t[6]) + (t[6] - t[3]) * (t[2] - t[8]); if (Math.abs(d) < 1e-12) continue;
+      const a = ((t[5] - t[8]) * (x - t[6]) + (t[6] - t[3]) * (z - t[8])) / d, b = ((t[8] - t[2]) * (x - t[6]) + (t[0] - t[6]) * (z - t[8])) / d, c = 1 - a - b;
+      if (a < -1e-4 || b < -1e-4 || c < -1e-4) continue;
+      const y = a * t[1] + b * t[4] + c * t[7]; if (y >= lo && y <= hi && (best === null || y > best)) best = y; }
+    return best;
+  }
+  /* warm-up: one footprint per frame after boot, so walking into a building never stalls a frame on the first query */
+  let warm = 0; SK.TICK.push(() => { const R = rects(); if (warm < R.length && SK.ED && SK.ED.UNITS) { if (!built.has(warm)) build(warm); warm++; } });
+  return { at, reset() { bins.clear(); built.clear(); unitBoxes = null; warm = 0; }, stats: () => ({ bins: bins.size, built: built.size }) };
+})();
+SK.SURF = SURF;
 /* ---- walk mode ---- */
 const W = { y: 0, on: false, x: 0, z: 0, yaw: 0, pitch: 0, ptr: new Map() };
 W.down = e => { cvs.setPointerCapture(e.pointerId); W.ptr.set(e.pointerId, { x: e.clientX, y: e.clientY, sx: e.clientX, sy: e.clientY, mv: e.pointerType === 'touch' && e.clientX < innerWidth * 0.45 }); };
@@ -4794,6 +4863,9 @@ W.step = dt => {
   if (W.z < TB.z1 - 0.5) W.x = clamp(W.x, TB.x0 + 1.5, TB.x1 - 1.5); else W.x = clamp(W.x, -46, 46);  /* resort is fenced in; the white gallery floor south of it is open */
   W.z = clamp(W.z, TB.z0 + 1.5, SK.DEV ? SK.GAL_Z1 : TB.z1 - 1.5);
   const gY = SK.groundY(W.x, W.z); let ty = gY; SK.FLOORS.forEach(f => { if (W.x < f.x0 || W.x > f.x1 || W.z < f.z0 || W.z > f.z1) return; const t = f.ax === 'x' ? (W.x - f.x0) / (f.x1 - f.x0) : f.ax === 'z' ? (W.z - f.z0) / (f.z1 - f.z0) : 0; const sf = f.y0 + (f.y1 - f.y0) * t; if (f.ax ? W.y < sf - 0.65 : W.y < f.min) return; ty = Math.max(ty, sf); });
+  { const vs = SURF.at(W.x, W.z, ty - 0.12, ty + 0.4); if (vs !== null) ty = vs; }   /* stand on the visible floor (planks, carpet, deck, slab) */
+  const onSnow = ty === gY;   /* boots sink into the snow layer (0.06 over the terrain); on hard floors the sole sits on the surface */
+  W.goff = W.goff === undefined ? (onSnow ? 0.06 : 0) : W.goff + ((onSnow ? 0.06 : 0) - W.goff) * (1 - Math.exp(-dt * 14));
   const ev = SK.ELEV && SK.ELEV.floorAt(W.x, W.z, W.y); if (ev !== null && ev !== undefined) { ty = ev; W.y = ev; }   /* standing in the elevator cab */
   /* jump on foot (Space / JUMP): a hop of ~0.5 m; no footprints in the air, a dent where you land */
   const jIn = !!(IN.jump || keys[' ']); if (jIn && !W.jHeld && !(W.jy > 0)) { W.jv = 4.6; W.jy = 0.001; } W.jHeld = jIn;
@@ -4802,7 +4874,7 @@ W.step = dt => {
   W.y += (ty - W.y) * (1 - Math.exp(-dt * 12));
   /* gentle head bob while walking */
   const sp = Math.hypot(W.vx, W.vz), stride = Math.max(0.55, Math.min(2, 0.45 + 0.17 * sp)); W.bp = (W.bp || 0) + dt * sp * PI / stride;   /* one PI of bp = one step */ const bob = Math.min(1, sp / 5) * 0.035 * Math.sin(W.bp * 2);
-  camera.position.set(W.x, 0.06 + EYE + W.y + (W.jy || 0) + bob, W.z); camera.rotation.set(W.pitch, W.yaw, 0, 'YXZ');
+  camera.position.set(W.x, W.goff + EYE + W.y + (W.jy || 0) + bob, W.z); camera.rotation.set(W.pitch, W.yaw, 0, 'YXZ');
   if (!W.cool) { const b = SK.LIFTX.boardable(W.x, W.z, camera.position.y); if (b) startBoard(b.car, b.k); }
 };
 W.toggle = (on, where) => {
@@ -5345,12 +5417,12 @@ PL.walkPost = dt => {
   const wj = !!(W.on && !busy && !W.sit && PL.mode !== 'ski'); if (document.body.classList.contains('walkjump') !== wj) document.body.classList.toggle('walkjump', wj);
   PL.snackT = Math.max(0, (PL.snackT || 0) - dt);
   if (!third) return;
-  if (W.sit) { AVW.wrap.position.set(W.x, W.sit.fy + 0.06, W.z); qT.setFromAxisAngle(YUP, (W.sit.yaw || 0) + PI); AVW.wrap.quaternion.copy(qT); AVW.p.userData.seatH = 1.02; AVW.p.userData.rate = 1; AVW.p.userData.snack = PL.snackT > 0; AVW.p.userData.play('Sit on chair');
+  if (W.sit) { AVW.wrap.position.set(W.x, W.sit.fy, W.z); qT.setFromAxisAngle(YUP, (W.sit.yaw || 0) + PI); AVW.wrap.quaternion.copy(qT); AVW.p.userData.seatH = 1.02; AVW.p.userData.rate = 1; AVW.p.userData.snack = PL.snackT > 0; AVW.p.userData.play('Sit on chair');
     /* watch yourself eat: of the angles near where you look, take the one with the most room (a wall behind the chair swings the camera round) */
     let by = W.yaw, bt = -1; [0, 0.5, -0.5, 1.0, -1.0, 1.5, -1.5].forEach(o => { const yw = W.yaw + o; camClear(W.x, W.sit.fy + 1.3, W.z, W.x + Math.sin(yw) * 2.4, W.sit.fy + 2.0, W.z + Math.cos(yw) * 2.4, W.sit.fy); if (camClear.t > bt + 0.08) { bt = camClear.t; by = yw; } });
     camera.position.copy(camClear(W.x, W.sit.fy + 1.3, W.z, W.x + Math.sin(by) * 2.4, W.sit.fy + 2.0, W.z + Math.cos(by) * 2.4, W.sit.fy)); camera.lookAt(W.x, W.sit.fy + 0.75, W.z); return; }
   const sp = Math.hypot(W.vx || 0, W.vz || 0); if (CAM.on) PL.walkFace = W.yaw; else if (sp > 0.3) PL.walkFace = Math.atan2(-W.vx, -W.vz);   /* camera lock: face where you look */
-  AVW.wrap.position.set(W.x, W.y + 0.06 + (W.jy || 0), W.z); qT.setFromAxisAngle(YUP, PL.walkFace + PI); AVW.wrap.quaternion.slerp(qT, Math.min(1, dt * 10));
+  AVW.wrap.position.set(W.x, W.y + (W.goff === undefined ? 0.06 : W.goff) + (W.jy || 0), W.z); qT.setFromAxisAngle(YUP, PL.walkFace + PI); AVW.wrap.quaternion.slerp(qT, Math.min(1, dt * 10));
   if (W.jy > 0) PL.landT = 0.2; else PL.landT = Math.max(0, (PL.landT || 0) - dt);
   AVW.p.userData.jv = W.jv || 0; AVW.p.userData.snack = PL.snackT > 0;
   AVW.p.userData.play(W.jy > 0 ? 'Hop' : PL.landT > 0.02 && PL.landT < 0.2 ? 'Land' : sp > 3 ? 'Sprinting' : sp > 0.4 ? 'Walking' : 'Standing'); AVW.p.userData.rate = sp > 3 ? Math.min(1.9, Math.max(0.8, sp / 4.2)) : sp > 0.4 ? Math.min(1.8, Math.max(0.6, sp / 1.4)) : 1;   /* legs keep pace with the ground */
@@ -6661,7 +6733,7 @@ SK.VM = VM;
    buttons: look at one and press F (or tap). Doors are fitted to the real opening (slab to header) and move in under half a second. */
 const ELEV = (() => {
   const H = SK.HOTEL, X = H && H.HX, sh = X && X.shaft; if (!sh) return null;
-  const FL = X.floors.map(v => H.gy + v), SLAB = X.floors.map((v, f) => H.gy + (f ? v + 0.23 : v)), OPEN_H = 2.25;   /* walk heights vs the slab the doorway is built on */
+  const SLAB = X.floors.map((v, f) => H.gy + (f ? v + 0.23 : v)), FL = SLAB.slice(), OPEN_H = 2.25;   /* the cab stops level with each slab: no step in or out */   /* walk heights vs the slab the doorway is built on */
   const cxl = (sh.x0 + sh.x1) / 2, czl = (sh.z0 + sh.z1) / 2, w = sh.x1 - sh.x0, d = sh.z1 - sh.z0, EXl = -11.0, DOOR_T = 0.42, HOLD = 3.2, ARRIVE = 0.3;
   const M = c => new THREE.MeshLambertMaterial({ color: c }), box = (gx, gy, gz, m) => new THREE.Mesh(new THREE.BoxGeometry(gx, gy, gz), m);
   const ez = x => x * x * (3 - 2 * x);
@@ -6716,6 +6788,9 @@ const ELEV = (() => {
   function press(btn, f) { btn.push = 0.16; if (SK.sfx) SK.sfx('click'); go(f); }
   SK.TICK.push(dt => {
     const was = S.phase;
+    if (!S.lvl && SK.SURF && SK.ED && SK.ED.UNITS) {   /* once: each stop level with the landing's real floor (slab + runner), so there is no lip at the door */
+      S.lvl = 1; FL.forEach((v, f) => { const s = SK.SURF.at(H.x + EXl, H.z + sh.door + 0.45, v - 0.12, v + 0.2); if (s !== null) FL[f] = s; X.walk[f] = FL[f] - H.gy; });
+      if (S.phase === 'idle' && S.target === null) S.y = FL[S.at]; }
     if (S.phase === 'idle' && S.queue.length) { S.target = S.queue.shift(); S.phase = S.door > 0.01 ? 'closing' : (S.target === S.at ? 'opening' : 'moving'); }
     if (S.phase === 'open') { S.door = 1; S.t -= dt; if (S.t <= 0 && (S.queue.length || !inside(W.x, W.z, W.y))) S.phase = 'closing'; }
     if (S.phase === 'closing') { S.door = Math.max(0, S.door - dt / DOOR_T); if (inside(W.x, W.z, W.y) && S.target === null && !S.queue.length && Math.abs(W.z - (H.z + sh.door)) < 0.5) { S.phase = 'opening'; }   /* someone in the doorway */
@@ -6857,7 +6932,7 @@ ECON.nearby = (x, z) => { const t = p6Target(x, z); return t ? { text: t.text, a
 ECON.act = (x, z) => { const t = p6Target(x, z); if (t) { if (t.act) t.act(); return true; } return E1.act(x, z); };
 function ride(f) {
   closeSheet(); const fe = document.getElementById('fade'); fe.classList.add('on');
-  setTimeout(() => { W.x = HOT.x + HXd.elev.x; W.z = HOT.z + HXd.elev.z + 0.2; W.y = HOT.gy + HXd.floors[f]; W.vx = W.vz = 0; W.yaw = 0; lastY = null; SK.toast(FLOORN[f] + (f === 0 ? ': breakfast hall and lobby' : f === 1 ? ': rooms 101 to 109' : ': rooms 201 to 208, suites')); setTimeout(() => fe.classList.remove('on'), 250); }, 300);
+  setTimeout(() => { W.x = HOT.x + HXd.elev.x; W.z = HOT.z + HXd.elev.z + 0.2; W.y = HOT.gy + HXd.walk[f]; W.vx = W.vz = 0; W.yaw = 0; lastY = null; SK.toast(FLOORN[f] + (f === 0 ? ': breakfast hall and lobby' : f === 1 ? ': rooms 101 to 109' : ': rooms 201 to 208, suites')); setTimeout(() => fe.classList.remove('on'), 250); }, 300);
 }
 /* ---- sheets: reception (check-in) and the elevator panel ---- */
 SK.P6 = {
@@ -7882,6 +7957,7 @@ const ED = SK.DEV ? null : (() => {
   function close() {
     if (!S.on) return; if (S.dirty && !confirm('Leave the editor? Unsaved changes stay in this session but are lost on reload. Press Save to keep them.')) return;
     S.on = false; S.sel = []; S.npc = null; S.path = null; closePanel(); frameTick(); drawRoute(); document.body.classList.remove('ed'); $('ed').hidden = true;
+    if (SK.SURF) SK.SURF.reset();   /* assets may have moved: walk surfaces are rebuilt on demand */
     const W = SK.W; W.toggle(true, 'here'); if (backup) { W.x = backup.x; W.z = backup.z; W.yaw = backup.yaw; W.pitch = backup.pitch; W.y = SK.groundY(W.x, W.z); }
   }
 
