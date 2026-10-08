@@ -257,5 +257,15 @@ New:
 - **Fix:** shop / reception prompts are no longer offered from upstairs over the counter below.
 - Tests: `tools/r11-test.js`; `tools/trickbot.js` holds jump for tricks.
 
+## Lighting, post-processing and art style (twelfth round)
+- **First-person body rebuilt:** slim detailed skis (sidecut, rockered tips with guards, steel edges, topsheet pinstripes and chevrons, bindings with brakes, buckled boots) and rounded mittens with knit cuffs and sleeves. Built with the world's model kit and shrunk toward the camera, so parts depth-sort and never clip into tables or walls. Only the ski tips show along the bottom of the screen; hands sit in the corners, hold the plate rim and bring food up.
+- **Light catalog:** every fixture carries a colour temperature and brightness: warm 2700 K (rooms, breakfast pendants, cabin porches, café), soft 3500 K (lobby, corridors), neutral white (shops, lift floodlights), sodium amber (street lamps), flickering fire. 12 real spot lights follow the nearest fixtures; 4 cast shadows on High (2 on Balanced).
+- **Fake light removed:** the see-through beam cones and floating dust motes are gone; glow globes are solid bulbs that light up at night (and bloom).
+- **Sky light:** a hemisphere light adds cool sky fill from above and warm bounce off the snow from below; the sun is a stronger warm key; the toon ramp has 6 soft steps instead of 3 hard ones.
+- **Post-processing (High):** the scene renders into a 4x multisampled target with depth. A half-resolution screen-space pass ray-marches 6 directions x 4 steps over the depth buffer for ambient occlusion (contact shadow in corners, under benches and furniture, where things meet the snow), with a depth-aware blur. A two-level bloom makes bulbs, fire and sunlit snow glow. The grade adds a filmic shoulder, saturation, warm highlights / cool shadows and a light vignette. Balanced keeps bloom + grade; Low draws straight to the screen.
+- **Outlines:** thinner, a soft slate instead of black, fading out with distance so far forests and peaks read painterly.
+- **Art (after the reference images):** fir trees rebuilt as whorls of drooping two-blade branches with snow lying along them (fewer triangles than before); puffy cumulus clouds; lush layered bushes; rounded faceted boulders; a campfire with a stone ring, log teepee, embers and layered flames; deeper greens.
+- Tools: `tools/style.js <tag>` (fixed QA shots, day/night/interior), `tools/fpshot.js` (first-person states).
+
 ## Not yet
 - Terrain distance LOD; real-phone frame-rate check (only tested in headless software rendering). Breakfast diners and fallen skiers ignore collisions with the player.

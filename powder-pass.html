@@ -228,7 +228,7 @@ const PI = Math.PI, TAU = PI * 2;
 
 /* ---------- palette: flat, saturated, one colour per thing ---------- */
 const C = {
-  snow: 0xe9f6ff, white: 0xffffff, pine: 0x14b13c, pine2: 0x0b8f2e, grass: 0x5bdc3a, grass2: 0x2fb833,
+  snow: 0xe9f6ff, white: 0xffffff, pine: 0x14b13c, pine2: 0x0b8f2e, grass: 0x52c23e, grass2: 0x2b9441,
   trunk: 0x8a4a1c, wood: 0xe89a3c, wood2: 0xc26f26, wood3: 0x7d4218, red: 0xff3232, blue: 0x2f7bff,
   sky: 0x3fb6ff, yellow: 0xffd21f, orange: 0xff8a1f, purple: 0x8b3dff, pink: 0xff5fa2, metal: 0xa6b0bc,
   dark: 0x3b4252, navy: 0x232a4a, stone: 0xbcc1cd, rock: 0x8f99ab, skin: 0xffc48c, teal: 0x12c9b8,
@@ -387,16 +387,17 @@ function callerName() { const s = (new Error().stack || '').split('\n'); for (le
 /* =====================================================================
    NATURE
    ===================================================================== */
+/* lush shrub: a dark inner mass, then a dome of overlapping leaf clumps (a lighter crown on top), each clump a slightly squashed,
+   low-poly ball; berries tucked between them. Same two greens as before, so the editor's part keys stay put. */
 function bush(berries) {
-  const b = new B();
-  b.add(sp(0.85, 1, 0.85, 1), C.grass2, 0, 0.62, 0);
-  b.add(sp(0.62, 1, 0.9, 1), C.grass, 0.72, 0.45, 0.25);
-  b.add(sp(0.58, 1, 0.9, 1), C.grass, -0.7, 0.42, 0.3);
-  b.add(sp(0.55, 1, 0.9, 1), C.grass2, 0.05, 0.4, -0.72);
-  b.add(sp(0.5, 1, 0.8, 1), C.grass2, 0.25, 0.34, 0.85);
-  if (berries) for (let i = 0; i < 10; i++) {
-    const a = i * 2.4, el = 0.3 + (i % 4) * 0.28;
-    b.add(sp(0.12), C.red, Math.cos(el) * Math.cos(a) * 0.88, 0.62 + Math.sin(el) * 0.74, Math.cos(el) * Math.sin(a) * 0.88);
+  const b = new B(), r = rng(berries ? 31 : 17);
+  b.add(sp(0.82, 1.15, 0.75, 1.1, 9, 6), C.grass2, 0, 0.55, 0);
+  for (let i = 0; i < 14; i++) { const a = i * 2.39996 + r() * 0.4, el = 0.15 + (i / 14) * 1.1, rr = 0.82 - 0.25 * (i / 14), sz = 0.34 + r() * 0.16;
+    b.add(sp(sz, 1.1, 0.85, 1.1, 7, 5), i < 9 ? C.grass2 : C.grass, Math.cos(el) * Math.cos(a) * rr, 0.42 + Math.sin(el) * 0.7, Math.cos(el) * Math.sin(a) * rr, { ry: a }); }
+  [[0, 1.12, 0, 0.4], [0.3, 1.02, 0.25, 0.3], [-0.32, 1.0, -0.15, 0.3]].forEach(c => b.add(sp(c[3], 1.1, 0.8, 1.1, 7, 5), C.grass, c[0], c[1], c[2]));
+  if (berries) for (let i = 0; i < 14; i++) {
+    const a = i * 2.4, el = 0.2 + (i % 5) * 0.24;
+    b.add(sp(0.085, 1, 1, 1, 6, 4), C.red, Math.cos(el) * Math.cos(a) * 0.95, 0.5 + Math.sin(el) * 0.78, Math.cos(el) * Math.sin(a) * 0.95);
   }
   return b.build();
 }
@@ -416,12 +417,19 @@ function snowPatch() {
   b.add(sp(0.5, 1, 0.4, 1), C.snow, 0.5, 0.35, 0.9);
   return b.build();
 }
+/* boulder group: rounded, weathered stones (smoothed icosahedra, not sharp dodecahedra) settled into the ground, a soft snow cap
+   draped over the big one */
+const stoneGeo = (r, sx, sy, sz, seed) => { const g = new THREE.IcosahedronGeometry(r, 1), p = g.attributes.position, R = rng(seed);
+  const J = new Map(), off = R() * 100;   /* faces don't share vertices here: jitter by position so shared corners move together */
+  for (let i = 0; i < p.count; i++) { const x = p.getX(i), y = p.getY(i), z = p.getZ(i), key = Math.round(x * 1e3) + ',' + Math.round(y * 1e3) + ',' + Math.round(z * 1e3);
+    let k = J.get(key); if (k === undefined) { k = 0.86 + 0.24 * (0.5 + 0.5 * Math.sin(x * 12.9898 + y * 78.233 + z * 37.719 + off) * 0.999); J.set(key, k); } p.setXYZ(i, x * k * sx, y * k * sy, z * k * sz); }
+  g.computeVertexNormals(); return g; };
 function boulders() {
   const b = new B();
-  b.add(dod(0.95, 1, 0.8, 1), C.rock, 0, 0.6, 0, { ry: 0.4 });
-  b.add(sp(0.75, 1, 0.36, 0.95), C.snow, 0, 1.15, 0);
-  b.add(dod(0.6, 1, 0.8, 1), C.stone, 1.25, 0.35, 0.55, { ry: 1 });
-  b.add(dod(0.45, 1, 0.8, 1), C.rock, -1.0, 0.28, 0.75, { ry: 2 });
+  b.add(stoneGeo(0.95, 1.1, 0.78, 1, 3), C.rock, 0, 0.5, 0, { ry: 0.4 });
+  b.add(sp(0.8, 1.05, 0.32, 0.95, 12, 6), C.snow, 0.02, 1.08, 0);
+  b.add(stoneGeo(0.6, 1.1, 0.75, 1, 7), C.stone, 1.25, 0.3, 0.55, { ry: 1 });
+  b.add(stoneGeo(0.45, 1.05, 0.7, 1.1, 11), C.rock, -1.0, 0.22, 0.75, { ry: 2 });
   return b.build();
 }
 function grassPatch() {
@@ -658,9 +666,12 @@ function quarterPipe() {
 /* =====================================================================
    SKY: dome, sun, clouds, mountains
    ===================================================================== */
+/* cumulus: a flat-bottomed base of wide puffs, a heaped middle and two or three domes on top (like the reference skies) */
 function cloudInto(b, x, y, z, s) {
-  [[0, 0.55, 0, 0.75], [0.85, 0.4, 0.05, 0.55], [-0.85, 0.4, 0, 0.55], [0.4, 0.95, -0.1, 0.6], [-0.4, 0.85, 0.1, 0.55], [1.45, 0.3, 0, 0.4], [-1.4, 0.3, 0, 0.4]]
-    .forEach(c => b.add(sp(c[3] * s, 1, 1, 1, 12, 9), C.white, x + c[0] * s, y + c[1] * s, z + c[2] * s));
+  [[0, 0.32, 0, 0.62, 1.7, 0.55], [1.05, 0.3, 0.1, 0.5, 1.6, 0.5], [-1.05, 0.3, -0.05, 0.52, 1.6, 0.52], [1.9, 0.26, 0, 0.36, 1.5, 0.45], [-1.85, 0.25, 0.05, 0.38, 1.5, 0.45],
+    [0.45, 0.75, 0.05, 0.62, 1.1, 0.9], [-0.55, 0.7, -0.05, 0.56, 1.1, 0.9], [1.25, 0.6, 0, 0.44, 1.1, 0.85], [-1.3, 0.55, 0.05, 0.4, 1.1, 0.85],
+    [0.1, 1.2, 0, 0.55, 1, 1], [0.85, 1.05, -0.05, 0.42, 1, 1], [-0.65, 1.08, 0.05, 0.4, 1, 1], [0.3, 1.55, 0, 0.34, 1, 1]]
+    .forEach(c => b.add(sp(c[3] * s, c[4], c[5] === undefined ? 1 : c[5], 1, 14, 9), C.white, x + c[0] * s, y + c[1] * s, z + c[2] * s));
 }
 function cloud(s) { const b = new B(); cloudInto(b, 0, 0, 0, s); const g = b.build(); g.userData.noCast = 1; return g; }
 function skyDome() {
@@ -838,13 +849,16 @@ function tent() {
   [-1, 1].forEach(s => b.add(cy(0.05, 0.05, 0.5, 8), C.yellow, 0, 1.9, s * 1.4));
   return b.build();
 }
+/* campfire: a ring of rounded stones, a log teepee over a glowing ember bed, layered flames (red core, orange body, yellow tongues).
+   Same colour groups as before (editor part keys). */
 function campfire() {
   const b = new B();
-  for (let i = 0; i < 5; i++) { const a = i * TAU / 5 + 0.3; b.rod([Math.cos(a) * 1.0, 0.14, Math.sin(a) * 1.0], [0, 0.75, 0], 0.13, i % 2 ? C.wood3 : C.wood2); }
-  for (let i = 0; i < 8; i++) { const a = i * TAU / 8; b.add(dod(0.3, 1, 0.8, 1), i % 2 ? C.rock : C.stone, Math.cos(a) * 1.55, 0.22, Math.sin(a) * 1.55, { ry: i }); }
-  b.add(cn(0.42, 1.7, 7), C.orange, 0, 1.2, 0, { basic: 1 });
-  b.add(cn(0.32, 1.15, 7), C.yellow, -0.4, 0.95, 0.1, { basic: 1, rz: 0.25 });
-  b.add(cn(0.34, 1.25, 7), C.red, 0.4, 0.98, -0.1, { basic: 1, rz: -0.25 });
+  for (let i = 0; i < 11; i++) { const a = i * TAU / 11; b.add(stoneGeo(0.24 + 0.05 * (i % 3), 1.15, 0.7, 1, 40 + i), i % 2 ? C.rock : C.stone, Math.cos(a) * 1.45, 0.15, Math.sin(a) * 1.45, { ry: a }); }
+  for (let i = 0; i < 6; i++) { const a = i * TAU / 6 + 0.3, c = i % 2 ? C.wood3 : C.wood2; b.rod([Math.cos(a) * 0.95, 0.12, Math.sin(a) * 0.95], [Math.cos(a) * 0.08, 0.95, Math.sin(a) * 0.08], 0.11, c);
+    b.add(cy(0.09, 0.09, 0.02, 8), C.orange, Math.cos(a) * 0.98, 0.1, Math.sin(a) * 0.98, { basic: 1, rx: PI / 2, ry: -a }); }   /* glowing cut ends */
+  for (let i = 0; i < 9; i++) { const a = i * 2.4, d = 0.15 + 0.4 * ((i * 7) % 5) / 5; b.add(sp(0.16, 1.2, 0.5, 1, 7, 4), C.red, Math.cos(a) * d, 0.1, Math.sin(a) * d, { basic: 1 }); }   /* embers */
+  b.add(cn(0.5, 1.5, 8), C.red, 0, 0.82, 0, { basic: 1 }); b.add(cn(0.42, 1.75, 8), C.orange, 0.05, 1.0, 0, { basic: 1 });
+  [[-0.32, 0.15, 0.95, 0.24], [0.34, -0.1, 1.05, -0.22], [0.05, 0.3, 1.25, 0.1], [-0.1, -0.3, 0.9, -0.12]].forEach(t => b.add(cn(0.2, t[2], 7), C.yellow, t[0], 0.62 + t[2] * 0.45, t[1], { basic: 1, rz: t[3], rx: t[3] * 0.6 }));
   return b.build();
 }
 function mug() {
@@ -4344,7 +4358,7 @@ function buildResort() {
   cabinExtras(R, 'chalet', 52, 44, 0, 1.15, { W: 4.8, D: 3.6, dk: 1.9, tier: 3 }); cabinExtras(R, 'af1', 38, 86, PI, 1, { W: 4.8, D: 6.4, dk: 0.6, tier: 4, af: 1 }); cabinExtras(R, 'af2', 56, 86, PI, 1, { W: 4.8, D: 6.4, dk: 0.6, tier: 4, af: 1 });
   put(R, stonePath(), 34, 53, 0, 0.85); put(R, plankPath(), 52, 52.5, 0, 0.85); put(R, gravelPath(), 58.5, 60, -PI / 2, 0.85); put(R, stonePath(), 38, 79.5, PI, 0.5); put(R, stonePath(), 56, 79.5, PI, 0.5);
   put(R, fence(6, 0), 34, 41.2, 0, 1.1); addSolids([[0, 0, 6 * 0.434, 0.15]], 34, RES_Z + 41.2, 0, 1.1);
-  putC(R, 'Campfire', campfire(), CAMP[0], CAMP[1], 0, 0.9); LIGHTS.push({ x: CAMP[0], y: tH(CAMP[0], CAMP[1]) + 0.9, z: RES_Z + CAMP[1], col: 0xff9a40, r: 12, k: 'fire', t: 'fire', b: 1.6 }); { const fm = new THREE.Group(); fm.position.set(CAMP[0], tH(CAMP[0], CAMP[1]) + 0.05, CAMP[1]); R.add(fm); addFx(fm, 'campfire'); }
+  putC(R, 'Campfire', campfire(), CAMP[0], CAMP[1], 0, 0.9); LIGHTS.push({ x: CAMP[0], y: tH(CAMP[0], CAMP[1]) + 0.9, z: RES_Z + CAMP[1], col: 0xff9a40, r: 12, k: 'fire', t: 'fire', b: 1.2 }); { const fm = new THREE.Group(); fm.position.set(CAMP[0], tH(CAMP[0], CAMP[1]) + 0.05, CAMP[1]); R.add(fm); addFx(fm, 'campfire'); }
   putC(R, 'Tent', tent(), CAMP[0] - 8, CAMP[1] + 2, 0.4, 1.2); put(R, sled(), CAMP[0] - 4, CAMP[1] + 7, 0.9, 1); putC(R, 'Garden bench', hp(pBench)(), CAMP[0], CAMP[1] + 4.2, PI, 1.1); putC(R, 'Garden bench', hp(pBench)(), CAMP[0], CAMP[1] - 4.2, 0, 1.1);
   put(R, stringLights(), CAMP[0], CAMP[1] - 6.6, 0, 1.1);
   putC(R, 'Wood shed', hp(pWoodshed)(), 70, 74, -PI / 2, 1.15); putC(R, 'Log pile', hp(pLogPile)(), 27, 52, 0.2, 1.1); fit(putC(R, 'Stump + axe', hp(pStump)(), 28, 58, 0, 1.2), 0.7);
@@ -4766,8 +4780,8 @@ const POST = (() => {
       ' float ign = fract(52.9829189 * fract(dot(gl_FragCoord.xy, vec2(0.06711056, 0.00583715))) + frame * 0.618), occ = 0.0;' +
       ' for (int i = 0; i < 6; i++) { float a = (float(i) + ign) * 1.0472; vec2 dir = vec2(cos(a), sin(a)) * vec2(texel.x / texel.y, 1.0) * rs;' +
       '  for (int j = 1; j <= 4; j++) { float t = (float(j) - 0.5 + ign * 0.5) / 4.0; vec3 S = viewPos(vUv + dir * t); vec3 v = S - P; float l = length(v);' +
-      '   float hgt = dot(N, v) - (0.02 + 0.006 * -P.z); occ += max(0.0, hgt) / max(l, 1e-4) * (1.0 - smoothstep(radius * 0.6, radius * 1.6, l)); } }'   /* only geometry rising clearly above the surface's own plane occludes: no self-shadow stripes on long slopes */ +
-      ' float ao = clamp(1.0 - occ / 24.0 * 3.0, 0.0, 1.0); ao = mix(ao, 1.0, smoothstep(45.0, 130.0, -P.z)); gl_FragColor = vec4(ao, ao, ao, 1.0); }' });
+      '   float hgt = dot(N, v) - (0.02 + 0.006 * -P.z); occ += max(0.0, hgt / max(l, 1e-4) - 0.26) * (1.0 - smoothstep(radius * 0.6, radius * 1.6, l)); } }'   /* only geometry rising clearly above the surface's own plane occludes: no self-shadow stripes on long slopes */ +
+      ' float ao = clamp(1.0 - occ / 24.0 * 4.2, 0.0, 1.0); ao = mix(ao, 1.0, smoothstep(45.0, 130.0, -P.z)); gl_FragColor = vec4(ao, ao, ao, 1.0); }' });
   const brightMat = new THREE.ShaderMaterial({ depthTest: false, depthWrite: false, uniforms: { tSrc: { value: null }, texel: { value: new THREE.Vector2() }, thr: { value: 0.86 } }, vertexShader: VS,
     fragmentShader: 'varying vec2 vUv; uniform sampler2D tSrc; uniform vec2 texel; uniform float thr;' +
       'vec3 s(vec2 o){ vec3 c = texture2D(tSrc, vUv + o * texel).rgb; float l = max(c.r, max(c.g, c.b)); return c * smoothstep(thr, thr + 0.12, l); }' +
