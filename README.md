@@ -228,5 +228,12 @@ New:
 - **HUD:** the side buttons are one square icon grid top-right (SVG icons; the ⚙ / ✎ emoji rendered as blank squares on some devices); the controls hint and toasts live in a content-sized dock (bottom-left on desktop, top-left on touch) – the hint used to stretch top-to-bottom because two rules set both `top` and `bottom`. The editor only exists with `#dev`; the asset gallery moved to `#gallery`.
 - Tools: `tools/view.js` (orbit-camera QA shots), `tools/shot.js` (player-level shots).
 
+## Hotel revamp (ninth round)
+- **Ski room:** the entrance is now a glazed boot-room vestibule (ski racks on both walls, benches, boot dryers, rubber mat, SKI ROOM sign) with its own sliding door into the lobby. Walk in on skis and they are racked for you; put them back on outside with K.
+- **Lobby:** the TV couch box in the middle of the floor, the red/blue luggage cubes and the glass table are gone. A runner carpet marks a clear walk from the ski room to the breakfast arch; reception has a waiting nook (two armchairs, lamp table, rug); a lounge with two sofas, an armchair, low table, floor lamp and rug sits by the east windows. The elevator lobby is walled off from the breakfast hall (no lift box standing in the dining room). The two paintings over the breakfast hall window are gone.
+- **Rooms:** wing rooms are 5.5 m wide (four per floor on floor 1, two plus a large suite on floor 2, were 4.4 m). Every room has wall-to-wall carpet with a border and a bedside rug; standard rooms get an armchair facing the TV and a reading lamp. Corridors have patterned runners. Floor 1's locker row (moved down to the ski room) is now a window reading nook; floor 2's lounge has a rug. At least two normal rooms and a suite are always free.
+- **Third person indoors:** the camera now collides with walls and furniture and stays under the ceiling, so third person works everywhere in the hotel. Seated at breakfast you see yourself eating (the seated body had a NaN rotation, which made it invisible). The near plane drops to 0.12 m in third person.
+- Breakfast diners route along the free side of the tables; lobby walkers and sitters were moved onto the new furniture. `tools/plan.js` renders cut-away floor plans.
+
 ## Not yet
-- Terrain distance LOD; real-phone frame-rate check (only tested in headless software rendering). Third person is still forced off indoors, so seated eating is first person. Breakfast diners and fallen skiers ignore collisions with the player.
+- Terrain distance LOD; real-phone frame-rate check (only tested in headless software rendering). Breakfast diners and fallen skiers ignore collisions with the player.

@@ -5,7 +5,7 @@ Paste this file (or attach it with the zip) as the first message of a new chat.
 ## 1. What it is
 - **Powder Pass**: a mobile-first 3D ski-resort game in **one HTML file** (`powder-pass.html`, ~1.3 MB, ~7,100 lines). It uses Three.js r128, inlined.
 - **Live artifact:** https://claude.ai/artifact/WgdGTKpWU2SoYSF59Fzfp7
-  - Current version: **v24** (round 8). Shared "anyone with the link".
+  - Current version: **v25** (round 9). Shared "anyone with the link".
   - Capabilities: `artifact` (the in-game editor saves by republishing itself) and `downloads` (a fallback that saves the file instead).
 - **Project files** (zip: `powder-pass-project.zip`):
   - `powder-pass.html`: the game.
@@ -75,7 +75,7 @@ node tools/keycheck.js cmp tools/keys-baseline.json /tmp/k.json   # must say "0 
 ("ground moved" lines near ramps are expected: groundY now includes ramp surfaces.)
 
 **Publish** (keeps the same URL):
-1. `Artifact read` the URL with `path: index.html`. If its version is newer than v24, the user saved editor edits: merge its `pp-edits` block into the local file first.
+1. `Artifact read` the URL with `path: index.html`. If its version is newer than v25, the user saved editor edits: merge its `pp-edits` block into the local file first.
 2. Strip the skeleton lines:
    `grep -v -x '<!doctype html><html><head>\|</head><body>\|</body></html>' powder-pass.html > powder-pass-artifact.html`
 3. Publish with `url: https://claude.ai/artifact/WgdGTKpWU2SoYSF59Fzfp7`. Omit `capabilities` so they carry forward.
@@ -114,8 +114,9 @@ node tools/keycheck.js cmp tools/keys-baseline.json /tmp/k.json   # must say "0 
    - HUD: `#ctl` grid of SVG icon buttons, `#dock` for hint + toast. `SK.EDIT` (`#dev`) gates the editor; `SK.DEV` is now `#gallery`.
    - Audits: `tools/audit-props.js`, `tools/audit-trails.js`, `tools/audit-found.js`; QA shots: `tools/view.js`, `tools/shot.js`.
 
+8. **Round 9 (v25):** hotel revamp. Ski room vestibule (`zi = 2.2` local, second sliding door added last in `hotel()` so part keys stay put), lobby lounge east, runner on the axis, core wall at x -9.85, wing rooms 5.5 m (`wingFloor` lists), carpets in `room()` / `hInside()`. Skis auto-rack: TICK after `SK.ELEV`. Third-person camera collision: `camClear()` before `PL.walkPost`; `W.sit.yaw` set in `BF.sit`. `occupied()` keeps 2 normal + 1 suite free. `SK.AVW` getter. Floor plans: `node tools/plan.js <name> <x> <zLocal> <r> <floorY>`.
+
 ## 7. Known limits / ideas not done
-- Third person is forced off indoors, so seated eating is first person only.
 - No terrain LOD. Frame rate has only been checked in headless software rendering, never on a real phone.
 - NPC skiers don't use the park ramps or rails.
 - Diners and fallen skiers don't collide with the player. Pointer lock may be refused inside some sandboxed frames; the camera lock then steers from plain mouse movement.
