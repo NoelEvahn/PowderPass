@@ -1856,6 +1856,9 @@ const HOTEL_ITEMS = [
 
 /* ============ IMPORTED: polished people, particle FX, lift 2 (from the showcase file) ============ */
 const GK = 1.7;
+/* every human (player, guests, staff, instructors, kids) is built at this fraction of the original showcase size: ~10 % shorter, same
+   proportions, so IK lengths, gear mounts and poses all scale together. Seat poses, eye heights and carried items read g.userData.bodyK */
+const HUMAN_K = 0.9;
 const KB = (x, z, hw, hd) => ({ x: x, z: z, ry: 0, hw: hw, hd: hd === undefined ? hw : hd });
 /* ===== PEOPLE: individually coloured figures (skin tone, kit, hair, boots, skis), anatomical proportions (~7 heads), skis follow the skiing motion ===== */
 Object.assign(FONT, { 0: '111101101101111', 1: '010110010010111', 2: '111001111100111', 3: '111001111001111', 4: '101101111001001', 5: '111100111001111', 6: '111100111101111', 7: '111001001001001', 8: '111101111101111', 9: '111101111001111', ' ': '000000000000000', S: '111100111001111', K: '101101110101101', F: '111100110100100', G: '111100101101111', D: '110101101101110', U: '101101101101111', M: '101111111101101', W: '101101111111101', Y: '101101010010010', X: '101101010101101', Z: '111001010100111', V: '101101101101010' });
@@ -2030,7 +2033,7 @@ function person(o) {
   const cSkin = o.skin === undefined ? 0xf2c6a0 : o.skin, cSkin2 = shade(cSkin, 0.82), cJ = o.jacket === undefined ? 0xff3232 : o.jacket, cJ2 = o.jacket2 === undefined ? shade(cJ, 0.78) : o.jacket2,
     cP = o.pants === undefined ? 0x232a4a : o.pants, cP2 = shade(cP, 0.78), cHair = o.hair === undefined ? 0x4a2c17 : o.hair, cHat = o.hatc === undefined ? cJ : o.hatc, cHat2 = o.hatc2 === undefined ? shade(cHat, 0.78) : o.hatc2,
     cBoot = o.boot === undefined ? shade(cP, 1.0) : o.boot, cBoot2 = o.boot2 === undefined ? cJ : o.boot2, cSki = o.ski === undefined ? 0xff8a1f : o.ski, cSki2 = shade(cSki, 0.7), cGlove = o.glove === undefined ? shade(cJ2, 0.7) : o.glove, cPack = o.packc === undefined ? cJ2 : o.packc;
-  const hat = o.hat || 'helmet', hs = o.hairStyle || 'short', HAIR = cHair, g = new THREE.Group(), root = new THREE.Group(); g.add(root); root.scale.setScalar(kid ? 0.8 : fem ? 0.95 : 1);
+  const hat = o.hat || 'helmet', hs = o.hairStyle || 'short', HAIR = cHair, g = new THREE.Group(), root = new THREE.Group(); g.add(root); const RS = (kid ? 0.8 : fem ? 0.95 : 1) * HUMAN_K; root.scale.setScalar(RS);
   const ls = kid ? 0.84 : fem ? 0.97 : 1, L1 = ls, L2 = 0.95 * ls, UA = 0.75 * ls, FA = 0.7 * ls, k = fem ? 0.84 : kid ? 0.82 : 1, hw = fem ? 0.3 : 0.27, hsz = kid ? 1.28 : fem ? 0.97 : 1, HC = 0.3;
   const grp = (x, y, z, p) => { const q = new THREE.Group(); q.position.set(x || 0, y || 0, z || 0); (p || root).add(q); return q; };
   const mk = (fn, x, y, z, p) => { const b = new B(); fn(b); const q = b.build(); q.position.set(x || 0, y || 0, z || 0); (p || root).add(q); return q; };
@@ -2093,8 +2096,8 @@ function person(o) {
   }, 0, 0, 0, tor);
 
   /* neck + head */
-  const neck = grp(0, 1.3, 0, tor); mk(b => b.add(cy(0.12, 0.14, 0.3, 12), cSkin2, 0, 0.1, 0), 0, 0, 0, neck);
-  const head = grp(0, 0.26, 0, neck); head.scale.setScalar(hsz);
+  const neck = grp(0, 1.3, 0, tor); mk(b => b.add(cy(0.12, 0.14, 0.2, 12), cSkin2, 0, 0.06, 0), 0, 0, 0, neck);   /* short neck: the head sits right on the collar */
+  const head = grp(0, 0.15, 0, neck); head.scale.setScalar(hsz);
   mk(b => {
     b.add(sp(0.27, 1, 1.18, 1.08, 18, 14), cSkin, 0, HC, 0); b.add(sp(0.14, 1.2, 0.75, 0.85), cSkin, 0, HC - 0.2, 0.1, N); b.add(sp(0.05, 1, 1.4, 1.2), cSkin2, 0, HC - 0.04, 0.3);
     [-1, 1].forEach(s => { b.add(sp(0.055, 0.5, 1, 0.8), cSkin, s * 0.27, HC, 0); if (o.earring) b.add(sp(0.025), GOLD, s * 0.275, HC - 0.1, 0, N); });
@@ -2182,12 +2185,12 @@ function person(o) {
       case 'Backflip': air((lt / 1.6) % 1, false, -1); break;
       case 'Front flip': air((lt / 1.6) % 1, false, 1); break;
       case 'Sitting': { const c = sm(lt / 0.9); if (cross('sit', lt / 0.9, 1)) burst(5, 1.1, 0.12); P.pelX = 0; P.pry = 0; P.prz = 0; P.torY = 0; P.fx = 1 + 0.45 * c; P.pelY = hp - (hp - 0.5) * c; P.f = [[1.35 * c, 0], [1.35 * c, 0]]; P.fr = [[0, -0.3 * c, 0], [0, 0.3 * c, 0]]; P.arm = [[-0.1 - 0.8 * c, -0.7 * c - 0.4 * (1 - c)], [-0.1 - 0.8 * c, -0.7 * c - 0.4 * (1 - c)]]; P.torX = 0.1; break; }
-      case 'Sit on chair': { const c = sm(lt / 0.7), h = Math.max(0.8, g.userData.seatH || 1.02), dv = Math.max(0.2, h - AY - 0.25), f = Math.sqrt(Math.max(0.12, (L1 * L1 + L2 * L2) - dv * dv)) * 0.9;
+      case 'Sit on chair': { const c = sm(lt / 0.7), h = seatPel(), dv = Math.max(0.2, h - AY - 0.25), f = Math.sqrt(Math.max(0.12, (L1 * L1 + L2 * L2) - dv * dv)) * 0.9;
         P.pelX = 0; P.pry = 0; P.prz = 0; P.torY = 0; P.fx = 1 + 0.14 * c; P.pelY = hp - (hp - h) * c; P.f = [[f * c, 0], [f * c, 0]]; P.fr = [[0, -0.12 * c, 0], [0, 0.12 * c, 0]];
         P.arm = [[-0.1 - 0.7 * c, -0.4 - 0.7 * c], [-0.1 - 0.7 * c, -0.4 - 0.7 * c]]; P.torX = 0.04; break; }
       case 'Eating': case 'Snacking': {   /* right hand to the mouth and back, every 0.8 s; Eating is seated */
         const sitE = nm === 'Eating', up = Math.pow(Math.max(0, Math.sin(PI * ((lt % 0.8) / 0.8))), 0.7);
-        if (sitE) { const h = Math.max(0.8, g.userData.seatH || 1.02), dv = Math.max(0.2, h - AY - 0.25), f = Math.sqrt(Math.max(0.12, (L1 * L1 + L2 * L2) - dv * dv)) * 0.9; P.fx = 1.14; P.pelY = h; P.f = [[f, 0], [f, 0]]; P.fr = [[0, -0.12, 0], [0, 0.12, 0]]; P.arm[0] = [-0.8, -1.1]; P.torX = 0.12; }
+        if (sitE) { const h = seatPel(), dv = Math.max(0.2, h - AY - 0.25), f = Math.sqrt(Math.max(0.12, (L1 * L1 + L2 * L2) - dv * dv)) * 0.9; P.fx = 1.14; P.pelY = h; P.f = [[f, 0], [f, 0]]; P.fr = [[0, -0.12, 0], [0, 0.12, 0]]; P.arm[0] = [-0.8, -1.1]; P.torX = 0.12; }
         else { P.pelY = hp; P.arm[0] = [-0.5, -1.2]; P.torX = 0.03; }
         P.arm[1] = [-0.6 - 0.9 * up, -1.0 - 1.4 * up]; P.pelX = 0; P.pry = 0; P.prz = 0; P.torY = 0.06 * up; break; }
       case 'Tumbling': case 'Crash tumble': {
@@ -2238,6 +2241,9 @@ function person(o) {
     arms.forEach(a => { const d = D.arm[a.s < 0 ? 0 : 1]; a.sh.rotation.set(d[0], 0, a.s * 0.2); a.el.rotation.x = d[1]; a.pp = D.pp; if (a.pole) a.pole.rotation.x = (D.pp || 0.32) - (tor.rotation.x + d[0] + d[1]); });
   };
   const fx = sd => sd * 0.34 * (kid ? 0.85 : 1);
+  /* seatH is the hip height (body-group units) of an unscaled adult on that seat: the seat surface is seatH - SEAT_T. Hips go on that
+     surface for any body size (kids, women and the 0.9 HUMAN_K scale included), so nobody floats above or sinks into the seat */
+  function seatPel() { const SEAT_T = 0.37, s = Math.max(0.43, (g.userData.seatH || 1.02) - SEAT_T); return s / RS + SEAT_T; }
   let lodAcc = 0, lodN = PNUM, lodF = 0; const lodV = V(0, 0, 0);
   TICK.push((dt0, t0) => {
     /* level of detail: people far from the camera are animated every 3rd frame (time still adds up, so nothing slows down) */
@@ -2303,7 +2309,7 @@ function person(o) {
           else SNPFX.clump(vA.x, vA.y, vA.z, vN.x * 1.2, vN.y * 1.1, vN.z * 1.2, 0.016 + 0.02 * Math.random() * (0.5 + sf)); } }
     }
   });
-  g.userData.person = 1; g.userData.skis = skis;
+  g.userData.person = 1; g.userData.skis = skis; g.userData.bodyK = RS;
   g.userData.play = (nm, force) => { if (force || !ctl || ctl.nm !== nm) ctl = { nm: nm, t: 0 }; };
   g.userData.animInfo = () => ctl;
   return g;
@@ -4716,7 +4722,8 @@ W.down = e => { cvs.setPointerCapture(e.pointerId); W.ptr.set(e.pointerId, { x: 
 W.move = e => { const p = W.ptr.get(e.pointerId); if (!p) return; if (!p.mv) { W.yaw -= (e.clientX - p.x) * 0.005; W.pitch = clamp(W.pitch - (e.clientY - p.y) * 0.004, -1.2, 1.2); } p.x = e.clientX; p.y = e.clientY; };
 W.up = e => { W.ptr.delete(e.pointerId); };
 const ease = t => { t = clamp(t, 0, 1); return t * t * (3 - 2 * t); }, angd = (a, b) => { let d = (b - a) % (2 * PI); if (d > PI) d -= 2 * PI; if (d < -PI) d += 2 * PI; return d; };
-const EYE = 1.71, vE = new THREE.Vector3(), qC = new THREE.Quaternion(), qY = new THREE.Quaternion(), qL = new THREE.Quaternion(), eL = new THREE.Euler(0, 0, 0, 'YXZ'), UPY = new THREE.Vector3(0, 1, 0);
+/* eye height above the avatar's feet (the HUMAN_K 0.9 body, short neck); the avatar wrap sits 0.06 above W.y */
+const EYE = 1.87, SIT_EYE = 1.42, vE = new THREE.Vector3(), qC = new THREE.Quaternion(), qY = new THREE.Quaternion(), qL = new THREE.Quaternion(), eL = new THREE.Euler(0, 0, 0, 'YXZ'), UPY = new THREE.Vector3(0, 1, 0);
 const lerpA = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
 const pathAt = (P, t) => { const m = P.length - 1, f = clamp(t, 0, 1) * m, i = Math.min(m - 1, Math.floor(f)); return lerpA(P[i], P[i + 1], f - i); };
 /* camera fixed to a carrier: position = local eye point, orientation = carrier frame (swing included, softened) * local look */
@@ -4795,7 +4802,7 @@ W.step = dt => {
   W.y += (ty - W.y) * (1 - Math.exp(-dt * 12));
   /* gentle head bob while walking */
   const sp = Math.hypot(W.vx, W.vz), stride = Math.max(0.55, Math.min(2, 0.45 + 0.17 * sp)); W.bp = (W.bp || 0) + dt * sp * PI / stride;   /* one PI of bp = one step */ const bob = Math.min(1, sp / 5) * 0.035 * Math.sin(W.bp * 2);
-  camera.position.set(W.x, 0.06 + 1.65 + W.y + (W.jy || 0) + bob, W.z); camera.rotation.set(W.pitch, W.yaw, 0, 'YXZ');
+  camera.position.set(W.x, 0.06 + EYE + W.y + (W.jy || 0) + bob, W.z); camera.rotation.set(W.pitch, W.yaw, 0, 'YXZ');
   if (!W.cool) { const b = SK.LIFTX.boardable(W.x, W.z, camera.position.y); if (b) startBoard(b.car, b.k); }
 };
 W.toggle = (on, where) => {
@@ -5023,7 +5030,7 @@ requestAnimationFrame(frame);
 SK.ORB = { goal: goal, cur: cur, go: go };
 SK.snap = v => { go(typeof v === 'string' ? VIEWS[v] : v); cur.t.copy(goal.t); cur.r = goal.r; cur.theta = goal.theta; cur.phi = goal.phi; };
 SK.sim = (n, dt) => { dt = dt || 0.05; for (let i = 0; i < n; i++) { SK.clock = (SK.clock || 0) + dt; const t = SK.clock; SK.SPIN.forEach(s => { s.o.rotation.y += s.v * dt; }); SK.P = { on: W.on, ride: !!W.ride, x: W.x, y: W.y, z: W.z }; SK.TICK.forEach(f => f(dt, t)); if (W.on) W.step(dt); if (SK.SNOW) { SK.SNOW.setFocus(focus.x, focus.z - SK.RES_Z); SK.SNOW.update(dt, t); } } };
-SK.keys = keys; SK.W = W; SK.cam = camera; SK.startBoard = startBoard; SK.scene = scene; SK.renderer = renderer;
+SK.keys = keys; SK.W = W; SK.EYE = EYE; SK.SIT_EYE = SIT_EYE; SK.cam = camera; SK.startBoard = startBoard; SK.scene = scene; SK.renderer = renderer;
 
 /* ===================== POWDER PASS: game state + save (Phase 0) ===================== */
 const SAVE_KEY = 'powderpass.save', SAVE_V = 1;
@@ -5135,7 +5142,7 @@ function mkAvatar(skis) {
   return { wrap: wrap, piv: piv, p: p };
 }
 let AVS = mkAvatar(true), AVW = mkAvatar(false); SK.SNOWS.push(AVS.p);
-Object.defineProperty(SK, 'AVW', { get: () => AVW, configurable: true });
+Object.defineProperty(SK, 'AVW', { get: () => AVW, configurable: true }); Object.defineProperty(SK, 'AVS', { get: () => AVS, configurable: true });
 function recolorAvatars(col) { LOOK.jacket = col; [AVS, AVW].forEach(a => { scene.remove(a.wrap); const i = SK.SNOWS.indexOf(a.p); if (i >= 0) SK.SNOWS.splice(i, 1); }); AVS = mkAvatar(true); AVW = mkAvatar(false); SK.SNOWS.push(AVS.p); }   /* the skier leaves real ski tracks; boot prints come from the walker code */
 
 /* ---- player ---- */
@@ -6816,7 +6823,7 @@ const BF = (() => {
   }
   function sit(s) {
     B.seat = s; s.taken = 1; B.onTable = B.plate.slice(); B.plate = null; B.eaten = 0; VM.clear(); State.bfDay = State.day;
-    const fy = H.gy + X.floors[0]; W.sit = { x: H.x + s.x, z: H.z + s.z, y: fy - 0.05 + 1.15, fy: fy, yaw: s.yaw };   /* yaw: which way the chair faces (the third-person body needs it) */ W.x = W.sit.x; W.z = W.sit.z; W.y = fy - 0.5; W.yaw = s.yaw; W.pitch = -0.35; W.vx = W.vz = 0;
+    const fy = H.gy + X.floors[0]; W.sit = { x: H.x + s.x, z: H.z + s.z, y: fy + SK.SIT_EYE, fy: fy, yaw: s.yaw };   /* yaw: which way the chair faces (the third-person body needs it) */ W.x = W.sit.x; W.z = W.sit.z; W.y = fy - 0.5; W.yaw = s.yaw; W.pitch = -0.35; W.vx = W.vz = 0;
     /* the plate on the table in front of you */
     const g = new THREE.Group(), pm = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.14, 0.015, 22), new THREE.MeshLambertMaterial({ color: 0xffffff })); g.add(pm);
     B.onTable.forEach((k, i) => { const o = VM.FOOD[k](); o.scale.setScalar(1.3); o.position.set([-0.06, 0.06, 0, -0.08, 0.08][i], 0.01, [-0.05, -0.05, 0.07, 0.06, 0.06][i]); o.traverse(m => { if (m.material) m.material.depthTest = true; m.renderOrder = 0; }); g.add(o); });
