@@ -237,8 +237,8 @@ const C = {
 
 /* ---------- toon material (hard 3-step light bands, no blending) ---------- */
 const gradTex = (function () {
-  const t = new THREE.DataTexture(new Uint8Array([90, 170, 255]), 3, 1, THREE.LuminanceFormat);
-  t.minFilter = t.magFilter = THREE.NearestFilter; t.generateMipmaps = false; t.needsUpdate = true; return t;
+  const t = new THREE.DataTexture(new Uint8Array([72, 96, 150, 212, 246, 255]), 6, 1, THREE.LuminanceFormat);   /* painterly ramp: a soft but readable terminator */
+  t.minFilter = t.magFilter = THREE.LinearFilter; t.generateMipmaps = false; t.needsUpdate = true; return t;
 })();
 /* local lights (lamps, lanterns, fires) must not reach faces turned away from them: the toon ramp's darkest band is 35 %, which made
    ceilings glow above hanging lamps and lit the outside of walls from rooms behind them. Sun/moon keep the full ramp. */
@@ -272,12 +272,12 @@ const outlineMat = new THREE.ShaderMaterial({
     ' vec4 clip = projectionMatrix * mv;',
     ' vec3 vn = normalize(normalMatrix * sn2);',
     ' vec2 d = vn.xy; float l = length(d); d = l > 1e-4 ? d / l : vec2(0.0);',
-    ' float px = clamp(uW * uFocal / pow(max(clip.w, 0.001), 0.75), uMin, uMax);',
+    ' float px = clamp(uW * uFocal / pow(max(clip.w, 0.001), 0.75), uMin, uMax) * (1.0 - smoothstep(55.0, 190.0, clip.w));',   /* ink thins out with distance: far forests and peaks read painterly */
     ' clip.xy += d * px * 2.0 / uRes * clip.w;',
     ' gl_Position = clip; vOD = -mv.z; vec4 mvPosition = mv;', '#include <fog_vertex>', '}'
   ].join('\n'),
   /* hull faces right at the lens (hugging a wall, or the eye inside a prop) would fill the screen with black: skip them */
-  fragmentShader: ['#include <fog_pars_fragment>', 'varying float vOD;', 'void main(){ if (vOD < 0.6) discard; gl_FragColor = vec4(0.055,0.06,0.085,1.0);', '#include <fog_fragment>', '}'].join('\n')
+  fragmentShader: ['#include <fog_pars_fragment>', 'varying float vOD;', 'void main(){ if (vOD < 0.6) discard; gl_FragColor = vec4(0.15,0.14,0.19,1.0);', '#include <fog_fragment>', '}'].join('\n')
 });
 
 const hullCache = new WeakMap();
@@ -1111,7 +1111,7 @@ function cabinExtras(R, id, x, z, ry, s, o) {
     piv.add(pb.build()); piv.position.set(hx, FY, o.af ? D / 2 - 0.08 : D / 2); frame.add(piv); frame.position.set(x, gy, z); frame.rotation.y = ry; frame.scale.setScalar(s); R.add(frame);
     const c = w(hx + dw / 2, D / 2), sol = { x: c[0], z: RES_Z + c[1], a: ry, hw: dw / 2 * s, hd: 0.14 * s }; SOLIDS.push(sol);
     CDOORS.push({ id: id, piv: piv, sol: sol, x: c[0], z: RES_Z + c[1], o: 0 });
-    const lp = w(o.af ? -W / 2 - 0.4 : -xe, o.af ? D / 2 + 0.6 : zf); LIGHTS.push({ x: lp[0], y: gy + 1.3 * s, z: RES_Z + lp[1], col: 0xffc36b, r: 9, k: 'cabin' }); }
+    const lp = w(o.af ? -W / 2 - 0.4 : -xe, o.af ? D / 2 + 0.6 : zf); LIGHTS.push({ x: lp[0], y: gy + 1.3 * s, z: RES_Z + lp[1], col: 0xffc36b, r: 9, k: 'cabin', t: 'warm', b: 0.8 }); }
 }
 function putCab(R, g, x, z, ry, s) {
   put(R, g, x, z, ry, s);
@@ -1394,7 +1394,7 @@ function hotel() {
     if (suite) suiteFit(KK, x0, x1, zc, ze, yy, sg);
     hDoorFrame(b, x0 + 0.3, Y, zc - sg * 0.1, -sg);
     HX.rooms.push({ no: no, type: type, floor: Y > Y2 + 1 ? 2 : 1, hx: x0 + 0.3, z: zc, y: Y, w: 0.8, sg: sg, cx: (x0 + x1) / 2, cz: zm });
-    HX.beds.push({ no: no, x: x1 - 1.15, z: zc + sg * 2.55, y: Y }); HX.L.push([(x0 + x1) / 2, Y + 2.6, zm]);
+    HX.beds.push({ no: no, x: x1 - 1.15, z: zc + sg * 2.55, y: Y }); HX.L.push([(x0 + x1) / 2, Y + 2.6, zm, 0, 'warm', suite ? 1.0 : 0.85]);
     hLight(b, (x0 + x1) / 2, Y + 2.6, zm);
   };
   /* -- ground floor of the wing: breakfast hall -- */
@@ -1425,7 +1425,7 @@ function hotel() {
     [[11.3, -10.4], [11.3, -5.7], [-8.6, -10.4]].forEach(q => { b.add(cy(0.28, 0.22, 0.5, 12), 0xb4603e, q[0], WY + 0.25, q[1]); b.add(sp(0.42, 1, 1.5, 1), C.grass2, q[0], WY + 0.95, q[1]); b.add(sp(0.3, 1, 1.2, 1), C.grass, q[0] + 0.1, WY + 1.35, q[1] + 0.05); K.push({ x: q[0], z: q[1], ry: 0, hw: 0.3, hd: 0.3 }); });
     /* (no art over the side windows) */
     b.add(bx(3.0, 0.014, 4.4), RUGC, 0, WY + 0.235, -7.5, { noOutline: 1 }); }
-  [[-6, -6.0], [-1, -6.0], [4, -6.0], [9, -6.0], [-1.5, -9.9], [6.8, -9.9]].forEach(p => HX.L.push([p[0], WY + 2.95, p[1]]));
+  [[-6, -6.0], [-1, -6.0], [4, -6.0], [9, -6.0], [-1.5, -9.9], [6.8, -9.9]].forEach(p => HX.L.push([p[0], WY + 2.95, p[1], 0, 'warm', 1.15]));   /* breakfast hall: warm pendants */
   [[-6, -6.0], [4, -6.0]].forEach(p => hLight(b, p[0], WY + 2.95, p[1]));
   /* -- elevator: a shaft at the wing's west end on every floor, doors to the south -- */
   const EX = -11, EZ = -7.5;
@@ -1451,7 +1451,7 @@ function hotel() {
       b.add(bx(W - 0.2, 0.03, zr - ZC), 0x3b4a6b, 0, Y + 0.02, zm); b.add(bx(W - 0.8, 0.032, zr - ZC - 0.5), 0x5a6d94, 0, Y + 0.022, zm, { noOutline: 1 }); for (let x = -10.5; x < 11.6; x += 1.5) b.add(bx(0.6, 0.034, 0.6), 0xc9a14a, x, Y + 0.024, zm, { ry: PI / 4, noOutline: 1 });
       list.forEach((q, i) => hArt(b, q[2] + 3.2, Y + 1.55, ZC + 0.13, 0, 1.2, 0.85, i)); if (list.length < 4) hArt(b, 9.6, Y + 1.55, ZC + 0.13, 0, 1.2, 0.85, 2);   /* prints between the wing doors */
       hPlant(b, KK, 11.45, Y, -4.2); hRails(b, -10, 12, ZC + 0.1, Y, 1, list.map(q => [q[2] + 0.2, q[2] + 1.2])); }
-    list.forEach(q => room(KK, q[0], q[1], q[2], q[3], ZC, ZN, Y)); [-6, 0, 6].forEach(x => { hLight(b, x, Y + 2.6, -5.7); HX.L.push([x, Y + 2.6, -5.7]); });
+    list.forEach(q => room(KK, q[0], q[1], q[2], q[3], ZC, ZN, Y)); [-6, 0, 6].forEach(x => { hLight(b, x, Y + 2.6, -5.7); HX.L.push([x, Y + 2.6, -5.7, 0, 'soft', 0.9]); });
   };
   /* slabs between the wing's floors, and the main block's new floor 2 slab */
   [[Y2, (ZN - hz) / 2, -ZN - hz], [Y3, (ZN + hz) / 2, -ZN + hz]].forEach((q, qi) => { const y = q[0] - S / 2 + 0.03, z0 = q[1] - (q[2] + 0.4) / 2, z1 = q[1] + (q[2] + 0.4) / 2;   /* slab with the elevator shaft left open */
@@ -1479,11 +1479,11 @@ function hotel() {
     b.push(-7.7, Y3, -2.2, -PI / 2); pArm(b, LEATH); b.pop(); K4.push({ x: -7.7, z: -2.2, ry: 0, hw: 0.43, hd: 0.48 }); b.push(-7.65, Y3, -1.3, 0); pFloorLamp(b); b.pop();
     hArt(b, -6.53, Y3 + 1.6, 3.4, -PI / 2, 1.3, 0.9, 1); hPlant(b, K4, -6.95, Y3, 4.5);
     b.add(bx(0.5, 0.5, 0.5), CHAR, -11.2, Y3 + 0.25, 4.3); b.add(sp(0.45, 1, 1.4, 1), C.grass2, -11.2, Y3 + 1.1, 4.3); K4.push({ x: -11.2, z: 4.3, ry: 0, hw: 0.3, hd: 0.3 });
-    [-9, -3, 4].forEach(x => { hLight(b, x, Y3 + 2.6, -4.3); HX.L.push([x, Y3 + 2.6, -4.3]); }); }
+    [-9, -3, 4].forEach(x => { hLight(b, x, Y3 + 2.6, -4.3); HX.L.push([x, Y3 + 2.6, -4.3, 0, 'soft', 0.9]); }); }
   /* main block floor 1 rooms keep their bathrooms (hInside); they become rooms 101-104 with doors on the corridor */
   RC.forEach((c, i) => { HX.rooms.push({ no: 101 + i, type: 'normal', floor: 1, hx: c + 0.8, z: -3.6, y: Y2, w: 0.8, sg: 1, cx: c, cz: 0.7 }); HX.beds.push({ no: 101 + i, x: c, z: 3.2, y: Y2 }); });
   /* the main entrance lamps and lobby lights become real lights at night */
-  [[-6, 2], [0, 2], [6, -1], [9.5, 2]].forEach(p => HX.L.push([p[0], FY + 2.95, p[1]])); [-5.5, 5.5].forEach(x => HX.L.push([x, 3.62, hz + 5.5 - 1.2, 'street']));
+  [[-6, 2], [0, 2], [6, -1], [9.5, 2]].forEach(p => HX.L.push([p[0], FY + 2.95, p[1], 0, 'soft', 1.1])); [-5.5, 5.5].forEach(x => HX.L.push([x, 3.62, hz + 5.5 - 1.2, 'street', 'sodium', 1.0]));   /* lobby: soft white-warm; entrance: street lamps */
   WY = FY;
   // ---- balcony, canopy, entrance
   b.add(bx(W + 0.6, 0.3, 1.4), CHAR, 0, sy, hz + 1.0); b.add(bx(W + 0.6, 0.9, 0.05), GLASS, 0, Y2 + 0.45, hz + 1.7); [-1, 1].forEach(t => b.add(bx(0.05, 0.9, 1.4), GLASS, t * (hx + 0.3), Y2 + 0.45, hz + 1.0));
@@ -1521,7 +1521,7 @@ function putHotel(R, g, x, z) {
     piv.add(pb.build()); piv.position.set(rm.hx, rm.y, rm.z); g.add(piv);
     const sol = { x: x + rm.hx + 0.4, z: RES_Z + z + rm.z, a: 0, hw: 0.42, hd: 0.12 }; if (rm.floor === 1) { sol.bot = LV; sol.top = LV2; } else sol.bot = LV2; SOLIDS.push(sol);
     HOTEL.doors.push({ rm: rm, piv: piv, sol: sol, x: x + rm.hx + 0.4, z: RES_Z + z + rm.z, y: gy0 + rm.y, o: 0 }); });
-  HX.L.forEach(q => LIGHTS.push({ x: x + q[0], y: gy0 + q[1] - 0.25, z: RES_Z + z + q[2], col: q[3] ? 0xffe2a8 : 0xffd9a0, r: q[3] ? 14 : 7, k: q[3] || 'in' }));
+  HX.L.forEach(q => LIGHTS.push({ x: x + q[0], y: gy0 + q[1] - 0.25, z: RES_Z + z + q[2], col: q[3] ? 0xffe2a8 : 0xffd9a0, r: q[3] ? 14 : 7, k: q[3] || 'in', t: q[4] || 'soft', b: q[5] || 1.0 }));
   g.userData.F.forEach(f => FLOORS.push({ x0: x + f.x0, x1: x + f.x1, z0: RES_Z + z + f.z0, z1: RES_Z + z + f.z1, y0: f.y0, y1: f.y1, ax: f.ax, min: f.min }));
   (g.userData.doors || []).forEach(d => {
     const wx = x + d.cx, wz = RES_Z + z + d.cz, gy = g.position.y;
@@ -3153,8 +3153,8 @@ function tn(x, z, k) { const e = 0.7, gx = (tH(x + e, z) - tH(x - e, z)) / (2 * 
 function fit(g, k) { g.quaternion.premultiply(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), tn(g.position.x, g.position.z, k))); return g; }
 /* put() + collision, for resort assets (resort group sits at z = RES_Z) */
 function putC(R, name, g, x, z, ry, s, y) { put(R, g, x, z, ry, s, y); g.userData.ename = name; addSolids(collFor(name), x, RES_Z + z, ry || 0, s || 1);
-  const bulb = name === 'Lamp post' ? [1.2, 3.62, 0, 0xffe2a8, 14, 'street'] : name === 'Floodlight' ? [0, 4.5, 0.66, 0xf4f8ff, 22, 'flood'] : null;
-  if (bulb) { const sc = s || 1, c = Math.cos(ry || 0), n = Math.sin(ry || 0); LIGHTS.push({ x: x + (bulb[0] * c + bulb[2] * n) * sc, y: (y === undefined ? tH(x, z) : y) + 0.06 + bulb[1] * sc, z: RES_Z + z + (-bulb[0] * n + bulb[2] * c) * sc, col: bulb[3], r: bulb[4], k: bulb[5],
+  const bulb = name === 'Lamp post' ? [1.2, 3.62, 0, 0xffe2a8, 14, 'street', 'sodium', 1.0] : name === 'Floodlight' ? [0, 4.5, 0.66, 0xf4f8ff, 22, 'flood', 'white', 1.4] : null;
+  if (bulb) { const sc = s || 1, c = Math.cos(ry || 0), n = Math.sin(ry || 0); LIGHTS.push({ x: x + (bulb[0] * c + bulb[2] * n) * sc, y: (y === undefined ? tH(x, z) : y) + 0.06 + bulb[1] * sc, z: RES_Z + z + (-bulb[0] * n + bulb[2] * c) * sc, col: bulb[3], r: bulb[4], k: bulb[5], t: bulb[6], b: bulb[7],
     dir: name === 'Floodlight' ? [1.84 * n, -4.5, 1.84 * c] : undefined }); }   /* floods aim forward-down along their beam; everything else shines straight down */
   return g; }
 
@@ -3881,24 +3881,35 @@ function makeCrowd(R, HX, HZ) {
   SK.CROWD = NP; SK.CROWDX = { pts: pts, recum: recum };
 }
 
-/* detailed pine: trunk with root flare, layered drooping branch tiers (each with an underside lip), snow resting on every tier */
+/* painterly fir (after the reference art): a straight trunk with a root flare, then whorls of drooping branch fronds from the ground
+   up to a spire. Each frond is a flattened, jagged 4-sided blade: a dark underside, a lighter top blade and an extra bright blade on
+   the sunny side, snow lying on every other frond. A dark core fills the gaps. No ink outline on the foliage (the trunk keeps it). */
+const FOL = { d: 0x1d6332, m: 0x3e9e46 };   /* two tones only: each tree variant must keep its old number of mesh groups (editor keys count them) */
+const frondGeo = (len, w) => { const g = new THREE.CylinderGeometry(0, w, len, 4, 1); g.rotateX(PI / 2); g.scale(1, 0.42, 1); return g; };
 function pineInto(b, x, y, z, s, o) {
-  o = o || {}; const tiers = o.tiers || 5, snow = o.snow === undefined ? 1 : o.snow, r = rng(Math.floor((o.seed || 0) * 977) + 13);
-  b.add(cy(0.15 * s, 0.24 * s, 1.3 * s, 8), C.trunk, x, y + 0.65 * s, z);
-  b.add(cn(0.42 * s, 0.32 * s, 8), C.trunk, x, y + 0.14 * s, z, { ry: r() });
-  let yy = y + 0.78 * s;
-  for (let i = 0; i < tiers; i++) {
-    const f = i / Math.max(1, tiers - 1), rr = (1.55 - 1.05 * f) * s * (0.94 + 0.12 * r()), hh = (1.35 - 0.3 * f) * s, ry = r() * TAU, col = i % 2 ? C.pine2 : C.pine;
-    b.add(cn(rr * 1.06, hh * 0.32, 11), C.pine2, x, yy + hh * 0.14, z, { ry: ry });                 /* drooping branch lip */
-    b.add(cn(rr, hh, 11), col, x, yy + hh / 2, z, { ry: ry + 0.3 });
-    if (snow) {
-      b.add(cn(rr * 0.66, hh * 0.56, 11), C.snow, x, yy + hh * 0.66, z, { ry: ry });
-      const n = 3 + (i < 2 ? 2 : 0); for (let k = 0; k < n; k++) { const a = ry + k * TAU / n + r() * 0.6, d = rr * (0.62 + 0.18 * r()); b.add(sp(0.2 * s * (1 - 0.4 * f), 1.2, 0.5, 1), C.snow, x + Math.cos(a) * d, yy + hh * (0.34 - 0.1 * (d / rr)) + 0.06 * s, z + Math.sin(a) * d, { ry: -a }); }
+  o = o || {}; const tiers = o.tiers || 5, snow = o.snow === undefined ? 1 : o.snow, r = rng(Math.floor((o.seed || 0) * 977) + 13), NO = { noOutline: 1 };
+  const base = 0.75 * s, H = (1.6 + tiers * 0.92) * s, eu = new THREE.Euler(0, 0, 0, 'YXZ'), qq = new THREE.Quaternion();
+  b.add(cy(0.1 * s, 0.21 * s, base + H * 0.7, 8), C.trunk, x, y + (base + H * 0.7) / 2, z); b.add(cn(0.38 * s, 0.32 * s, 8), C.trunk, x, y + 0.16 * s, z, { ry: r() });
+  b.add(cn(0.62 * s, H * 0.96, 7), FOL.d, x, y + base + H * 0.48, z, NO);   /* core */
+  const L = Math.round(tiers * 1.9) + 2;
+  for (let i = 0; i < L; i++) {
+    const f = i / (L - 1), wy = y + base + H * (0.03 + 0.86 * f), reach = (1.7 * Math.pow(1 - f, 0.9) + 0.3) * s * (0.9 + 0.2 * r()), n = Math.max(4, Math.round(8 - 3.5 * f)), a0 = r() * TAU, droop = 0.32 + 0.3 * (1 - f);
+    for (let k = 0; k < n; k++) {
+      /* a branch = an inner blade reaching out and a drooping outer blade hanging from its end, each with a lighter top blade */
+      const a = a0 + k * TAU / n + (r() - 0.5) * 0.55, len = reach * (0.82 + 0.32 * r()), w = (0.26 + 0.34 * (1 - f)) * s, dr = droop * 0.6 + (r() - 0.5) * 0.15, dr2 = dr + 0.55 + 0.2 * (1 - f);
+      const L1 = len * 0.6, L2 = len * 0.52, ca = Math.cos(a), sa = Math.sin(a);
+      const d1 = [ca * Math.cos(dr), -Math.sin(dr), sa * Math.cos(dr)], d2 = [ca * Math.cos(dr2), -Math.sin(dr2), sa * Math.cos(dr2)];
+      const q1 = qq.setFromEuler(eu.set(dr, PI / 2 - a, 0, 'YXZ')).clone(), q2 = qq.setFromEuler(eu.set(dr2, PI / 2 - a, 0, 'YXZ')).clone();
+      const e1 = [x + d1[0] * L1, wy + d1[1] * L1, z + d1[2] * L1], up = 0.06 * s;
+      b.add(frondGeo(L1 * 1.08, w), FOL.d, x + d1[0] * L1 * 0.5, wy + d1[1] * L1 * 0.5, z + d1[2] * L1 * 0.5, Object.assign({ q: q1 }, NO));
+      b.add(frondGeo(L2, w * 0.86), FOL.d, e1[0] + d2[0] * L2 * 0.45, e1[1] + d2[1] * L2 * 0.45, e1[2] + d2[2] * L2 * 0.45, Object.assign({ q: q2 }, NO));
+      b.add(frondGeo(L1 * 0.95, w * 0.8), FOL.m, x + d1[0] * L1 * 0.52, wy + d1[1] * L1 * 0.52 + up, z + d1[2] * L1 * 0.52, Object.assign({ q: q1 }, NO));
+      if (Math.cos(a - 2.3) > -0.3) b.add(frondGeo(L2 * 0.88, w * 0.68), FOL.m, e1[0] + d2[0] * L2 * 0.42, e1[1] + d2[1] * L2 * 0.42 + up, e1[2] + d2[2] * L2 * 0.42, Object.assign({ q: q2 }, NO));   /* sunny side: a bright drooping blade too */
+      if (o.tips) o.tips.push([e1[0] + d2[0] * L2 * 0.85, e1[1] + d2[1] * L2 * 0.85, e1[2] + d2[2] * L2 * 0.85]);
+      if (snow && (k + i) % 2 === 0) { const sg = sp(w * 0.42, 1.0, 0.28, 2.6, 6, 3); b.add(sg, C.snow, x + d1[0] * L1 * 0.6, wy + d1[1] * L1 * 0.6 + up * 2.2, z + d1[2] * L1 * 0.6, Object.assign({ q: q1 }, NO)); }   /* snow lying along the branch */
     }
-    yy += hh * 0.6;
   }
-  b.add(cn(0.22 * s, 0.7 * s, 7), C.pine, x, yy + 0.3 * s, z);
-  if (snow) b.add(cn(0.14 * s, 0.32 * s, 7), C.snow, x, yy + 0.5 * s, z);
+  const ty = y + base + H; o.top = ty + 0.45 * s; b.add(cn(0.2 * s, 0.95 * s, 6), FOL.m, x, ty, z, NO); if (snow) b.add(cn(0.13 * s, 0.38 * s, 6), C.snow, x, ty + 0.25 * s, z, NO);
 }
 function pine(o) { const b = new B(); pineInto(b, 0, 0, 0, 1, Object.assign({ tiers: 4, snow: 0 }, o || {})); return b.build(); }
 function pisteMarkers() {
@@ -4136,7 +4147,7 @@ function makeStore(R, o) {
   STORES.push(st);
   if (o.clerk) { const p = tr(o.clerk[0], o.clerk[1]); CLERKS.push({ x: p[0], z: p[1], ry: o.ry + o.clerk[2], y: gy + FY, col: o.clerk[3] }); }
   PLACE_LABELS.push({ t: o.name, x: o.x, y: gy + (o.H || 3) + (o.style === 'flat' ? 1.0 : o.rise || 1.5) + 1.7, z: RES_Z + o.z, h: 1.15 });
-  (o.lights || []).filter((q, i) => i % 2 === 0).forEach(q => { const p = tr(q[0], q[1]); LIGHTS.push({ x: p[0], y: gy + FY + (o.H || 3) - 0.7, z: RES_Z + p[1], col: 0xffd9a0, r: 8, k: 'in' }); });
+  (o.lights || []).filter((q, i) => i % 2 === 0).forEach(q => { const p = tr(q[0], q[1]); LIGHTS.push({ x: p[0], y: gy + FY + (o.H || 3) - 0.7, z: RES_Z + p[1], col: 0xffd9a0, r: 8, k: 'in', t: 'white', b: 1.15 }); });   /* shops: bright neutral white */
 }
 const COUNTER = (len, reg) => b => { b.add(bx(0.8, 1.0, len), C.wood2, 0, 0.5, 0); b.add(bx(0.92, 0.06, len + 0.12), WOODL, 0, 1.03, 0); if (reg !== undefined) { b.push(0, 1.06, reg, -PI / 2); pRegister(b); b.pop(); } };
 const STORE_DEFS = [
@@ -4236,18 +4247,16 @@ function buildPlaces(R) {
       [[xa, za], [xb, za], [xa, zb], [xb, zb]].forEach(p => { rb.add(cy(0.07, 0.07, 3.2, 8), C.wood3, p[0], gy + 1.6, p[1]); });
       [[xa, za, xb, za], [xa, zb, xb, zb]].forEach(q => { for (let i = 0; i <= 18; i++) { const u = i / 18, sag = Math.sin(u * PI) * 0.5; rb.add(sp(0.09), [C.red, C.yellow, C.blue, C.lime][i % 4], q[0] + (q[2] - q[0]) * u, gy + 3.1 - sag, q[1], { basic: 1, noOutline: 1 }); } });
       R.add(rb.build()); NOSNOW.push({ x0: xa - 0.6, x1: xb + 0.6, z0: za - 0.6, z1: zb + 0.6 }); PLACE_LABELS.push({ t: 'Ice Rink', x: rx, y: gy + 4.2, z: RES_Z + rz, h: 1.0 }); }
-    { const tx = -1, tz = 55, gy = tH(tx, tz), s2 = 2.1, tb = new B(); pineInto(tb, tx, gy, tz, s2, { tiers: 6, snow: 1, seed: 7 });
-      let yy = gy + 0.78 * s2; for (let i = 0; i < 6; i++) { const f = i / 5, rr = (1.55 - 1.05 * f) * s2, hh = (1.35 - 0.3 * f) * s2, n = 9 - i;
-        for (let k = 0; k < n; k++) { const a = k * TAU / n + i * 0.7, r0 = rr * 0.72; tb.add(sp(0.13), [C.red, C.yellow, C.blue, C.pink, C.white][(k + i) % 5], tx + Math.cos(a) * r0, yy + hh * 0.3, tz + Math.sin(a) * r0, { basic: 1 }); }
-        yy += hh * 0.6; }
-      tb.add(sp(0.45, 1, 1, 1, 10, 8), C.yellow, tx, yy + 0.75 * s2, tz, { basic: 1 }); fib(10).forEach(d => tb.cone([tx + d.x * 0.45, yy + 0.75 * s2 + d.y * 0.45, tz + d.z * 0.45], d, 0.1, 0.35, C.yellow, { basic: 1 }));
+    { const tx = -1, tz = 55, gy = tH(tx, tz), s2 = 1.75, tb = new B(), to = { tiers: 6, snow: 1, seed: 7, tips: [] }; pineInto(tb, tx, gy, tz, s2, to);
+      to.tips.forEach((p, k) => { if (k % 2 === 0) tb.add(sp(0.13), [C.red, C.yellow, C.blue, C.pink, C.white][(k >> 1) % 5], p[0], p[1] - 0.12, p[2], { basic: 1 }); });   /* baubles hang off the frond tips */
+      let yy = to.top - 0.75 * s2; tb.add(sp(0.45, 1, 1, 1, 10, 8), C.yellow, tx, yy + 0.75 * s2, tz, { basic: 1 }); fib(10).forEach(d => tb.cone([tx + d.x * 0.45, yy + 0.75 * s2 + d.y * 0.45, tz + d.z * 0.45], d, 0.1, 0.35, C.yellow, { basic: 1 }));
       for (let i = 0; i < 5; i++) { const a = i * 1.3 + 0.4, d = 1.6 + (i % 2) * 0.5; tb.add(bx(0.55, 0.42, 0.55), [C.red, C.blue, C.lime, C.purple, C.orange][i], tx + Math.cos(a) * d, gy + 0.21, tz + Math.sin(a) * d, { ry: a }); tb.add(bx(0.58, 0.08, 0.12), C.yellow, tx + Math.cos(a) * d, gy + 0.44, tz + Math.sin(a) * d, { ry: a }); }
       R.add(tb.build()); SOLIDS.push({ x: tx, z: RES_Z + tz, a: 0, hw: 0.5, hd: 0.5 }); PLACE_LABELS.push({ t: 'Village Tree', x: tx, y: yy + 2.8, z: RES_Z + tz, h: 0.9 }); }
   }
   { const x = -68, z = 74, ry = PI / 2, g = greenhouse(), c = Math.cos(ry), n = Math.sin(ry), tw = (lx, lz) => [x + lx * c + lz * n, z - lx * n + lz * c];
     put(R, g, x, z, ry, 1); g.userData.K.forEach(k => { const p = tw(k.x, k.z); SOLIDS.push({ x: p[0], z: RES_Z + p[1], a: ry + k.ry, hw: k.hw, hd: k.hd }); });
     NOSNOW.push({ x0: x - 6.2, x1: x + 9.4, z0: z - 8, z1: z + 8 }); lab('Greenhouse', x, z, 6.4);
-    const gy = tH(x, z) + 0.06; [[-3.3, -0.5], [3.3, -0.5]].forEach(q => { const p = tw(q[0], q[1]); LIGHTS.push({ x: p[0], y: gy + 3.0, z: RES_Z + p[1], col: 0xffd28a, r: 9, k: 'in' }); });
+    const gy = tH(x, z) + 0.06; [[-3.3, -0.5], [3.3, -0.5]].forEach(q => { const p = tw(q[0], q[1]); LIGHTS.push({ x: p[0], y: gy + 3.0, z: RES_Z + p[1], col: 0xffd28a, r: 9, k: 'in', t: 'soft', b: 1.0 }); });
     SK_GREEN = { trees: g.userData.trees.map(t => { const p = tw(t[0], t[2]); return { x: p[0], y: gy + t[1], z: p[1] }; }), fern: tw(g.userData.fern[0], g.userData.fern[1]), door: tw(0, 5.2), ry: ry }; }
   { const x = -26, z = 52.5; fit(put(R, questBoard(), x, z, PI, 1), 0.6); addSolids([[0, 0, 1.6, 0.2]], x, RES_Z + z, 0, 1); lab('Quest Board', x, z, 4); }
   { const x = 83.5, z = -262, ry = PI / 2; put(R, vending(), x, z, ry, 1); addSolids([[0, 0, 0.7, 0.5]], x, RES_Z + z, ry, 1); lab('Vending', x, z, 3.4); }   /* on the Eagle Lift top-station pad, level, not on the bank */
@@ -4321,7 +4330,7 @@ function buildResort() {
   /* ===== MOUNTAIN LODGE (alpine hotel on its own pad mid-mountain, east of the lift) ===== */
   putAlpine(R, alpine(), ALPX, ALPZ); PLACE_LABELS.push({ t: 'Alpine Cabin', x: ALPX, y: tH(ALPX, ALPZ) + 9.5, z: RES_Z + ALPZ, h: 1.15 });
   { const cafe = lodge({ W: 5.6, D: 4.2, H: 2.6, rise: 2.0, wall: C.wood2, gable: C.wood, logs: 1, roof: C.red, deck: C.wood, rail: C.wood3, chim: 'stone', canopy: 1, dk: 2.0, rug: C.orange, blanket: C.red });
-    putCab(R, cafe, AX, AZ, 0, 1.35); PLACE_LABELS.push({ t: 'Lodge Café', x: AX, y: tH(AX, AZ) + 7.2, z: RES_Z + AZ, h: 1.15 }); LIGHTS.push({ x: AX, y: tH(AX, AZ) + 2.6, z: RES_Z + AZ, col: 0xffd9a0, r: 8, k: 'in' }); }
+    putCab(R, cafe, AX, AZ, 0, 1.35); PLACE_LABELS.push({ t: 'Lodge Café', x: AX, y: tH(AX, AZ) + 7.2, z: RES_Z + AZ, h: 1.15 }); LIGHTS.push({ x: AX, y: tH(AX, AZ) + 2.6, z: RES_Z + AZ, col: 0xffd9a0, r: 8, k: 'in', t: 'warm', b: 1.05 }); }
   fit(putC(R, 'Rock outcrop', hp(pRockOutcrop)(), AX - 4, AZ - 13, 0.6, 1.1), 0.7); fit(putC(R, 'Rock outcrop', hp(pRockOutcrop)(), AX - 10, AZ + 6, 2.4, 0.9), 0.7);
   fit(put(R, hp(pSnowDrift)(), AX - 7, AZ + 9, 0.3, 1.3), 1); fit(put(R, hp(pSnowDrift)(), AX + 8, AZ + 6, 1.2, 1.1), 1);
   /* ===== crest rocks, cliffs, drifts up high ===== */
@@ -4335,7 +4344,7 @@ function buildResort() {
   cabinExtras(R, 'chalet', 52, 44, 0, 1.15, { W: 4.8, D: 3.6, dk: 1.9, tier: 3 }); cabinExtras(R, 'af1', 38, 86, PI, 1, { W: 4.8, D: 6.4, dk: 0.6, tier: 4, af: 1 }); cabinExtras(R, 'af2', 56, 86, PI, 1, { W: 4.8, D: 6.4, dk: 0.6, tier: 4, af: 1 });
   put(R, stonePath(), 34, 53, 0, 0.85); put(R, plankPath(), 52, 52.5, 0, 0.85); put(R, gravelPath(), 58.5, 60, -PI / 2, 0.85); put(R, stonePath(), 38, 79.5, PI, 0.5); put(R, stonePath(), 56, 79.5, PI, 0.5);
   put(R, fence(6, 0), 34, 41.2, 0, 1.1); addSolids([[0, 0, 6 * 0.434, 0.15]], 34, RES_Z + 41.2, 0, 1.1);
-  putC(R, 'Campfire', campfire(), CAMP[0], CAMP[1], 0, 0.9); LIGHTS.push({ x: CAMP[0], y: tH(CAMP[0], CAMP[1]) + 0.9, z: RES_Z + CAMP[1], col: 0xff9a40, r: 12, k: 'fire' }); { const fm = new THREE.Group(); fm.position.set(CAMP[0], tH(CAMP[0], CAMP[1]) + 0.05, CAMP[1]); R.add(fm); addFx(fm, 'campfire'); }
+  putC(R, 'Campfire', campfire(), CAMP[0], CAMP[1], 0, 0.9); LIGHTS.push({ x: CAMP[0], y: tH(CAMP[0], CAMP[1]) + 0.9, z: RES_Z + CAMP[1], col: 0xff9a40, r: 12, k: 'fire', t: 'fire', b: 1.6 }); { const fm = new THREE.Group(); fm.position.set(CAMP[0], tH(CAMP[0], CAMP[1]) + 0.05, CAMP[1]); R.add(fm); addFx(fm, 'campfire'); }
   putC(R, 'Tent', tent(), CAMP[0] - 8, CAMP[1] + 2, 0.4, 1.2); put(R, sled(), CAMP[0] - 4, CAMP[1] + 7, 0.9, 1); putC(R, 'Garden bench', hp(pBench)(), CAMP[0], CAMP[1] + 4.2, PI, 1.1); putC(R, 'Garden bench', hp(pBench)(), CAMP[0], CAMP[1] - 4.2, 0, 1.1);
   put(R, stringLights(), CAMP[0], CAMP[1] - 6.6, 0, 1.1);
   putC(R, 'Wood shed', hp(pWoodshed)(), 70, 74, -PI / 2, 1.15); putC(R, 'Log pile', hp(pLogPile)(), 27, 52, 0.2, 1.1); fit(putC(R, 'Stump + axe', hp(pStump)(), 28, 58, 0, 1.2), 0.7);
@@ -4494,7 +4503,8 @@ const DPR0 = Math.min(window.devicePixelRatio || 1, 2), DPRMIN = Math.min(DPR0, 
 renderer.setPixelRatio(dpr); renderer.setClearColor(0xffffff, 1);
 const scene = new THREE.Scene(); scene.background = new THREE.Color(SK.DEV ? 0xffffff : 0xcfeaff);
 const camera = new THREE.PerspectiveCamera(48, 1, 0.5, 1100);
-scene.add(new THREE.AmbientLight(0xdde8ff, 0.52));   /* cool sky fill: shaded snow reads blue, like the real thing */
+scene.add(new THREE.AmbientLight(0xdde8ff, 0.3));   /* small flat fill */
+const HEMI = new THREE.HemisphereLight(0xbcd5ff, 0xf3e3c9, 0.3); scene.add(HEMI); SK.HEMI = HEMI;   /* sky fill from above (cool blue), warm bounce off the snow from below: shaded sides read blue, undersides warm */
 const sunL = new THREE.DirectionalLight(0xfff3e2, 0.5); sunL.position.set(-40, 80, 50); scene.add(sunL); scene.add(sunL.target);
 scene.fog = new THREE.Fog(0xeef6ff, 170, 950);
 /* sky dome: smooth gradient from a pale haze at the horizon (matches the fog) to deep blue overhead, with a soft glow round the sun. Follows the camera */
@@ -4732,11 +4742,87 @@ if (!SK.DEV) { const dk = document.getElementById('dock'); dk.appendChild(docume
 function hideHint() { if (hintOn) { hintOn = false; hint.classList.add('off'); } }
 setTimeout(hideHint, 9000);
 
+/* ===================== POST: ray-marched ambient occlusion, bloom, colour grade =====================
+   The scene renders into a multisampled target with a depth texture. Then, at half resolution, each pixel marches short rays across the
+   depth buffer in 6 directions (4 steps each) and measures how much nearby geometry rises above its surface: contact shadow in corners,
+   under furniture and where things meet the snow. Bright pixels (lit snow, bulbs, the sun) are blurred into a two-level bloom. The final
+   pass applies the AO (depth-aware blur), adds bloom and grades the image: filmic shoulder, a little more saturation, warm highlights and
+   cool shadows, a soft vignette. High = everything, Balanced = bloom + grade, Low = straight to the screen. */
+const POST = (() => {
+  const GL2 = renderer.capabilities.isWebGL2, RTO = { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBAFormat, depthBuffer: false, stencilBuffer: false };
+  let mode = 'off', bw = 1, bh = 1, sceneRT = null, aoRT = null, b1 = null, b2 = null, b3 = null, b4 = null;
+  const qCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1), qScene = new THREE.Scene(), quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2)); quad.frustumCulled = false; qScene.add(quad);
+  const VS = 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }';
+  const DEPTH = 'uniform sampler2D tDepth; uniform float cNear; uniform float cFar; uniform vec2 pScale;' +
+    'float viewZ(vec2 uv){ float d = texture2D(tDepth, uv).x; float z = d * 2.0 - 1.0; return 2.0 * cNear * cFar / (cFar + cNear - z * (cFar - cNear)); }' +
+    'vec3 viewPos(vec2 uv){ float z = viewZ(uv); vec2 n = uv * 2.0 - 1.0; return vec3(n.x * z / pScale.x, n.y * z / pScale.y, -z); }';
+  const aoMat = new THREE.ShaderMaterial({ depthTest: false, depthWrite: false,
+    uniforms: { tDepth: { value: null }, cNear: { value: 0.1 }, cFar: { value: 1100 }, pScale: { value: new THREE.Vector2(1, 1) }, texel: { value: new THREE.Vector2() }, radius: { value: 0.9 }, frame: { value: 0 } },
+    vertexShader: VS, fragmentShader: 'varying vec2 vUv; uniform vec2 texel; uniform float radius; uniform float frame;' + DEPTH +
+      'void main(){ float d0 = texture2D(tDepth, vUv).x; if (d0 > 0.99995) { gl_FragColor = vec4(1.0); return; }' +
+      ' vec3 P = viewPos(vUv); vec3 px = viewPos(vUv + vec2(texel.x, 0.0)) - P, nx = P - viewPos(vUv - vec2(texel.x, 0.0)); vec3 py = viewPos(vUv + vec2(0.0, texel.y)) - P, ny = P - viewPos(vUv - vec2(0.0, texel.y));' +
+      ' vec3 N = normalize(cross(abs(px.z) < abs(nx.z) ? px : nx, abs(py.z) < abs(ny.z) ? py : ny));' +
+      ' float rs = clamp(radius * pScale.y / -P.z * 0.5, 3.0 * texel.y, 0.12);' +   /* world radius -> screen radius */
+      ' float ign = fract(52.9829189 * fract(dot(gl_FragCoord.xy, vec2(0.06711056, 0.00583715))) + frame * 0.618), occ = 0.0;' +
+      ' for (int i = 0; i < 6; i++) { float a = (float(i) + ign) * 1.0472; vec2 dir = vec2(cos(a), sin(a)) * vec2(texel.x / texel.y, 1.0) * rs;' +
+      '  for (int j = 1; j <= 4; j++) { float t = (float(j) - 0.5 + ign * 0.5) / 4.0; vec3 S = viewPos(vUv + dir * t); vec3 v = S - P; float l = length(v);' +
+      '   float hgt = dot(N, v) - (0.02 + 0.006 * -P.z); occ += max(0.0, hgt) / max(l, 1e-4) * (1.0 - smoothstep(radius * 0.6, radius * 1.6, l)); } }'   /* only geometry rising clearly above the surface's own plane occludes: no self-shadow stripes on long slopes */ +
+      ' float ao = clamp(1.0 - occ / 24.0 * 3.0, 0.0, 1.0); ao = mix(ao, 1.0, smoothstep(45.0, 130.0, -P.z)); gl_FragColor = vec4(ao, ao, ao, 1.0); }' });
+  const brightMat = new THREE.ShaderMaterial({ depthTest: false, depthWrite: false, uniforms: { tSrc: { value: null }, texel: { value: new THREE.Vector2() }, thr: { value: 0.86 } }, vertexShader: VS,
+    fragmentShader: 'varying vec2 vUv; uniform sampler2D tSrc; uniform vec2 texel; uniform float thr;' +
+      'vec3 s(vec2 o){ vec3 c = texture2D(tSrc, vUv + o * texel).rgb; float l = max(c.r, max(c.g, c.b)); return c * smoothstep(thr, thr + 0.12, l); }' +
+      'void main(){ gl_FragColor = vec4((s(vec2(-1.0, -1.0)) + s(vec2(1.0, -1.0)) + s(vec2(-1.0, 1.0)) + s(vec2(1.0, 1.0))) * 0.25, 1.0); }' });
+  const blurMat = new THREE.ShaderMaterial({ depthTest: false, depthWrite: false, uniforms: { tSrc: { value: null }, dir: { value: new THREE.Vector2() } }, vertexShader: VS,
+    fragmentShader: 'varying vec2 vUv; uniform sampler2D tSrc; uniform vec2 dir;' +
+      'void main(){ vec3 c = texture2D(tSrc, vUv).rgb * 0.227; c += (texture2D(tSrc, vUv + dir * 1.385).rgb + texture2D(tSrc, vUv - dir * 1.385).rgb) * 0.316; c += (texture2D(tSrc, vUv + dir * 3.231).rgb + texture2D(tSrc, vUv - dir * 3.231).rgb) * 0.07; gl_FragColor = vec4(c, 1.0); }' });
+  const compMat = new THREE.ShaderMaterial({ depthTest: false, depthWrite: false,
+    uniforms: { tScene: { value: null }, tAO: { value: null }, tB1: { value: null }, tB2: { value: null }, tDepth: { value: null }, cNear: { value: 0.1 }, cFar: { value: 1100 }, pScale: { value: new THREE.Vector2(1, 1) },
+      aoTexel: { value: new THREE.Vector2() }, useAO: { value: 0 }, useBloom: { value: 0 }, bloom: { value: 0.32 }, aoAmt: { value: 0.85 }, expo: { value: 1.0 }, sat: { value: 1.2 }, warm: { value: 1 }, vig: { value: 0.2 }, dbg: { value: 0 } },
+    vertexShader: VS, fragmentShader: 'varying vec2 vUv; uniform sampler2D tScene; uniform sampler2D tAO; uniform sampler2D tB1; uniform sampler2D tB2; uniform vec2 aoTexel; uniform float useAO; uniform float useBloom; uniform float bloom; uniform float aoAmt; uniform float expo; uniform float sat; uniform float warm; uniform float vig; uniform float dbg;' + DEPTH +
+      'void main(){ vec3 c = texture2D(tScene, vUv).rgb;' +
+      ' if (useAO > 0.5) { float z0 = viewZ(vUv), a = 0.0, w = 0.0; for (int i = -1; i <= 1; i++) for (int j = -1; j <= 1; j++) { vec2 o = vec2(float(i), float(j)) * aoTexel; float zw = 1.0 / (1.0 + abs(viewZ(vUv + o) - z0) / (0.04 * z0)); a += texture2D(tAO, vUv + o).r * zw; w += zw; }' +
+      '  float ao = a / w; if (dbg > 0.5) { gl_FragColor = vec4(vec3(ao), 1.0); return; } c *= mix(1.0, ao, aoAmt); }' +
+      ' if (useBloom > 0.5) c += (texture2D(tB1, vUv).rgb * 0.6 + texture2D(tB2, vUv).rgb * 0.8) * bloom;' +
+      ' c *= expo; c = c * (1.0 + c / 2.6) / (1.0 + c);' +   /* extended Reinhard: highlights roll off instead of clipping flat */
+      ' c *= 1.1; c = mix(c, c * c * (3.0 - 2.0 * c), 0.3); float l = dot(c, vec3(0.299, 0.587, 0.114)); c = mix(vec3(l), c, sat);' +
+      ' c += warm * (vec3(0.035, 0.012, -0.03) * smoothstep(0.45, 1.0, l) + vec3(-0.02, 0.0, 0.035) * (1.0 - smoothstep(0.0, 0.45, l)));' +   /* warm light, cool shade */
+      ' vec2 q = vUv - 0.5; c *= 1.0 - vig * smoothstep(0.25, 0.85, dot(q, q) * 2.0);' +
+      ' gl_FragColor = vec4(clamp(c, 0.0, 1.0), 1.0); }' });
+  function free() { [sceneRT, aoRT, b1, b2, b3, b4].forEach(t => t && t.dispose()); sceneRT = aoRT = b1 = b2 = b3 = b4 = null; }
+  function alloc() {
+    free(); if (mode === 'off') return;
+    sceneRT = GL2 ? new THREE.WebGLMultisampleRenderTarget(bw, bh, { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBAFormat, stencilBuffer: false }) : new THREE.WebGLRenderTarget(bw, bh, { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, stencilBuffer: false });
+    if (GL2) sceneRT.samples = Math.min(4, renderer.capabilities.maxSamples || 4);
+    sceneRT.depthTexture = new THREE.DepthTexture(bw, bh); sceneRT.depthTexture.type = THREE.UnsignedIntType;
+    const hw = Math.max(1, bw >> 1), hh = Math.max(1, bh >> 1), qw = Math.max(1, bw >> 2), qh = Math.max(1, bh >> 2), ew = Math.max(1, bw >> 3), eh = Math.max(1, bh >> 3);
+    if (mode === 'full') aoRT = new THREE.WebGLRenderTarget(hw, hh, RTO);
+    b1 = new THREE.WebGLRenderTarget(qw, qh, RTO); b2 = new THREE.WebGLRenderTarget(qw, qh, RTO); b3 = new THREE.WebGLRenderTarget(ew, eh, RTO); b4 = new THREE.WebGLRenderTarget(ew, eh, RTO);
+  }
+  function pass(m, target) { quad.material = m; renderer.setRenderTarget(target); renderer.render(qScene, qCam); }
+  function blur(src, tmp, w, h) { blurMat.uniforms.tSrc.value = src.texture; blurMat.uniforms.dir.value.set(1 / w, 0); pass(blurMat, tmp); blurMat.uniforms.tSrc.value = tmp.texture; blurMat.uniforms.dir.value.set(0, 1 / h); pass(blurMat, src); }
+  let fr = 0;
+  function render() {
+    if (mode === 'off' || !sceneRT) { renderer.setRenderTarget(null); renderer.render(scene, camera); return; }
+    renderer.setRenderTarget(sceneRT); renderer.render(scene, camera);
+    const pe = camera.projectionMatrix.elements, dT = sceneRT.depthTexture;
+    [aoMat, compMat].forEach(m => { m.uniforms.tDepth.value = dT; m.uniforms.cNear.value = camera.near; m.uniforms.cFar.value = camera.far; m.uniforms.pScale.value.set(pe[0], pe[5]); });
+    if (aoRT) { aoMat.uniforms.texel.value.set(1 / aoRT.width, 1 / aoRT.height); aoMat.uniforms.frame.value = (fr++ % 8) * 0.0; aoMat.uniforms.radius.value = W.on ? 0.75 : 1.6; pass(aoMat, aoRT); }
+    brightMat.uniforms.tSrc.value = sceneRT.texture; brightMat.uniforms.texel.value.set(1 / bw, 1 / bh); pass(brightMat, b1); blur(b1, b2, b1.width, b1.height);
+    blurMat.uniforms.tSrc.value = b1.texture; blurMat.uniforms.dir.value.set(0, 0); pass(blurMat, b3); blur(b3, b4, b3.width, b3.height);
+    const U = compMat.uniforms; U.tScene.value = sceneRT.texture; U.tAO.value = aoRT ? aoRT.texture : null; U.useAO.value = aoRT ? 1 : 0; U.useBloom.value = 1; U.tB1.value = b1.texture; U.tB2.value = b3.texture;
+    if (aoRT) U.aoTexel.value.set(1 / aoRT.width, 1 / aoRT.height); pass(compMat, null);
+  }
+  function resize(w, h) { bw = Math.max(1, w); bh = Math.max(1, h); alloc(); }
+  function set(m) { if (m === mode) return; mode = m; alloc(); }
+  return { render, resize, set, get mode() { return mode; }, U: compMat.uniforms, AO: aoMat.uniforms };
+})();
+SK.POST = POST;
 /* ---- loop ---- */
 function resize() {
   const w = window.innerWidth, h = window.innerHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
   const bw = cvs.width, bh = cvs.height; SK.OUT.uRes.value.set(bw, bh); SK.OUT.uFocal.value = camera.projectionMatrix.elements[5] * bh / 2;
-  SK.OUT.uMin.value = 1.8 * dpr; SK.OUT.uMax.value = 4.5 * dpr;
+  SK.OUT.uMin.value = 1.1 * dpr; SK.OUT.uMax.value = 2.9 * dpr;
+  if (typeof POST !== 'undefined') POST.resize(bw, bh);
 }
 addEventListener('resize', resize); resize();
 let last = performance.now(), dtS = 1 / 60, perfT = 0, perfN = 0;
@@ -4746,7 +4832,7 @@ function frame(now) {
   const raw = Math.min(0.1, Math.max(0, (now - last) / 1000)); last = now; dtS += (raw - dtS) * (raw > dtS * 2.5 ? 0.12 : 0.3); const dt = Math.min(0.05, dtS);
   simStep(dt, raw);
   shF++; renderer.shadowMap.needsUpdate = W.on || cur.r < 110 || shF % 3 === 0;
-  if (!SK.mapOpen) renderer.render(scene, camera);   /* the map covers the screen: skip drawing the 3D view */
+  if (!SK.mapOpen) POST.render();   /* the map covers the screen: skip drawing the 3D view */
   requestAnimationFrame(frame);
 }
 /* one simulation step (everything a frame does except drawing); SK.play(n, dt) runs it headless for tests and playtests */
@@ -6140,8 +6226,9 @@ function skyFor(min) {
   NIGHT = 1 - day; if (SK.SUNO) SK.SUNO.visible = day > 0.15;
   const az = (h - 12) / 12 * PI;   /* east in the morning, south at noon, west in the evening */
   if (el > -0.05) SUND.set(Math.sin(az) * 0.7 - 0.25, Math.max(0.12, el), 0.45 + Math.cos(az) * 0.3).normalize(); else SUND.set(0.35, 0.75, -0.3).normalize();   /* moon */
-  sunL.intensity = 0.12 + 0.38 * day; sunL.color.set(day > 0.5 ? 0xfff3e2 : dusk > 0.3 ? 0xffc28a : 0x9db4ff);
-  if (AMB) { AMB.intensity = 0.2 + 0.32 * day; AMB.color.set(day > 0.5 ? 0xdde8ff : 0x7d90c8); }
+  sunL.intensity = 0.14 + 0.6 * day; sunL.color.set(day > 0.5 ? 0xffedcf : dusk > 0.3 ? 0xffb37a : 0x9db4ff);   /* a strong warm key: lit faces glow, shade goes cool */
+  if (AMB) { AMB.intensity = 0.14 + 0.14 * day; AMB.color.set(day > 0.5 ? 0xd5e2ff : 0x6d80bb); }
+  HEMI.intensity = 0.1 + 0.3 * day; HEMI.color.set(day > 0.5 ? 0xb9d3ff : dusk > 0.3 ? 0xc9a8d8 : 0x3a4a80); HEMI.groundColor.set(day > 0.5 ? 0xf5e4c8 : 0x2a2f45);
   const U = SK.SKY && SK.SKY.uniforms; if (U) {
     ['zen', 'mid', 'hor'].forEach(k => { mixC(cNight[k], cDay[k], day, tc1); tc1.lerp(tc2.set(cDusk[k]), dusk * 0.75); U[k].value.copy(tc1); });
     U.night.value = NIGHT; U.glow.value = day; U.sunD.value.copy(SUND);
@@ -6154,17 +6241,31 @@ const GLASSM = [], GLOWM = [];
 scene.traverse(o => { if (!o.isMesh) return; (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => { if (!m || !m.transparent || !m.color) return; const hx = m.color.getHex();
   if ((hx === 0xdff3ff || hx === 0xa9e4ff) && GLASSM.indexOf(m) < 0) { m.userData.c0 = hx; m.userData.o0 = m.opacity; GLASSM.push(m); }
   if (hx === 0xffe98a && GLOWM.indexOf(m) < 0 && m !== SK.BEAM) { m.userData.o0 = m.opacity; GLOWM.push(m); } }); });
+/* the fake light is gone: no beam cones, no dust motes, no see-through glow globes. Those meshes stay in the scene (editor keys count
+   them) but never draw. Every fixture's globe is a solid frosted bulb that lights up (and blooms) when its light is on. */
+scene.traverse(o => { if ((o.isMesh && o.material === SK.BEAM) || (o.isPoints && SK.FXDOTS.indexOf(o.material) >= 0)) o.visible = false; });
+GLOWM.forEach(m => { m.transparent = false; m.opacity = 1; m.depthWrite = true; m.needsUpdate = true; });
+const BULB_OFF = new THREE.Color(0xd9d4c4), BULB_ON = new THREE.Color(0xfff2c8);
 function lookFor() {
   const n = NIGHT; GLASSM.forEach(m => { m.color.set(m.userData.c0).lerp(tc3.set(0xffd89a), n * 0.55); m.opacity = m.userData.o0 + n * 0.12; });
-  GLOWM.forEach(m => { m.opacity = m.userData.o0 * (0.15 + 0.85 * n); }); if (SK.BEAM) SK.BEAM.opacity = 0.05 * n; SK.FXDOTS.forEach(m => { m.opacity = 0.57 * n * (SK.QDUST === 0 ? 0 : 1); });
+  GLOWM.forEach(m => { m.color.copy(BULB_OFF).lerp(BULB_ON, Math.min(1, 0.35 + n)); });
 }
 /* ---- real lights: a fixed pool (no shader rebuilds) handed to the nearest fixtures. Every lamp is a spot cone that matches its visible
    beam (straight down, floods forward-down), so light lands where the fixture points and never on the ceiling above it; the 2 nearest
    cast shadows so a lamp can't shine through a wall. One point light is kept for the campfire, which glows all round. ---- */
-const PTS = [], SPS = [], SPOTN = 8;
+/* LIGHT CATALOG. Every fixture registered in world gen carries its own colour temperature (t) and brightness (b):
+     warm   2700 K yellow   room lamps, breakfast pendants, cabin porches, the lodge café
+     soft   3500 K          lobby, corridors, landings
+     white  5000 K neutral  shops, lift-station floodlights, the elevator cab
+     sodium street-lamp amber, fire = flickering orange
+   The real lights are a fixed pool (no shader rebuilds) handed to the nearest fixtures each frame; on High the 4 nearest cast shadows. */
+const TINTS = { warm: 0xffc47c, soft: 0xffe0b4, white: 0xf2f6ff, sodium: 0xffb45a, fire: 0xff8a33 };
+SK.LIGHTS.forEach(L => { if (!L.t) L.t = L.k === 'fire' ? 'fire' : L.k === 'flood' ? 'white' : L.k === 'street' ? 'sodium' : L.k === 'cabin' ? 'warm' : 'soft'; if (!L.b) L.b = 1; });
+SK.LIGHTCAT = TINTS;
+const PTS = [], SPS = [], SPOTN = 12;
 { const l = new THREE.PointLight(0xff9a40, 0, 12, 2); scene.add(l); PTS.push(l); }
-for (let i = 0; i < SPOTN; i++) { const l = new THREE.SpotLight(0xffe2a8, 0, 10, 0.7, 0.35, 1.6); l.castShadow = i < 2; l.shadow.mapSize.set(512, 512); l.shadow.camera.near = 0.3; l.shadow.camera.far = 24; l.shadow.bias = -0.0015; scene.add(l); scene.add(l.target); SPS.push(l); }
-const SPOT_K = { in: [1.0, 1, 1.5, 1.0], cabin: [1.05, 1, 0.9, 0.5], street: [0.95, 1, 1.0, 0.6], flood: [0.6, 1, 1.0, 0.9] };   /* kind: cone half-angle, penumbra (1 = no hard edge), reach x radius, intensity. Subtle warm pools that fade out gradually; snow never washes to white */
+for (let i = 0; i < SPOTN; i++) { const l = new THREE.SpotLight(0xffe2a8, 0, 10, 0.7, 0.35, 1.6); l.castShadow = i < 4; l.shadow.mapSize.set(512, 512); l.shadow.camera.near = 0.3; l.shadow.camera.far = 24; l.shadow.bias = -0.0015; scene.add(l); scene.add(l.target); SPS.push(l); }
+const SPOT_K = { in: [1.05, 0.85, 1.6, 1.25], cabin: [1.1, 0.9, 1.0, 0.8], street: [0.95, 0.8, 1.15, 1.0], flood: [0.62, 0.7, 1.1, 1.2] };   /* kind: cone half-angle, penumbra (1 = no hard edge), reach x radius, intensity. Subtle warm pools that fade out gradually; snow never washes to white */
 const LCOL = { in: 0xffd49a, cabin: 0xffb85c, street: 0xffc46e, flood: 0xffdca0 };   /* warm yellow tints, never pure white */
 const level = L => L.k === 'in' ? 0.35 + 0.65 * NIGHT : L.k === 'fire' ? 0.4 + 0.6 * NIGHT : NIGHT;   /* indoor lights are on all day, outdoor ones after dark */
 const camFwd = new THREE.Vector3();
@@ -6173,11 +6274,11 @@ function lightsFor() {
   SK.LIGHTS.forEach(L => { if (L.off) return; const lv = level(L); if (lv < 0.05) return; const dx = L.x - c.x, dy = L.y - c.y, dz = L.z - c.z, d = Math.hypot(dx, dy, dz);
     if (d < 70) cand.push({ L: L, d: d * ((dx * camFwd.x + dy * camFwd.y + dz * camFwd.z) < -L.r ? 1.8 : 1), lv: lv }); });   /* lamps well behind you rank lower */
   cand.sort((a, b) => a.d - b.d); const used = new Set();
-  PTS.forEach(p => { const q = cand.find(x => x.L.k === 'fire'); if (!q) { p.intensity = 0; return; } used.add(q); p.position.set(q.L.x, q.L.y, q.L.z); p.color.set(q.L.col); p.distance = q.L.r; p.intensity = (2.2 + Math.random() * 0.4) * q.lv; });
+  PTS.forEach(p => { const q = cand.find(x => x.L.k === 'fire'); if (!q) { p.intensity = 0; return; } used.add(q); p.position.set(q.L.x, q.L.y, q.L.z); p.color.set(TINTS[q.L.t] || q.L.col); p.distance = q.L.r; p.intensity = (1.6 + Math.random() * 0.35) * q.L.b * q.lv; });
   SPS.forEach(s => { if (s.userData.off) { s.intensity = 0; return; } const q = cand.find(x => !used.has(x) && x.L.k !== 'fire'); if (!q) { s.intensity = 0; return; } used.add(q);
     const L = q.L, K = SPOT_K[L.k] || SPOT_K.in, dv = L.dir || [0, -1, 0];
     s.position.set(L.x, L.y, L.z); s.target.position.set(L.x + dv[0], L.y + dv[1], L.z + dv[2]); s.target.updateMatrixWorld();
-    s.userData.k = L.k; s.angle = K[0]; s.penumbra = K[1]; s.distance = L.r * K[2]; s.shadow.camera.far = s.distance + 1; s.color.set(LCOL[L.k] || L.col); s.decay = 2; s.intensity = K[3] * q.lv; });
+    s.userData.k = L.k; s.angle = K[0]; s.penumbra = K[1]; s.distance = L.r * K[2]; s.shadow.camera.far = s.distance + 1; s.color.set(TINTS[L.t] || L.col); s.decay = 2; s.intensity = K[3] * L.b * q.lv; });
 }
 /* ---- hotel: rooms, who is staying tonight (seeded per day), your key ---- */
 const ROOMS = HXd.rooms.map(r => r);
@@ -6772,10 +6873,10 @@ function soundTick(dt) {
   if (!ski && W.on && !W.ride && W.bp) { const st = Math.floor(W.bp / PI); if (st !== lastStep) { lastStep = st; if (Math.hypot(W.vx || 0, W.vz || 0) > 0.5) step(inside); } }
 }
 /* ---- graphics quality: high / balanced / low trade lights, shadows, snow and resolution for frame rate ---- */
-const QUAL = { high: { pts: 8, spotSh: true, snow: 1, dpr: 2, sh: 2048, dust: 1 }, balanced: { pts: 6, spotSh: true, snow: 0.6, dpr: 1.5, sh: 1024, dust: 1 }, low: { pts: 4, spotSh: false, snow: 0.35, dpr: 1, sh: 512, dust: 0 } };
+const QUAL = { high: { post: 'full', pts: 12, spSh: 4, spotSh: true, snow: 1, dpr: 2, sh: 2048, dust: 1 }, balanced: { post: 'lite', pts: 8, spSh: 2, spotSh: true, snow: 0.6, dpr: 1.5, sh: 1024, dust: 1 }, low: { post: 'off', pts: 5, spSh: 0, spotSh: false, snow: 0.35, dpr: 1, sh: 512, dust: 0 } };
 const qual = () => State.settings.gfx || (coarse ? 'balanced' : 'high');
 function qualApply() {
-  const Q = QUAL[qual()]; SK.P6.SPS.forEach((l, i) => { const sh = Q.spotSh && i < 2; if (l.castShadow !== sh) l.castShadow = sh; l.userData.off = i >= Q.pts; });   /* one shader rebuild when it changes */ SK.QMAXDPR = Q.dpr; SK.QDUST = Q.dust;
+  const Q = QUAL[qual()]; if (SK.POST) SK.POST.set(Q.post); SK.P6.SPS.forEach((l, i) => { const sh = i < Q.spSh; if (l.castShadow !== sh) l.castShadow = sh; l.userData.off = i >= Q.pts; });   /* one shader rebuild when it changes */ SK.QMAXDPR = Q.dpr; SK.QDUST = Q.dust;
   const nd = Math.max(Math.min(1, DPR0), Math.min(DPR0, Q.dpr)); if (nd !== dpr) { dpr = nd; renderer.setPixelRatio(dpr); resize(); }   /* resolution changes now, not after the next slow frame */
   if (sunL.shadow.mapSize.x !== Q.sh) { sunL.shadow.mapSize.set(Q.sh, Q.sh); if (sunL.shadow.map) { sunL.shadow.map.dispose(); sunL.shadow.map = null; } }
   SK.P6.lightsFor();
@@ -6787,7 +6888,7 @@ const SET = {
     if (!S0 || S0.kind !== 'set') return { h: h, foot: foot }; const st = State.settings, q = qual(), f = forecast(State.day), T = WXT[f.k];
     let o = '<h4>Weather today</h4>' + row(T.ic + ' ' + T.n, f.k === 'clear' ? 'Blue skies all day' : 'Heaviest around ' + (f.peak < 10 ? '0' : '') + f.peak + ':00' + (f.k === 'storm' ? ' · low visibility, cold' : ''), '');
     o += '<h4>Sound and feel</h4>' + row('Sound', 'Wind, skis, footsteps, chimes', btn(st.sound ? 'On' : 'Off', 'p6:p7:sound', false, !st.sound)) + row('Vibration', 'Landings, crashes, coins', btn(st.vib ? 'On' : 'Off', 'p6:p7:vib', false, !st.vib));
-    o += '<h4>Graphics</h4>' + ['high', 'balanced', 'low'].map(k => row(k[0].toUpperCase() + k.slice(1), k === 'high' ? 'All lights, lamp shadows, full snowfall' : k === 'balanced' ? 'Fewer lights, no lamp shadows, lighter snow' : 'Fastest: minimal lights, light snow, lower resolution', btn(q === k ? 'In use' : 'Use', 'p6:p7:gfx:' + k, q === k, q !== k))).join('');
+    o += '<h4>Graphics</h4>' + ['high', 'balanced', 'low'].map(k => row(k[0].toUpperCase() + k.slice(1), k === 'high' ? 'All lights, 4 lamp shadows, ambient occlusion, bloom, full snowfall' : k === 'balanced' ? 'Fewer lights, 2 lamp shadows, bloom + colour grade, lighter snow' : 'Fastest: minimal lights, no post effects, light snow, lower resolution', btn(q === k ? 'In use' : 'Use', 'p6:p7:gfx:' + k, q === k, q !== k))).join('');
     return { title: 'Settings', h: o, foot: 'Phones start on Balanced. Pick Low if a snowstorm feels choppy.' };
   },
   op(a) { const st = State.settings; if (a[0] === 'sound') { st.sound = st.sound ? 0 : 1; if (st.sound) audioInit(); if (MASTER) MASTER.gain.value = st.sound ? 0.7 : 0; }

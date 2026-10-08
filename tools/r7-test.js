@@ -6,7 +6,7 @@ const { boot, check } = require('./lib');
   const ev = (f, a) => page.evaluate(f, a);
   let r = await ev(() => { SK.P6.setTime(22 * 60); const W = SK.W; W.x = -44; W.y = 0.25; W.z = -64; SK.play(3); SK.P6.lightsFor();
     return { spots: SK.P6.SPS.length, lit: SK.P6.SPS.filter(s => s.intensity > 0).length, pts: SK.P6.PTS.length, down: SK.P6.SPS.filter(s => s.intensity > 0).every(s => s.target.position.y < s.position.y), chunk: THREE.ShaderChunk.lights_toon_pars_fragment.indexOf('RE_Direct_ToonLocal') > 0 }; });
-  check(r.spots === 8 && r.lit >= 4 && r.down && r.chunk, 'lamps are downward spot cones; local lights skip back faces (' + JSON.stringify(r) + ')', fails);
+  check(r.spots === 12 && r.lit >= 4 && r.down && r.chunk, 'lamps are downward spot cones; local lights skip back faces (' + JSON.stringify(r) + ')', fails);
   r = await ev(() => { SK.State.cabins = []; SK.play(30); const D = SK.CDOORS; return { n: D.length, alp: !!D.find(d => d.id === 'alpine'), shut: D.every(d => d.o === 0 && !d.sol.off), af: D.filter(d => /^af/.test(d.id)).length }; });
   check(r.alp && r.af === 2 && r.shut, 'cabin doors (A-frames, Alpine) are the model leaf, shut and solid when not owned (' + JSON.stringify(r) + ')', fails);
   r = await ev(() => { const D = SK.CDOORS.find(d => d.id === 'alpine'); SK.State.cabins.push('alpine'); const W = SK.W; W.x = D.x; W.z = D.z + 1.5; W.y = SK.groundY(W.x, W.z); SK.play(60); const o = D.o; SK.State.cabins.pop(); return { o: o, solid: D.sol.off }; });
