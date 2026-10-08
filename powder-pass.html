@@ -1086,8 +1086,35 @@ function lodge(o) {
     b.add(cy(0.11, 0.11, ph, 8), C.metal, px, ph / 2, pz); b.cone([px, ph, pz], V(0, 1, 0), 0.24, 0.3, C.dark);
     K.push({ x: px, z: pz, ry: 0, hw: 0.38, hd: 0.38 }); puffs(px, ph, pz);
   }
+  lodgeDress(b, r, o, W, D, H, T, rise, hw, dx);
   g.add(b.build()); const rf = r.build(); g.add(rf); ROOFS.push(rf); g.userData.K = K; g.userData.chim = chimAt;
   return g;
+}
+/* cabin / chalet / hut / café dressing: fieldstone plinth (open at the door), a soft snow roll along both eaves, rafter tails, a ridge
+   cap, a framed panelled door with a handle and a welcome mat, shutters + flower boxes on the front window, vertical battens on the
+   gables, a hanging lantern sign. Everything is added to the cabin's own groups, so hiding the roof / editing the cabin still works. */
+function lodgeDress(b, r, o, W, D, H, T, rise, hw, dx) {
+  const R = rng(Math.round(W * 17 + D * 5) + 9), ry0 = FY + H;
+  /* plinth */
+  const ring = (x0, z0, x1, z1) => { const L = Math.hypot(x1 - x0, z1 - z0), n = Math.max(2, Math.round(L / 0.5)); for (let i = 0; i <= n; i++) { const t = i / n; b.add(stoneGeo(0.17 + 0.05 * R(), 1.3, 0.7, 1, 600 + i), i % 3 ? C.stone : C.rock, x0 + (x1 - x0) * t, 0.12, z0 + (z1 - z0) * t, { ry: R() * 3 }); } };
+  const ex = W / 2 + 0.2, ez = D / 2 + 0.2; ring(-ex, ez, dx - 0.75, ez); ring(dx + 0.75, ez, ex, ez); ring(-ex, -ez, ex, -ez); ring(-ex, -ez, -ex, ez); ring(ex, -ez, ex, ez);
+  /* eave snow roll + rafter tails + ridge cap */
+  const ang = Math.atan2(rise, hw);
+  [-1, 1].forEach(s => { r.add(cy(0.11, 0.11, D + 0.7, 8), C.snow, s * (hw - 0.02), ry0 + 0.02, 0, { rx: PI / 2, noOutline: 1 });
+    for (let z = -D / 2 - 0.2; z <= D / 2 + 0.25; z += 0.6) b.add(bx(0.5, 0.1, 0.09), o.trim || C.wood3, s * (W / 2 + 0.25), ry0 - 0.06, z, { rz: -s * ang }); });
+  r.add(bx(0.22, 0.12, D + 0.74), o.roof, 0, ry0 + rise + 0.17, 0); r.add(bx(0.3, 0.07, D + 0.72), C.snow, 0, ry0 + rise + 0.27, 0, { noOutline: 1 });
+  /* door surround, panels, handle, mat, lantern sign */
+  const zd = D / 2 + 0.04, tr = o.trim || C.wood3;
+  [-0.56, 0.56].forEach(x => b.add(bx(0.1, 1.85, 0.1), tr, dx + x, FY + 0.92, zd)); b.add(bx(1.22, 0.12, 0.1), tr, dx, FY + 1.82, zd); b.add(bx(1.3, 0.06, 0.16), C.snow, dx, FY + 1.91, zd, { noOutline: 1 });
+  b.add(bx(0.7, 0.04, 0.5), C.dark, dx, FY + 0.03, D / 2 + 0.4, { noOutline: 1 }); b.add(bx(0.62, 0.02, 0.42), C.orange, dx, FY + 0.055, D / 2 + 0.4, { noOutline: 1 });
+  b.add(bx(0.05, 0.4, 0.05), C.dark, dx + 0.82, FY + 1.7, zd + 0.1); b.add(bx(0.2, 0.22, 0.2), C.dark, dx + 0.82, FY + 1.42, zd + 0.22); b.add(sp(0.065), WARM, dx + 0.82, FY + 1.4, zd + 0.22, { basic: 1 });
+  /* front window: frame, sill, flower box, shutters */
+  const wx = W * 0.22, wy = FY + 1.25;
+  b.add(bx(1.04, 0.1, 0.1), tr, wx, wy - 0.5, zd); b.add(bx(1.04, 0.1, 0.1), tr, wx, wy + 0.5, zd); [-0.5, 0.5].forEach(u => b.add(bx(0.1, 1.0, 0.1), tr, wx + u, wy, zd));
+  b.add(bx(1.0, 0.2, 0.24), C.wood3, wx, wy - 0.68, zd + 0.1); for (let i = 0; i < 6; i++) b.add(sp(0.07, 1, 1, 1, 6, 4), [C.red, C.yellow, C.pink, C.grass][i % 4], wx - 0.4 + i * 0.16, wy - 0.54, zd + 0.1, { noOutline: 1 });
+  [-1, 1].forEach(sd => { b.add(bx(0.34, 1.0, 0.05), o.wall === C.wood2 ? C.wood3 : C.blue, wx + sd * 0.72, wy, zd + 0.02); for (let k = 0; k < 4; k++) b.add(bx(0.26, 0.03, 0.02), C.dark, wx + sd * 0.72, wy - 0.33 + k * 0.22, zd + 0.06, { noOutline: 1 }); });
+  /* gable battens */
+  [1, -1].forEach(sg => { for (let u = -hw + 0.5; u < hw - 0.4; u += 0.5) { const h = rise * (1 - Math.abs(u) / hw) - 0.1; if (h > 0.12) b.add(bx(0.05, h, 0.03), tr, u, ry0 + h / 2 + 0.05, sg * (D / 2 + 0.03), { noOutline: 1 }); } });
 }
 const logCabin = () => lodge({ noLeaf: 1, W: 3.6, D: 3.0, wall: C.wood2, gable: C.wood, logs: 1, roof: C.red, deck: C.wood, rail: C.wood3, chim: 'stone', rug: C.blue });
 const chalet = () => lodge({ noLeaf: 1, W: 4.8, D: 3.6, H: 2.5, rise: 1.9, wall: CREAM, gable: CREAM, trim: C.wood3, roof: C.blue, deck: C.wood, rail: C.white, chim: 'brick', canopy: 1, dk: 1.9, rug: C.red, blanket: C.blue });
@@ -1232,6 +1259,19 @@ function pool() {
   let n = 0; [-6.5, -3.6, -0.7, 2.2, 5.1, 8].forEach(x => [cz - 1.2, cz + 1.2].forEach(z => steam(g, x, 0.9, z, n++, 1))); [0, 1, 2].forEach(i => steam(g, 9 + (i - 1) * 0.3, 1.0, 4.2, n++, 0.9));
   g.userData.K = K; return g;
 }
+/* interior finish helpers (hotel): panelled wainscot with a chair rail and a skirting, applied along a wall's room-side face between
+   door / window gaps; a crown moulding; coffered ceiling beams; a wall sconce. All noOutline, shallow: they read as plaster and timber work. */
+function hWainscot(b, x0, x1, z, y, sd, gaps, hgt, col, rail) {
+  const cuts = (gaps || []).slice().sort((p, q) => p[0] - q[0]), runs = []; let a = x0; cuts.forEach(d => { if (d[0] > a) runs.push([a, d[0]]); a = Math.max(a, d[1]); }); if (x1 > a) runs.push([a, x1]);
+  hgt = hgt || 1.0; runs.forEach(r => { const L = r[1] - r[0], cx = (r[0] + r[1]) / 2; if (L < 0.2) return;
+    b.add(bx(L, hgt, 0.03), col, cx, y + hgt / 2, z + sd * 0.016, { noOutline: 1 }); b.add(bx(L, 0.07, 0.06), rail, cx, y + hgt, z + sd * 0.03, { noOutline: 1 }); b.add(bx(L, 0.14, 0.05), rail, cx, y + 0.07, z + sd * 0.028, { noOutline: 1 });
+    for (let u = r[0] + 0.45; u < r[1] - 0.25; u += 0.9) b.add(bx(0.72, hgt - 0.3, 0.012), 0x000000 + (col & 0xfefefe) / 2 + 0x0a0a0a, u, y + hgt / 2 - 0.02, z + sd * 0.034, { noOutline: 1 }); });
+}
+function hCrown(b, x0, x1, z, yTop, sd, col) { b.add(bx(x1 - x0, 0.12, 0.1), col, (x0 + x1) / 2, yTop - 0.06, z + sd * 0.05, { noOutline: 1 }); b.add(bx(x1 - x0, 0.05, 0.16), col, (x0 + x1) / 2, yTop - 0.14, z + sd * 0.08, { noOutline: 1 }); }
+function hCoffer(b, x0, x1, z0, z1, yTop, col, step) { step = step || 2.4;
+  for (let x = x0; x <= x1 + 0.01; x += step) b.add(bx(0.16, 0.14, z1 - z0), col, x, yTop - 0.07, (z0 + z1) / 2, { noOutline: 1 });
+  for (let z = z0; z <= z1 + 0.01; z += step) b.add(bx(x1 - x0, 0.14, 0.16), col, (x0 + x1) / 2, yTop - 0.07, z, { noOutline: 1 }); }
+function hSconce(b, x, y, z, ry) { b.push(x, y, z, ry); b.add(bx(0.12, 0.34, 0.04), 0xd4a73a, 0, 0, 0); b.add(cy(0.08, 0.12, 0.2, 8), 0xf2e6c8, 0, 0.06, 0.1, { noOutline: 1 }); b.add(sp(0.045), WARM, 0, 0.0, 0.1, { basic: 1 }); b.pop(); }
 /* a glass balustrade panel that follows a stair's slope with plumb ends (a tilted box poked out past the treads like a floating plate) */
 function stairGlass(len, rise) { const g = bx(0.03, 0.9, len); g.applyMatrix4(new THREE.Matrix4().set(1, 0, 0, 0, 0, 1, -rise / len, 0, 0, 0, 1, 0, 0, 0, 0, 1)); return g; }
 /* framed print for corridor walls: wood frame, pale mount, colour blocks and a sun. Front faces local +z (ry turns it) */
@@ -1308,6 +1348,22 @@ function hotel() {
   b.push(4.9, WY, 4.3, 0); pFloorLamp(b); b.pop(); K.push({ x: 4.9, z: 4.3, ry: 0, hw: 0.2, hd: 0.2 });
   [[-9.0, 4.35], [-4.4, 4.35], [4.4, -0.2], [11.2, -4.2]].forEach(p => { topiaryInto(b, p[0], WY, p[1], 1, 0.6); K.push({ x: p[0], z: p[1], ry: 0, hw: 0.3, hd: 0.3 }); });
   [[-6, 2], [-6, -1], [0, 2], [0, -3], [6, 2], [6, -1], [9.5, 2]].forEach(p => { hLight(b, p[0], WY + 2.95, p[1]); lightFx(g, [p[0], WY + 2.95, p[1]], [p[0], WY + 0.05, p[1]], 1.1, { n: 8, size: 0.09 }); });
+  /* ---- lobby finish: wainscot + crown + coffered ceiling + sconces + a stone fireplace feature ---- */
+  { const wc = 0x7a4a2e, rl = 0x33200f;
+    hWainscot(b, -hx + 0.1, hx - 0.1, hz - T / 2, WY, -1, [[-1.5, 1.5], [-hx, -8.2]], 1.05, wc, rl);   /* south (street) wall inside */
+    hWainscot(b, -hx + 0.1, -4.0, -hz + T / 2, WY, 1, [[-3.4, -2.3], [-2.4, 2.4]], 1.05, wc, rl); hWainscot(b, 10.2, hx - 0.1, -hz + T / 2, WY, 1, [[11.2, 13]], 1.05, wc, rl);
+    hCrown(b, -hx, hx, hz - T / 2, WY + 3.4, -1, 0xf2eee4); hCrown(b, -hx, hx, -hz + T / 2, WY + 3.4, 1, 0xf2eee4);
+    hCoffer(b, -9.6, 9.6, -4.4, 4.4, WY + 3.4, 0xe9e1d3, 2.4);
+    [[-8.2, hz - 0.2, PI], [-3.2, hz - 0.2, PI], [3.2, hz - 0.2, PI], [8.2, hz - 0.2, PI], [-8.2, -hz + 0.2, 0], [8.5, -hz + 0.2, 0]].forEach(q => hSconce(b, q[0], WY + 2.1, q[1], q[2]));
+    /* stone fireplace on the east wall, between the windows: hearth, surround, mantel, logs, flames */
+    const fx = hx - 0.45, fz = -2.6;   /* (the lounge sofas face east: the fireplace sits behind the armchair) */
+    b.add(bx(0.7, 1.3, 2.2), C.stone, fx, WY + 0.65, fz); b.add(bx(0.14, 2.6, 2.0), C.stone, fx + 0.14, WY + 1.7, fz); b.add(bx(0.9, 0.12, 2.5), C.wood3, fx - 0.05, WY + 1.35, fz);
+    b.add(bx(0.05, 0.7, 1.2), C.dark, fx - 0.34, WY + 0.45, fz); b.add(cn(0.26, 0.55, 6), C.orange, fx - 0.3, WY + 0.5, fz, { basic: 1 }); b.add(cn(0.17, 0.4, 6), C.yellow, fx - 0.3, WY + 0.46, fz + 0.12, { basic: 1 });
+    [-0.3, 0.3].forEach(t => b.add(cy(0.07, 0.07, 0.9, 8), C.wood3, fx - 0.25, WY + 0.15, fz + t, { rx: PI / 2 })); K.push({ x: fx, z: fz, ry: 0, hw: 0.45, hd: 1.1 });
+    HX.L.push([fx - 1.0, WY + 1.4, fz, 0, 'warm', 0.8]); }
+  /* lobby floor: oak planks with a dark herringbone-style inlay border, a stone threshold inside the glass door */
+  b.add(bx(W - 1.2, 0.012, 8.2), 0xb88a56, 0, WY + 0.022, 0, { noOutline: 1 }); for (let z = -4; z <= 4; z += 0.45) b.add(bx(W - 1.2, 0.006, 0.012), 0x8a6238, 0, WY + 0.029, z, { noOutline: 1 });
+  [-1, 1].forEach(sd => { b.add(bx(0.18, 0.014, 8.2), 0x4a2f1a, sd * (W / 2 - 0.7), WY + 0.026, 0, { noOutline: 1 }); }); b.add(bx(W - 1.2, 0.014, 0.18), 0x4a2f1a, 0, WY + 0.026, -4.0, { noOutline: 1 }); b.add(bx(W - 1.2, 0.014, 0.18), 0x4a2f1a, 0, WY + 0.026, 4.0, { noOutline: 1 });
   // ---- boot room: the entrance vestibule. Skis go in the racks here before anyone walks into the lobby (the game racks yours for you)
   { const zi = 2.2, zf = hz - T / 2, zc = (zi + zf) / 2, dz = zf - zi;
     [-1, 1].forEach(sd => wall(b, K, sd * 3.6, zc, PI / 2, dz, H, 0.15, CONC, []));
@@ -1348,7 +1404,7 @@ function hotel() {
   [-6.4, -1.8, 2.8, 7.4].forEach(x => wall(b, K2, x, 0.7, PI / 2, 8.6, H2, 0.2, CONC, []));
   RC.forEach(c => hInside(b, K2, c, 4.6, -3.6, 5.0, H2));
   RC.forEach((c, i) => hArt(b, c - 1.1, WY + 1.55, -3.73, PI, 1.1, 0.8, i + 1));   /* prints between the room doors, facing the hallway */
-  RC.forEach(c => hDoorFrame(b, c + 0.8, WY, -3.7, -1)); hRails(b, -6.4, 12, -3.7, WY, -1, RC.map(c => [c + 0.7, c + 1.7]));
+  RC.forEach(c => hDoorFrame(b, c + 0.8, WY, -3.7, -1)); [-5.3, -1.8, 2.8, 7.4].forEach(x => hSconce(b, x, WY + 2.0, -3.7 - 0.2, PI)); hCrown(b, -6.4, 12, -3.7, WY + H2, -1, 0xf2eee4); hRails(b, -6.4, 12, -3.7, WY, -1, RC.map(c => [c + 0.7, c + 1.7]));
   /* west end of floor 1: the landing between the two flights. Kept clear (the reading nook's sofas blocked it): a long rug, a print and plants along the room wall */
   const westCarpet = (y, c0, c1) => { b.add(bx(3.3, 0.014, 8.4), c0, -8.175, y + 0.04, 0.675, { noOutline: 1 }); b.add(bx(2.8, 0.016, 7.9), c1, -8.175, y + 0.042, 0.675, { noOutline: 1 });   /* wall to wall beside the well */
     b.add(bx(2.0, 0.014, 2.2), c0, -10.875, y + 0.04, 3.775, { noOutline: 1 }); b.add(bx(1.6, 0.016, 1.8), c1, -10.875, y + 0.042, 3.775, { noOutline: 1 }); };   /* and the south landing */
@@ -1439,6 +1495,14 @@ function hotel() {
     [[11.3, -10.4], [11.3, -5.7], [-8.6, -10.4]].forEach(q => { b.add(cy(0.28, 0.22, 0.5, 12), 0xb4603e, q[0], WY + 0.25, q[1]); b.add(sp(0.42, 1, 1.5, 1), C.grass2, q[0], WY + 0.95, q[1]); b.add(sp(0.3, 1, 1.2, 1), C.grass, q[0] + 0.1, WY + 1.35, q[1] + 0.05); K.push({ x: q[0], z: q[1], ry: 0, hw: 0.3, hd: 0.3 }); });
     /* (no art over the side windows) */
     b.add(bx(3.0, 0.014, 4.4), RUGC, 0, WY + 0.235, -7.5, { noOutline: 1 }); }
+  { /* breakfast hall finish: green-painted wainscot, crown, timber ceiling beams, wall sconces, a patterned runner under the tables */
+    const wc = 0x3f6a4a, rl = 0xf2eee4, yb = FY;
+    hWainscot(b, -hx + 0.1, hx - 0.1, ZN + T / 2, yb, 1, [[-6.5, -2.5], [-1.5, 2.5], [3.5, 7.5], [-12, -10]], 1.0, wc, rl);   /* north wall (buffet side) between the windows */
+    hWainscot(b, ZN + 0.1, -hz - 0.1, -hx + T / 2 + 0.08, yb, 1, [[-8.5, -6.5]], 1.0, wc, rl);
+    hCrown(b, -hx + 0.1, hx - 0.1, ZN + T / 2, FY + 3.4, 1, rl);
+    for (let x = -10; x <= 10.1; x += 3.4) b.add(bx(0.2, 0.2, -ZN - hz - 0.4), 0x6b4226, x, FY + 3.3, (ZN - hz) / 2, { noOutline: 1 });
+    [[-9, ZN + 0.25], [-4.5, ZN + 0.25], [4.5, ZN + 0.25], [9.5, ZN + 0.25]].forEach(q => hSconce(b, q[0], FY + 2.2, q[1], 0));
+    [-1, 1].forEach(sd => b.add(bx(0.5, 0.012, 5.2), [0xc8553d, 0x2f7bff][sd > 0 ? 0 : 1], 3.2 * sd, FY + 0.236, -7.8, { noOutline: 1 })); }
   [[-6, -6.0], [-1, -6.0], [4, -6.0], [9, -6.0], [-1.5, -9.9], [6.8, -9.9]].forEach(p => HX.L.push([p[0], WY + 2.95, p[1], 0, 'warm', 1.15]));   /* breakfast hall: warm pendants */
   [[-6, -6.0], [4, -6.0]].forEach(p => hLight(b, p[0], WY + 2.95, p[1]));
   /* -- elevator: a shaft at the wing's west end on every floor, doors to the south -- */
@@ -2362,6 +2426,12 @@ function liftStation2(top) {
       b.add(bx(1.8, 0.14, 1.8), C.red, hx, 2.2, hz); b.add(bx(1.8, 0.1, 1.8), SNOWC, hx, 2.31, hz); b.add(bx(0.7, 0.05, 0.4), C.dark, hx - 0.3, 1.24, hz - 0.45); b.add(sp(0.05), C.lime, hx - 0.5, 1.29, hz - 0.5, { basic: 1 }); b.add(sp(0.05), C.red, hx - 0.35, 1.29, hz - 0.5, { basic: 1 });
       K.push({ x: hx, z: hz, ry: 0, hw: 0.8, hd: 0.8 }); }
   }
+  /* winter finish: snow roll + icicles along both roof eaves, a ring of stones round every post foot, a lit hanging lantern over the gate */
+  { const R2 = rng(top ? 71 : 53), ya = 8.5 - Math.sin(0.184) * 2.95 * 2 + 0.05;
+    [-1, 1].forEach(sd => { const ex = sd * 5.78; b.add(cy(0.12, 0.12, 11.1, 8), SNOWC, ex, 7.6 + 0.0, 0.6, { rx: PI / 2, noOutline: 1 });
+      for (let z = -4.8; z <= 6.0; z += 0.3 + 0.28 * R2()) { const l = 0.12 + 0.5 * R2() * R2(); b.add(cn(0.04, l, 5), ICE, ex, 7.6 - l / 2, z, { rx: PI, noOutline: 1 }); } });
+    [[-1, -3.8], [1, -3.8], [-1, 0], [1, 0], [-1, 5.0], [1, 5.0]].forEach((p, k) => { for (let i = 0; i < 6; i++) { const a = i * TAU / 6 + k; b.add(stoneGeo(0.17, 1.2, 0.7, 1, 700 + k * 6 + i), i % 2 ? C.stone : C.rock, p[0] * 5.4 + Math.cos(a) * 0.5, 0.17, p[1] + Math.sin(a) * 0.5, { ry: a }); } });
+    if (!top) { b.add(cy(0.02, 0.02, 0.5, 5), C.dark, 0, 4.25, 9.6, { noOutline: 1 }); b.add(bx(0.2, 0.28, 0.2), C.dark, 0, 3.7, 9.9); b.add(sp(0.075), WARM, 0, 3.68, 9.9, { basic: 1 }); } }
   g.add(b.build());
   const w = new B(); w.add(tor(RC2 - 0.45, 0.11), C.yellow, 0, 0, 0, { rx: PI / 2 }); w.add(tor(RC2 - 0.95, 0.07), C.dark, 0, 0, 0, { rx: PI / 2 }); w.add(cy(0.4, 0.4, 0.35, 12), C.red, 0, 0, 0);
   for (let i = 0; i < 8; i++) { const a = i * PI / 4; w.rod([0, 0, 0], [Math.cos(a) * (RC2 - 0.45), 0, Math.sin(a) * (RC2 - 0.45)], 0.07, C.dark); }
@@ -2892,6 +2962,10 @@ function aframe(o) {
   // collision: gable plates + low-ceiling strips under the slopes (headroom < 1.9 m) so the camera never ends up inside the roof
   K.push({ x: -1.025, z: zf, ry: 0, hw: 1.375, hd: 0.1 }, { x: 1.775, z: zf, ry: 0, hw: 0.625, hd: 0.1 }, { x: 0, z: -zf, ry: 0, hw: hw, hd: 0.1 },
     { x: -1.75, z: 0, ry: 0, hw: 0.35, hd: D / 2 }, { x: 1.75, z: 0, ry: 0, hw: 0.35, hd: D / 2 }, { x: -0.95, z: -0.62, ry: 0, hw: 0.06, hd: 0.06 }, { x: 0.95, z: -0.62, ry: 0, hw: 0.06, hd: 0.06 });
+  { /* winter finish: fieldstone plinth round the base, icicles along both roof edges, a lantern by the door */
+    const R2 = rng(88); for (let i = 0; i < 46; i++) { const t = i / 45, side = i % 2 ? 1 : -1, z = -D / 2 - 0.3 + t * (D + 0.6); b.add(stoneGeo(0.2 + 0.05 * R2(), 1.3, 0.7, 1, 800 + i), i % 3 ? C.stone : C.rock, side * (hw + 0.28), 0.15, z, { ry: R2() * 3 }); }
+    [-1, 1].forEach(s => { for (let z = -D / 2 + 0.1; z < D / 2; z += 0.32 + 0.3 * R2()) { const l = 0.12 + 0.5 * R2() * R2(); b.add(cn(0.04, l, 5), ICE, s * (hw + 0.06), FY + 0.5 - l / 2, z, { rx: PI, noOutline: 1 }); } });
+    b.add(bx(0.1, 1.1, 0.1), C.dark, 1.5, 0.6, zo + 0.35); b.add(bx(0.22, 0.28, 0.22), C.dark, 1.5, 1.28, zo + 0.35); b.add(sp(0.08), WARM, 1.5, 1.26, zo + 0.35, { basic: 1 }); }
   g.add(b.build());
   lightFx(g, [lx, ly, D / 2 + 0.16], [lx, 0.2, D / 2 + 0.9], 0.8, { n: 6, size: 0.08 });
   g.userData.K = K; g.userData.chim = [1.3, FY + 3.5, -0.2]; return g;
@@ -3058,6 +3132,9 @@ function alpine() {
   [[-1.7, 2.4], [1.0, 0.05]].forEach(p => { b.push(p[0], FY + 0.35, p[1], 0); pPendant(b); b.pop(); });
   b.add(bx(2.2, 0.5, 0.06), BRZD, -1.7, FY + 2.35, zfo + 0.03); hText(b, 'ALPINE', -1.7, FY + 2.35, zfo + 0.08, 0.075, C.white);
   [[-5.2, 0.2, 2.5, 1.2], [5.6, 0.2, -2.5, 1.2], [-1.0, 0.2, 4.9, 1.0]].forEach(p => b.add(sp(p[3], 1, 0.4, 1), C.snow, p[0], p[1], p[2]));
+  { /* winter finish: fieldstone plinth along the front and back, a snow roll with icicles on the gable edges */
+    const R2 = rng(99); [[-4.2, 4.6, zfo + 0.15], [-4.2, 4.6, -zfo - 0.15]].forEach((q, k) => { const L = q[1] - q[0], n = Math.round(L / 0.5); for (let i = 0; i <= n; i++) b.add(stoneGeo(0.2 + 0.05 * R2(), 1.3, 0.7, 1, 900 + k * 40 + i), i % 3 ? C.stone : C.rock, q[0] + L * i / n, 0.14, q[2], { ry: R2() * 3 }); });
+    for (let x = -4.0; x <= 1.6; x += 0.35 + 0.3 * R2()) { const top = FY + Y2 - FY + (x <= 0.6 ? 1.9 + (x + 4.0) * 3.3 / 4.6 : 5.2 - (x - 0.6) * 1.5), l = 0.12 + 0.45 * R2() * R2(); [-1, 1].forEach(sd => b.add(cn(0.04, l, 5), ICE, x, top - l / 2 - 0.15, sd * 3.15, { rx: PI, noOutline: 1 })); } }
   g.add(g.userData.body = b.build()); const rf = r.build(); g.add(rf); ROOFS.push(rf);
   g.userData.K = K; g.userData.K2 = K2; g.userData.K3 = K3; g.userData.F = (function () {
     F.push({ x0: -3.95, x1: -2.35, z0: -3.5, z1: 3.5, y0: UP, y1: UP, ax: 0, min: UP - 0.7 }, { x0: -2.35, x1: VX, z0: -2.0, z1: 3.5, y0: UP, y1: UP, ax: 0, min: UP - 0.7 }, { x0: VX, x1: 4.55, z0: -3.5, z1: 3.5, y0: UP, y1: UP, ax: 0, min: UP - 0.7 },
@@ -4825,6 +4902,7 @@ const POST = (() => {
     'float viewZ(vec2 uv){ float d = texture2D(tDepth, uv).x; float z = d * 2.0 - 1.0; return 2.0 * cNear * cFar / (cFar + cNear - z * (cFar - cNear)); }' +
     'vec3 viewPos(vec2 uv){ float z = viewZ(uv); vec2 n = uv * 2.0 - 1.0; return vec3(n.x * z / pScale.x, n.y * z / pScale.y, -z); }';
   const aoMat = new THREE.ShaderMaterial({ depthTest: false, depthWrite: false,
+    defines: { NRAY: window.matchMedia && matchMedia('(pointer:coarse)').matches ? 4 : 6 },   /* phones: 4 rays x 4 steps */
     uniforms: { tDepth: { value: null }, cNear: { value: 0.1 }, cFar: { value: 1100 }, pScale: { value: new THREE.Vector2(1, 1) }, texel: { value: new THREE.Vector2() }, radius: { value: 0.9 }, frame: { value: 0 } },
     vertexShader: VS, fragmentShader: 'varying vec2 vUv; uniform vec2 texel; uniform float radius; uniform float frame;' + DEPTH +
       'void main(){ float d0 = texture2D(tDepth, vUv).x; if (d0 > 0.99995) { gl_FragColor = vec4(1.0); return; }' +
@@ -4832,10 +4910,10 @@ const POST = (() => {
       ' vec3 N = normalize(cross(abs(px.z) < abs(nx.z) ? px : nx, abs(py.z) < abs(ny.z) ? py : ny));' +
       ' float rs = clamp(radius * pScale.y / -P.z * 0.5, 3.0 * texel.y, 0.12);' +   /* world radius -> screen radius */
       ' float ign = fract(52.9829189 * fract(dot(gl_FragCoord.xy, vec2(0.06711056, 0.00583715))) + frame * 0.618), occ = 0.0;' +
-      ' for (int i = 0; i < 6; i++) { float a = (float(i) + ign) * 1.0472; vec2 dir = vec2(cos(a), sin(a)) * vec2(texel.x / texel.y, 1.0) * rs;' +
+      ' for (int i = 0; i < NRAY; i++) { float a = (float(i) + ign) * (6.2832 / float(NRAY)); vec2 dir = vec2(cos(a), sin(a)) * vec2(texel.x / texel.y, 1.0) * rs;' +
       '  for (int j = 1; j <= 4; j++) { float t = (float(j) - 0.5 + ign * 0.5) / 4.0; vec3 S = viewPos(vUv + dir * t); vec3 v = S - P; float l = length(v);' +
       '   float hgt = dot(N, v) - (0.02 + 0.006 * -P.z); occ += max(0.0, hgt / max(l, 1e-4) - 0.26) * (1.0 - smoothstep(radius * 0.6, radius * 1.6, l)); } }'   /* only geometry rising clearly above the surface's own plane occludes: no self-shadow stripes on long slopes */ +
-      ' float ao = clamp(1.0 - occ / 24.0 * 4.2, 0.0, 1.0); ao = mix(ao, 1.0, smoothstep(45.0, 130.0, -P.z)); gl_FragColor = vec4(ao, ao, ao, 1.0); }' });
+      ' float ao = clamp(1.0 - occ / (float(NRAY) * 4.0) * 4.2, 0.0, 1.0); ao = mix(ao, 1.0, smoothstep(45.0, 130.0, -P.z)); gl_FragColor = vec4(ao, ao, ao, 1.0); }' });
   const brightMat = new THREE.ShaderMaterial({ depthTest: false, depthWrite: false, uniforms: { tSrc: { value: null }, texel: { value: new THREE.Vector2() }, thr: { value: 0.86 } }, vertexShader: VS,
     fragmentShader: 'varying vec2 vUv; uniform sampler2D tSrc; uniform vec2 texel; uniform float thr;' +
       'vec3 s(vec2 o){ vec3 c = texture2D(tSrc, vUv + o * texel).rgb; float l = dot(c, vec3(0.299, 0.587, 0.114)); return c * smoothstep(thr, thr + 0.1, l); }'   /* luminance: saturated colours don\'t bloom, only real highlights */ +
@@ -4938,7 +5016,7 @@ function simStep(dt, raw) {
   SK.SNPFX.focus(camera.position, focus);
   /* far overview: refresh the shadow map every 3rd frame (static scenery dominates); close up: every frame */
   /* adaptive resolution: if frames stay slow, render fewer pixels (never below 0.75x); recover when there is headroom */
-  perfT += raw; perfN++; if (perfT > 2.5) { const ms = perfT / perfN * 1000; perfT = 0; perfN = 0; const cap = Math.max(Math.min(1, DPR0), Math.min(DPR0, SK.QMAXDPR || 9)); let nd = ms > 30 ? Math.max(Math.min(DPRMIN, cap), dpr - 0.25) : ms < 20 ? Math.min(cap, dpr + 0.25) : dpr; if (nd > cap) nd = cap; if (nd !== dpr) { dpr = nd; renderer.setPixelRatio(dpr); resize(); } }
+  perfT += raw; perfN++; if (perfT > 2.5) { const ms = perfT / perfN * 1000; perfT = 0; perfN = 0; const cap = Math.max(Math.min(1, DPR0), Math.min(DPR0, SK.QMAXDPR || 9)); let nd = ms > 30 ? Math.max(Math.min(DPRMIN, cap), dpr - 0.25) : ms < 20 ? Math.min(cap, dpr + 0.25) : dpr; if (nd > cap) nd = cap; if (nd !== dpr) { dpr = nd; renderer.setPixelRatio(dpr); resize(); } autoQ(ms); }
 }
 requestAnimationFrame(frame);
 /* test hooks: jump the orbit camera, fast-forward the simulation without rendering */
@@ -6350,7 +6428,7 @@ function lightsFor() {
   SPS.forEach(s => { if (s.userData.off) { s.intensity = 0; return; } const q = cand.find(x => !used.has(x) && x.L.k !== 'fire'); if (!q) { s.intensity = 0; return; } used.add(q);
     const L = q.L, K = SPOT_K[L.k] || SPOT_K.in, dv = L.dir || [0, -1, 0];
     s.position.set(L.x, L.y, L.z); s.target.position.set(L.x + dv[0], L.y + dv[1], L.z + dv[2]); s.target.updateMatrixWorld();
-    s.userData.k = L.k; s.angle = K[0]; s.penumbra = K[1]; s.distance = L.r * K[2]; s.shadow.camera.far = s.distance + 1; s.color.set(TINTS[L.t] || L.col); s.decay = 2; s.intensity = K[3] * L.b * q.lv; });
+    s.userData.k = L.k; s.castShadow = SPS.indexOf(s) < QUAL[qual()].spSh && q.d < 16;   /* only close lamps pay for a shadow map */ s.angle = K[0]; s.penumbra = K[1]; s.distance = L.r * K[2]; s.shadow.camera.far = s.distance + 1; s.color.set(TINTS[L.t] || L.col); s.decay = 2; s.intensity = K[3] * L.b * q.lv; });
 }
 /* ---- hotel: rooms, who is staying tonight (seeded per day), your key ---- */
 const ROOMS = HXd.rooms.map(r => r);
@@ -6949,8 +7027,21 @@ function soundTick(dt) {
   if (!ski && W.on && !W.ride && W.bp) { const st = Math.floor(W.bp / PI); if (st !== lastStep) { lastStep = st; if (Math.hypot(W.vx || 0, W.vz || 0) > 0.5) step(inside); } }
 }
 /* ---- graphics quality: high / balanced / low trade lights, shadows, snow and resolution for frame rate ---- */
-const QUAL = { high: { post: 'full', pts: 12, spSh: 4, spotSh: true, snow: 1, dpr: 2, sh: 2048, dust: 1 }, balanced: { post: 'lite', pts: 8, spSh: 2, spotSh: true, snow: 0.6, dpr: 1.5, sh: 1024, dust: 1 }, low: { post: 'off', pts: 5, spSh: 0, spotSh: false, snow: 0.35, dpr: 1, sh: 512, dust: 0 } };
-const qual = () => State.settings.gfx || (coarse ? 'balanced' : 'high');
+const QUAL = { high: { post: 'full', pts: 12, spSh: 3, spotSh: true, snow: 1, dpr: 2, sh: 2048, dust: 1 }, balanced: { post: 'lite', pts: 8, spSh: 1, spotSh: true, snow: 0.6, dpr: 1.5, sh: 1024, dust: 1 }, low: { post: 'off', pts: 5, spSh: 0, spotSh: false, snow: 0.35, dpr: 1, sh: 512, dust: 0 } };
+/* Auto quality: with no tier chosen in Settings the game starts on balanced (touch) or high (desktop) and, if frames stay slow even at
+   the lowest resolution, steps one tier down (never below low); if they stay fast for a long stretch it steps one tier back up (never
+   past where it started). Picking a tier by hand switches this off. */
+const AUTOQ = { tier: null, cap: null, slow: 0, fast: 0 };
+const TIERS = ['low', 'balanced', 'high'];
+const qual = () => State.settings.gfx || AUTOQ.tier || (AUTOQ.cap = coarse ? 'balanced' : 'high', AUTOQ.tier = AUTOQ.cap);
+function autoQ(ms) {
+  if (State.settings.gfx) { AUTOQ.slow = AUTOQ.fast = 0; return; }
+  const i = TIERS.indexOf(AUTOQ.tier || qual()), atMin = dpr <= Math.max(Math.min(1, DPR0), Math.min(DPR0, DPRMIN)) + 0.01;
+  if (ms > 38 && atMin) { AUTOQ.fast = 0; if (++AUTOQ.slow >= 2 && i > 0) { AUTOQ.tier = TIERS[i - 1]; AUTOQ.slow = 0; qualApply(); if (SK.toast) SK.toast('Graphics eased to ' + AUTOQ.tier + ' for a smoother frame rate'); } }
+  else if (ms < 17) { AUTOQ.slow = 0; if (++AUTOQ.fast >= 6 && i < TIERS.indexOf(AUTOQ.cap)) { AUTOQ.tier = TIERS[i + 1]; AUTOQ.fast = 0; qualApply(); } }
+  else { AUTOQ.slow = 0; AUTOQ.fast = Math.max(0, AUTOQ.fast - 1); }
+}
+SK.AUTOQ = AUTOQ; SK.autoQ = autoQ; SK.forceMinDpr = () => { dpr = Math.max(Math.min(1, DPR0), Math.min(DPR0, DPRMIN)); renderer.setPixelRatio(dpr); };
 function qualApply() {
   const Q = QUAL[qual()]; if (SK.POST) SK.POST.set(Q.post); SK.P6.SPS.forEach((l, i) => { const sh = i < Q.spSh; if (l.castShadow !== sh) l.castShadow = sh; l.userData.off = i >= Q.pts; });   /* one shader rebuild when it changes */ SK.QMAXDPR = Q.dpr; SK.QDUST = Q.dust;
   const nd = Math.max(Math.min(1, DPR0), Math.min(DPR0, Q.dpr)); if (nd !== dpr) { dpr = nd; renderer.setPixelRatio(dpr); resize(); }   /* resolution changes now, not after the next slow frame */
@@ -6964,11 +7055,12 @@ const SET = {
     if (!S0 || S0.kind !== 'set') return { h: h, foot: foot }; const st = State.settings, q = qual(), f = forecast(State.day), T = WXT[f.k];
     let o = '<h4>Weather today</h4>' + row(T.ic + ' ' + T.n, f.k === 'clear' ? 'Blue skies all day' : 'Heaviest around ' + (f.peak < 10 ? '0' : '') + f.peak + ':00' + (f.k === 'storm' ? ' · low visibility, cold' : ''), '');
     o += '<h4>Sound and feel</h4>' + row('Sound', 'Wind, skis, footsteps, chimes', btn(st.sound ? 'On' : 'Off', 'p6:p7:sound', false, !st.sound)) + row('Vibration', 'Landings, crashes, coins', btn(st.vib ? 'On' : 'Off', 'p6:p7:vib', false, !st.vib));
-    o += '<h4>Graphics</h4>' + ['high', 'balanced', 'low'].map(k => row(k[0].toUpperCase() + k.slice(1), k === 'high' ? 'All lights, 4 lamp shadows, ambient occlusion, bloom, full snowfall' : k === 'balanced' ? 'Fewer lights, 2 lamp shadows, bloom + colour grade, lighter snow' : 'Fastest: minimal lights, no post effects, light snow, lower resolution', btn(q === k ? 'In use' : 'Use', 'p6:p7:gfx:' + k, q === k, q !== k))).join('');
+    o += '<h4>Graphics</h4>' + row('Auto', 'Starts at ' + (coarse ? 'Balanced' : 'High') + ' and eases down (or back up) by itself if the frame rate drops. Now: ' + (State.settings.gfx ? 'off' : SK.AUTOQ.tier), btn(!State.settings.gfx ? 'In use' : 'Use', 'p6:p7:gfx:auto', !State.settings.gfx, !!State.settings.gfx))
+      + ['high', 'balanced', 'low'].map(k => row(k[0].toUpperCase() + k.slice(1), k === 'high' ? 'All lights, 3 lamp shadows, ambient occlusion, bloom, full snowfall' : k === 'balanced' ? 'Fewer lights, 1 lamp shadow, bloom + colour grade, lighter snow' : 'Fastest: minimal lights, no post effects, light snow, lower resolution', btn(q === k ? 'In use' : 'Use', 'p6:p7:gfx:' + k, q === k, q !== k))).join('');
     return { title: 'Settings', h: o, foot: 'Phones start on Balanced. Pick Low if a snowstorm feels choppy.' };
   },
   op(a) { const st = State.settings; if (a[0] === 'sound') { st.sound = st.sound ? 0 : 1; if (st.sound) audioInit(); if (MASTER) MASTER.gain.value = st.sound ? 0.7 : 0; }
-    else if (a[0] === 'vib') st.vib = st.vib ? 0 : 1; else if (a[0] === 'gfx') { st.gfx = a[1]; qualApply(); wxApply(); } }
+    else if (a[0] === 'vib') st.vib = st.vib ? 0 : 1; else if (a[0] === 'gfx') { st.gfx = a[1] === 'auto' ? '' : a[1]; if (!st.gfx) AUTOQ.tier = AUTOQ.cap; qualApply(); wxApply(); } }
 };
 { const P6s = SK.P6.sheet; SK.P6.sheet = (S0, h, foot) => { const r = SET.sheet(S0, h, foot); return S0 && S0.kind === 'set' ? r : P6s(S0, h, foot); }; const P6o = SK.P6.op; SK.P6.op = a => a[0] === 'p7' ? SET.op(a.slice(1)) : P6o(a); }
 SK.P7 = { forecast, wxNow, wxApply, WX, QUAL, qual, qualApply, SFX, start() { qualApply(); wxApply(); wxNews(); } };

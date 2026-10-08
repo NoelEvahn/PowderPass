@@ -267,5 +267,12 @@ New:
 - **Art (after the reference images):** fir trees rebuilt as whorls of drooping two-blade branches with snow lying along them (fewer triangles than before); puffy cumulus clouds; lush layered bushes; rounded faceted boulders; a campfire with a stone ring, log teepee, embers and layered flames; deeper greens.
 - Tools: `tools/style.js <tag>` (fixed QA shots, day/night/interior), `tools/fpshot.js` (first-person states).
 
+## Cabins, stations, hotel interiors, Auto graphics (thirteenth round)
+- **First-person body** lives in the world on a hip rig (see HANDOFF round 13): looking ahead you cannot see skis or hands; look down and they are there. Fixed the floodlight beam cone that turned opaque.
+- **Cabins, café, patrol hut, A-frame, Alpine hotel, lift stations:** fieldstone plinths, snow rolls + icicles on every eave, rafter tails, ridge caps, framed doors with handles and mats, shutters + flower boxes, hanging lanterns, gable battens (`lodgeDress`, shop `storeDress`, plus the station / A-frame / Alpine blocks). Lift station posts get stone footings and the gate a lit lantern.
+- **Hotel interiors:** the lobby has a plank floor with a dark inlay border, a panelled wainscot with a chair rail, crown moulding, coffered ceiling beams, wall sconces and a stone fireplace with a lit hearth. The breakfast hall has green wainscot, timber ceiling beams, sconces and a runner. Corridors get sconces and crown moulding. Helpers: `hWainscot`, `hCrown`, `hCoffer`, `hSconce`.
+- **Auto graphics:** Settings -> Graphics has an Auto row (default). It starts at Balanced on touch / High on desktop; if frames stay slow even at minimum resolution it steps one tier down (toast says so) and steps back up after a long fast stretch. Choosing High / Balanced / Low by hand switches Auto off. Phones get a cheaper AO (4 rays). Shadow-casting lamps: High 3, Balanced 1, only lamps within 16 m.
+- Tools: `tools/perf.js` (frame cost by tier; headless software GL, so only ratios mean anything: Low was 3-8x cheaper than High), `tools/r13-test.js`.
+
 ## Not yet
 - Terrain distance LOD; real-phone frame-rate check (only tested in headless software rendering). Breakfast diners and fallen skiers ignore collisions with the player.
