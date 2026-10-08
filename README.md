@@ -245,5 +245,17 @@ New:
 - **Close buttons:** the sheet, map and editor-panel X are SVG icons with an explicit colour (the ✕ glyph showed an empty box under a dark host colour scheme); the page forces `color-scheme: light`.
 - Tests: `tools/r10-test.js`. `p13-test` walks a shorter way out of the floor-2 elevator (a long walk now goes down the new flight).
 
+## Elevator, suites, stairs, tricks (eleventh round)
+- **Elevator:** outer doors are two telescoping leaves a side that slide fully into the wall pockets (they used to slide out past the shaft). The cab has its own telescoping inner doors behind front returns, a header with a floor display, side rails, kick plates, a two-tone floor and ceiling spots. Every landing has a floor display (floor number, ▲/▼ while moving). New sounds: door rumble + thunk, motor start, a low hum while moving, the arrival chime.
+- **Suites (201, 202, 207):** bathroom run on the corridor wall (double vanity with brass mirror and sconces, glass shower, WC, frosted screen, tiled floor), a lounge facing a 1.7 m TV on a media console (sofa, low table with flowers, armchairs in the deep suites, fur rug, floor lamp), dining for two by the windows, a bench at the bed's foot, chandelier, prints and plants. The entry is kept clear.
+- **Corridors:** room doors have raised panels on both faces, lever handles, kick plates, a peephole and a brass plate with the room number; each doorway has a wood surround and a sconce. Corridor walls have skirting, a dado rail and a panelled lower wall. The west landings beside the stair well are carpeted wall to wall on floors 1 and 2; floor 2's lounge has a sofa, armchairs, a low table, a bookshelf and a reading chair; floor 1 a bench.
+- **Stairs:** flight one's glass is now a railing that follows the treads (solids with a sloped bottom/top), so you can't step off the side, and on the ground floor you can walk under the stair's high end to the elevator door.
+- **Crest Lift base:** its pad overlapped the Summit Express top pad, whose blend raised the snow 2 m over the station entrance. It now shares that plateau's level.
+- **Tricks:** spins and flips only turn while jump is held with a direction (Space + A/D / W/S, or JUMP + stick); landing with jump still held doesn't wind up another jump.
+- **First person:** flips pitch the view round, spins turn it, a crash tumbles and drops it. Mittens and your ski tips show in the air (one mitt reaches down for a grab) and flail in a crash; mittens hold the plate and bring food up while eating.
+- **Breakfast guests:** come in through the ski room carrying their skis and poles, rack them, then walk to breakfast; on the way out they collect them. The hotel's sliding doors open for them.
+- **Fix:** shop / reception prompts are no longer offered from upstairs over the counter below.
+- Tests: `tools/r11-test.js`; `tools/trickbot.js` holds jump for tricks.
+
 ## Not yet
 - Terrain distance LOD; real-phone frame-rate check (only tested in headless software rendering). Breakfast diners and fallen skiers ignore collisions with the player.

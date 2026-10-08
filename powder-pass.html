@@ -1127,7 +1127,9 @@ function putCab(R, g, x, z, ry, s) {
 const GLASS = 0xa9e4ff, CONC = 0xe8ebf0, CHAR = 0x2c3140, POOLC = 0x27c8e8, LIN = 0xd9cfbf, TIMB = 0xc98a4b, WARM = 0xffc36b, LEATH = 0x8a5a3c, RUST = 0xb5482f, RUGC = 0xb9c4d6, LV = 1.85;
 const FLOORS = [], STEAM = [];
 let WY = 0.2, WF = C.wood3, WG = C.sky, WAL = 0;
-const FONT = { H: '101101111101101', O: '111101101101111', T: '111010010010010', E: '111100111100111', L: '100100100100111', R: '110101110101101', C: '111100100100111', P: '111101111100100', I: '111010010010111', N: '101111111111101', B: '110101110101110', A: '010101111101101' };
+const FONT = { 0: '111101101101111', 1: '010110010010111', 2: '111001111100111', 3: '111001111001111', 4: '101101111001001', 5: '111100111001111', 6: '111100111101111', 7: '111001010010010', 8: '111101111101111', 9: '111101111001111', H: '101101111101101', O: '111101101101111', T: '111010010010010', E: '111100111100111', L: '100100100100111', R: '110101110101101', C: '111100100100111', P: '111101111100100', I: '111010010010111', N: '101111111111101', B: '110101110101110', A: '010101111101101' };
+/* lit (shaded) block numbers for door plaques: reads correctly from +z; push the builder round PI to read from -z */
+function hNum(b, str, x, y, z, px, col) { const n = str.length; str.split('').forEach((ch, k) => FONT[ch].split('').forEach((v, i) => { if (v === '1') b.add(bx(px * 0.95, px * 0.95, px * 0.6), col, x + (k - (n - 1) / 2) * px * 4 + (i % 3 - 1) * px, y - Math.floor(i / 3) * px, z, { noOutline: 1 }); })); }
 function hText(b, str, x, y, z, px, col) { const n = str.length; str.split('').forEach((ch, k) => FONT[ch].split('').forEach((v, i) => { if (v === '1') b.add(bx(px * 0.9, px * 0.9, px * 0.5), col, x + (k - (n - 1) / 2) * px * 4 + (i % 3 - 1) * px, y - Math.floor(i / 3) * px, z, { basic: 1 }); })); }
 const hLight = (b, x, y, z) => { b.rod([x, y + 0.45, z], [x, y, z], 0.02, C.metal); b.add(sp(0.2), 0xffe98a, x, y, z, { alpha: 0.45 }); };
 const hStool = (b, x, z, h, col) => { b.add(cy(0.22, 0.22, 0.07, 12), col, x, WY + h, z); b.add(cy(0.04, 0.04, h, 8), C.metal, x, WY + h / 2, z); };
@@ -1225,6 +1227,19 @@ function hArt(b, x, y, z, ry, w, h, k) {
   b.add(bx((w - 0.2) * 0.55, (h - 0.2) * 0.45, 0.012), P[0], -w * 0.12, -h * 0.15, 0.045, { noOutline: 1 }); b.add(bx((w - 0.2) * 0.35, (h - 0.2) * 0.3, 0.012), P[2], w * 0.2, -h * 0.22, 0.047, { noOutline: 1 });
   b.add(cy(h * 0.12, h * 0.12, 0.012, 14), P[1], w * 0.22, h * 0.18, 0.047, { rx: PI / 2, noOutline: 1 }); b.pop();
 }
+/* corridor dressing for a wall whose corridor face is at z (the corridor on side sd = +1 / -1 in z): skirting, a dado rail and a
+   panelled lower wall, broken at the door openings (doors: [[xa, xb], ...]) */
+function hRails(b, x0, x1, z, y, sd, doors) {
+  const cuts = doors.slice().sort((p, q) => p[0] - q[0]), runs = []; let a = x0; cuts.forEach(d => { if (d[0] > a) runs.push([a, d[0]]); a = Math.max(a, d[1]); }); if (x1 > a) runs.push([a, x1]);
+  runs.forEach(r => { const L = r[1] - r[0], cx = (r[0] + r[1]) / 2; if (L < 0.05) return;
+    b.add(bx(L, 0.14, 0.03), 0x33200f, cx, y + 0.07, z + sd * 0.015); b.add(bx(L, 0.05, 0.04), 0x6b4226, cx, y + 0.95, z + sd * 0.02); b.add(bx(L, 0.78, 0.012), 0xdfe3ea, cx, y + 0.53, z + sd * 0.006, { noOutline: 1 });
+    for (let u = r[0] + 0.55; u < r[1] - 0.3; u += 0.9) b.add(bx(0.03, 0.66, 0.02), 0xc9cfd9, u, y + 0.53, z + sd * 0.012, { noOutline: 1 }); });
+}
+/* door surround on the corridor face: jambs, head, a warm sconce beside it. hx = hinge-side edge of the 0.8 m door */
+function hDoorFrame(b, hx, y, z, sd) {
+  [-0.06, 0.86].forEach(x => b.add(bx(0.1, 2.2, 0.05), 0x33200f, hx + x, y + 1.1, z + sd * 0.025)); b.add(bx(1.04, 0.12, 0.05), 0x33200f, hx + 0.4, y + 2.16, z + sd * 0.025);
+  b.add(bx(0.12, 0.2, 0.06), C.metal, hx + 1.15, y + 1.75, z + sd * 0.03); b.add(sp(0.07), WARM, hx + 1.15, y + 1.88, z + sd * 0.07, { basic: 1 });
+}
 /* potted plant with a collision box */
 function hPlant(b, KK, x, y, z) { b.add(cy(0.28, 0.22, 0.5, 12), 0xb4603e, x, y + 0.25, z); b.add(sp(0.42, 1, 1.5, 1), C.grass2, x, y + 0.95, z); b.add(sp(0.3, 1, 1.2, 1), C.grass, x + 0.1, y + 1.35, z + 0.05); KK.push({ x: x, z: z, ry: 0, hw: 0.3, hd: 0.3 }); }
 function hotel() {
@@ -1294,7 +1309,10 @@ function hotel() {
   b.beam([sxc, 0.08, 2.6], [sxc, Y2 - 0.15, -3.4], 0.18, CHAR);
   b.add(stairGlass(6, UP), GLASS, -9.85, (0.23 + Y2 + 0.03) / 2 + 0.45, -0.4); b.rod([-9.85, 0.23 + 0.95, 2.6], [-9.85, Y2 + 0.03 + 0.95, -3.4], 0.04, CHAR);
   b.add(bx(0.03, 0.9, 6.05), GLASS, -9.85, Y2 + 0.45, -0.375);
-  K.push({ x: -9.85, z: -0.4, ry: 0, hw: 0.06, hd: 3.0 }); K2.push({ x: -9.85, z: -0.4, ry: 0, hw: 0.06, hd: 3.0 });   /* stair glass on the ground floor and floor 1 */
+  K2.push({ x: -9.85, z: -0.4, ry: 0, hw: 0.06, hd: 3.0 });   /* stair glass on floor 1 */
+  /* flight one's glass as a railing that follows the treads (bot/top ride the slope): you can't step off the stair sideways, but on the
+     ground floor you can walk under its high end to the elevator door (the old full-height box blocked the whole side) */
+  const KR = []; for (let i = 0; i < 12; i++) { const z0 = 2.6 - i * 0.5, zc2 = z0 - 0.25, sf = UP * (2.6 - zc2) / 6; KR.push({ x: -9.85, z: zc2, ry: 0, hw: 0.06, hd: 0.25, bot: sf - 0.55, top: sf + 1.6 }); }
   /* second flight, stacked over the first in the same well: floor 1 (south landing) up to floor 2 (north landing). 3.3 m of headroom over flight one */
   { const rise = UP2 - UP, rv2 = rise / n, y1 = UP + 0.23;
     for (let i = 1; i <= n; i++) b.add(bx(1.6, 0.1, run + 0.02), TIMB, sxc, y1 + i * rv2 - 0.05, 2.6 - (i - 0.5) * run);
@@ -1316,27 +1334,65 @@ function hotel() {
   [-6.4, -1.8, 2.8, 7.4].forEach(x => wall(b, K2, x, 0.7, PI / 2, 8.6, H2, 0.2, CONC, []));
   RC.forEach(c => hInside(b, K2, c, 4.6, -3.6, 5.0, H2));
   RC.forEach((c, i) => hArt(b, c - 1.1, WY + 1.55, -3.73, PI, 1.1, 0.8, i + 1));   /* prints between the room doors, facing the hallway */
+  RC.forEach(c => hDoorFrame(b, c + 0.8, WY, -3.7, -1)); hRails(b, -6.4, 12, -3.7, WY, -1, RC.map(c => [c + 0.7, c + 1.7]));
   /* west end of floor 1: the landing between the two flights. Kept clear (the reading nook's sofas blocked it): a long rug, a print and plants along the room wall */
-  b.add(bx(3.1, 0.014, 8.0), 0x6a4e3a, -8.15, WY + 0.04, 0.6, { noOutline: 1 }); b.add(bx(2.7, 0.016, 7.6), 0xa07a58, -8.15, WY + 0.042, 0.6, { noOutline: 1 });
+  const westCarpet = (y, c0, c1) => { b.add(bx(3.3, 0.014, 8.4), c0, -8.175, y + 0.04, 0.675, { noOutline: 1 }); b.add(bx(2.8, 0.016, 7.9), c1, -8.175, y + 0.042, 0.675, { noOutline: 1 });   /* wall to wall beside the well */
+    b.add(bx(2.0, 0.014, 2.2), c0, -10.875, y + 0.04, 3.775, { noOutline: 1 }); b.add(bx(1.6, 0.016, 1.8), c1, -10.875, y + 0.042, 3.775, { noOutline: 1 }); };   /* and the south landing */
+  westCarpet(WY, 0x3b4a6b, 0x5a6d94);
   hArt(b, -6.53, WY + 1.55, 1.4, -PI / 2, 1.5, 1.0, 0); hPlant(b, K2, -6.95, WY, 4.3); hPlant(b, K2, -6.95, WY, -2.9);
+  b.push(-6.85, WY, 1.4, -PI / 2); pBench(b); b.pop(); K2.push({ x: -6.85, z: 1.4, ry: 0, hw: 0.25, hd: 0.8 });
   b.push(-6.8, WY, 0.2, 0); pFloorLamp(b); b.pop(); K2.push({ x: -6.8, z: 0.2, ry: 0, hw: 0.2, hd: 0.2 });
   b.add(bx(0.5, 0.5, 0.5), CHAR, -11.0, WY + 0.25, 4.4); b.add(sp(0.45, 1, 1.4, 1), C.grass2, -11.0, WY + 1.1, 4.4);
   /* ===== EXPANSION: north wing (z -11..-5) on three levels + a second floor on the main block ===== */
   const ZN = -11, ZC = -6.4;   /* wing outer wall, wing corridor wall */
+  /* suite furnishing, laid out in room coordinates: u from the door-side wall (x0), v from the corridor wall (zc) into the room.
+     Bathroom run on the corridor wall (double vanity, glass shower, WC on a tiled floor), lounge facing a big TV on the x0 wall
+     (sofa, low table, armchairs, fur rug, floor lamp), dining for two by the windows, chandelier, prints and plants. The entry stays clear. */
+  const suiteFit = (KK, x0, x1, zc, ze, yy, sg) => {
+    const D = Math.abs(ze - zc), Wd = x1 - x0, X = u => x0 + u, Z = v => zc + sg * v, rw = sg > 0 ? 0 : PI, put = (u, v, hw, hd) => KK.push({ x: X(u), z: Z(v), ry: 0, hw: hw, hd: hd });
+    /* bathroom run */
+    b.add(bx(4.3, 0.016, 1.45), 0xe9edf2, X(3.95), yy + 0.05, Z(0.72), { noOutline: 1 }); for (let i = 0; i < 7; i++) b.add(bx(0.02, 0.018, 1.45), 0xc4ccd8, X(1.95 + i * 0.66), yy + 0.051, Z(0.72), { noOutline: 1 });
+    b.push(X(2.7), yy, Z(0.3), rw); b.add(bx(1.6, 0.78, 0.55), 0x33200f, 0, 0.39, 0); b.add(bx(1.66, 0.06, 0.6), 0xf2f0ea, 0, 0.81, 0);
+    [-0.4, 0.4].forEach(x => { b.add(cy(0.17, 0.14, 0.08, 14), C.white, x, 0.87, 0.04); b.rod([x, 0.84, -0.22], [x, 1.02, -0.22], 0.015, C.metal); b.rod([x, 1.02, -0.22], [x, 1.0, -0.1], 0.013, C.metal);
+      b.add(bx(0.06, 0.2, 0.05), C.metal, x, 1.95, -0.25); b.add(sp(0.06), WARM, x, 2.0, -0.2, { basic: 1 }); });
+    b.add(bx(1.5, 0.95, 0.03), 0xcfe3f2, 0, 1.45, -0.27); b.add(bx(1.58, 1.03, 0.02), 0xd4a73a, 0, 1.45, -0.285); b.add(bx(0.3, 0.1, 0.18), C.white, 0.62, 0.88, 0.1); b.pop(); put(2.7, 0.3, 0.82, 0.32);
+    b.push(X(4.4), yy, Z(0.62), rw); pShower(b); b.add(bx(0.9, 0.04, 0.04), C.metal, 0, 2.02, 0.45); b.add(bx(0.2, 0.3, 0.02), 0xd9dde4, -0.42, 1.2, -0.43); b.pop(); put(4.4, 0.62, 0.48, 0.48);
+    b.push(X(5.55), yy, Z(0.38), rw); pToilet(b); b.pop(); put(5.55, 0.35, 0.22, 0.3);
+    b.add(bx(0.04, 2.0, 1.1), GLASS, X(5.95), yy + 1.0, Z(0.6));   /* frosted screen between WC and bedroom */
+    /* lounge */
+    const vt = Math.max(2.5, D * 0.55), deep = D > 6;
+    b.push(X(0.27), yy, Z(vt), PI / 2); pTVCabinet(b, 1.9); b.pop(); put(0.27, vt, 0.25, 0.95); hTV(b, X(0.1), yy + 1.65, Z(vt), 1, 0, 1.7);
+    b.add(bx(3.6, 0.014, 3.2), 0xe9e1d3, X(2.3), yy + 0.05, Z(vt), { noOutline: 1 }); b.push(X(2.0), yy + 0.04, Z(vt), 0); pFurRug(b, 0.9); b.pop();
+    b.push(X(3.15), yy, Z(vt), -PI / 2); pCouch(b, 2.4, 0x3f4a63); b.pop(); put(3.15, vt, 0.45, 1.2);
+    b.add(bx(1.2, 0.06, 0.6), 0x33200f, X(1.95), yy + 0.42, Z(vt)); [-0.5, 0.5].forEach(t => [-0.22, 0.22].forEach(w2 => b.add(bx(0.05, 0.39, 0.05), C.metal, X(1.95 + w2), yy + 0.2, Z(vt + t))));
+    b.add(cy(0.12, 0.09, 0.14, 12), 0xd4a73a, X(1.95), yy + 0.52, Z(vt + 0.25)); [0, 1, 2].forEach(k => b.add(sp(0.05), [C.red, C.white, 0xff5fa2][k], X(1.92 + k * 0.03), yy + 0.63, Z(vt + 0.22 + k * 0.03), { noOutline: 1 })); put(1.95, vt, 0.3, 0.6);
+    b.push(X(3.4), yy, Z(vt + 1.55), 0); pFloorLamp(b); b.pop();
+    if (deep) { [-1, 1].forEach(e => { const v = vt + e * 1.65; b.push(X(1.95), yy, Z(v), e * sg > 0 ? PI : 0); pArm(b, LEATH); b.pop(); put(1.95, v, 0.48, 0.43); }); }
+    /* dining for two by the windows */
+    { const u = 5.0, v = D - 1.05; b.add(cy(0.45, 0.45, 0.05, 20), 0x33200f, X(u), yy + 0.75, Z(v)); b.add(cy(0.06, 0.08, 0.72, 10), C.metal, X(u), yy + 0.37, Z(v)); b.add(cy(0.25, 0.3, 0.03, 14), C.metal, X(u), yy + 0.02, Z(v));
+      [-0.2, 0.2].forEach(t => { b.add(cy(0.11, 0.11, 0.015, 14), C.white, X(u + t), yy + 0.785, Z(v)); b.add(cy(0.03, 0.02, 0.1, 8), GLASS, X(u + t), yy + 0.83, Z(v + 0.15)); });
+      b.add(cy(0.02, 0.025, 0.2, 8), 0xfff1c4, X(u), yy + 0.87, Z(v), { basic: 1 }); put(u, v, 0.45, 0.45);
+      [-1, 1].forEach(e => { b.push(X(u + e * 0.75), yy, Z(v), -e * PI / 2); pChair(b, 0x6b4226); b.pop(); put(u + e * 0.75, v, 0.25, 0.25); }); }
+    /* bed bench, plants, prints, chandelier */
+    b.push(X(Wd - 2.65), yy, Z(2.55), PI / 2); b.add(bx(1.5, 0.42, 0.45), 0x6e3f52, 0, 0.21, 0); b.add(bx(1.5, 0.08, 0.45), 0x8a5068, 0, 0.45, 0); b.pop(); put(Wd - 2.65, 2.55, 0.25, 0.75);
+    hPlant(b, KK, X(0.45), yy, Z(D - 1.25)); if (deep) hPlant(b, KK, X(Wd - 0.45), yy, Z(D - 0.45));
+    hArt(b, X(0.06), yy + 1.6, Z(vt - 1.75), PI / 2, 0.9, 0.7, 2); if (deep) hArt(b, X(0.06), yy + 1.6, Z(vt + 1.9), PI / 2, 0.9, 0.7, 1);
+    { const cx2 = X(2.6), cz2 = Z(vt), cyc = yy + 2.35; b.rod([cx2, yy + 2.95, cz2], [cx2, cyc, cz2], 0.015, 0xd4a73a); b.add(cy(0.42, 0.42, 0.04, 20), 0xd4a73a, cx2, cyc, cz2);
+      for (let i = 0; i < 8; i++) { const a = i / 8 * TAU; b.add(sp(0.06), 0xfff1c4, cx2 + Math.cos(a) * 0.42, cyc + 0.08, cz2 + Math.sin(a) * 0.42, { basic: 1 }); b.add(sp(0.035), 0xcfe3f2, cx2 + Math.cos(a + 0.4) * 0.3, cyc - 0.12, cz2 + Math.sin(a + 0.4) * 0.3, { noOutline: 1 }); } }
+  };
   const room = (KK, no, type, x0, x1, zc, ze, Y) => {   /* furnished room between x0..x1; corridor wall at zc, outside wall at ze; door near x0 */
     const sg = Math.sign(ze - zc), zm = (zc + ze) / 2, suite = type === 'suite', yy = Y;
     b.push(x1 - 1.15, yy, zc + sg * 2.55, -PI / 2); pBed(b, suite ? C.blue : RUST); b.pop(); KK.push({ x: x1 - 1.15, z: zc + sg * 2.55, ry: 0, hw: 1.15, hd: 1.0 });
     [-1, 1].forEach(t => { const nz = zc + sg * 2.55 + t * 1.25; b.add(bx(0.45, 0.5, 0.4), MWOOD, x1 - 0.3, yy + 0.25, nz); b.add(cy(0.05, 0.12, 0.3, 8), C.white, x1 - 0.3, yy + 0.65, nz); b.add(sp(0.09), WARM, x1 - 0.3, yy + 0.82, nz, { basic: 1 }); });
     b.push(x1 - 0.85, yy, zc + sg * 0.42, sg > 0 ? 0 : PI); pWardrobe(b); b.pop(); KK.push({ x: x1 - 0.85, z: zc + sg * 0.42, ry: 0, hw: 0.72, hd: 0.32 });
     b.push(x0 + 0.95, yy, ze - sg * 0.4, sg > 0 ? PI : 0); pDesk(b); b.pop(); KK.push({ x: x0 + 0.95, z: ze - sg * 0.4, ry: 0, hw: 0.72, hd: 0.3 });
-    hTV(b, x0 + 0.1, yy + 1.5, zm, 1, 0, 1.0);
+    if (!suite) hTV(b, x0 + 0.1, yy + 1.5, zm, 1, 0, 1.0);
     { const cw = x1 - x0 - 0.22, cd = Math.abs(ze - zc) - 0.22, CP = suite ? [0x6e3f52, 0x8a5068] : [0x5d6f93, 0x7d8fb3];   /* wall-to-wall carpet with a darker border */
       b.add(bx(cw, 0.012, cd), CP[0], (x0 + x1) / 2, yy + 0.038, zm, { noOutline: 1 }); b.add(bx(cw - 0.5, 0.013, cd - 0.5), CP[1], (x0 + x1) / 2, yy + 0.042, zm, { noOutline: 1 });
       b.add(bx(1.6, 0.014, 1.1), 0xe9e1d3, x1 - 2.65, yy + 0.047, zc + sg * 2.55, { noOutline: 1 }); }   /* soft rug at the bedside */
     if (!suite) { hCouch(b, KK, x0 + 2.55, zm, 0.95, FAB2, -1, 0); b.push(x0 + 2.6, yy, zc + sg * 0.55, 0); pFloorLamp(b); b.pop(); KK.push({ x: x0 + 2.6, z: zc + sg * 0.55, ry: 0, hw: 0.2, hd: 0.2 }); }   /* armchair facing the TV, reading lamp */
-    if (suite) { const lx = x0 + 2.4; b.push(lx, yy, zm + sg * 0.2, PI / 2); pCouch(b, 2.0, LEATH); b.pop(); KK.push({ x: lx, z: zm + sg * 0.2, ry: 0, hw: 0.45, hd: 1.0 });
-      b.push(x0 + 1.25, yy, zm + sg * 0.2, 0); pCoffeeTable(b); b.pop(); b.add(bx(0.5, 0.5, 0.5), CHAR, x0 + 0.5, yy + 0.25, zc + sg * 0.6); b.add(sp(0.4, 1, 1.4, 1), C.grass2, x0 + 0.5, yy + 1.0, zc + sg * 0.6);
-      b.add(bx(0.6, 0.85, 0.5), C.dark, x1 - 2.8, yy + 0.43, ze - sg * 0.35); b.add(bx(0.5, 0.04, 0.4), 0x5dff8a, x1 - 2.8, yy + 0.88, ze - sg * 0.35, { basic: 1, noOutline: 1 }); }
+    if (suite) suiteFit(KK, x0, x1, zc, ze, yy, sg);
+    hDoorFrame(b, x0 + 0.3, Y, zc - sg * 0.1, -sg);
     HX.rooms.push({ no: no, type: type, floor: Y > Y2 + 1 ? 2 : 1, hx: x0 + 0.3, z: zc, y: Y, w: 0.8, sg: sg, cx: (x0 + x1) / 2, cz: zm });
     HX.beds.push({ no: no, x: x1 - 1.15, z: zc + sg * 2.55, y: Y }); HX.L.push([(x0 + x1) / 2, Y + 2.6, zm]);
     hLight(b, (x0 + x1) / 2, Y + 2.6, zm);
@@ -1394,7 +1450,7 @@ function hotel() {
     b.add(bx(21.9, 0.03, ZC - ZN), LIN, 0.95, Y + 0.015, (ZN + ZC) / 2); b.add(bx(1.9, 0.03, -8.55 - ZN), LIN, -10.95, Y + 0.015, (ZN - 8.55) / 2); { const zr = -3.7, zm = (ZC + zr) / 2;   /* one wide runner over the whole hallway (wing corridor + room corridor) */
       b.add(bx(W - 0.2, 0.03, zr - ZC), 0x3b4a6b, 0, Y + 0.02, zm); b.add(bx(W - 0.8, 0.032, zr - ZC - 0.5), 0x5a6d94, 0, Y + 0.022, zm, { noOutline: 1 }); for (let x = -10.5; x < 11.6; x += 1.5) b.add(bx(0.6, 0.034, 0.6), 0xc9a14a, x, Y + 0.024, zm, { ry: PI / 4, noOutline: 1 });
       list.forEach((q, i) => hArt(b, q[2] + 3.2, Y + 1.55, ZC + 0.13, 0, 1.2, 0.85, i)); if (list.length < 4) hArt(b, 9.6, Y + 1.55, ZC + 0.13, 0, 1.2, 0.85, 2);   /* prints between the wing doors */
-      hPlant(b, KK, 11.45, Y, -4.2); }
+      hPlant(b, KK, 11.45, Y, -4.2); hRails(b, -10, 12, ZC + 0.1, Y, 1, list.map(q => [q[2] + 0.2, q[2] + 1.2])); }
     list.forEach(q => room(KK, q[0], q[1], q[2], q[3], ZC, ZN, Y)); [-6, 0, 6].forEach(x => { hLight(b, x, Y + 2.6, -5.7); HX.L.push([x, Y + 2.6, -5.7]); });
   };
   /* slabs between the wing's floors, and the main block's new floor 2 slab */
@@ -1412,9 +1468,16 @@ function hotel() {
     [-6.4, 2.8].forEach(x => wall(b, K4, x, 0.7, PI / 2, 8.6, hh, 0.2, CONC, []));
     [[-9.85, 11.9, -4.9, 4.9], [-11.9, -9.85, -4.9, -3.4], [-11.9, -9.85, 2.65, 4.9]].forEach(p => b.add(bx(p[1] - p[0], 0.03, p[3] - p[2]), LIN, (p[0] + p[1]) / 2, Y3 + 0.015, (p[2] + p[3]) / 2));
     room(K4, 201, 'suite', -6.4, 2.8, -3.6, hz, Y3); room(K4, 202, 'suite', 2.8, 12, -3.6, hz, Y3);
-    [[-2.0, 0], [7.5, 1], [10.6, 2]].forEach(q => hArt(b, q[0], Y3 + 1.55, -3.73, PI, 1.1, 0.8, q[1]));
-    b.add(bx(3.0, 0.014, 4.4), 0x6a4e3a, -8.15, Y3 + 0.04, 1.0, { noOutline: 1 }); b.add(bx(2.6, 0.016, 4.0), 0xa07a58, -8.15, Y3 + 0.042, 1.0, { noOutline: 1 });   /* lounge moved off the stair well */
-    b.push(-6.95, Y3, 1.0, -PI / 2); pCouch(b, 2.4, LEATH); b.pop(); K4.push({ x: -6.95, z: 1.0, ry: 0, hw: 0.45, hd: 1.2 }); b.push(-8.05, Y3, 1.0, PI / 2); pCoffeeTable(b); b.pop();
+    [[-2.0, 0], [7.5, 1], [10.6, 2]].forEach(q => hArt(b, q[0], Y3 + 1.55, -3.73, PI, 1.1, 0.8, q[1])); hRails(b, -6.4, 12, -3.7, Y3, -1, [[-6.2, -5.2], [3.0, 4.0]]);
+    westCarpet(Y3, 0x5a3a46, 0x7d5262);   /* lounge beside the well: carpeted wall to wall, sofa and armchairs round a low table, a reading corner */
+    b.add(bx(2.2, 0.014, 2.6), 0xe9e1d3, -7.9, Y3 + 0.048, 1.0, { noOutline: 1 });
+    b.push(-6.95, Y3, 1.0, -PI / 2); pCouch(b, 2.4, LEATH); b.pop(); K4.push({ x: -6.95, z: 1.0, ry: 0, hw: 0.45, hd: 1.2 });
+    b.add(bx(1.1, 0.06, 0.6), 0x33200f, -7.95, Y3 + 0.42, 1.0); [-0.45, 0.45].forEach(t => b.add(bx(0.05, 0.39, 0.4), C.metal, -7.95 + t * 0.9, Y3 + 0.2, 1.0)); K4.push({ x: -7.95, z: 1.0, ry: 0, hw: 0.3, hd: 0.55 });
+    b.add(cy(0.12, 0.09, 0.14, 12), 0xd4a73a, -7.95, Y3 + 0.52, 1.2); b.add(bx(0.3, 0.05, 0.22), C.red, -7.9, Y3 + 0.48, 0.7);
+    [0.05, 1.95].forEach(z => { b.push(-8.85, Y3, z, PI / 2); pArm(b, FAB2); b.pop(); K4.push({ x: -8.85, z: z, ry: 0, hw: 0.43, hd: 0.48 }); });
+    b.push(-6.6, Y3, -2.3, -PI / 2); pBookshelf(b); b.pop(); K4.push({ x: -6.6, z: -2.3, ry: 0, hw: 0.17, hd: 0.66 });
+    b.push(-7.7, Y3, -2.2, -PI / 2); pArm(b, LEATH); b.pop(); K4.push({ x: -7.7, z: -2.2, ry: 0, hw: 0.43, hd: 0.48 }); b.push(-7.65, Y3, -1.3, 0); pFloorLamp(b); b.pop();
+    hArt(b, -6.53, Y3 + 1.6, 3.4, -PI / 2, 1.3, 0.9, 1); hPlant(b, K4, -6.95, Y3, 4.5);
     b.add(bx(0.5, 0.5, 0.5), CHAR, -11.2, Y3 + 0.25, 4.3); b.add(sp(0.45, 1, 1.4, 1), C.grass2, -11.2, Y3 + 1.1, 4.3); K4.push({ x: -11.2, z: 4.3, ry: 0, hw: 0.3, hd: 0.3 });
     [-9, -3, 4].forEach(x => { hLight(b, x, Y3 + 2.6, -4.3); HX.L.push([x, Y3 + 2.6, -4.3]); }); }
   /* main block floor 1 rooms keep their bathrooms (hInside); they become rooms 101-104 with doors on the corridor */
@@ -1436,7 +1499,7 @@ function hotel() {
   const OX = 23.35, OZ = 2, pg = pool(); pg.position.set(OX, 0, OZ); g.add(pg);
   pg.userData.K.forEach(k => K.push({ x: k.x + OX, z: k.z + OZ, ry: 0, hw: k.hw, hd: k.hd }));
   const DR = []; hSlideDoor(g, DR, 0, hz - T / 2 - 0.04, 'x', 1.3, 2.55, 1.2); hSlideDoor(g, DR, hx - T / 2 - 0.04, 2.5, 'z', 1.3, 2.55, 1.2); g.userData.doors = DR;
-  g.add(b.build()); flushWind(g); const rf = r.build(); g.add(rf); ROOFS.push(rf); hSlideDoor(g, DR, 0, 2.2, 'x', 1.3, 2.55, 1.2);   /* ski room -> lobby door, added last so the editor's keys for the hotel's parts don't shift */ g.userData.K = K; g.userData.K2 = K2; g.userData.K3 = K3; g.userData.K4 = K4; g.userData.HX = HX; HX.lv2 = (UP + UP2) / 2;
+  g.add(b.build()); flushWind(g); const rf = r.build(); g.add(rf); ROOFS.push(rf); hSlideDoor(g, DR, 0, 2.2, 'x', 1.3, 2.55, 1.2);   /* ski room -> lobby door, added last so the editor's keys for the hotel's parts don't shift */ g.userData.K = K; g.userData.K2 = K2; g.userData.K3 = K3; g.userData.K4 = K4; g.userData.KR = KR; g.userData.HX = HX; HX.lv2 = (UP + UP2) / 2;
   F.push({ x0: -12, x1: 12, z0: ZN, z1: -5, y0: UP, y1: UP, ax: 0, min: UP - 0.7 }, { x0: -12, x1: 12, z0: ZN, z1: -5, y0: UP2, y1: UP2, ax: 0, min: UP2 - 0.7 });
   F.push({ x0: -9.85, x1: 12, z0: -5, z1: 5.3, y0: UP2, y1: UP2, ax: 0, min: UP2 - 0.7 }, { x0: -12, x1: -9.85, z0: -5, z1: -3.4, y0: UP2, y1: UP2, ax: 0, min: UP2 - 0.7 }, { x0: -12, x1: -9.85, z0: 2.65, z1: 5.3, y0: UP2, y1: UP2, ax: 0, min: UP2 - 0.7 });
   F.push({ x0: -9.85, x1: 12, z0: -5, z1: 6.6, y0: UP, y1: UP, ax: 0, min: UP - 0.7 }, { x0: -12, x1: -9.85, z0: -5, z1: -3.4, y0: UP, y1: UP, ax: 0, min: UP - 0.7 }, { x0: -12, x1: -9.85, z0: 2.65, z1: 6.6, y0: UP, y1: UP, ax: 0, min: UP - 0.7 });
@@ -1447,9 +1510,14 @@ function putHotel(R, g, x, z) {
   put(R, g, x, z, 0, 1); { const bb = new THREE.Box3().setFromObject(g); NOSNOW.push({ x0: bb.min.x - 0.6, x1: bb.max.x + 0.6, z0: bb.min.z - 0.6, z1: bb.max.z + 0.6 }); } const W = (k, e) => { const o = { x: x + k.x, z: RES_Z + z + k.z, a: k.ry || 0, hw: k.hw, hd: k.hd }; return Object.assign(o, e); };
   const HX = g.userData.HX, LV2 = g.position.y + HX.lv2;
   g.userData.K.forEach(k => SOLIDS.push(W(k, { top: LV }))); g.userData.K2.forEach(k => SOLIDS.push(W(k, { bot: LV, top: LV2 }))); g.userData.K4.forEach(k => SOLIDS.push(W(k, { bot: LV2 }))); g.userData.K3.forEach(k => SOLIDS.push(W(k, {})));
-  (g.userData.KS || []).forEach(k => SOLIDS.push(W(k, { top: g.position.y + k.top })));
+  (g.userData.KS || []).forEach(k => SOLIDS.push(W(k, { top: g.position.y + k.top }))); (g.userData.KR || []).forEach(k => SOLIDS.push(W(k, { bot: g.position.y + k.bot, top: g.position.y + k.top })));
   const gy0 = g.position.y; HOTEL.x = x; HOTEL.z = RES_Z + z; HOTEL.gy = gy0; HOTEL.HX = HX; HOTEL.doors = [];
-  HX.rooms.forEach(rm => { const piv = new THREE.Group(), pb = new B(); pb.add(bx(0.8, 2.1, 0.06), rm.type === 'suite' ? 0x6b4226 : TIMB, 0.4, 1.05, 0); pb.add(bx(0.24, 0.1, 0.07), C.yellow, 0.4, 1.75, 0.0); pb.add(sp(0.04), C.metal, 0.7, 1.0, 0.05, { noOutline: 1 });
+  HX.rooms.forEach(rm => { const piv = new THREE.Group(), pb = new B(), su = rm.type === 'suite', cs = -(rm.sg || 1);   /* cs: the corridor side of the leaf */
+    pb.add(bx(0.8, 2.1, 0.06), su ? 0x6b4226 : TIMB, 0.4, 1.05, 0);
+    [-1, 1].forEach(f => { const pc = su ? 0x7d5030 : 0xb37a3f; pb.add(bx(0.56, 0.86, 0.016), pc, 0.4, 1.47, f * 0.036); pb.add(bx(0.56, 0.7, 0.016), pc, 0.4, 0.55, f * 0.036);   /* raised panels both faces */
+      pb.add(bx(0.7, 0.14, 0.01), C.metal, 0.4, 0.09, f * 0.036, { noOutline: 1 }); pb.add(cy(0.035, 0.035, 0.02, 10), C.metal, 0.7, 1.0, f * 0.04, { rx: PI / 2, noOutline: 1 }); pb.add(bx(0.14, 0.026, 0.026), C.metal, 0.645, 1.0, f * 0.07, { noOutline: 1 }); });   /* kick plate, lever handles */
+    pb.add(bx(0.32, 0.15, 0.012), 0xd4a73a, 0.4, 1.78, cs * 0.04); pb.push(0.4, 1.815, cs * 0.05, cs < 0 ? PI : 0); hNum(pb, String(rm.no), 0, 0, 0, 0.018, 0x1b1f2a); pb.pop();   /* brass number plate, corridor side */
+    pb.add(sp(0.012), C.metal, 0.4, 1.55, cs * 0.04, { noOutline: 1 });
     piv.add(pb.build()); piv.position.set(rm.hx, rm.y, rm.z); g.add(piv);
     const sol = { x: x + rm.hx + 0.4, z: RES_Z + z + rm.z, a: 0, hw: 0.42, hd: 0.12 }; if (rm.floor === 1) { sol.bot = LV; sol.top = LV2; } else sol.bot = LV2; SOLIDS.push(sol);
     HOTEL.doors.push({ rm: rm, piv: piv, sol: sol, x: x + rm.hx + 0.4, z: RES_Z + z + rm.z, y: gy0 + rm.y, o: 0 }); });
@@ -1458,7 +1526,8 @@ function putHotel(R, g, x, z) {
   (g.userData.doors || []).forEach(d => {
     const wx = x + d.cx, wz = RES_Z + z + d.cz, gy = g.position.y;
     TICK.push(dt => {
-      const P = globalThis.SK && SK.P, near = !!(P && P.on && P.y < gy + 2 && Math.hypot(P.x - wx, P.z - wz) < 3.4);
+      const P = globalThis.SK && SK.P, near = !!(P && P.on && P.y < gy + 2 && Math.hypot(P.x - wx, P.z - wz) < 3.4)
+        || !!(globalThis.SK && SK.DOORPPL && SK.DOORPPL.some(o => o.visible && o.position.y < gy + 2 && Math.hypot(o.position.x - wx, o.position.z - wz) < 2.2));   /* hotel guests walking through */
       d.o = Math.max(0, Math.min(1, d.o + (near ? 1 : -1) * dt * 1.8)); const e = d.o * d.o * (3 - 2 * d.o);
       d.leaves.forEach(l => { const v = l.t * e * d.slide; if (d.ax === 'x') l.m.position.x = l.px + v; else l.m.position.z = l.pz + v; });
     });
@@ -3220,7 +3289,10 @@ const PADS = [[AX, AZ, 7.5, 6.5, 7], [LIFTX, TOPZ - 5.5, 7.2, 11.9, 16], [LIFTX,
     a.push([l.a[0] - ux * 6.6, l.a[1] - uz * 6.6, 7.6 * az + 11.6 * ax, 7.6 * ax + 11.6 * az, 10, 'cut'], [l.b[0] + ux * 5.5, l.b[1] + uz * 5.5, 7.2 * az + 11.9 * ax, 7.2 * ax + 11.9 * az, 14]); return a; }, []))
   .concat([[-8, -356, 4.6, 4.2, 5], [59, -90, 4, 4, 4], [30, -228, 4.5, 4.5, 4], [40.4, -225, 4.4, 5.6, 4], [60.4, -90, 4.4, 5.4, 4], [-66.6, 74, 7, 8, 7], [ALPX - 0.5, ALPZ, 7.5, 6.5, 9]])
   .map(p => { let y = tH0(p[0], p[1]); if (p[5] === 'cut') for (let i = -2; i <= 2; i++) for (let j = -2; j <= 2; j++) y = Math.min(y, tH0(p[0] + i * p[2] / 2, p[1] + j * p[3] / 2));   /* bottom stations sit cut into the slope at its lowest point: no snow heaped under them */
-    return { x: p[0], z: p[1], hx: p[2], hz: p[3], b: p[4], y: y }; });
+    return { x: p[0], z: p[1], hx: p[2], hz: p[3], b: p[4], y: y, cut: p[5] === 'cut' }; });
+/* a bottom station whose pad runs into the Summit Express top pad (the Crest Lift base) sits on that plateau's level: otherwise the
+   top pad's blend lifts the snow 2 m over the station's front and buries the platform */
+PADS.forEach(p => { const q = PADS[1]; if (p.cut && Math.abs(p.x - q.x) < p.hx + q.hx + q.b && Math.abs(p.z - q.z) < p.hz + q.hz + q.b) p.y = Math.max(p.y, q.y); });
 /* Summit Express top: a level plateau from the station exit west to the Pine Ribbon start gate, at the station's height (no snow bank in the way) */
 PADS.push({ x: (LIFTX + PISTE(TOPZ - 8)) / 2, z: TOPZ - 7, hx: (LIFTX - PISTE(TOPZ - 8)) / 2 + 6, hz: 9, b: 14, y: PADS[1].y });
 const AY = PADS[0].y, PADT = PADS[1].y;
@@ -4842,8 +4914,8 @@ function normalAt(x, z, o, e) { e = e || 0.6; return o.set(-(gY(x + e, z) - gY(x
 const softAt = (x, z) => SK.SNOW ? SK.SNOW.soft(x, z - SK.RES_Z) : 0.5;
 const onBuilding = (x, z) => { const lz = z - SK.RES_Z; return SK.NOSNOW.some(r => x > r.x0 && x < r.x1 && lz > r.z0 && lz < r.z1); };
 const canSki = () => W.on && !W.ride && !W.board && !W.unboard && Math.abs(W.y - gY(W.x, W.z)) < 0.3 && !onBuilding(W.x, W.z);
-const SKI_HINT = coarse ? 'Left thumb: steer, push up to tuck, pull down to brake  |  hold JUMP and release  |  in the air the stick spins and flips'
-  : 'A/D steer  ·  W tuck  ·  S brake  ·  hold Space, release to jump  ·  in the air: A/D spin, W/S flip, Shift grab  ·  V camera  ·  K skis off';
+const SKI_HINT = coarse ? 'Left thumb: steer, push up to tuck, pull down to brake  |  hold JUMP and release  |  in the air hold JUMP + stick to spin and flip'
+  : 'A/D steer  ·  W tuck  ·  S brake  ·  hold Space, release to jump  ·  in the air hold Space + A/D to spin, Space + W/S to flip, Shift grab  ·  V camera  ·  K skis off';
 function showHint(t, ms) { hint.textContent = t; hint.classList.remove('off'); hintOn = true; clearTimeout(showHint.t); showHint.t = setTimeout(hideHint, ms || 7000); }
 PL.enterSki = () => {
   if (PL.mode === 'ski') return; PL.mode = 'ski';
@@ -4896,7 +4968,7 @@ function phys(h, I) {
     else PL.y = g;
   } else {
     PL.vy -= G * h; const sp = Math.hypot(PL.vx, PL.vy, PL.vz), d = 1 - 0.004 * sp * h; PL.vx *= d; PL.vy *= d; PL.vz *= d; PL.airT += h;
-    if (!crashing) { PL.spin -= I.steer * 6.2 * PL.mods.spin * h; PL.flip += I.fwd * 5.4 * h; if (I.grab) PL.grabT += h; }
+    if (!crashing) { if (I.jump) { PL.spin -= I.steer * 6.2 * PL.mods.spin * h; PL.flip += I.fwd * 5.4 * h; } if (I.grab) PL.grabT += h; }   /* tricks only while jump is held with a direction: steering in the air alone no longer flips you */
     if (PL.y <= g) land(g);
   }
 }
@@ -4959,7 +5031,9 @@ PL.ski = dt => {
   if (PL.crash > 0) crashStep(dt);
   const grind = SK.GRIND && (SK.GRIND.G.on || (PL.crash <= 0 && SK.GRIND.tryCatch()));   /* on a rail or box: slide it, skip the snow physics */
   if (grind) { PL.charge = 0; SK.GRIND.step(dt, I); } else {
-  if (!PL.air && PL.crash <= 0) { if (I.jump) PL.charge = Math.min(0.6, PL.charge + dt); else if (PL.charge > 0) launch(); }
+  if (PL.air && I.jump) PL.jLock = 1;   /* jump held for a trick: landing with it still down must not wind up another jump */
+  if (PL.jLock && !I.jump) PL.jLock = 0;
+  if (!PL.air && PL.crash <= 0 && !PL.jLock) { if (I.jump) PL.charge = Math.min(0.6, PL.charge + dt); else if (PL.charge > 0) launch(); }
   if (onCarpet(PL.x, PL.z) && !PL.air && PL.crash <= 0) { const Cp = SK.CARPET, dir = Math.sign(Cp.z1 - Cp.z0); PL.z += dir * Cp.speed * dt; PL.x += (Cp.x - PL.x) * Math.min(1, dt * 4); PL.y = gY(PL.x, PL.z); PL.vx = PL.vy = 0; PL.vz = dir * Cp.speed; if (dir * (PL.z - SK.RES_Z - Cp.z1) > -0.4) PL.z += dir * 1.2; }
   else { const n = Math.max(1, Math.ceil(dt * 120)), h = dt / n; for (let i = 0; i < n; i++) phys(h, I); }
   collide();
@@ -5007,7 +5081,11 @@ function camSki(dt) {
     if (!PL.camInit) { PL.camPos.copy(vT2); PL.camInit = true; } else PL.camPos.lerp(vT2, Math.min(1, dt * 7));
     camera.position.copy(PL.camPos); camera.lookAt(PL.x - Math.sin(yaw) * 2.5, PL.y + 1.2 + PL.lookPitch * 1.5, PL.z - Math.cos(yaw) * 2.5);
   } else {
-    camera.position.set(PL.x, PL.y + 1.62, PL.z); camera.rotation.set(-0.12 + PL.lookPitch * 0.8, yaw, 0, 'YXZ');
+    /* first person follows the body: flips pitch the view round, spins turn it, a crash tumbles and drops it */
+    let px = -0.12 + PL.lookPitch * 0.8, py = yaw, rz = 0, hy = 1.62;
+    if (PL.air && PL.crash <= 0) { px -= PL.flip; py += PL.spin; }
+    if (PL.crash > 0) { const e = Math.sin(clamp(PL.crash / 2.8, 0, 1) * PI); rz = 0.9 * Math.sin(PL.crash * 6.5) * e; px -= 0.55 * e; hy = 1.62 - 1.0 * e; }
+    camera.position.set(PL.x, PL.y + hy, PL.z); camera.rotation.set(px, py, rz, 'YXZ');
   }
 }
 /* third-person camera collision: walk from the head toward the wanted camera spot and stop short of the first wall / furniture box
@@ -5428,7 +5506,8 @@ const ECON = {
     const lz = z - SK.RES_Z; let nb = null, nd = 2.3;
     NODES.forEach(n => { if (State.gather.picked.indexOf(n.id) >= 0) return; const d = Math.hypot(n.x - x, n.z - lz); if (d < nd) { nd = d; nb = n; } });
     if (nb) return { node: nb };
-    for (const k in SHOPS) { const S = SHOPS[k]; if (!S.walkin && Math.hypot(S.at[0] - x, S.at[1] - lz) < S.reach) return { shop: S }; }
+    const upst = W.y - SK.groundY(x, lz + SK.RES_Z) > 1.5;   /* upstairs in a building: the counters on the ground floor below are out of reach */
+    for (const k in SHOPS) { const S = SHOPS[k]; if (!S.walkin && !upst && Math.hypot(S.at[0] - x, S.at[1] - lz) < S.reach) return { shop: S }; }
     for (const c of CABINS) if (Math.hypot(c.at[0] - x, c.at[1] - lz) < c.reach) return { cabin: c };
     return null;
   },
@@ -6248,6 +6327,30 @@ const VM = (() => {
     root.visible = held && (W.on && !W.ride && State.cam.walk !== 'third');
     if (i >= a.n) { clear(); anim = null; if (a.done) a.done(); }
   });
+  /* first-person body: mittens (sleeve cuff, mitt, thumb) and your skis. Mittens hold the plate and bring food up while eating; in the air
+     they spread for balance (one reaches down for a grab) with the ski tips in view, and in a crash they flail while the skis tumble */
+  const LK = LOOK, mitt = sd => { const g = new THREE.Group(); g.add(mesh(new THREE.CylinderGeometry(0.048, 0.055, 0.15, 10), M(LK.jacket), 0, 0, 0.1, [Math.PI / 2, 0, 0]));
+    g.add(mesh(new THREE.BoxGeometry(0.085, 0.055, 0.105), M(LK.glove), 0, 0, -0.02)); g.add(mesh(new THREE.BoxGeometry(0.03, 0.035, 0.055), M(LK.glove), -sd * 0.047, 0.012, -0.012, [0, sd * 0.45, 0])); return g; };
+  const handsE = [mitt(-1), mitt(1)]; handsE.forEach(h => { h.visible = false; root.add(h); });
+  const body = new THREE.Group(); camera.add(body); body.visible = false; const handsS = [mitt(-1), mitt(1)]; handsS.forEach(h => body.add(h));
+  const skis = new THREE.Group(); body.add(skis);
+  [-1, 1].forEach(sd => { const k = new THREE.Group(); k.position.x = sd * 0.15; k.add(mesh(new THREE.BoxGeometry(0.1, 0.022, 1.25), M(LK.ski), 0, 0, -0.45)); k.add(mesh(new THREE.BoxGeometry(0.1, 0.022, 0.22), M(LK.ski), 0, 0.04, -1.13, [0.45, 0, 0]));
+    k.add(mesh(new THREE.BoxGeometry(0.13, 0.15, 0.3), M(LK.boot), 0, 0.085, 0.02)); k.add(mesh(new THREE.BoxGeometry(0.14, 0.03, 0.12), M(0x2a2f3a), 0, 0.02, -0.15)); skis.add(k); });
+  let bt = 0;
+  SK.TICK.push(dt => {
+    bt += dt; const fpWalk = W.on && !W.ride && State.cam.walk !== 'third' && PL.mode !== 'ski', eat = root.visible && fpWalk;
+    handsE.forEach(h => { h.visible = eat; });
+    if (eat) { const [hl, hr] = handsE;
+      if (held && anim) { hr.position.set(held.position.x + 0.02, held.position.y - 0.05, held.position.z + 0.06); hr.rotation.set(held.rotation.x * 0.6, 0, -0.3); hl.position.set(-0.46, -0.06, 0.02); hl.rotation.set(0.2, 0, 0.3); }
+      else { hl.position.set(-0.15, -0.055, 0.07); hr.position.set(0.15, -0.055, 0.07); hl.rotation.set(0.5, 0, 0.5); hr.rotation.set(0.5, 0, -0.5); } }
+    const fpSki = PL.mode === 'ski' && State.cam.ski !== 'third' && (PL.air || PL.crash > 0); body.visible = fpSki; if (!fpSki) return;
+    const [L, R] = handsS, asp = Math.min(1, camera.aspect * 1.4);
+    if (PL.crash > 0) { const f = Math.min(1, PL.crash); L.position.set(-0.3 * asp + 0.1 * Math.sin(bt * 13), -0.12 + 0.12 * Math.sin(bt * 11), -0.5); R.position.set(0.3 * asp + 0.1 * Math.sin(bt * 12 + 1), -0.1 + 0.12 * Math.sin(bt * 10 + 2), -0.5);
+      L.rotation.set(Math.sin(bt * 9), 0, bt * 5); R.rotation.set(Math.sin(bt * 8), 0, -bt * 5); skis.position.set(0, -0.5 - 0.1 * f, -0.4); skis.rotation.set(0.5 + 0.4 * Math.sin(bt * 7), 0.3 * Math.sin(bt * 5), 0.7 * Math.sin(bt * 9)); }
+    else { const bob = 0.02 * Math.sin(bt * 6), grab = PL.grabT > 0 && inp().grab; L.position.set(-0.33 * asp, -0.16 + bob, -0.5); L.rotation.set(0.3, 0, 0.6);
+      if (grab) { R.position.set(0.12, -0.4, -0.7); R.rotation.set(1.1, 0, 0); } else { R.position.set(0.33 * asp, -0.16 - bob, -0.5); R.rotation.set(0.3, 0, -0.6); }
+      skis.position.set(0, -0.5, -0.4); skis.rotation.set(0.42, 0, 0); }
+  });
   return { consume, showPlate, clear, FOOD, get busy() { return !!anim; } };
 })();
 SK.VM = VM;
@@ -6274,10 +6377,30 @@ const ELEV = (() => {
   const pan = box(0.04, 0.62, 0.3, dark); pan.position.set(w / 2 - 0.07, 1.3, d / 2 - 0.35); cab.add(pan);
   const CB = [0, 1, 2].map(i => { const mats = btnMats(i ? String(i) : 'G'), b = new THREE.Mesh(new THREE.CircleGeometry(0.055, 20), mats.off); b.rotation.y = -Math.PI / 2; b.position.set(w / 2 - 0.095, 1.12 + i * 0.17, d / 2 - 0.35); cab.add(b); return { m: b, mats: mats, f: i, push: 0 }; });
   const lamp = new THREE.PointLight(0xfff1d0, 0.6, 4); lamp.position.set(0, 2.1, 0); cab.add(lamp);
+  /* cab detail: front returns either side of a 1.0 m door, a header with the floor display, side rails, kick plates, a patterned floor, ceiling spots */
+  const CO = 0.5, CW = w / 2;
+  [-1, 1].forEach(sd => { const r = box(CW - CO, 2.3, 0.05, wall); r.position.set(sd * (CO + (CW - CO) / 2), 1.15, d / 2 - 0.03); cab.add(r);
+    const rl = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, d - 0.6, 8), steel); rl.rotation.x = Math.PI / 2; rl.position.set(sd * (CW - 0.1), 0.95, -0.1); cab.add(rl);
+    const kp = box(0.02, 0.18, d - 0.1, steel); kp.position.set(sd * (CW - 0.06), 0.1, 0); cab.add(kp); });
+  { const hdr = box(w, 0.22, 0.05, wall); hdr.position.set(0, 2.19, d / 2 - 0.03); cab.add(hdr); const kpb = box(w - 0.1, 0.18, 0.02, steel); kpb.position.set(0, 0.1, -d / 2 + 0.06); cab.add(kpb);
+    for (let i = 0; i < 4; i++) { const t = box(w / 4 - 0.02, 0.005, d - 0.04, M(i % 2 ? 0x4a5160 : 0x2f3542)); t.position.set(-w / 2 + w / 8 + i * w / 4, 0.003, 0); cab.add(t); }
+    [-0.45, 0.45].forEach(x => [-0.45, 0.45].forEach(z => { const sp = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.02, 12), new THREE.MeshBasicMaterial({ color: 0xfff4d6 })); sp.position.set(x, 2.3, z); cab.add(sp); })); }
+  /* floor display: one canvas shared by the cab and every landing (floor letter + travel arrow) */
+  const dCv = document.createElement('canvas'); dCv.width = 128; dCv.height = 64; const dCx = dCv.getContext('2d'), dTex = new THREE.CanvasTexture(dCv), dMat = new THREE.MeshBasicMaterial({ map: dTex });
+  let dLast = '';
+  function drawDisp(txt) { if (txt === dLast) return; dLast = txt; dCx.fillStyle = '#0d0f14'; dCx.fillRect(0, 0, 128, 64); dCx.fillStyle = '#ff9a1f'; dCx.font = '900 44px Trebuchet MS, Arial, sans-serif'; dCx.textAlign = 'center'; dCx.textBaseline = 'middle'; dCx.fillText(txt, 64, 35); dTex.needsUpdate = true; }
+  drawDisp('G');
+  { const dm = new THREE.Mesh(new THREE.PlaneGeometry(0.3, 0.15), dMat); dm.position.set(0, 2.19, d / 2 - 0.06); dm.rotation.y = Math.PI; cab.add(dm); }
+  /* inner cab doors: two telescoping leaves a side that stack behind the front returns */
+  const CPW = 0.27, cabLeaves = [];
+  [-1, 1].forEach(sd => [0, 1].forEach(k => { const m = box(CPW, 2.06, 0.025, k ? M(0xa7b1bf) : steel); m.position.set(0, 1.04, d / 2 - 0.07 - k * 0.04); cab.add(m); cabLeaves.push({ m: m, sd: sd, k: k }); }));
   /* outer doors on each floor: two panels that exactly fill the opening (slab to header), a steel header track over them, a solid bar while shut,
      and a call button on the wall to the right */
-  const DOORS = FL.map((y, f) => { const yb = SLAB[f], dh = OPEN_H - 0.03, L = box(0.6, dh, 0.05, steel), Rr = box(0.6, dh, 0.05, M(0x9aa3b2));
-    [L, Rr].forEach(m => { m.position.y = yb + dh / 2; m.position.z = H.z + sh.door; scene.add(m); });
+  /* outer doors: two telescoping leaves a side (fast inner, slow outer) that slide fully into the wall pockets beside the opening, never past the shaft */
+  const OPW = 0.33, HALF = 0.63;
+  const DOORS = FL.map((y, f) => { const yb = SLAB[f], dh = OPEN_H - 0.03, L = [], Rr = [];
+    [-1, 1].forEach(sd => [0, 1].forEach(k => { const m = box(OPW, dh, 0.025, k ? M(0x9aa3b2) : steel); m.position.set(0, yb + dh / 2, H.z + sh.door - k * 0.05); scene.add(m); (sd < 0 ? L : Rr).push({ m: m, k: k, sd: sd }); }));
+    { const dm = new THREE.Mesh(new THREE.PlaneGeometry(0.3, 0.15), dMat); dm.position.set(H.x + EXl, yb + 2.42, H.z + sh.door + 0.11); scene.add(dm); }
     const hd = box(1.34, 0.09, 0.12, dark); hd.position.set(H.x + EXl, yb + OPEN_H - 0.02, H.z + sh.door); scene.add(hd);
     const sill = box(1.3, 0.025, 0.14, steel); sill.position.set(H.x + EXl, yb + 0.012, H.z + sh.door); scene.add(sill);
     const plate = box(0.16, 0.26, 0.03, dark); plate.position.set(H.x + EXl + 0.8, yb + 1.2, H.z + sh.door + 0.1); scene.add(plate);
@@ -6299,9 +6422,14 @@ const ELEV = (() => {
     if (S.phase === 'moving') { const dy = FL[S.target] - S.y, v = Math.min(1.8, 0.4 + Math.abs(dy) * 1.4); if (Math.abs(dy) < 0.004) { S.y = FL[S.target]; S.at = S.target; S.target = null; S.phase = 'arrive'; S.t = ARRIVE; if (SK.sfx) SK.sfx('ding'); } else S.y += Math.sign(dy) * Math.min(Math.abs(dy), v * dt); }
     if (S.phase === 'arrive') { S.t -= dt; if (S.t <= 0) S.phase = 'opening'; }
     if (S.phase === 'opening') { S.door = Math.min(1, S.door + dt / DOOR_T); if (S.door >= 1) { S.phase = 'open'; S.t = HOLD; } }
-    if (was !== S.phase && (S.phase === 'opening' || S.phase === 'closing') && SK.sfx) SK.sfx('door');
+    if (was !== S.phase && (S.phase === 'opening' || S.phase === 'closing') && SK.sfx) SK.sfx('slide');
     cab.position.set(H.x + cxl, S.y, H.z + czl);
-    DOORS.forEach((D, f) => { const o = S.at === f && S.phase !== 'moving' ? ez(S.door) : 0, k = 0.58 * o; D.L.position.x = H.x + EXl - 0.3 - k; D.R.position.x = H.x + EXl + 0.3 + k; D.sol.off = o > 0.75;
+    { const co = S.phase === 'moving' ? 0 : ez(S.door); cabLeaves.forEach(q => { const c0 = q.k ? CO - CPW / 2 : CPW / 2, c1 = CO + CPW / 2 - 0.01; q.m.position.x = q.sd * (c0 + (c1 - c0) * co); }); }
+    { const fl = S.phase === 'moving' ? ELEV.nearest(S.y) : S.at, nm = fl ? String(fl) : 'G'; drawDisp(S.phase === 'moving' ? (FL[S.target] > S.y ? '▲' : '▼') + nm : nm); }
+    if (S.phase === 'moving') { S.hum = (S.hum || 0) - dt; if (S.hum <= 0) { S.hum = 0.55; if (SK.sfx) SK.sfx('hum'); } } else S.hum = 0;
+    if (was !== 'moving' && S.phase === 'moving' && SK.sfx) SK.sfx('motor');
+    DOORS.forEach((D, f) => { const o = S.at === f && S.phase !== 'moving' ? ez(S.door) : 0; D.sol.off = o > 0.75;
+      D.L.concat(D.R).forEach(q => { const c0 = q.k ? HALF - OPW / 2 : OPW / 2, c1 = HALF + OPW / 2; q.m.position.x = H.x + EXl + q.sd * (c0 + (c1 - c0) * o); });
       const B = D.btn; B.m.material = wanted(f) ? B.mats.on : B.mats.off; B.push = Math.max(0, B.push - dt); B.m.position.z = B.z0 - (B.push > 0 ? 0.012 : 0); });
     CB.forEach(B => { B.m.material = (S.queue.indexOf(B.f) >= 0 || S.target === B.f) ? B.mats.on : B.mats.off; B.push = Math.max(0, B.push - dt); B.m.position.x = w / 2 - 0.095 + (B.push > 0 ? 0.012 : 0); });
   });
@@ -6334,12 +6462,19 @@ const BF = (() => {
   const open = () => { const h = State.time / 60; return h >= 6 && h < 11; };
   /* guests: a chef at the west end of the buffet and diners who walk in from the lobby archway during breakfast (6-11), take a free seat,
      eat for a while and walk out again. The hall is empty the rest of the day. Positions are hall-local; y is the hall floor. */
-  const guests = [], FLY = H.gy + X.floors[0], GX = (x, z, o) => o.position.set(H.x + x, FLY, H.z + z), ENTRY = [0, -5.6], LOBBY = [0, -3.2];
+  const guests = [], FLY = H.gy + X.floors[0], GX = (x, z, o) => o.position.set(H.x + x, FLY, H.z + z), ENTRY = [0, -5.6], SKI_IN = [0, 4.55];
   const DINERS = [];
   { const P = SK.PEOPLE, looks = [[P.lady, { jacket: 0x8b3dff }], [P.man, { jacket: 0x2f7bff }], [P.teen, {}], [P.man, { jacket: 0x14b13c, beard: false }], [P.lady, { jacket: 0xff8a1f }], [P.man, { jacket: 0xc8553d }]];
-    looks.forEach(q => { const g = npc(q[0], Object.assign({ npc: 1, item: null }, q[1]), 0, 0, 0); g.visible = false; g.userData.seatH = 1.02;
+    /* diners come in off the slopes: in boots (no skis on their feet indoors), carrying their skis and poles to a rack in the ski room first */
+    const skiPair = col => { const g = new THREE.Group(), m = new THREE.MeshLambertMaterial({ color: col }), pm = new THREE.MeshLambertMaterial({ color: 0x8f99ab });
+      [-0.06, 0.06].forEach(x => { const k = new THREE.Mesh(new THREE.BoxGeometry(0.09, 1.7, 0.025), m); k.position.set(x, 0.85, 0); g.add(k); }); [-0.04, 0.04].forEach(x => { const q2 = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 1.25, 6), pm); q2.position.set(x, 0.62, 0.06); g.add(q2); }); return g; };
+    const SKC = [0x2f7bff, 0xff3232, 0x14b13c, 0xffd21f, 0x8b3dff, 0xff8a1f];
+    looks.forEach((q, i) => { const g = npc(q[0], Object.assign({ npc: 1, item: null, skis: false }, q[1]), 0, 0, 0); g.visible = false; g.userData.seatH = 1.02;
       const pl = VM.FOOD.pancakes(); pl.scale.setScalar(2); pl.traverse(m => { if (m.material) m.material.depthTest = true; m.renderOrder = 0; }); pl.visible = false; scene.add(pl);
-      const d = { g: g, plate: pl, st: 'out', path: [], seat: null, t: 0 }; DINERS.push(d); guests.push(d); });
+      const carry = skiPair(SKC[i % 6]); carry.scale.setScalar(2); carry.position.set(0.8, 0.3, 0.25); carry.rotation.z = 0.12; g.add(carry);   /* npc() scales people by 0.5 */
+      const sd = i % 2 ? 1 : -1, rz = 2.95 + Math.floor(i / 2) * 0.55, rack = skiPair(SKC[i % 6]); rack.position.set(H.x + sd * 3.12, FLY, H.z + rz); rack.rotation.z = sd * 0.1; rack.visible = false; scene.add(rack);
+      const d = { g: g, plate: pl, st: 'out', path: [], seat: null, t: 0, carry: carry, rack: rack, stand: [sd * 2.55, rz] }; DINERS.push(d); guests.push(d); });
+    SK.DOORPPL = DINERS.map(d => d.g);   /* the hotel's sliding doors open for them too */
     const chef = npc(P.staff, { npc: 1, item: null, jacket: 0xffffff }, 0, 0, 0); GX(-3.8, -10.3, chef); chef.rotation.y = 0.35; chef.userData.play('Standing', true); chef.visible = false; guests.push({ g: chef, chef: 1 }); }
   /* a route that never cuts through a table: down the column beside the seat's table (x +-2 sits between tables), then along the chair row */
   const route = s => { const tx = TAB[s.tab][0], gx = tx + (s.x > tx || tx - 2 < -9 ? 2 : -2);   /* never along the lift-core wall */ return [[gx, -5.8], [gx, s.z], [s.x, s.z]]; };
@@ -6350,21 +6485,25 @@ const BF = (() => {
     const chef = guests.find(q => q.chef); if (chef) chef.g.visible = h >= 5.75 && h < 11.25;
     if (isOpen && busy < want && h < 10.6 && State.time >= nextIn) {   /* someone walks in every 6-18 game minutes while there is room */
       const d = DINERS.find(x => x.st === 'out'), free = SEATS.filter(seatFree);
-      if (d && free.length) { const s = free[Math.floor(Math.random() * free.length)]; d.seat = s; d.path = [ENTRY].concat(route(s)); d.st = 'in'; d.g.visible = true; GX(LOBBY[0], LOBBY[1], d.g); d.g.userData.play('Walking', true); d.g.userData.rate = 1; }
+      if (d && free.length) { const s = free[Math.floor(Math.random() * free.length)]; d.seat = s; d.path = [[d.stand[0], d.stand[1], 1.4, 'rack'], [0, 3.0], [0, 1.4], ENTRY].concat(route(s)); d.st = 'in'; d.g.visible = true;
+        d.carry.visible = true; d.rack.visible = false; d.wait = 0; GX(SKI_IN[0], SKI_IN[1], d.g); d.g.userData.play('Walking', true); d.g.userData.rate = 1; }
       nextIn = State.time + 6 + Math.random() * 12;
     }
     DINERS.forEach(d => {
       if (d.st === 'out') return; const g = d.g, s = d.seat;
       if (d.st === 'in' || d.st === 'leave') {
-        const tgt = d.path[0]; if (!tgt) { if (d.st === 'in') { d.st = 'sit'; d.t = 0; g.rotation.y = s.yaw + PI; g.userData.play('Sit on chair', true); GX(s.x, s.z, g); } else { d.st = 'out'; g.visible = false; d.seat = null; } return; }
+        if (d.wait > 0) { d.wait -= dt; if (!d.did && d.wait < 0.7) { d.did = 1; const put = d.act === 'rack'; d.carry.visible = !put; d.rack.visible = put; }   /* skis onto / off the rack */
+          if (d.wait <= 0) g.userData.play('Walking', true); return; }
+        const tgt = d.path[0]; if (!tgt) { if (d.st === 'in') { d.st = 'sit'; d.t = 0; g.rotation.y = s.yaw + PI; g.userData.play('Sit on chair', true); GX(s.x, s.z, g); } else { d.st = 'out'; g.visible = false; d.seat = null; d.carry.visible = false; d.rack.visible = false; } return; }
         const lx = g.position.x - H.x, lz = g.position.z - H.z, dx = tgt[0] - lx, dz = tgt[1] - lz, dd = Math.hypot(dx, dz), v = 1.25 * dt;
-        if (dd <= v) { GX(tgt[0], tgt[1], g); d.path.shift(); } else { GX(lx + dx / dd * v, lz + dz / dd * v, g); g.rotation.y = Math.atan2(dx, dz); }
+        if (dd <= v) { GX(tgt[0], tgt[1], g); d.path.shift(); if (tgt[2]) { d.wait = tgt[2]; d.act = tgt[3]; d.did = 0; g.rotation.y = Math.atan2(Math.sign(tgt[0]), 0); g.userData.play('Standing', true); } }
+        else { GX(lx + dx / dd * v, lz + dz / dd * v, g); g.rotation.y = Math.atan2(dx, dz); }
         return;
       }
       d.t += dt;
       if (d.st === 'sit' && d.t > 0.8) { d.st = 'eat'; d.t = 0; d.until = State.time + 20 + Math.random() * 25; d.plate.position.set(H.x + s.tx, FLY + 0.58, H.z + s.tz + (s.yaw ? -0.22 : 0.22)); d.plate.visible = true; g.userData.play('Eating', true); }
       if (d.st === 'eat') { if (d.t > 3) { d.t = 0; g.userData.play(Math.random() < 0.35 ? 'Sit on chair' : 'Eating', true); }   /* bite, pause, bite */
-        if (State.time >= d.until || State.time < 5 * 60 || h >= 11.4) { d.st = 'leave'; d.plate.visible = false; d.path = route(s).reverse().slice(1).concat([ENTRY, LOBBY]); g.userData.play('Walking', true); } }
+        if (State.time >= d.until || State.time < 5 * 60 || h >= 11.4) { d.st = 'leave'; d.plate.visible = false; d.path = route(s).reverse().slice(1).concat([ENTRY, [0, 1.4], [0, 3.0], [d.stand[0], d.stand[1], 1.4, 'take'], SKI_IN]); g.userData.play('Walking', true); } }   /* skis back off the rack on the way out */
     });
   }
   SK.TICK.push(dt => { if (SK.DEV) return; gAcc += dt; if (gAcc < 0.033) return; dinerTick(gAcc); gAcc = 0;
@@ -6568,6 +6707,9 @@ const SFX = {
   crash: () => { noiseHit(0.22, 0.12, 380, 40); noiseHit(0.12, 0.04, 2400, 900, 0.05); },
   lock: () => { noiseHit(0.03, 0.06, 1800, 400); noiseHit(0.03, 0.05, 1500, 300, 0.09); },   /* rattle of a locked handle */
   door: () => tone(140, 90, 0.25, 'sine', 0.2),
+  slide: () => { noiseHit(0.42, 0.05, 1100, 160); tone(95, 70, 0.4, 'triangle', 0.03); noiseHit(0.05, 0.05, 700, 80, 0.42); },   /* elevator doors: a soft rumble along the track, a muffled thunk at the end */
+  motor: () => { tone(55, 82, 0.6, 'sawtooth', 0.018); noiseHit(0.08, 0.04, 400, 40); },   /* the cab starting off: a clunk and the motor spinning up */
+  hum: () => tone(68, 70, 0.6, 'triangle', 0.014),
   ding: () => { tone(1568, 0, 0.5, 'sine', 0.14); tone(2093, 0, 0.6, 'sine', 0.08, 0.05); },
   click: () => tone(1400, 0, 0.025, 'sine', 0.025)
 };

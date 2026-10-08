@@ -16,7 +16,7 @@ const plans = [['straight', 0, 0], ['360', 1, 0], ['360 grab', 1, 1], ['540', 1,
         K.a = K.d = K.w = K.s = 0; K[' '] = 0; K.shift = 0;
         if (state === 'approach') { const hx = PL.vx, hz = PL.vz; if (v > 0.25) K.a = 1; else if (v < -0.25) K.d = 1; K.w = 1; if (u > -3.5) K[' '] = 1; if (u > -0.3 || PL.air) { state = PL.air ? 'air' : 'lip'; out.approachKmh = Math.round(PL.spd * 3.6); } }
         else if (state === 'lip') { if (PL.air) state = 'air'; else if (++t0 > 20) state = 'air'; }
-        if (state === 'air' && PL.air) { out.airT += 1 / 30; if (spin) { if (Math.abs(PL.spin) < (spinMul || 1) * 2 * Math.PI - 0.6) K.d = 1; } if (flip && Math.abs(PL.flip) < 2 * Math.PI - 0.6) K.s = 1; if (grab) K.shift = 1; }
+        if (state === 'air' && PL.air) { out.airT += 1 / 30; if (spin || flip) K[' '] = 1;   /* tricks need jump held */ if (spin) { if (Math.abs(PL.spin) < (spinMul || 1) * 2 * Math.PI - 0.6) K.d = 1; } if (flip && Math.abs(PL.flip) < 2 * Math.PI - 0.6) K.s = 1; if (grab) K.shift = 1; }
         SK.play(1, 1 / 30);
         out.maxAir = Math.max(out.maxAir, PL.y - SK.groundY(PL.x, PL.z)); out.spinDeg = Math.max(out.spinDeg, Math.round(Math.abs(PL.spin) * 57.3));
         if (PL.crash > 0) out.crash = 1;

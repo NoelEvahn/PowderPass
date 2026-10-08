@@ -11,7 +11,7 @@ const { boot, check } = require('./lib');
   check(r.alp && r.af === 2 && r.shut, 'cabin doors (A-frames, Alpine) are the model leaf, shut and solid when not owned (' + JSON.stringify(r) + ')', fails);
   r = await ev(() => { const D = SK.CDOORS.find(d => d.id === 'alpine'); SK.State.cabins.push('alpine'); const W = SK.W; W.x = D.x; W.z = D.z + 1.5; W.y = SK.groundY(W.x, W.z); SK.play(60); const o = D.o; SK.State.cabins.pop(); return { o: o, solid: D.sol.off }; });
   check(r.o > 0.9 && r.solid, 'the Alpine front door swings open for its owner (' + JSON.stringify(r) + ')', fails);
-  r = await ev(() => { SK.P6.setTime(4 * 60); SK.play(900, 1 / 30); const g0 = SK.BF.guests.filter(d => !d.chef && d.g.visible).length; SK.P6.setTime(8 * 60); for (let i = 0; i < 6; i++) { SK.State.warmth = SK.State.energy = 100; SK.play(300, 1 / 30); }
+  r = await ev(() => { SK.P6.setTime(4 * 60); SK.play(1800, 1 / 30);   /* diners walk out via the ski-room racks now: give them time */ const g0 = SK.BF.guests.filter(d => !d.chef && d.g.visible).length; SK.P6.setTime(8 * 60); for (let i = 0; i < 6; i++) { SK.State.warmth = SK.State.energy = 100; SK.play(300, 1 / 30); }
     const G = SK.BF.guests.filter(d => !d.chef), seated = G.filter(d => d.st === 'eat'), H = SK.HOTEL;
     const ok = seated.every(d => { const s = d.seat, dz = H.z + s.tz - d.g.position.z, fz = Math.cos(d.g.rotation.y); return Math.sign(dz) === Math.sign(fz); });
     const chef = SK.BF.guests.find(d => d.chef).g.position; SK.P6.setTime(11 * 60 + 30); SK.play(1500, 1 / 30); const g2 = G.filter(d => d.g.visible).length;
