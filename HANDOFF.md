@@ -5,7 +5,7 @@ Paste this file (or attach it with the zip) as the first message of a new chat.
 ## 1. What it is
 - **Powder Pass**: a mobile-first 3D ski-resort game in **one HTML file** (`powder-pass.html`, ~1.4 MB, ~7,500 lines). It uses Three.js r128, inlined.
 - **Live artifact:** https://claude.ai/artifact/WgdGTKpWU2SoYSF59Fzfp7
-  - Current version: **v25** (round 9). Shared "anyone with the link".
+  - Current version: **v29** (round 13). Shared "anyone with the link".
   - Capabilities: `artifact` (the in-game editor saves by republishing itself) and `downloads` (a fallback that saves the file instead).
 - **Project files** (zip: `powder-pass-project.zip`):
   - `powder-pass.html`: the game.
