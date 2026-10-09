@@ -10,7 +10,7 @@ Spec: `docs/superpowers/specs/2026-10-08-powder-pass-overhaul-design.md`. Branch
 | A3 | Seat anchors (bar stools, benches, café) + occupancy | `tools/r15/a3.js` | done |
 | B1 | 25 km/h tuck with hysteresis + physics gate | `tools/r15/b1.js` | done |
 | B2 | Skate push-off pose + pole plants | `tools/r15/b1.js` | done |
-| C1 | First person = real avatar, head hidden, independent look | | todo |
+| C1 | First person = real avatar, head hidden, independent look | `tools/r15/c1.js` | done |
 | D1–D6 | Hotel: entrance, elevator, lobby/breakfast/bar clutter, lamps, upstairs rail, suite | | todo |
 | E1–E4 | Café rebuild + Mia + in-world ordering, Pro Shop, gondola pad, global audit | | todo |
 | F1–F3 | Sun/snow, sky/moon/clouds, weather states | | todo |

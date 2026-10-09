@@ -2148,7 +2148,7 @@ function person(o) {
       if (role === 'ticket' && s === 1) { b.add(bx(0.2, 0.012, 0.13), 0xffd21f, 0, -0.2, 0.06, { rx: -0.2 }); b.add(bx(0.2, 0.014, 0.03), 0xff3232, 0, -0.2, 0.09, { rx: -0.2, noOutline: 1 }); }
     }, 0, 0, 0, hand);
     if (pole) mk(b => { b.add(cy(0.03, 0.03, 2.55, 6), 0x8f99ab, 0, -1.05, 0); b.add(cy(0.045, 0.045, 0.28, 8), cJ2, 0, 0.0, 0); b.add(cy(0.05, 0.2, 0.05, 10), 0x8f99ab, 0, -2.05, 0); b.add(cn(0.045, 0.16, 6), INK, 0, -2.4, 0, { rx: PI }); b.add(sp(0.065, 1, 0.8, 1, 8, 6), cJ2, 0, 0.16, 0); b.add(ringG(0.09, 0.09, 0.02), INK, 0, -2.05, 0); b.add(ringG(0.07, 0.07, 0.03), 0x222831, 0, 0.1, 0.04); b.add(bx(0.02, 0.2, 0.02), 0x222831, 0.05, -0.02, 0.05, N); }, 0, 0, 0, pole);
-    return { sh: sh, el: el, pole: pole, s: s };
+    return { sh: sh, el: el, hand: hand, pole: pole, s: s };
   });
 
   const D0 = (L1 + L2) * (skis ? 0.87 : 0.975), kidHop = kid && skis;
@@ -2243,6 +2243,7 @@ function person(o) {
     if (g.userData.snack && nm !== 'Eating' && nm !== 'Snacking') {   /* eating / drinking on top of whatever the body is doing: only the right arm takes the food to the mouth */
       DS.snT = (DS.snT || 0) + dt; const u = Math.pow(Math.max(0, Math.sin(PI * ((DS.snT % 0.8) / 0.8))), 0.7); P.arm[1] = [-0.6 - 0.9 * u, -1.0 - 1.4 * u];
     } else DS.snT = 0;
+    if (g.userData.carry && !g.userData.snack && nm !== 'Eating') { P.arm[0] = [-0.95, -0.85]; P.arm[1] = [-0.95, -0.85]; }   /* holding a plate in both hands at the chest */
     const kk = 1 - Math.exp(-dt * (nm === 'Walking' || nm === 'Sprinting' || nm === 'Hop' || nm === 'Land' || (nm === 'Skate' && lt > 0.3) ? 24 : 10)), D = DS.v; Object.keys(P).forEach(k => { if (typeof P[k] === 'number') D[k] = bl(D[k], P[k], kk); else bl(D[k], P[k], kk); });
     /* root motion cross-fade: when the move changes, ease the whole body from where it was instead of snapping */
     if (DS.lastNm !== nm) { DS.lastNm = nm; DS.bt = DS.R ? 0.45 : 0; }
@@ -2253,7 +2254,7 @@ function person(o) {
     root.rotation.set(DS.R[0], DS.R[1], DS.R[2]); root.position.set(DS.R[3], DS.R[4], DS.R[5]);
     sk.forEach((q, j) => { q.position.set(fx(j ? 1 : -1) * D.fx, D.f[j][1], D.f[j][0]); q.rotation.set(D.fr[j][0], D.fr[j][1], D.fr[j][2]); });
     pel.position.set(D.pelX, D.pelY, D.pelZ); pel.rotation.set(0, D.pry, D.prz); tor.rotation.set(D.torX, D.torY, 0);
-    arms.forEach(a => { const d = D.arm[a.s < 0 ? 0 : 1]; a.sh.rotation.set(d[0], 0, a.s * 0.2); a.el.rotation.x = d[1]; a.pp = D.pa[a.s < 0 ? 0 : 1]; if (a.pole) a.pole.rotation.x = (a.pp || 0.32) - (tor.rotation.x + d[0] + d[1]); });
+    arms.forEach(a => { const d = D.arm[a.s < 0 ? 0 : 1]; a.sh.rotation.set(d[0], 0, a.s * (g.userData.carry ? -0.14 : 0.2));   /* carrying: hands come in under the plate */ a.el.rotation.x = d[1]; a.pp = D.pa[a.s < 0 ? 0 : 1]; if (a.pole) a.pole.rotation.x = (a.pp || 0.32) - (tor.rotation.x + d[0] + d[1]); });
   };
   const fx = sd => sd * 0.34 * (kid ? 0.85 : 1);
   /* boots on uneven snow: on a slope the feet used to stay level with the body, burying the uphill sole up to 20 cm. Each foot is
@@ -2299,6 +2300,8 @@ function person(o) {
       if (a.pole) a.pole.rotation.x = (a.pp || 0.32) - (tor.rotation.x + sh + el);
     });
     if (dmo) demoPose(dt, t0);
+    /* first person: the upper body turns a little toward where you look (hips, legs and skis keep the heading) */
+    if (g.userData.aimY) tor.rotation.y += Math.max(-0.6, Math.min(0.6, g.userData.aimY));
     g.updateMatrixWorld(true);
     if (!skis) footConform();
     /* 3D two-bone IK: each ankle sits on its ski, knee bends forward */
@@ -2314,6 +2317,7 @@ function person(o) {
     g.updateMatrixWorld(true);
     arms.forEach(a => { if (!a.pole) return; a.pole.getWorldPosition(vA); root.worldToLocal(vA); a.pole.scale.y = Math.min(1.25, Math.max(0.5, (vA.y - 0.03) / Math.cos(a.pp || 0.32) / 2.48)); });
     head.rotation.set(-(skis ? 0.16 : 0.04) - 0.06 * c2 + 0.05 * Math.sin(0.9 * t), (role === 'instructor' ? 0.5 : 0.35) * Math.sin(0.55 * t + 0.8) - 0.4 * psi, 0.05 * Math.sin(0.6 * t));
+    if (g.userData.fp) head.rotation.set(0, 0, 0);   /* the player's own eyes: the camera does the looking, the (hidden) head stays square on the neck */
     const bp = (t + seed) % 3.4, bl = bp < 0.16 ? Math.abs(bp - 0.08) / 0.08 : 1, ey = 0.1 + 0.9 * bl;
     eyes.scale.y = ey; pup.scale.y = ey; pup.position.x = 0.02 * Math.sin(0.6 * t + 2);
     browL.position.y = HC + 0.16 + 0.02 * (0.5 + 0.5 * Math.sin(0.9 * t)); browR.position.y = HC + 0.16 + 0.02 * (0.5 + 0.5 * Math.sin(0.9 * t + 0.8));
@@ -5255,6 +5259,14 @@ function mkAvatar(skis) {
   return { wrap: wrap, piv: piv, p: p };
 }
 let AVS = mkAvatar(true), AVW = mkAvatar(false); SK.SNOWS.push(AVS.p);
+/* first person is a view out of the same body: its head (face, hair, hat) is hidden so it never fills the screen, and the camera sits
+   at its eyes. FP_EYE: the eye point in head space (between the eyes, just behind the face) */
+const FP_EYE = new THREE.Vector3(0, 0.34, 0.22), vEyeW = new THREE.Vector3();
+function fpSet(av, on) { const u = av.p.userData, h = u.dbg.head, nk = h.parent.children[0]; if (h.visible === on) { h.visible = !on; if (nk !== h) nk.visible = !on; } u.fp = on; if (!on) u.aimY = 0; }   /* head + neck: right under the eye */
+/* looking down you lean your head forward over your chest (no shoulder blocking the view): the eye moves along the look direction */
+function eyeAt(av, pitch, yaw) { av.wrap.updateMatrixWorld(true); av.p.userData.dbg.head.localToWorld(vEyeW.copy(FP_EYE));
+  if (pitch !== undefined) { const k = clamp((-pitch - 0.15) / 0.95, 0, 1), s = k * k * (3 - 2 * k); vEyeW.x -= Math.sin(yaw) * 0.16 * s; vEyeW.z -= Math.cos(yaw) * 0.16 * s; vEyeW.y -= 0.04 * s; }
+  return vEyeW; }
 Object.defineProperty(SK, 'AVW', { get: () => AVW, configurable: true }); Object.defineProperty(SK, 'AVS', { get: () => AVS, configurable: true });
 function recolorAvatars(col) { LOOK.jacket = col; [AVS, AVW].forEach(a => { scene.remove(a.wrap); const i = SK.SNOWS.indexOf(a.p); if (i >= 0) SK.SNOWS.splice(i, 1); }); AVS = mkAvatar(true); AVW = mkAvatar(false); SK.SNOWS.push(AVS.p); }   /* the skier leaves real ski tracks; boot prints come from the walker code */
 
@@ -5424,7 +5436,8 @@ function pose(dt, I) {
   else { normalAt(PL.x, PL.z, nrm); qN.setFromUnitVectors(YUP, nrm); qT.copy(qN).multiply(qA); w.quaternion.slerp(qT, Math.min(1, dt * 14)); }
   AVS.piv.rotation.set(PL.air ? PL.flip : 0, 0, 0);
   AVS.p.userData.noSnow = PL.air;
-  w.visible = State.cam.ski === 'third';
+  const fp = State.cam.ski !== 'third'; w.visible = true; fpSet(AVS, fp);   /* first person looks out of this same body */
+  if (fp) A.aimY = PL.crash > 0 || PL.air ? 0 : wrapA(PL.camYaw + PL.lookOff - (PL.hd + (gr ? PI / 2 : 0))) * 0.5;
 }
 function camSki(dt) {
   const third = State.cam.ski === 'third', hsp = Math.hypot(PL.vx, PL.vz);
@@ -5440,11 +5453,13 @@ function camSki(dt) {
     if (!PL.camInit) { PL.camPos.copy(vT2); PL.camInit = true; } else PL.camPos.lerp(vT2, Math.min(1, dt * 7));
     camera.position.copy(PL.camPos); camera.lookAt(PL.x - Math.sin(yaw) * 2.5, PL.y + 1.2 + PL.lookPitch * 1.5, PL.z - Math.cos(yaw) * 2.5);
   } else {
-    /* first person follows the body: flips pitch the view round, spins turn it, a crash tumbles and drops it */
-    let px = -0.12 + PL.lookPitch * 0.8, py = yaw, rz = 0, hy = 1.62; PL.fpLook = px;
+    /* first person: the camera is the skier's eyes (crouch, tuck, skate bob, flips and crash tumbles move it with the body); where it
+       points is your look: flips pitch the view round, spins turn it, a crash rolls it */
+    let px = -0.12 + PL.lookPitch * 0.8, py = yaw, rz = 0; PL.fpLook = px;
     if (PL.air && PL.crash <= 0) { px -= PL.flip; py += PL.spin; }
-    if (PL.crash > 0) { const e = Math.sin(clamp(PL.crash / 2.8, 0, 1) * PI); rz = 0.9 * Math.sin(PL.crash * 6.5) * e; px -= 0.55 * e; hy = 1.62 - 1.0 * e; }
-    camera.position.set(PL.x, PL.y + hy, PL.z); camera.rotation.set(px, py, rz, 'YXZ');
+    if (PL.crash > 0) { const e = Math.sin(clamp(PL.crash / 2.8, 0, 1) * PI); rz = 0.9 * Math.sin(PL.crash * 6.5) * e; px -= 0.55 * e; }
+    camera.position.copy(eyeAt(AVS, PL.crash > 0 || PL.air ? undefined : px, py)); { const g0 = gY(camera.position.x, camera.position.z) + 0.25; if (camera.position.y < g0) camera.position.y = g0; }   /* never under the snow in a tumble */
+    camera.rotation.set(px, py, rz, 'YXZ'); if (camera.near !== 0.05) { camera.near = 0.05; camera.updateProjectionMatrix(); }
   }
 }
 /* third-person camera collision: walk from the head toward the wanted camera spot and stop short of the first wall / furniture box
@@ -5459,20 +5474,33 @@ function camClear(hx, hy, hz, cx, cy, cz, fy) {
 }
 PL.walkPost = dt => {
   if (!W.ride && !W.board && !W.unboard && onCarpet(W.x, W.z)) { const Cp = SK.CARPET, dir = Math.sign(Cp.z1 - Cp.z0); W.z += dir * Cp.speed * dt; if (dir * (W.z - SK.RES_Z - Cp.z1) > -0.4) W.z += dir * 1.2; }
-  const busy = W.ride || W.board || W.unboard, third = State.cam.walk === 'third' && !busy && W.on && !(SK.inStore && SK.inStore());
-  AVW.wrap.visible = third; AVS.wrap.visible = false; uiFrame(); { const nr = third ? 0.12 : 0.1; if (camera.near !== nr) { camera.near = nr; camera.updateProjectionMatrix(); } }
+  const busy = W.ride || W.board || W.unboard, third = State.cam.walk === 'third' && !busy && W.on && !(SK.inStore && SK.inStore()), fp = W.on && !busy && !third, rideBody = !!(W.on && W.ride && !W.board && !W.unboard);
+  AVW.wrap.visible = third || fp || rideBody; fpSet(AVW, fp || rideBody); AVS.wrap.visible = false; uiFrame(); { const nr = third ? 0.12 : 0.05; if (camera.near !== nr) { camera.near = nr; camera.updateProjectionMatrix(); } }
+  AVW.p.userData.carry = fp && !!(SK.BF && SK.BF.B.plate && !W.sit);
   const wj = !!(W.on && !busy && !W.sit && PL.mode !== 'ski'); if (document.body.classList.contains('walkjump') !== wj) document.body.classList.toggle('walkjump', wj);
   PL.snackT = Math.max(0, (PL.snackT || 0) - dt);
-  if (!third) return;
+  if (rideBody) {   /* on a lift you are in your own body: seated on the chair's cushion (or standing in the gondola), looking out of its eyes */
+    const o = W.ride, U = o.userData, sp = SK.LIFTX.seat(o, W.seatK); o.updateMatrixWorld(true); AVW.wrap.position.copy(o.localToWorld(vT2.set(sp[0], sp[1], sp[2])));
+    o.getWorldQuaternion(qT); qN.setFromAxisAngle(YUP, U.kind ? W.yaw + PI / 2 : PI / 2);   /* standing in a gondola you turn to face where you look */ AVW.wrap.quaternion.copy(qT).multiply(qN); AVW.p.userData.rate = 1; AVW.p.userData.snack = false; AVW.p.userData.carry = false;
+    AVW.p.userData.play(U.kind ? 'Standing' : 'Sit on chair'); AVW.p.userData.aimY = U.kind ? 0 : clamp(wrapA(W.yaw), -0.6, 0.6) * 0.5;
+    camera.getWorldDirection(vT2); const lp = Math.asin(clamp(vT2.y, -1, 1)), ly = Math.atan2(-vT2.x, -vT2.z); camera.position.copy(eyeAt(AVW, lp, ly)); return; }
+  if (!third && !fp) return;
   if (W.sit) { AVW.wrap.position.set(W.x, W.sit.fy, W.z); qT.setFromAxisAngle(YUP, (W.sit.yaw || 0) + PI); AVW.wrap.quaternion.copy(qT); AVW.p.userData.rate = 1; AVW.p.userData.snack = PL.snackT > 0; AVW.p.userData.play('Sit on chair');
+    if (fp) { AVW.p.userData.aimY = wrapA(W.yaw - (W.sit.yaw || 0)) * 0.5; camera.position.copy(eyeAt(AVW, W.pitch, W.yaw)); camera.rotation.set(W.pitch, W.yaw, 0, 'YXZ'); return; }
     /* watch yourself eat: of the angles near where you look, take the one with the most room (a wall behind the chair swings the camera round) */
     let by = W.yaw, bt = -1; [0, 0.5, -0.5, 1.0, -1.0, 1.5, -1.5].forEach(o => { const yw = W.yaw + o; camClear(W.x, W.sit.fy + 1.3, W.z, W.x + Math.sin(yw) * 2.4, W.sit.fy + 2.0, W.z + Math.cos(yw) * 2.4, W.sit.fy); if (camClear.t > bt + 0.08) { bt = camClear.t; by = yw; } });
     camera.position.copy(camClear(W.x, W.sit.fy + 1.3, W.z, W.x + Math.sin(by) * 2.4, W.sit.fy + 2.0, W.z + Math.cos(by) * 2.4, W.sit.fy)); camera.lookAt(W.x, W.sit.fy + 0.75, W.z); return; }
-  const sp = Math.hypot(W.vx || 0, W.vz || 0); if (CAM.on) PL.walkFace = W.yaw; else if (sp > 0.3) PL.walkFace = Math.atan2(-W.vx, -W.vz);   /* camera lock: face where you look */
+  const sp = Math.hypot(W.vx || 0, W.vz || 0);
+  if (fp) {   /* first person: the body walks where it goes (backing up keeps facing forward); standing still it turns to follow your look only past ~55 degrees */
+    const mv = Math.atan2(-W.vx, -W.vz), back = Math.cos(wrapA(mv - W.yaw)) < -0.3;
+    if (sp > 0.3) PL.walkFace = back ? W.yaw : mv; else if (Math.abs(wrapA(W.yaw - PL.walkFace)) > 0.95) PL.walkFace += wrapA(W.yaw - PL.walkFace) * Math.min(1, dt * 4);
+    AVW.p.userData.aimY = wrapA(W.yaw - PL.walkFace) * 0.55;
+  } else if (CAM.on) PL.walkFace = W.yaw; else if (sp > 0.3) PL.walkFace = Math.atan2(-W.vx, -W.vz);   /* camera lock: face where you look */
   AVW.wrap.position.set(W.x, W.y + (W.goff === undefined ? 0.06 : W.goff) + (W.jy || 0), W.z); qT.setFromAxisAngle(YUP, PL.walkFace + PI); AVW.wrap.quaternion.slerp(qT, Math.min(1, dt * 10));
   if (W.jy > 0) PL.landT = 0.2; else PL.landT = Math.max(0, (PL.landT || 0) - dt);
   AVW.p.userData.jv = W.jv || 0; AVW.p.userData.snack = PL.snackT > 0;
   AVW.p.userData.play(W.jy > 0 ? 'Hop' : PL.landT > 0.02 && PL.landT < 0.2 ? 'Land' : sp > 3 ? 'Sprinting' : sp > 0.4 ? 'Walking' : 'Standing'); AVW.p.userData.rate = sp > 3 ? Math.min(1.9, Math.max(0.8, sp / 4.2)) : sp > 0.4 ? Math.min(1.8, Math.max(0.6, sp / 1.4)) : 1;   /* legs keep pace with the ground */
+  if (fp) { camera.position.copy(eyeAt(AVW, W.pitch, W.yaw)); camera.rotation.set(W.pitch, W.yaw, 0, 'YXZ'); return; }
   const d = 4.2, yaw = W.yaw, up = 1.9 - W.pitch * 2.2;
   const ind = isIndoors(), cyw = ind ? Math.min(W.y + up, W.y + 2.25) : W.y + up;   /* indoors: stay under the ceiling */
   camClear(W.x, W.y + 1.55, W.z, W.x + Math.sin(yaw) * d, cyw, W.z + Math.cos(yaw) * d, W.y); const gc = gY(vT2.x, vT2.z) + 0.6; if (!ind && vT2.y < gc) vT2.y = gc;
@@ -6748,11 +6776,14 @@ const VM = (() => {
   }
   const skis = new THREE.Group(); rig.add(skis); [-1, 1].forEach(sd => { const k = vmBuild(skiModel); k.position.x = sd * 0.13; skis.add(k); });
   const mitts = [-1, 1].map(sd => { const m = vmBuild(b => mittModel(b, sd)); rig.add(m); return m; });
-  let bt = 0; const vT = new THREE.Vector3(), HIP = 0.72;
+  /* the real body (same rig as third person) is shown in first person now: these stand-in mittens and skis stay hidden; the rig still
+     carries the plate and food you hold */
+  mitts.forEach(m => { m.visible = false; }); skis.visible = false;
+  let bt = 0; const vT = new THREE.Vector3(), vH = new THREE.Vector3(), HIP = 0.72;
   const place = (m, x, y, z, rx, ry, rz) => { m.position.set(x, y, z); m.rotation.set(rx, ry, rz); };
   SK.TICK.push(dt => {
     bt += dt; const fpWalk = W.on && !W.ride && !W.sit && State.cam.walk !== 'third' && PL.mode !== 'ski' && !(SK.inStore && SK.inStore() && false), fpSki = W.on && PL.mode === 'ski' && State.cam.ski !== 'third';
-    rig.visible = fpWalk || fpSki || (root.visible && W.sit && State.cam.walk !== 'third'); skis.visible = fpSki; if (!rig.visible) return;
+    rig.visible = fpWalk || fpSki || (root.visible && W.sit && State.cam.walk !== 'third'); skis.visible = false; if (!rig.visible) return;
     const [L, R] = mitts, eat = root.visible;
     if (eat && !fpSki) {   /* left hand under the plate rim, right one bringing food to your chin */
       const rp = root.position; place(L, rp.x - 0.13, rp.y - 0.03, rp.z + 0.05, 0.9, 0.3, 0.9);
@@ -6770,7 +6801,10 @@ const VM = (() => {
   });
   /* the rig follows the camera's body orientation without its look pitch, every drawn frame */
   SK.PRE = SK.PRE || []; SK.PRE.push(() => { if (!rig.visible) return; const ski = PL.mode === 'ski', look = ski ? (PL.fpLook || 0) : (W.pitch || 0);
-    rig.rotation.set(camera.rotation.x - look, camera.rotation.y, camera.rotation.z, 'YXZ'); rig.position.copy(camera.position); rig.position.y = ski ? PL.y + 0.9 : camera.position.y - HIP; rig.updateMatrixWorld(true); });
+    rig.rotation.set(camera.rotation.x - look, camera.rotation.y, camera.rotation.z, 'YXZ'); rig.position.copy(camera.position); rig.position.y = ski ? PL.y + 0.9 : camera.position.y - HIP; rig.updateMatrixWorld(true);
+    /* the plate you carry sits on your real hands (first-person body), level enough to see what's on it */
+    const AV = SK.AVW; if (AV && AV.wrap.visible && AV.p.userData.carry && plate.parent === root && !held) { vT.set(0, 0, 0); AV.p.userData.dbg.arms.forEach(a => vT.add(a.hand.getWorldPosition(vH))); vT.multiplyScalar(0.5); vT.y += 0.03;
+      root.position.copy(rig.worldToLocal(vT)); plate.position.set(0, 0, 0); plate.rotation.set(0.18, 0, 0); } else root.position.set(0.06, 0.28, -0.36); });
   return { consume, showPlate, clear, FOOD, rig, skis, get busy() { return !!anim; } };
 })();
 SK.VM = VM;
