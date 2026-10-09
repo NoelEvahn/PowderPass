@@ -3462,10 +3462,14 @@ PADS.push({ x: (LIFTX + PISTE(TOPZ - 8)) / 2, z: TOPZ - 7, hx: (LIFTX - PISTE(TO
 /* the Lodge Café pad overlaps the Crest station's plateau: it sits on that level (it used to be 2.2 m higher, and the station's blend,
    applied after it, tilted the café floor into a 1.5 m ramp with snow poking through the boards) */
 { const c = PADS[0]; PADS.forEach((p, i) => { if (i && Math.abs(p.x - c.x) < p.hx + c.hx && Math.abs(p.z - c.z) < p.hz + c.hz) c.y = Math.min(c.y, p.y); }); }
+PADS.forEach((p, i) => PADS.forEach((q, j) => { if (j > i && !p.cut && !q.cut && Math.abs(p.x - q.x) < 2 && Math.abs(p.z - q.z) < 2) p.y = q.y; }));   /* two pads for one building (Summit Outfitters): one level */
 const AY = PADS[0].y, PADT = PADS[1].y;
 function tHx(x, z) {
   let h = tH0(x, z);
-  for (let k = 1; k <= PADS.length; k++) { const p = PADS[k % PADS.length], ex = Math.abs(x - p.x) - p.hx, ez = Math.abs(z - p.z) - p.hz; if (ex > p.b || ez > p.b) continue; const w = 1 - sstep(0, p.b, Math.hypot(Math.max(0, ex), Math.max(0, ez))); h += (p.y - h) * w; }   /* the café pad (0) last: nothing tilts its floor */
+  for (let k = 1; k <= PADS.length; k++) { const p = PADS[k % PADS.length], ex = Math.abs(x - p.x) - p.hx, ez = Math.abs(z - p.z) - p.hz; if (ex > p.b || ez > p.b) continue; const w = 1 - sstep(0, p.b, Math.hypot(Math.max(0, ex), Math.max(0, ez))); h += (p.y - h) * w; }
+  /* every pad's flat core wins over the other pads' blend slopes: a neighbour's blend used to tilt the café (1.5 m) and Summit
+     Outfitters (1.8 m) floors, leaving them hanging over the snow */
+  for (let k = 1; k <= PADS.length; k++) { const p = PADS[k % PADS.length]; if (Math.abs(x - p.x) <= p.hx && Math.abs(z - p.z) <= p.hz) h = p.y; }
   return h;
 }
 /* height lookups: exact maths until buildTerrain bakes the grid, then a bilinear sample of the same grid the mesh uses (cheap, and matches what you see) */
@@ -4353,6 +4357,9 @@ function makeStore(R, o) {
     disp: D.map(d => { const p = tr(d.lx, d.lz); return { key: d.key, x: p[0], y: y0 + d.ly, z: RES_Z + p[1], top: d.top }; }) };
   if (o.board) { const p = tr(o.board[0], o.board[2]); st.board = { x: p[0], y: y0 + o.board[1], z: RES_Z + p[1], ry: o.ry, w: o.board[3], h: o.board[4] }; }
   STORES.push(st);
+  { /* the shop floor is a walk floor in its own right (not just 'the terrain plus a few cm'), so a dip in the snow under it never drops you through */
+    const sw = Math.abs(Math.sin(o.ry)) > 0.5, hx = (sw ? o.D : o.W) / 2 - 0.1, hz = (sw ? o.W : o.D) / 2 - 0.1, fy = y0 + FY + 0.02;
+    FLOORS.push({ x0: o.x - hx, x1: o.x + hx, z0: RES_Z + o.z - hz, z1: RES_Z + o.z + hz, y0: fy, y1: fy, ax: 0, min: fy - 1.2 }); }
   if (o.clerk) { const p = tr(o.clerk[0], o.clerk[1]); CLERKS.push({ x: p[0], z: p[1], ry: o.ry + o.clerk[2], y: gy + FY, col: o.clerk[3] }); }
   PLACE_LABELS.push({ t: o.name, x: o.x, y: gy + (o.H || 3) + (o.style === 'flat' ? 1.0 : o.rise || 1.5) + 1.7, z: RES_Z + o.z, h: 1.15 });
   (o.lights || []).filter((q, i) => i % 2 === 0).forEach(q => { const p = tr(q[0], q[1]); LIGHTS.push({ x: p[0], y: gy + FY + (o.H || 3) - 0.7, z: RES_Z + p[1], col: 0xffd9a0, r: 8, k: 'in', t: 'white', b: 1.15 }); });   /* shops: bright neutral white */
