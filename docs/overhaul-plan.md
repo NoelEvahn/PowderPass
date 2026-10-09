@@ -14,7 +14,7 @@ Spec: `docs/superpowers/specs/2026-10-08-powder-pass-overhaul-design.md`. Branch
 | D1–D6 | Hotel: entrance, elevator, lobby/breakfast/bar clutter, lamps, upstairs rail, suite | `tools/r15/d1.js` | done (M: upstairs barrier not present in v30 — rounds 10–11 already rebuilt it; re-checked by QA shots) |
 | E1–E3 | Café rebuild + Mia + in-world ordering, Pro Shop, gondola pad | `tools/r15/e2.js` | done |
 | E4 | Global architecture / prop / collision audit | `tools/r15/e4.js`, `e4z.js` | done (17 small trim-junction z-fights left: rail/post tops, under 0.2 m² each) |
-| F1–F3 | Sun/snow, sky/moon/clouds, weather states | | todo |
+| F1–F3 | Sun/snow, sky/moon/clouds, weather states | `tools/r15/f1.js` | done |
 | G1–G3 | NPC framework, nav graph, staff/guests/café customers | | todo |
 | H1–H2 | Ski school lessons, wildlife | | todo |
 | I1 | Fog, streaming, LOD, metrics | | todo |

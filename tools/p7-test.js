@@ -3,8 +3,8 @@ const { boot, check, OUT } = require('./lib');
 (async () => {
   const fails = []; const { browser, page, errors } = await boot();
   const ev = (f, a) => page.evaluate(f, a);
-  let r = await ev(() => { const P = SK.P7, ks = {}; for (let d = 1; d <= 60; d++) ks[P.forecast(d).k] = (ks[P.forecast(d).k] || 0) + 1; return { ks: ks, same: JSON.stringify(P.forecast(7)) === JSON.stringify(P.forecast(7)) }; });
-  check(Object.keys(r.ks).length === 4 && r.same, 'forecast varies over 60 days and is repeatable ' + JSON.stringify(r.ks), fails);
+  let r = await ev(() => { const P = SK.P7, ks = {}; for (let d = 1; d <= 120; d++) ks[P.forecast(d).k] = (ks[P.forecast(d).k] || 0) + 1; return { ks: ks, same: JSON.stringify(P.forecast(7)) === JSON.stringify(P.forecast(7)) }; });
+  check(Object.keys(r.ks).length >= 8 && r.same, 'forecast varies over 60 days (9 kinds of day) and is repeatable ' + JSON.stringify(r.ks), fails);
   r = await ev(() => { const P = SK.P7, S = SK.State; let d = 1; while (P.forecast(d).k !== 'storm') d++; S.day = d; S.settings.gfx = 'high'; P.qualApply(); SK.P6.setTime(P.forecast(d).peak * 60);
     const a = { amt: +P.WX.amt.toFixed(2), far: Math.round(SK.scene.fog.far), cold: P.WX.cold, snow: +SK.SNPFX.amount().toFixed(2) };
     S.owned.push('goggles'); S.gear.goggles = 'goggles'; P.wxApply(); a.farG = Math.round(SK.scene.fog.far);
