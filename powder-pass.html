@@ -1172,7 +1172,8 @@ const FONT = { 0: '111101101101111', 1: '010110010010111', 2: '111001111100111',
 /* lit (shaded) block numbers for door plaques: reads correctly from +z; push the builder round PI to read from -z */
 function hNum(b, str, x, y, z, px, col) { const n = str.length; str.split('').forEach((ch, k) => FONT[ch].split('').forEach((v, i) => { if (v === '1') b.add(bx(px * 0.95, px * 0.95, px * 0.6), col, x + (k - (n - 1) / 2) * px * 4 + (i % 3 - 1) * px, y - Math.floor(i / 3) * px, z, { noOutline: 1 }); })); }
 function hText(b, str, x, y, z, px, col) { const n = str.length; str.split('').forEach((ch, k) => FONT[ch].split('').forEach((v, i) => { if (v === '1') b.add(bx(px * 0.9, px * 0.9, px * 0.5), col, x + (k - (n - 1) / 2) * px * 4 + (i % 3 - 1) * px, y - Math.floor(i / 3) * px, z, { basic: 1 }); })); }
-const hLight = (b, x, y, z) => { b.rod([x, y + 0.45, z], [x, y, z], 0.02, C.metal); b.add(sp(0.2), 0xffe98a, x, y, z, { alpha: 0.45 }); };
+/* ceiling pendant: drop rod, a dark metal shade open at the bottom and a warm bulb inside (was a pale see-through globe that read as a grey disc) */
+const hLight = (b, x, y, z) => { b.rod([x, y + 0.45, z], [x, y + 0.1, z], 0.015, C.dark); b.add(cn(0.19, 0.17, 14), C.dark, x, y + 0.03, z, { noOutline: 1 }); b.add(sp(0.065), WARM, x, y - 0.03, z, { basic: 1, noOutline: 1 }); };
 const hStool = (b, x, z, h, col) => { b.add(cy(0.22, 0.22, 0.07, 12), col, x, WY + h, z); b.add(cy(0.04, 0.04, h, 8), C.metal, x, WY + h / 2, z);
   b.add(new THREE.TorusGeometry(0.17, 0.018, 6, 18), C.metal, x, WY + h * 0.47, z, { rx: PI / 2 }); [0, 1, 2].forEach(i => { const a = i * TAU / 3; b.rod([x, WY + h * 0.47, z], [x + Math.cos(a) * 0.17, WY + h * 0.47, z + Math.sin(a) * 0.17], 0.012, C.metal); });   /* footring the sitter's boots rest on */ };
 function hCouch(b, K, x, z, len, col, fx, fz) {
@@ -1332,7 +1333,7 @@ function hotel() {
   b.add(bx(6.0, 0.95, 0.55), C.dark, bcx, WY + 0.475, -4.55); b.add(bx(6.2, 0.06, 0.65), C.white, bcx, WY + 0.98, -4.55);
   [1.5, 1.9, 2.3].forEach((y, k) => { b.add(bx(5.4, 0.05, 0.28), TIMB, bcx, WY + y, -4.75); for (let i = 0; i < 12; i++) b.add(cy(0.06, 0.06, 0.3, 8), [C.red, C.pine, C.yellow, C.blue, C.white][(i + k) % 5], bcx - 2.45 + i * 0.445, WY + y + 0.17, -4.75); });
   hText(b, 'BAR', 4.9, WY + 2.95, -hz + 0.3, 0.13, C.yellow);
-  b.add(bx(0.9, 1.9, 0.6), C.metal, 4.85, WY + 0.95, -4.6); b.add(bx(0.7, 1.5, 0.02), 0xbfe6ff, 4.85, WY + 1.0, -4.29, { basic: 1 }); b.add(bx(0.06, 0.5, 0.04), C.dark, 5.15, WY + 1.0, -4.27);
+  /* (no tall fridge beside the back bar: from the lobby and through the windows it read as a loose grey door panel) */
   b.add(bx(6.4, 1.1, 0.9), C.dark, bcx, WY + 0.55, cz0); b.add(bx(6.4, 0.9, 0.05), TIMB, bcx, WY + 0.5, cz0 + 0.47); b.add(bx(6.6, 0.08, 1.1), C.white, bcx, WY + 1.14, cz0);
   b.add(bx(0.8, 0.45, 0.5), 0xc0c5cf, 6.0, y0 + 0.23, cz0); [-0.22, 0.22].forEach(t => { b.add(cy(0.07, 0.07, 0.15, 8), C.dark, 6.0 + t, y0 + 0.12, cz0 + 0.3); b.add(cy(0.05, 0.04, 0.07, 8), C.white, 6.0 + t, y0 + 0.04, cz0 + 0.36); }); b.rod([6.35, y0 + 0.3, cz0 + 0.25], [6.55, y0 + 0.2, cz0 + 0.4], 0.02, C.metal);
   b.add(bx(0.28, 0.5, 0.28), C.dark, 6.9, y0 + 0.25, cz0); b.add(sp(0.16), C.dark, 6.9, y0 + 0.58, cz0);
@@ -1340,7 +1341,7 @@ function hotel() {
   b.add(bx(0.9, 0.06, 0.3), C.metal, 8.5, y0 + 0.03, cz0); [-0.3, 0, 0.3].forEach((t, i) => { b.add(cy(0.03, 0.03, 0.4, 8), C.metal, 8.5 + t, y0 + 0.26, cz0); b.add(sp(0.06), [C.red, C.yellow, C.blue][i], 8.5 + t, y0 + 0.5, cz0); });
   [9.4, 9.55, 9.7, 9.85].forEach(x => b.add(cy(0.05, 0.04, 0.14, 8), GLASS, x, y0 + 0.07, cz0 + 0.2));
   b.add(bx(0.5, 0.28, 0.4), 0x222222, 10.4, y0 + 0.14, cz0); b.add(bx(0.3, 0.2, 0.03), 0x5dff8a, 10.4, y0 + 0.36, cz0 - 0.1, { rx: -0.4, basic: 1 }); b.add(cy(0.2, 0.16, 0.3, 10), C.metal, 10.9, y0 + 0.15, cz0 + 0.2);
-  [6, 7, 8, 9, 10, 11].forEach(x => hStool(b, x - 0.2, -1.7, 0.75, C.orange)); K.push({ x: bcx, z: cz0, ry: 0, hw: 3.3, hd: 0.55 }, { x: bcx, z: -4.55, ry: 0, hw: 3.1, hd: 0.3 }, { x: 4.85, z: -4.6, ry: 0, hw: 0.45, hd: 0.3 });
+  [6, 7, 8, 9, 10, 11].forEach(x => hStool(b, x - 0.2, -1.7, 0.75, C.orange)); K.push({ x: bcx, z: cz0, ry: 0, hw: 3.3, hd: 0.55 }, { x: bcx, z: -4.55, ry: 0, hw: 3.1, hd: 0.3 });
   /* lounge by the east windows, off the walking line: two sofas facing over a low table, an armchair, floor lamp, rug */
   b.add(bx(5.0, 0.014, 3.2), 0x3f5a73, 7.7, WY + 0.04, 2.75, { noOutline: 1 }); b.add(bx(4.6, 0.016, 2.8), 0x6f8fa8, 7.7, WY + 0.042, 2.75, { noOutline: 1 });
   hCouch(b, K, 7.4, 1.5, 2.6, LEATH, 0, 1); hCouch(b, K, 7.4, 4.0, 2.6, LEATH, 0, -1); hCouch(b, K, 10.3, 2.75, 1.0, FAB2, -1, 0);
@@ -1355,7 +1356,7 @@ function hotel() {
     hWainscot(b, -hx + 0.1, -4.0, -hz + T / 2, WY, 1, [[-3.4, -2.3], [-2.4, 2.4]], 1.05, wc, rl); hWainscot(b, 10.2, hx - 0.1, -hz + T / 2, WY, 1, [[11.2, 13]], 1.05, wc, rl);
     hCrown(b, -hx, hx, hz - T / 2, WY + 3.4, -1, 0xf2eee4); hCrown(b, -hx, hx, -hz + T / 2, WY + 3.4, 1, 0xf2eee4);
     hCoffer(b, -9.6, 9.6, -4.4, 4.4, WY + 3.4, 0xe9e1d3, 2.4);
-    [[-8.2, hz - 0.2, PI], [-3.2, hz - 0.2, PI], [3.2, hz - 0.2, PI], [8.2, hz - 0.2, PI], [-8.2, -hz + 0.2, 0], [8.5, -hz + 0.2, 0]].forEach(q => hSconce(b, q[0], WY + 2.1, q[1], q[2]));
+    [[-8.2, -hz + 0.2, 0], [8.5, -hz + 0.2, 0]].forEach(q => hSconce(b, q[0], WY + 2.1, q[1], q[2]));   /* only on solid wall: the street side is glass */
     /* stone fireplace on the east wall, between the windows: hearth, surround, mantel, logs, flames */
     const fx = hx - 0.45, fz = -2.6;   /* (the lounge sofas face east: the fireplace sits behind the armchair) */
     b.add(bx(0.7, 1.3, 2.2), C.stone, fx, WY + 0.65, fz); b.add(bx(0.14, 2.6, 2.0), C.stone, fx + 0.14, WY + 1.7, fz); b.add(bx(0.9, 0.12, 2.5), C.wood3, fx - 0.05, WY + 1.35, fz);
@@ -1372,7 +1373,7 @@ function hotel() {
     b.add(bx(7.0, 0.015, dz - 0.1), 0x3b3f4a, 0, WY + 0.04, zc, { noOutline: 1 }); for (let i = 0; i < 9; i++) b.add(bx(0.03, 0.017, dz - 0.3), 0x2a2e38, -2.8 + i * 0.7, WY + 0.045, zc, { noOutline: 1 });   /* rubber mat */
     [-1, 1].forEach(sd => { b.push(sd * 3.38, WY, zc, -sd * PI / 2); pSkiRack(b); b.pop(); K.push({ x: sd * 3.3, z: zc, ry: 0, hw: 0.3, hd: 0.95 });   /* a rack on each side wall */
       b.push(sd * 2.35, WY, zf - 0.3, PI); pBench(b); b.pop(); K.push({ x: sd * 2.35, z: zf - 0.3, ry: 0, hw: 0.8, hd: 0.25 });   /* benches either side of the door */
-      [0, 1].forEach(k => { const bxp = sd * (1.85 - k * 0.0) - sd * k * 0.6; b.add(bx(0.5, 0.06, 0.22), C.metal, bxp, WY + 1.25, zi + 0.14); [-0.12, 0.12].forEach(t => b.add(cy(0.03, 0.03, 0.18, 6), C.metal, bxp + t, WY + 1.36, zi + 0.18)); });   /* boot dryers on the glass wall's posts */ });
+      /* (no boot dryers bolted to the glass beside the inner door: they read as stray metal bars across the entrance) */ });
     b.add(bx(1.7, 0.32, 0.05), 0x33200f, 0, WY + 2.8, zi + 0.1); hText(b, 'SKI ROOM', 0, WY + 2.82, zi + 0.13, 0.04, C.yellow); }
   // ---- stairs (floating treads, glass balustrade) to the upper floor
   const n = 16, run = 0.375, rv = UP / n, sxc = -10.7;
@@ -1415,41 +1416,50 @@ function hotel() {
   b.push(-6.8, WY, 0.2, 0); pFloorLamp(b); b.pop(); K2.push({ x: -6.8, z: 0.2, ry: 0, hw: 0.2, hd: 0.2 });
   topiaryInto(b, -11.0, WY, 4.4, 1, 0.6);
   /* ===== EXPANSION: north wing (z -11..-5) on three levels + a second floor on the main block ===== */
-  const ZN = -11, ZC = -6.4;   /* wing outer wall, wing corridor wall */
-  /* suite furnishing, laid out in room coordinates: u from the door-side wall (x0), v from the corridor wall (zc) into the room.
-     Bathroom run on the corridor wall (double vanity, glass shower, WC on a tiled floor), lounge facing a big TV on the x0 wall
-     (sofa, low table, armchairs, fur rug, floor lamp), dining for two by the windows, chandelier, prints and plants. The entry stays clear. */
+  const ZN = -11, ZC = -6.4;
+  const dU = x0 => x0 <= -9.9 ? 0.65 : 0.3;   /* a room's door, measured from its west wall; the rooms next to the elevator keep theirs clear of its surround */   /* wing outer wall, wing corridor wall */
+  /* suite floor plan, in room coordinates: u from the door-side wall (x0), v from the corridor wall (zc) into the room, D deep, Wd wide.
+       foyer      u 0 .. 1.45, inside the entrance door
+       bathroom   u 1.45 .. 4.05 x v 0 .. 2.3: walled, a doorway (door ajar) onto the lounge; double vanity, corner shower, WC on tiles
+       lounge     u 1.45 .. uB: sofa facing a TV on the partition, coffee table, rug, floor lamp, dining for two by the windows
+       bedroom    u uB .. Wd behind a partition wall with a doorway by the windows (bed, nightstands, wardrobe come from room())
+     Every piece of furniture gets a collision box; the walls get theirs from wall(). */
   const suiteFit = (KK, x0, x1, zc, ze, yy, sg) => {
     const D = Math.abs(ze - zc), Wd = x1 - x0, X = u => x0 + u, Z = v => zc + sg * v, rw = sg > 0 ? 0 : PI, put = (u, v, hw, hd) => KK.push({ x: X(u), z: Z(v), ry: 0, hw: hw, hd: hd });
-    /* bathroom run */
-    b.add(bx(4.3, 0.016, 1.45), 0xe9edf2, X(3.95), yy + 0.05, Z(0.72), { noOutline: 1 }); for (let i = 0; i < 7; i++) b.add(bx(0.02, 0.018, 1.45), 0xc4ccd8, X(1.95 + i * 0.66), yy + 0.051, Z(0.72), { noOutline: 1 });
-    b.push(X(2.7), yy, Z(0.3), rw); b.add(bx(1.6, 0.78, 0.55), 0x33200f, 0, 0.39, 0); b.add(bx(1.66, 0.06, 0.6), 0xf2f0ea, 0, 0.81, 0);
+    const bw0 = 1.45, bw1 = 4.05, bd = 2.3, uB = Wd - 3.6, WT = 0.12, ha = 1.15;
+    /* bathroom: west wall, front wall with the doorway, east wall; tiled floor */
+    wall(b, KK, X(bw0), Z(bd / 2), PI / 2, bd, H2, WT, CONC, []); wall(b, KK, X(bw1), Z(bd / 2), PI / 2, bd, H2, WT, CONC, []);
+    wall(b, KK, X((bw0 + bw1) / 2), Z(bd), 0, bw1 - bw0 + WT, H2, WT, CONC, [[-(bw1 - bw0) / 2 + 0.25, -(bw1 - bw0) / 2 + 1.05, 0, 2.1]]);
+    { const hx = X(bw0 + 0.25), dvx = Math.cos(ha), dvz = sg * Math.sin(ha); b.add(bx(0.8, 2.05, 0.045), 0x6b4226, hx + dvx * 0.4, yy + 1.04, Z(bd) + dvz * 0.4, { ry: -sg * ha }); b.add(bx(0.06, 0.03, 0.12), C.metal, hx + dvx * 0.72, yy + 1.0, Z(bd) + dvz * 0.72, { ry: -sg * ha });   /* door ajar, swung out into the lounge */
+      put(bw0 + 0.25 + 0.4 * Math.cos(ha), bd + 0.4 * Math.sin(ha), 0.1, 0.1); }
+    b.add(bx(bw1 - bw0 - WT, 0.016, bd - WT), 0xe9edf2, X((bw0 + bw1) / 2), yy + 0.05, Z((bd - WT / 2) / 2), { noOutline: 1 }); for (let i = 1; i < 4; i++) b.add(bx(0.02, 0.018, bd - WT), 0xc4ccd8, X(bw0 + i * 0.65), yy + 0.051, Z((bd - WT / 2) / 2), { noOutline: 1 });
+    /* double vanity on the corridor wall, mirror and sconces over it */
+    b.push(X(2.75), yy, Z(0.3), rw); b.add(bx(1.6, 0.78, 0.55), 0x33200f, 0, 0.39, 0); b.add(bx(1.66, 0.06, 0.6), 0xf2f0ea, 0, 0.81, 0);
     [-0.4, 0.4].forEach(x => { b.add(cy(0.17, 0.14, 0.08, 14), C.white, x, 0.87, 0.04); b.rod([x, 0.84, -0.22], [x, 1.02, -0.22], 0.015, C.metal); b.rod([x, 1.02, -0.22], [x, 1.0, -0.1], 0.013, C.metal);
       b.add(bx(0.06, 0.2, 0.05), C.metal, x, 1.95, -0.25); b.add(sp(0.06), WARM, x, 2.0, -0.2, { basic: 1 }); });
-    b.add(bx(1.5, 0.95, 0.03), 0xcfe3f2, 0, 1.45, -0.27); b.add(bx(1.58, 1.03, 0.02), 0xd4a73a, 0, 1.45, -0.285); b.add(bx(0.3, 0.1, 0.18), C.white, 0.62, 0.88, 0.1); b.pop(); put(2.7, 0.3, 0.82, 0.32);
-    b.push(X(4.4), yy, Z(0.62), rw); pShower(b); b.add(bx(0.9, 0.04, 0.04), C.metal, 0, 2.02, 0.45); b.add(bx(0.2, 0.3, 0.02), 0xd9dde4, -0.42, 1.2, -0.43); b.pop(); put(4.4, 0.62, 0.48, 0.48);
-    b.push(X(5.55), yy, Z(0.38), rw); pToilet(b); b.pop(); put(5.55, 0.35, 0.22, 0.3);
-    b.add(bx(0.04, 2.0, 1.1), GLASS, X(5.95), yy + 1.0, Z(0.6));   /* frosted screen between WC and bedroom */
-    /* lounge */
-    const vt = Math.max(2.5, D * 0.55), deep = D > 6;
-    b.push(X(0.27), yy, Z(vt), PI / 2); pTVCabinet(b, 1.9); b.pop(); put(0.27, vt, 0.25, 0.95); hTV(b, X(0.1), yy + 1.65, Z(vt), 1, 0, 1.7);
-    b.add(bx(3.6, 0.014, 3.2), 0xe9e1d3, X(2.3), yy + 0.05, Z(vt), { noOutline: 1 }); b.push(X(2.0), yy + 0.04, Z(vt), 0); pFurRug(b, 0.9); b.pop();
-    b.push(X(3.15), yy, Z(vt), -PI / 2); pCouch(b, 2.4, 0x3f4a63); b.pop(); put(3.15, vt, 0.45, 1.2);
-    b.add(bx(1.2, 0.06, 0.6), 0x33200f, X(1.95), yy + 0.42, Z(vt)); [-0.5, 0.5].forEach(t => [-0.22, 0.22].forEach(w2 => b.add(bx(0.05, 0.39, 0.05), C.metal, X(1.95 + w2), yy + 0.2, Z(vt + t))));
-    b.add(cy(0.12, 0.09, 0.14, 12), 0xd4a73a, X(1.95), yy + 0.52, Z(vt + 0.25)); [0, 1, 2].forEach(k => b.add(sp(0.05), [C.red, C.white, 0xff5fa2][k], X(1.92 + k * 0.03), yy + 0.63, Z(vt + 0.22 + k * 0.03), { noOutline: 1 })); put(1.95, vt, 0.3, 0.6);
-    b.push(X(3.4), yy, Z(vt + 1.55), 0); pFloorLamp(b); b.pop();
-    if (deep) { [-1, 1].forEach(e => { const v = vt + e * 1.65; b.push(X(1.95), yy, Z(v), e * sg > 0 ? PI : 0); pArm(b, LEATH); b.pop(); put(1.95, v, 0.48, 0.43); }); }
+    b.add(bx(1.5, 0.95, 0.03), 0xcfe3f2, 0, 1.45, -0.27); b.add(bx(1.58, 1.03, 0.02), 0xd4a73a, 0, 1.45, -0.285); b.pop(); put(2.75, 0.3, 0.82, 0.32);
+    b.push(X(3.55), yy, Z(1.75), rw + PI); pShower(b); b.pop(); put(3.55, 1.75, 0.47, 0.47);
+    b.push(X(1.86), yy, Z(1.45), PI / 2); pToilet(b); b.pop(); put(1.82, 1.45, 0.3, 0.22);
+    hArt(b, X(3.45), yy + 1.6, Z(bd + 0.07), rw, 0.8, 0.6, 1);   /* print on the bathroom wall, lounge side */
+    /* partition between lounge and bedroom: full height, doorway by the windows */
+    { const op = sg > 0 ? [0.25 - D / 2, 1.65 - D / 2] : [D / 2 - 1.65, D / 2 - 0.25]; wall(b, KK, X(uB), Z(D / 2), PI / 2, D, H2, WT, CONC, [[op[0], op[1], 0, 2.2]]); }
+    /* lounge: TV on the partition, sofa facing it, coffee table, rug, lamp */
+    const vt = Math.min(D - 2.2, Math.max(1.4, D * 0.42)), us = uB - 2.5;
+    b.push(X(uB - 0.3), yy, Z(vt), -PI / 2); pTVCabinet(b, 1.8); b.pop(); put(uB - 0.3, vt, 0.25, 0.9); hTV(b, X(uB - 0.09), yy + 1.6, Z(vt), -1, 0, 1.5);
+    b.add(bx(2.8, 0.014, 2.4), 0xe9e1d3, X(us + 1.25), yy + 0.05, Z(vt), { noOutline: 1 });
+    b.push(X(us), yy, Z(vt), PI / 2); pCouch(b, 2.2, 0x3f4a63); b.pop(); put(us, vt, 0.45, 1.1);
+    b.add(bx(0.55, 0.06, 1.0), 0x33200f, X(us + 1.2), yy + 0.42, Z(vt)); [-0.22, 0.22].forEach(t => [-0.42, 0.42].forEach(w2 => b.add(bx(0.05, 0.39, 0.05), C.metal, X(us + 1.2 + t), yy + 0.2, Z(vt + w2)))); put(us + 1.2, vt, 0.3, 0.52);
+    b.add(cy(0.12, 0.09, 0.14, 12), 0xd4a73a, X(us + 1.2), yy + 0.52, Z(vt + 0.25)); [0, 1, 2].forEach(k => b.add(sp(0.05), [C.red, C.white, 0xff5fa2][k], X(us + 1.17 + k * 0.03), yy + 0.63, Z(vt + 0.22 + k * 0.03), { noOutline: 1 }));
+    b.push(X(us), yy, Z(Math.max(0.5, vt - 1.45)), 0); pFloorLamp(b); b.pop(); put(us, Math.max(0.5, vt - 1.45), 0.2, 0.2);
+    if (D > 6) { b.push(X(us + 1.2), yy, Z(vt + 1.75), sg > 0 ? PI : 0); pArm(b, LEATH); b.pop(); put(us + 1.2, vt + 1.75, 0.48, 0.43); }
     /* dining for two by the windows */
-    { const u = 5.0, v = D - 1.05; b.add(cy(0.45, 0.45, 0.05, 20), 0x33200f, X(u), yy + 0.75, Z(v)); b.add(cy(0.06, 0.08, 0.72, 10), C.metal, X(u), yy + 0.37, Z(v)); b.add(cy(0.25, 0.3, 0.03, 14), C.metal, X(u), yy + 0.02, Z(v));
+    { const u = 2.9, v = D - 1.0; b.add(cy(0.45, 0.45, 0.05, 20), 0x33200f, X(u), yy + 0.75, Z(v)); b.add(cy(0.06, 0.08, 0.72, 10), C.metal, X(u), yy + 0.37, Z(v)); b.add(cy(0.25, 0.3, 0.03, 14), C.metal, X(u), yy + 0.02, Z(v));
       [-0.2, 0.2].forEach(t => { b.add(cy(0.11, 0.11, 0.015, 14), C.white, X(u + t), yy + 0.785, Z(v)); b.add(cy(0.03, 0.02, 0.1, 8), GLASS, X(u + t), yy + 0.83, Z(v + 0.15)); });
       b.add(cy(0.02, 0.025, 0.2, 8), 0xfff1c4, X(u), yy + 0.87, Z(v), { basic: 1 }); put(u, v, 0.45, 0.45);
       [-1, 1].forEach(e => { b.push(X(u + e * 0.75), yy, Z(v), -e * PI / 2); pChair(b, 0x6b4226); b.pop(); put(u + e * 0.75, v, 0.25, 0.25); }); }
-    /* bed bench, plants, prints, chandelier */
+    /* bedroom: bench at the foot of the bed, a print on the partition, a plant by the window */
     b.push(X(Wd - 2.65), yy, Z(2.55), PI / 2); b.add(bx(1.5, 0.42, 0.45), 0x6e3f52, 0, 0.21, 0); b.add(bx(1.5, 0.08, 0.45), 0x8a5068, 0, 0.45, 0); b.pop(); put(Wd - 2.65, 2.55, 0.25, 0.75);
-    hPlant(b, KK, X(0.45), yy, Z(D - 1.25)); if (deep) hPlant(b, KK, X(Wd - 0.45), yy, Z(D - 0.45));
-    hArt(b, X(0.06), yy + 1.6, Z(vt - 1.75), PI / 2, 0.9, 0.7, 2); if (deep) hArt(b, X(0.06), yy + 1.6, Z(vt + 1.9), PI / 2, 0.9, 0.7, 1);
-    { const cx2 = X(2.6), cz2 = Z(vt), cyc = yy + 2.35; b.rod([cx2, yy + 2.95, cz2], [cx2, cyc, cz2], 0.015, 0xd4a73a); b.add(cy(0.42, 0.42, 0.04, 20), 0xd4a73a, cx2, cyc, cz2);
-      for (let i = 0; i < 8; i++) { const a = i / 8 * TAU; b.add(sp(0.06), 0xfff1c4, cx2 + Math.cos(a) * 0.42, cyc + 0.08, cz2 + Math.sin(a) * 0.42, { basic: 1 }); b.add(sp(0.035), 0xcfe3f2, cx2 + Math.cos(a + 0.4) * 0.3, cyc - 0.12, cz2 + Math.sin(a + 0.4) * 0.3, { noOutline: 1 }); } }
+    hArt(b, X(uB + 0.07), yy + 1.6, Z(1.4), PI / 2, 0.9, 0.7, 2); hPlant(b, KK, X(Wd - 1.6), yy, Z(D - 0.45)); hPlant(b, KK, X(bw1 + 0.45), yy, Z(0.45));
   };
   const room = (KK, no, type, x0, x1, zc, ze, Y) => {   /* furnished room between x0..x1; corridor wall at zc, outside wall at ze; door near x0 */
     const sg = Math.sign(ze - zc), zm = (zc + ze) / 2, suite = type === 'suite', yy = Y;
@@ -1463,8 +1473,8 @@ function hotel() {
       b.add(bx(1.6, 0.014, 1.1), 0xe9e1d3, x1 - 2.65, yy + 0.047, zc + sg * 2.55, { noOutline: 1 }); }   /* soft rug at the bedside */
     if (!suite) { hCouch(b, KK, x0 + 2.55, zm, 0.95, FAB2, -1, 0); b.push(x0 + 2.6, yy, zc + sg * 0.55, 0); pFloorLamp(b); b.pop(); KK.push({ x: x0 + 2.6, z: zc + sg * 0.55, ry: 0, hw: 0.2, hd: 0.2 }); }   /* armchair facing the TV, reading lamp */
     if (suite) suiteFit(KK, x0, x1, zc, ze, yy, sg);
-    hDoorFrame(b, x0 + 0.3, Y, zc - sg * 0.1, -sg);
-    HX.rooms.push({ no: no, type: type, floor: Y > Y2 + 1 ? 2 : 1, hx: x0 + 0.3, z: zc, y: Y, w: 0.8, sg: sg, cx: (x0 + x1) / 2, cz: zm });
+    hDoorFrame(b, x0 + dU(x0), Y, zc - sg * 0.1, -sg);
+    HX.rooms.push({ no: no, type: type, floor: Y > Y2 + 1 ? 2 : 1, hx: x0 + dU(x0), z: zc, y: Y, w: 0.8, sg: sg, cx: (x0 + x1) / 2, cz: zm });
     HX.beds.push({ no: no, x: x1 - 1.15, z: zc + sg * 2.55, y: Y }); HX.L.push([(x0 + x1) / 2, Y + 2.6, zm, 0, 'warm', suite ? 1.0 : 0.85]);
     hLight(b, (x0 + x1) / 2, Y + 2.6, zm);
   };
@@ -1489,31 +1499,31 @@ function hotel() {
     b.add(cy(0.05, 0.06, 0.18, 8), 0x9fd6ff, p[0], WY + 0.9, p[1], { alpha: 0.6 }); [0, 1, 2].forEach(k2 => b.add(sp(0.05), [C.red, C.yellow, 0xff5fa2][k2], p[0] + (k2 - 1) * 0.05, WY + 1.02 + (k2 % 2) * 0.03, p[1], { noOutline: 1 }));
     b.add(cy(0.008, 0.008, 0.85, 4), C.dark, p[0], WY + 2.97, p[1]); b.add(cn(0.3, 0.26, 12), 0xffb02e, p[0], WY + 2.45, p[1]); b.add(sp(0.08), 0xfff1c4, p[0], WY + 2.32, p[1], { basic: 1 }); });
   { const zb = ZN + 0.12;   /* signs and menu on the north wall, art on the side walls, plants in the corners, runner from the archway */
-    b.add(bx(3.4, 0.6, 0.06), 0x33200f, 1, WY + 2.42, zb); hText(b, 'BREAKFAST', 1, WY + 2.55, zb + 0.04, 0.06, 0xffd21f);
-    [[-2.1, 'HOT'], [0.5, 'BREAD'], [1.6, 'FRUIT'], [3.4, 'COFFEE']].forEach(q => { b.add(bx(0.62, 0.18, 0.03), C.white, q[0], WY + 1.75, zb + 0.02); hText(b, q[1], q[0], WY + 1.8, zb + 0.04, 0.022, 0x33200f); });
+    /* (no BREAKFAST board on the glass behind the buffet: the arch from the lobby carries the name) */
+    [[-1.6, 'HOT'], [0.47, 'BREAD'], [1.6, 'FRUIT'], [3.9, 'COFFEE']].forEach(q => { const lz = ZN + 0.75 + 0.42; b.add(bx(0.62, 0.18, 0.03), C.white, q[0], WY + 1.24, lz); hText(b, q[1], q[0], WY + 1.29, lz + 0.02, 0.022, 0x33200f); });   /* station labels hang from the sneeze-guard rail over each station (they were stuck on the window glass) */
     b.add(bx(1.5, 1.0, 0.05), 0x2b3a2f, 7.3, WY + 1.7, zb); b.add(bx(1.62, 1.12, 0.03), TIMB, 7.3, WY + 1.7, zb - 0.01); hText(b, 'MENU', 7.3, WY + 2.08, zb + 0.03, 0.03, C.white);
     for (let i = 0; i < 4; i++) b.add(bx(1.0 - (i % 2) * 0.3, 0.025, 0.02), 0xe8eef6, 7.2, WY + 1.82 - i * 0.16, zb + 0.03, { noOutline: 1 });
     [[11.3, -10.4], [11.3, -5.7], [-8.6, -10.4]].forEach(q => { b.add(cy(0.28, 0.22, 0.5, 12), 0xb4603e, q[0], WY + 0.25, q[1]); b.add(sp(0.42, 1, 1.5, 1), C.grass2, q[0], WY + 0.95, q[1]); b.add(sp(0.3, 1, 1.2, 1), C.grass, q[0] + 0.1, WY + 1.35, q[1] + 0.05); K.push({ x: q[0], z: q[1], ry: 0, hw: 0.3, hd: 0.3 }); });
     /* (no art over the side windows) */
-    b.add(bx(3.0, 0.014, 4.4), RUGC, 0, WY + 0.235, -7.5, { noOutline: 1 }); }
+    /* (the grey rug that hovered 20 cm over the tiles at the breakfast entrance is gone) */ }
   { /* breakfast hall finish: green-painted wainscot, crown, timber ceiling beams, wall sconces, a patterned runner under the tables */
     const wc = 0x3f6a4a, rl = 0xf2eee4, yb = FY;
     hWainscot(b, -hx + 0.1, hx - 0.1, ZN + T / 2, yb, 1, [[-6.5, -2.5], [-1.5, 2.5], [3.5, 7.5], [-12, -10]], 1.0, wc, rl);   /* north wall (buffet side) between the windows */
     hWainscot(b, ZN + 0.1, -hz - 0.1, -hx + T / 2 + 0.08, yb, 1, [[-8.5, -6.5]], 1.0, wc, rl);
     hCrown(b, -hx + 0.1, hx - 0.1, ZN + T / 2, FY + 3.4, 1, rl);
     for (let x = -10; x <= 10.1; x += 3.4) b.add(bx(0.2, 0.2, -ZN - hz - 0.4), 0x6b4226, x, FY + 3.3, (ZN - hz) / 2, { noOutline: 1 });
-    [[-9, ZN + 0.25], [-4.5, ZN + 0.25], [4.5, ZN + 0.25], [9.5, ZN + 0.25]].forEach(q => hSconce(b, q[0], FY + 2.2, q[1], 0));
-    [-1, 1].forEach(sd => b.add(bx(0.5, 0.012, 5.2), [0xc8553d, 0x2f7bff][sd > 0 ? 0 : 1], 3.2 * sd, FY + 0.236, -7.8, { noOutline: 1 })); }
+    [[-9.75, ZN + 0.25], [-3.0, ZN + 0.25], [8.5, ZN + 0.25], [11.3, ZN + 0.25]].forEach(q => hSconce(b, q[0], FY + 2.2, q[1], 0));   /* on the piers between the windows (two hung on glass, one on the door) */
+    /* (the red / blue runner strips floated 20 cm over the floor: removed, the tile floor runs through) */ }
   [[-6, -6.0], [-1, -6.0], [4, -6.0], [9, -6.0], [-1.5, -9.9], [6.8, -9.9]].forEach(p => HX.L.push([p[0], WY + 2.95, p[1], 0, 'warm', 1.15]));   /* breakfast hall: warm pendants */
   [[-6, -6.0], [4, -6.0]].forEach(p => hLight(b, p[0], WY + 2.95, p[1]));
   /* -- elevator: a shaft at the wing's west end on every floor, doors to the south -- */
-  const EX = -11, EZ = -7.5;
+  const EX = -10.93, EZ = -7.5;   /* the door on the shaft's (and the lift lobby's) centre line: equal piers both sides */ HX.ex = EX;
   [FY, Y2, Y3].forEach((Y, f) => { const KK = [K, K2, K4][f], hh = f ? H2 : H;
     b.add(bx(0.18, hh, 2.2), CONC, -11.95 + 0.09, Y + hh / 2, EZ); b.add(bx(0.18, hh, 2.2), CONC, -10.0, Y + hh / 2, EZ); b.add(bx(2.1, hh, 0.18), CONC, EX, Y + hh / 2, EZ - 1.05);
-    b.add(bx(0.35, hh, 0.16), CONC, -11.775, Y + hh / 2, -6.45); b.add(bx(0.4, hh, 0.16), CONC, -10.2, Y + hh / 2, -6.45); b.add(bx(1.95, hh - 2.25, 0.16), CONC, EX - 0.0, Y + 2.25 + (hh - 2.25) / 2, -6.45);
+    b.add(bx(0.42, hh, 0.16), CONC, EX - 0.81, Y + hh / 2, -6.45); b.add(bx(0.42, hh, 0.16), CONC, EX + 0.81, Y + hh / 2, -6.45); b.add(bx(2.04, hh - 2.25, 0.16), CONC, EX, Y + 2.25 + (hh - 2.25) / 2, -6.45);
     b.add(bx(1.32, 0.06, 0.18), C.metal, EX, Y + 2.24, -6.42); [-1, 1].forEach(sd => b.add(bx(0.05, 2.22, 0.18), C.metal, EX + sd * 0.63, Y + 1.11, -6.42)); b.add(bx(1.5, 0.3, 0.08), CHAR, EX, Y + 2.48, -6.35);
     b.add(bx(0.3, 0.1, 0.02), 0xff8a1f, EX, Y + 2.42, -6.35, { basic: 1, noOutline: 1 }); b.add(bx(0.12, 0.22, 0.04), CHAR, EX + 0.8, Y + 1.2, -6.36); b.add(sp(0.03), 0x5dff8a, EX + 0.8, Y + 1.25, -6.33, { basic: 1 });
-    KK.push({ x: -11.86, z: EZ, ry: 0, hw: 0.09, hd: 1.1 }, { x: -10.0, z: EZ, ry: 0, hw: 0.09, hd: 1.1 }, { x: EX, z: EZ - 1.05, ry: 0, hw: 1.0, hd: 0.09 }, { x: -11.775, z: -6.45, ry: 0, hw: 0.175, hd: 0.08 }, { x: -10.2, z: -6.45, ry: 0, hw: 0.2, hd: 0.08 }); });
+    KK.push({ x: -11.86, z: EZ, ry: 0, hw: 0.09, hd: 1.1 }, { x: -10.0, z: EZ, ry: 0, hw: 0.09, hd: 1.1 }, { x: EX, z: EZ - 1.05, ry: 0, hw: 1.0, hd: 0.09 }, { x: EX - 0.81, z: -6.45, ry: 0, hw: 0.21, hd: 0.08 }, { x: EX + 0.81, z: -6.45, ry: 0, hw: 0.21, hd: 0.08 }); });
   /* ground floor: the shaft and the lift lobby in front of it are walled off from the breakfast hall (you reach them from the lobby) */
   WY = FY; wall(b, K, -9.85, (ZN - hz) / 2, PI / 2, -ZN - hz, H, 0.2, CONC, []); b.add(bx(2.1, 0.03, 1.4), RUGC, -10.95, FY + 0.04, -5.75, { noOutline: 1 });
   HX.shaft = { x0: -11.77, x1: -10.09, z0: -8.46, z1: -6.52, door: -6.42 };
@@ -1523,13 +1533,13 @@ function hotel() {
     WY = Y; const hh = H2;
     wall(b, KK, 0, ZN, PI, W, hh, T, CONC, list.map(q => [-(q[3] - 0.9), -(q[2] + 0.9), 0.8, 2.4, 1]).concat([[10.6, 11.6, 0.8, 2.4, 1]]).sort((a2, b2) => a2[0] - b2[0]));
     wall(b, KK, -hx, (ZN - hz) / 2, PI / 2, -ZN - hz, hh, T, CONC, []); wall(b, KK, hx, (ZN - hz) / 2, PI / 2, -ZN - hz, hh, T, CONC, [[-1.6, -0.4, 0.8, 2.4, 1]]);
-    wall(b, KK, 1, ZC, 0, 22, hh, 0.2, CONC, list.map(q => [q[2] + 0.3 - 1, q[2] + 1.1 - 1, 0, 2.1]));
+    wall(b, KK, 1, ZC, 0, 22, hh, 0.2, CONC, list.map(q => [q[2] + dU(q[2]) - 1, q[2] + dU(q[2]) + 0.8 - 1, 0, 2.1]));
     list.forEach(q => wall(b, KK, q[2], (ZN + ZC) / 2, PI / 2, ZC - ZN, hh, 0.2, CONC, []));
     b.add(bx(2, hh, 0.2), CONC, -11, Y + hh / 2, -9.8); KK.push({ x: -11, z: -9.8, ry: 0, hw: 1, hd: 0.1 });
     b.add(bx(21.9, 0.03, ZC - ZN), LIN, 0.95, Y + 0.015, (ZN + ZC) / 2); b.add(bx(1.9, 0.03, -8.55 - ZN), LIN, -10.95, Y + 0.015, (ZN - 8.55) / 2); { const zr = -3.7, zm = (ZC + zr) / 2;   /* one wide runner over the whole hallway (wing corridor + room corridor) */
       b.add(bx(W - 0.2, 0.03, zr - ZC), 0x3b4a6b, 0, Y + 0.02, zm); b.add(bx(W - 0.8, 0.032, zr - ZC - 0.5), 0x5a6d94, 0, Y + 0.022, zm, { noOutline: 1 }); for (let x = -10.5; x < 11.6; x += 1.5) b.add(bx(0.6, 0.034, 0.6), 0xc9a14a, x, Y + 0.024, zm, { ry: PI / 4, noOutline: 1 });
       list.forEach((q, i) => hArt(b, q[2] + 3.2, Y + 1.55, ZC + 0.13, 0, 1.2, 0.85, i)); if (list.length < 4) hArt(b, 9.6, Y + 1.55, ZC + 0.13, 0, 1.2, 0.85, 2);   /* prints between the wing doors */
-      hPlant(b, KK, 11.45, Y, -4.2); hRails(b, -10, 12, ZC + 0.1, Y, 1, list.map(q => [q[2] + 0.2, q[2] + 1.2])); }
+      hPlant(b, KK, 11.45, Y, -4.2); hRails(b, -10, 12, ZC + 0.1, Y, 1, list.map(q => [q[2] + dU(q[2]) - 0.1, q[2] + dU(q[2]) + 0.9])); }
     list.forEach(q => room(KK, q[0], q[1], q[2], q[3], ZC, ZN, Y)); [-6, 0, 6].forEach(x => { hLight(b, x, Y + 2.6, -5.7); HX.L.push([x, Y + 2.6, -5.7, 0, 'soft', 0.9]); });
   };
   /* slabs between the wing's floors, and the main block's new floor 2 slab */
@@ -1613,11 +1623,13 @@ function putHotel(R, g, x, z) {
   g.userData.F.forEach(f => FLOORS.push({ x0: x + f.x0, x1: x + f.x1, z0: RES_Z + z + f.z0, z1: RES_Z + z + f.z1, y0: f.y0, y1: f.y1, ax: f.ax, min: f.min }));
   (g.userData.doors || []).forEach(d => {
     const wx = x + d.cx, wz = RES_Z + z + d.cz, gy = g.position.y;
+    /* closed glass is solid: a box over the opening that clears once the leaves are more than half open */
+    const sol = { x: wx, z: wz, a: 0, hw: d.ax === 'x' ? 1.3 : 0.07, hd: d.ax === 'x' ? 0.07 : 1.3, top: gy + 2.4 }; SOLIDS.push(sol); d.sol = sol;
     TICK.push(dt => {
       const P = globalThis.SK && SK.P, near = !!(P && P.on && P.y < gy + 2 && Math.hypot(P.x - wx, P.z - wz) < 3.4)
         || !!(globalThis.SK && SK.DOORPPL && SK.DOORPPL.some(o => o.visible && o.position.y < gy + 2 && Math.hypot(o.position.x - wx, o.position.z - wz) < 2.2));   /* hotel guests walking through */
       d.o = Math.max(0, Math.min(1, d.o + (near ? 1 : -1) * dt * 1.8)); const e = d.o * d.o * (3 - 2 * d.o);
-      d.leaves.forEach(l => { const v = l.t * e * d.slide; if (d.ax === 'x') l.m.position.x = l.px + v; else l.m.position.z = l.pz + v; });
+      d.leaves.forEach(l => { const v = l.t * e * d.slide; if (d.ax === 'x') l.m.position.x = l.px + v; else l.m.position.z = l.pz + v; }); sol.off = e > 0.5;
     });
   });
 }
@@ -2334,7 +2346,7 @@ function person(o) {
       mouth.scale.set(mouth.scale.x * XS.wide, XS.smile, 1);
       if (XS.mo > mo) { mopen.scale.set(Math.max(0.001, XS.mo * 1.2), Math.max(0.001, XS.mo * 1.5), Math.max(0.001, XS.mo)); mopen.visible = XS.mo > 0.02; }
       cheeks.scale.setScalar(Math.max(0.001, XS.blush));
-      bAcc += dt * (0.26 + 0.8 * act); if (bAcc >= 1) { bAcc = Math.random() * 0.3; mouth.getWorldPosition(vM); head.getWorldQuaternion(qB); vN.set(0, 0.05, 1).applyQuaternion(qB); const bs = 0.05 + 0.025 * act, n = act > 0.5 ? 2 : 1; for (let q = 0; q < n; q++) { const d0 = 0.2 + 0.1 * q; puff(vM.x + vN.x * d0, vM.y + 0.04 + 0.03 * q, vM.z + vN.z * d0, vN.x * 0.35 + (Math.random() - 0.5) * 0.15, 0.3 + 0.1 * q, vN.z * 0.35 + (Math.random() - 0.5) * 0.15, bs * (0.8 + 0.3 * q), 1.1, 1.5, 'breath'); } }
+      bAcc += dt * (0.26 + 0.8 * act); if (bAcc >= 1 && g.userData.fp) bAcc = 0;   /* your own breath would puff right over the first-person camera */ if (bAcc >= 1) { bAcc = Math.random() * 0.3; mouth.getWorldPosition(vM); head.getWorldQuaternion(qB); vN.set(0, 0.05, 1).applyQuaternion(qB); const bs = 0.05 + 0.025 * act, n = act > 0.5 ? 2 : 1; for (let q = 0; q < n; q++) { const d0 = 0.2 + 0.1 * q; puff(vM.x + vN.x * d0, vM.y + 0.04 + 0.03 * q, vM.z + vN.z * d0, vN.x * 0.35 + (Math.random() - 0.5) * 0.15, 0.3 + 0.1 * q, vN.z * 0.35 + (Math.random() - 0.5) * 0.15, bs * (0.8 + 0.3 * q), 1.1, 1.5, 'breath'); } }
       if (skis) {   /* ski spray: powder plume + clumps thrown off the downhill edge, carried partly by the skier's own speed */
         g.getWorldPosition(vM); if (!g.userData.pv) g.userData.pv = vM.clone(); const pv = g.userData.pv, gv = g.userData.gv || (g.userData.gv = V(0, 0, 0));
         if (dt > 0) { vN.copy(vM).sub(pv).divideScalar(dt); if (vN.lengthSq() < 400) gv.lerp(vN, Math.min(1, dt * 6)); } pv.copy(vM);
@@ -6815,7 +6827,7 @@ SK.VM = VM;
 const ELEV = (() => {
   const H = SK.HOTEL, X = H && H.HX, sh = X && X.shaft; if (!sh) return null;
   const SLAB = X.floors.map((v, f) => H.wy + (f ? v + 0.23 : v)), FL = SLAB.slice(), OPEN_H = 2.25;   /* the cab stops level with each slab: no step in or out */   /* walk heights vs the slab the doorway is built on */
-  const cxl = (sh.x0 + sh.x1) / 2, czl = (sh.z0 + sh.z1) / 2, w = sh.x1 - sh.x0, d = sh.z1 - sh.z0, EXl = -11.0, DOOR_T = 0.42, HOLD = 3.2, ARRIVE = 0.3;
+  const cxl = (sh.x0 + sh.x1) / 2, czl = (sh.z0 + sh.z1) / 2, w = sh.x1 - sh.x0, d = sh.z1 - sh.z0, EXl = X.ex !== undefined ? X.ex : -11.0, DOOR_T = 0.42, HOLD = 3.2, ARRIVE = 0.3;
   const M = c => new THREE.MeshLambertMaterial({ color: c }), box = (gx, gy, gz, m) => new THREE.Mesh(new THREE.BoxGeometry(gx, gy, gz), m);
   const ez = x => x * x * (3 - 2 * x);
   const labelTex = (txt, fg, bg) => { const c = document.createElement('canvas'); c.width = c.height = 64; const x = c.getContext('2d'); x.fillStyle = bg; x.beginPath(); x.arc(32, 32, 30, 0, 7); x.fill(); x.lineWidth = 5; x.strokeStyle = '#14161c'; x.stroke();

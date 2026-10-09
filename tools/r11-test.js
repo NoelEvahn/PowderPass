@@ -12,7 +12,7 @@ const { boot, check } = require('./lib');
   let r = await ev(() => { const H = SK.HOTEL, sh = H.HX.shaft, E = SK.ELEV; E.go(0); SK.play(40); const xs = [];
     SK.scene.traverse(o => { if (o.isMesh && o.geometry && o.geometry.parameters && Math.abs(o.geometry.parameters.width - 0.33) < 1e-6 && Math.abs(o.position.y - (H.gy + H.HX.floors[0])) < 2) xs.push(+(o.position.x - H.x).toFixed(2)); });
     return { door: +E.S.door.toFixed(2), min: Math.min.apply(null, xs), max: Math.max.apply(null, xs), n: xs.length, x0: sh.x0 }; });
-  check(r.door === 1 && r.n >= 4 && r.min - 0.165 >= -11.97 && r.max + 0.165 <= -9.99, 'open elevator door leaves stay inside the wall pockets (' + JSON.stringify(r) + ')', fails);
+  check(r.door === 1 && r.n >= 4 && r.min - 0.165 >= -11.97 && r.max + 0.165 <= -9.89 && Math.abs((r.min + r.max) / 2 - (-10.93)) < 0.02,   /* shaft walls' outer faces -11.95 / -9.91; leaves symmetric about the centred door */ 'open elevator door leaves stay inside the wall pockets (' + JSON.stringify(r) + ')', fails);
   r = await ev(() => { let n = 0; SK.ELEV.cab.traverse(o => { if (o.isMesh && o.geometry.parameters && Math.abs(o.geometry.parameters.width - 0.27) < 1e-6) n++; }); return n; });
   check(r === 4, 'the cab has its own inner door leaves (' + r + ')', fails);
   /* lobby -> under the high end of flight one -> elevator lobby door */

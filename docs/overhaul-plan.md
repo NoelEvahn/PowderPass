@@ -11,7 +11,7 @@ Spec: `docs/superpowers/specs/2026-10-08-powder-pass-overhaul-design.md`. Branch
 | B1 | 25 km/h tuck with hysteresis + physics gate | `tools/r15/b1.js` | done |
 | B2 | Skate push-off pose + pole plants | `tools/r15/b1.js` | done |
 | C1 | First person = real avatar, head hidden, independent look | `tools/r15/c1.js` | done |
-| D1–D6 | Hotel: entrance, elevator, lobby/breakfast/bar clutter, lamps, upstairs rail, suite | | todo |
+| D1–D6 | Hotel: entrance, elevator, lobby/breakfast/bar clutter, lamps, upstairs rail, suite | `tools/r15/d1.js` | done (M: upstairs barrier not present in v30 — rounds 10–11 already rebuilt it; re-checked by QA shots) |
 | E1–E4 | Café rebuild + Mia + in-world ordering, Pro Shop, gondola pad, global audit | | todo |
 | F1–F3 | Sun/snow, sky/moon/clouds, weather states | | todo |
 | G1–G3 | NPC framework, nav graph, staff/guests/café customers | | todo |
