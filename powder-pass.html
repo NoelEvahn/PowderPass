@@ -2107,6 +2107,7 @@ function person(o) {
     if (fem) [-1, 1].forEach(s => b.add(sp(0.17, 1, 0.9, 0.95), cJ, s * 0.17, 0.8, 0.2));
     if (o.scarf !== undefined) { b.add(ringG(0.22, 0.19, 0.11), o.scarf, 0, 1.3, 0.0); b.add(bx(0.14, 0.5, 0.05), o.scarf, 0.1, 1.05, 0.26); }
     if (o.hood) b.add(sp(0.28, 1.2, 0.8, 0.55), cJ2, 0, 1.15, -0.28);
+    if (o.apron !== undefined) { b.add(bx(0.62 * k, 1.0, 0.035), o.apron, 0, 0.3, 0.29); [-1, 1].forEach(s => b.add(bx(0.05, 0.5, 0.03), o.apron, s * 0.2 * k, 1.02, 0.285, N)); b.add(bx(0.3 * k, 0.16, 0.02), shade(o.apron, 0.85), 0, 0.12, 0.31, N); }   /* bib apron with neck straps and a front pocket */
     if (o.pack !== false && role !== 'staff') { b.add(sp(0.4, 0.9, 1.1, 0.55), cPack, 0, 0.72, -0.4); [-1, 1].forEach(s => b.add(bx(0.07, 0.6, 0.03), shade(cPack, 0.7), s * 0.2 * k, 0.8, 0.28, N)); }
     if (role === 'ticket') { b.add(bx(0.34 * k, 0.62, 0.05), GOLD, 0, 0.66, 0.285, N); b.add(bx(0.05, 0.62, 0.055), cJ2, -0.2 * k, 0.66, 0.285, N); b.add(bx(0.05, 0.62, 0.055), cJ2, 0.2 * k, 0.66, 0.285, N); }
     if (role === 'staff' || role === 'ticket') { b.add(bx(0.14, 0.09, 0.03), GOLD, -0.25, 0.9, 0.28, N); hText(b, 'SKI', 0.22, 0.9, 0.29, 0.022, INK); }
@@ -2436,7 +2437,7 @@ function fenceRun(b, clip, x, zA, zB, rot) {
   for (let i = 0; i < n; i++) { const z = zA + len * i / (n - 1); b.add(bx(0.16, 1.1, 0.16), C.wood3, x, 0.12 + 0.55, z); b.add(bx(0.22, 0.08, 0.22), SNOWC, x, 0.12 + 1.14, z); }
   [0.62, 1.05].forEach(y => b.add(bx(0.09, 0.09, len), C.wood, x, 0.12 + y, (zA + zB) / 2)); clip.push([x - 0.1, 0, zA - 0.1, x + 0.1, 1.2, zB + 0.1]);
 }
-function liftStation2(top) {
+function liftStation2(top, kind) {
   const b = new B(), g = new THREE.Group(), Y = YC, zMin = -4.6, zMax = top ? 14.8 : 17.8, plen = zMax - zMin, pc = (zMin + zMax) / 2, clip = [], K = [], U = g.userData;
   const cb = (x0, y0, z0, x1, y1, z1) => clip.push([x0, y0, z0, x1, y1, z1]);
   b.add(bx(11.4, 0.12, plen), C.stone, 0, 0.06, pc); for (let z = zMin + 0.7; z < zMax; z += 1.4) b.add(bx(11.4, 0.01, 0.05), C.rock, 0, 0.125, z, { noOutline: 1 });
@@ -2475,7 +2476,9 @@ function liftStation2(top) {
     b.add(bx(0.12, 1.0, 2.2), C.wood3, 4.7, 0.62, 12.5); [-0.9, -0.5, -0.1, 0.3, 0.7].forEach((z, i) => b.add(bx(0.1, 1.9, 0.06), [C.red, C.blue, C.yellow, C.lime, C.purple][i], 4.6, 1.0, 12.5 + z, { rx: 0.0, rz: 0.12 })); K.push({ x: 4.7, z: 12.5, ry: 0, hw: 0.3, hd: 1.2 });
     U.kiosk = [-2.4, 12.9]; U.window = [-3.4, 13.4]; U.gateZ = gz;
     /* loading spots (blue pads) for the chairs + attendant's hut with a window onto the loading zone */
-    [-1, 1].forEach(sd => { b.add(cy(0.38, 0.38, 0.02, 22), C.blue, 0.75, 0.135, RC2 + sd * 0.45, { noOutline: 1 }); b.add(cy(0.26, 0.26, 0.025, 22), C.white, 0.75, 0.137, RC2 + sd * 0.45, { noOutline: 1 }); b.add(cy(0.2, 0.2, 0.03, 22), C.blue, 0.75, 0.14, RC2 + sd * 0.45, { noOutline: 1 }); });
+    /* chairs: a painted yellow load line across the lane where you wait (the old blue target discs read as game markers); gondolas board at the
+       open cabin door, so their platform has no marker at all */
+    if (!kind) { b.add(bx(0.09, 0.012, 1.9), C.yellow, 1.12, 0.136, RC2, { noOutline: 1 }); [-1, 1].forEach(sd => b.add(bx(0.5, 0.012, 0.07), C.yellow, 0.9, 0.136, RC2 + sd * 0.95, { noOutline: 1 })); }
     { const hx = 4.6, hz = 6.6; b.add(bx(1.5, 0.1, 1.5), C.dark, hx, 0.17, hz); b.add(bx(1.5, 1.0, 1.5), C.blue, hx, 0.72, hz); b.add(bx(1.5, 0.9, 0.08), C.blue, hx, 1.67, hz + 0.71); b.add(bx(0.08, 0.9, 1.5), C.blue, hx + 0.71, 1.67, hz);
       b.add(bx(1.3, 0.85, 0.03), 0xbfe6ff, hx, 1.67, hz - 0.72, { alpha: 0.3 }); b.add(bx(0.03, 0.85, 1.3), 0xbfe6ff, hx - 0.72, 1.67, hz, { alpha: 0.3 });
       b.add(bx(1.8, 0.14, 1.8), C.red, hx, 2.2, hz); b.add(bx(1.8, 0.1, 1.8), SNOWC, hx, 2.31, hz); b.add(bx(0.7, 0.05, 0.4), C.dark, hx - 0.3, 1.24, hz - 0.45); b.add(sp(0.05), C.lime, hx - 0.5, 1.29, hz - 0.5, { basic: 1 }); b.add(sp(0.05), C.red, hx - 0.35, 1.29, hz - 0.5, { basic: 1 });
@@ -2545,7 +2548,7 @@ function buildLift2(R0, xs, zs, L, o) {
   const nos = (x0, x1, z0, z1) => { const c = [W2(x0, z0), W2(x1, z0), W2(x0, z1), W2(x1, z1)]; NOSNOW.push({ x0: Math.min.apply(null, c.map(p => p[0])), x1: Math.max.apply(null, c.map(p => p[0])), z0: Math.min.apply(null, c.map(p => p[1])), z1: Math.max.apply(null, c.map(p => p[1])) }); };
   const zT = -L, pad0 = tHL(0, 0), padT = tHL(0, zT), Yb = pad0 + YC, Yt = padT + YC, dy = Yt - Yb, rise = padT - pad0;
   const kind = o.kind !== undefined ? o.kind : (L >= 160 || rise >= 40 ? 1 : 0);   /* 1 = gondola (long or tall), 0 = chairs */
-  const st0 = liftStation2(false); put(R, st0, 0, 0, 0, 1, pad0); const st1 = liftStation2(true); put(R, st1, 0, zT, PI, 1, padT); nos(-7.6, 7.6, -7, 17.6); nos(-7.6, 7.6, zT - 17.6, zT + 7);
+  const st0 = liftStation2(false, kind); put(R, st0, 0, 0, 0, 1, pad0); const st1 = liftStation2(true, kind); put(R, st1, 0, zT, PI, 1, padT); nos(-7.6, 7.6, -7, 17.6); nos(-7.6, 7.6, zT - 17.6, zT + 7);
   const kk = (st, rot, px, pz) => st.userData.K.forEach(k => { const c = Math.cos(rot), s2 = Math.sin(rot); solid(px + (k.x * c + k.z * s2), pz + (-k.x * s2 + k.z * c), rot, k.hw, k.hd); });
   kk(st0, 0, 0, 0);
   const gzL = st0.userData.gateZ, armSolids = [0, 1, 2].map(() => solid(0, gzL, 0, GATE_ARM / 2 + 0.06, 0.1));
@@ -2656,7 +2659,7 @@ function buildLift2(R0, xs, zs, L, o) {
       if (Math.min(Math.hypot(lx - SU.kiosk[0], lz - SU.kiosk[1]), Math.hypot(lx - SU.window[0], lz - SU.window[1])) < 2.4) return LS.ticket ? { text: 'You already have a ticket - walk to the gate', act: null } : { text: SK.State && SK.State.cabins.indexOf('alpine') >= 0 ? 'Take a lift ticket (season pass)' : 'Buy a lift ticket (10 coins, any lift)', act: 'buy' };
       if (Math.abs(lx) < 2.5 && lz - gzL > 0.3 && lz - gzL < 3.2 && !LS.ticket) return (LS.pass || 0) > LS.now ? { text: 'Gate open - walk through', act: null } : { text: 'Gate locked - you need a ticket', act: null };
       if (Math.abs(lx) < 3.2 && lz > 1.5 && lz < 6 && lx > -3 && !((LS.pass || 0) > LS.now)) return { text: 'Go through the ticket gate to board', act: null };
-      if (Math.abs(lx) < 3.2 && lz > 1.5 && lz < 6 && lx > -3) return { text: kind ? 'Walk to an open gondola door' : 'Stand on a blue spot: the chair picks you up', act: null };
+      if (Math.abs(lx) < 3.2 && lz > 1.5 && lz < 6 && lx > -3) return { text: kind ? 'Walk to an open gondola door' : 'Wait at the yellow load line: the chair picks you up', act: null };
       return null;
     },
     /* player boarding: chairs pick you up when they reach you; gondolas when you are at the open door */
@@ -4319,8 +4322,11 @@ function storeDress(b, r, K, o, Wd, D, H, rise, hw, st) {
       for (let z = -D / 2; z <= D / 2 + 0.01; z += 0.7) b.add(bx(0.55, 0.12, 0.1), o.trim, sg * (Wd / 2 + 0.22), FY + H - 0.1, z, { rz: -sg * Math.atan2(rise, hw) }); });   /* rafter tails */
   }
   /* chimney (pitched roofs): stone stack, cap, snow, smoke */
-  if (st !== 'flat' && st !== 'stone') { const cx = -Wd / 4, cz = -D / 4, top = FY + H + rise * (1 - Math.abs(cx) / hw) + 0.9;
-    b.add(bx(0.7, top - FY - H + 0.4, 0.7), C.stone, cx, (top + FY + H - 0.4) / 2, cz); b.add(bx(0.86, 0.12, 0.86), C.rock, cx, top + 0.06, cz); r.add(bx(0.7, 0.08, 0.7), C.snow, cx, top + 0.16, cz, { noOutline: 1 });
+  /* the stack rises out of the roof slope (it used to start 0.4 m under the wall top, hanging inside the shop), with a sloped metal
+     flashing collar where it meets the roof */
+  if (st !== 'flat' && st !== 'stone') { const cx = -Wd / 4, cz = -D / 4, w = 0.7, roofAt = x => FY + H + rise * (1 - Math.abs(x) / hw), top = roofAt(cx) + 0.9, lo = roofAt(Math.abs(cx) + w / 2) + 0.05, ang = Math.atan2(rise, hw);
+    b.add(bx(w, top - lo, w), C.stone, cx, (top + lo) / 2, cz); b.add(bx(0.86, 0.12, 0.86), C.rock, cx, top + 0.06, cz); r.add(bx(0.7, 0.08, 0.7), C.snow, cx, top + 0.16, cz, { noOutline: 1 });
+    r.add(bx(w + 0.18, 0.05, w + 0.18), C.dark, cx, roofAt(cx) + 0.3, cz, { rz: cx < 0 ? ang : -ang });
     b.userDataChim = [cx, top + 0.2, cz]; }
   /* windows in solid walls: sill + flower box */
   if (!o.glass && st !== 'chalet') [[-Wd / 2 + 1.4, 1.6], [Wd / 2 - 1.4, 1.6]].forEach(w => { const zf = D / 2 + 0.12;
@@ -4339,6 +4345,7 @@ function makeStore(R, o) {
   };
   o.fill(S);
   if (b.userDataChim) g.userData.chim = b.userDataChim;   /* putCab turns it into chimney smoke */
+  g.userData.ename = o.name;   /* the editor lists it by name (Pro Shop, Lodge Café...) */
   g.add(b.build()); const rf = r.build(); rf.userData.noCast = 1; g.add(rf); g.userData.K = K;   /* roof casts no shadow, so the shop floor stays bright */
   putCab(R, g, o.x, o.z, o.ry, 1);
   const c = Math.cos(o.ry), n = Math.sin(o.ry), gy = tH(o.x, o.z), y0 = gy + 0.06, tr = (lx, lz) => [o.x + lx * c + lz * n, o.z - lx * n + lz * c];
@@ -4365,7 +4372,7 @@ const STORE_DEFS = [
       S.deco(-0.3, FY, 0.4, 0, b => { [-1.85, 1.85].forEach(x => { b.add(bx(0.06, 1.75, 0.06), C.metal, x, 0.875, 0); b.add(bx(0.08, 0.04, 0.6), C.dark, x, 0.02, 0); }); b.add(bx(3.76, 0.05, 0.05), C.metal, 0, 1.72, 0); }); S.solid(-0.3, 0.4, 1.9, 0.3);
       [['yellow', 0xffd21f], ['sky', 0x3fb6ff], ['forest', 0x14b13c], ['sunset', 0xff8a1f], ['midnight', 0x2b3350]].forEach((q, i) => S.item('g:color:' + q[0], -1.8 + i * 0.75, FY + 0.72, 0.4, 0, 1.12, b => IT.jacket(b, q[1])));
       S.deco(3.7, FY, 0.6, 0, COUNTER(2.6, 0.8)); S.solid(3.7, 0.6, 0.44, 1.34);
-      S.deco(-0.3, FY, 2.4, 0, b => pRugRect(b));
+      S.deco(-0.3, FY + 0.008, 1.55, 0, b => pRugRect(b));   /* on the floor, not in it (coplanar layers flickered), and clear of the door mat */
     } },
   { id: 'out', name: 'Summit Outfitters', x: 60, z: -90, ry: -PI / 2, W: 9, D: 7, style: 'stone', rise: 1.7, wall: C.wood2, gable: C.wood, trim: C.wood3, roof: C.pine2, floor: C.wood2, mat: C.orange, sideWin: 1,
     beams: [-1.75, 1.75], lights: [[-2.2, -1.75], [2.2, -1.75], [-2.2, 1.75], [2.2, 1.75]], clerk: [4.05, 0.2, -PI / 2, C.orange],
@@ -4421,6 +4428,63 @@ const STORE_DEFS = [
       S.deco(1.9, FY, 1.4, 0, b => { b.add(bx(1.4, 0.06, 0.8), C.wood, 0, 0.75, 0); [[-0.6, -0.32], [0.6, -0.32], [-0.6, 0.32], [0.6, 0.32]].forEach(p => b.add(bx(0.06, 0.72, 0.06), C.wood3, p[0], 0.36, p[1])); b.add(bx(1.4, 0.06, 0.32), C.wood2, 0, 0.45, -0.7); }); S.solid(1.9, 1.3, 0.72, 0.6);
     } }
 ];
+/* ===== LODGE CAFÉ: a real café (was a generic log cabin with a bed in it). Log walls, porch, a sign on the gable. Inside: guests' side
+   by the door and windows, a service counter with a glass pastry case and a hot station (everything on it is the real thing you buy:
+   look at it and buy it), Mia's aisle behind it, a back counter with the espresso machine, grinder, kettle and mug rack under shelves and
+   a chalk menu; seating by the fireplace, a window bar with stools, two bistro tables. Layout in local metres, front (+z) = the door. */
+const CAFE_SEATS = [[-3.7, 2.62, 0, 1.9], [-3.1, 2.62, 0, 1.9], [-2.5, 2.62, 0, 1.9], [-2.7, -2.15, -PI / 2, 1.29], [-2.7, -0.65, -PI / 2, 1.29], [2.2, 2.3, PI / 2, 1.29], [3.6, 2.3, -PI / 2, 1.29], [2.2, 0.45, PI / 2, 1.29], [3.6, 0.45, -PI / 2, 1.29]];   /* [x, z, facing, seatH]: window bar stools, fireside armchairs, bistro chairs */
+const CAFE_MIA = { reg: [2.55, -2.25], brew: [0.25, -2.45], case: [0.3, -2.25], hot: [2.0, -2.25], pass: [3.1, -2.25] };   /* Mia's posts behind the counter */
+const CAFE_DEF = { id: 'cafe', name: 'Lodge Café', x: AX, z: AZ, ry: 0, W: 9, D: 7, H: 3.0, style: 'log', rise: 2.2, wall: C.wood2, logc: C.wood2, gable: C.wood, trim: C.wood3, roof: C.red, floor: 0xa0683f, mat: C.orange, sideWin: 1, veranda: 1.8,
+  beams: [-1.2, 1.2], lights: [[-2.9, 1.2], [0.4, 0.9], [2.9, 1.4], [1.5, -2.3]],
+  fill: S => {
+    const Y = FY + 0.02, WD = 0x6b4226, GL = 0xa9e4ff;
+    /* service counter: wood front with battens, plank top; glass pastry case on the left half, register on the right */
+    S.deco(1.5, Y, -1.4, 0, b => { b.add(bx(4.2, 1.0, 0.7), C.wood2, 0, 0.5, 0); b.add(bx(4.36, 0.06, 0.84), WOODL, 0, 1.03, 0); b.add(bx(4.2, 0.1, 0.03), C.wood3, 0, 0.08, 0.36);
+      for (let i = 0; i < 7; i++) b.add(bx(0.05, 0.78, 0.02), C.wood3, -1.95 + i * 0.65, 0.5, 0.36, { noOutline: 1 });
+      b.add(bx(1.6, 0.04, 0.62), C.white, -1.1, 1.08, 0); b.add(bx(1.6, 0.5, 0.62), GL, -1.1, 1.35, 0); b.add(bx(1.6, 0.03, 0.62), C.wood3, -1.1, 1.61, 0); b.add(bx(1.5, 0.02, 0.5), C.white, -1.1, 1.33, 0, { noOutline: 1 });
+      b.push(1.75, 1.06, -0.05, PI); pRegister(b); b.pop();
+      for (let i = 0; i < 5; i++) b.add(cy(0.05, 0.04, 0.09, 10), C.white, 1.05, 1.11 + i * 0.09, -0.15, { noOutline: i > 0 });   /* stacked cups */
+      b.add(bx(0.5, 0.02, 0.4), 0x3b4252, 1.0, 1.065, 0.12, { noOutline: 1 }); });   /* hot-station drip mat */
+    S.solid(1.5, -1.4, 2.18, 0.42);
+    S.item('f:cafe:granola', 0.05, Y + 1.11, -1.35, 0, 0.42, b => IT.granola(b)); S.item('f:cafe:sandwich', 0.75, Y + 1.11, -1.35, 0, 0.42, b => IT.sandwich(b));
+    S.item('f:cafe:soup', 2.05, Y + 1.06, -1.3, 0, 0.5, b => { b.add(cy(0.2, 0.17, 0.26, 16), C.metal, 0, 0.13, 0); b.add(cy(0.21, 0.21, 0.03, 16), C.dark, 0, 0.275, 0); b.add(sp(0.04), C.dark, 0, 0.31, 0); IT.soup(b); });
+    S.item('f:cafe:cocoa', 2.6, Y + 1.06, -1.3, 0, 0.42, b => IT.cocoa(b));
+    /* back counter with the espresso machine, grinder, kettle, mug rack; shelves and a chalk menu on the wall above */
+    S.deco(1.0, Y, -3.05, 0, b => { b.add(bx(5.2, 0.95, 0.6), C.wood2, 0, 0.475, 0); b.add(bx(5.3, 0.06, 0.66), WOODL, 0, 0.98, 0);
+      b.add(bx(0.7, 0.5, 0.48), C.metal, -0.8, 1.26, -0.02); b.add(bx(0.72, 0.06, 0.5), C.dark, -0.8, 1.53, -0.02); [-0.18, 0.18].forEach(t => { b.add(cy(0.05, 0.05, 0.08, 10), C.dark, -0.8 + t, 1.09, 0.22); b.add(cy(0.045, 0.035, 0.07, 10), C.white, -0.8 + t, 1.04, 0.24); });
+      b.add(sp(0.03), C.red, -0.6, 1.4, 0.23, { basic: 1 }); b.add(sp(0.03), C.lime, -0.5, 1.4, 0.23, { basic: 1 });
+      b.add(cy(0.09, 0.11, 0.3, 10), C.dark, -1.55, 1.16, 0); b.add(cn(0.12, 0.2, 10), 0xc9d1dc, -1.55, 1.42, 0, { alpha: 0.6 });   /* grinder with its bean hopper */
+      b.add(cy(0.11, 0.13, 0.2, 12), C.metal, 0.3, 1.1, 0); b.rod([0.42, 1.18, 0], [0.52, 1.28, 0], 0.015, C.metal);   /* kettle */
+      for (let r = 0; r < 2; r++) for (let i = 0; i < 6; i++) b.add(cy(0.05, 0.045, 0.1, 10), [C.red, C.white, C.yellow][(i + r) % 3], 1.1 + i * 0.14, 1.06 + r * 0.11, -0.05 + r * 0.02);
+      [1.75, 2.15].forEach((y, k) => { b.add(bx(4.6, 0.05, 0.28), WD, 0.3, y, -0.17); for (let i = 0; i < 10; i++) b.add(cy(0.06, 0.06, 0.16, 10), [0xd9963c, 0x8a5a3c, C.white, C.red][(i + k) % 4], -1.8 + i * 0.42, y + 0.11, -0.17, { alpha: (i + k) % 4 === 0 ? 0.8 : 0 }); });
+      b.add(bx(1.3, 0.85, 0.05), 0x2b3a2f, 2.35, 1.95, -0.27); b.add(bx(1.42, 0.97, 0.03), C.wood3, 2.35, 1.95, -0.29); hText(b, 'MENU', 2.35, 2.25, -0.24, 0.028, C.white);
+      for (let i = 0; i < 4; i++) b.add(bx(0.9 - (i % 2) * 0.25, 0.022, 0.012), 0xe8eef6, 2.3, 2.08 - i * 0.14, -0.24, { noOutline: 1 }); });
+    S.solid(1.0, -3.05, 2.65, 0.33);
+    /* fireplace on the west wall: stone surround, firebox, logs, flames, mantel with mugs; two armchairs and a low table on a rug */
+    S.deco(-4.08, Y, -1.4, 0, b => { b.add(bx(0.3, 1.25, 1.8), C.stone, -0.16, 0.62, 0); [-1, 1].forEach(s => b.add(bx(0.32, 1.25, 0.36), C.stone, 0.15, 0.62, s * 0.72)); b.add(bx(0.32, 0.38, 1.08), C.stone, 0.15, 1.06, 0);   /* back, jambs, lintel: a real opening */
+      b.add(bx(0.9, 0.08, 2.0), C.rock, 0.1, 0.04, 0); b.add(bx(0.1, 2.4, 1.5), C.stone, -0.26, 1.7, 0); b.add(bx(0.62, 0.1, 2.0), C.wood3, 0.12, 1.3, 0);   /* hearth, chimney breast, mantel */
+      b.add(bx(0.02, 0.84, 1.06), C.dark, 0.0, 0.46, 0, { noOutline: 1 }); [-0.18, 0.18].forEach(t => b.add(cy(0.065, 0.065, 0.7, 8), C.wood3, 0.15, 0.15, t * 0.5, { rx: PI / 2, ry: t }));
+      b.add(cn(0.22, 0.5, 6), C.orange, 0.15, 0.42, 0, { basic: 1 }); b.add(cn(0.14, 0.34, 6), C.yellow, 0.17, 0.38, 0.12, { basic: 1 }); [-0.5, 0.45].forEach(t => b.add(cy(0.05, 0.04, 0.09, 8), C.red, 0.12, 1.4, t)); });
+    S.solid(-4.08, -1.4, 0.4, 0.95);
+    S.deco(-2.75, Y + 0.008, -1.4, 0, b => { b.add(bx(1.9, 0.012, 2.4), C.orange, 0, 0, 0, { noOutline: 1 }); b.add(bx(1.5, 0.014, 2.0), 0xffc36b, 0, 0.004, 0, { noOutline: 1 }); });
+    [-2.15, -0.65].forEach(z => { S.deco(-2.7, Y, z, -PI / 2, b => pArm(b, LEATH)); S.solid(-2.7, z, 0.43, 0.48); });
+    S.deco(-3.4, Y, -1.4, 0, b => { b.add(bx(0.5, 0.05, 0.8), WD, 0, 0.42, 0); [-0.2, 0.2].forEach(t => [-0.33, 0.33].forEach(u => b.add(bx(0.05, 0.4, 0.05), C.dark, t, 0.2, u))); b.add(cy(0.05, 0.04, 0.09, 8), C.white, 0.05, 0.49, 0.15); }); S.solid(-3.4, -1.4, 0.27, 0.42);
+    /* window bar under the front-left window, three stools */
+    S.deco(-3.1, Y, 3.15, 0, b => { b.add(bx(1.9, 0.05, 0.4), WOODL, 0, 1.05, 0); [-0.8, 0.8].forEach(x => b.add(bx(0.05, 0.3, 0.3), C.dark, x, 0.88, 0.02));
+      [-0.6, 0, 0.6].forEach(x => { b.add(cy(0.2, 0.2, 0.06, 12), C.red, x, 0.75, -0.53); b.add(cy(0.035, 0.035, 0.72, 8), C.metal, x, 0.37, -0.53); b.add(cy(0.18, 0.2, 0.03, 12), C.dark, x, 0.02, -0.53);
+        b.add(new THREE.TorusGeometry(0.15, 0.016, 6, 16), C.metal, x, 0.33, -0.53, { rx: PI / 2 }); }); });
+    S.solid(-3.1, 3.15, 0.95, 0.2);
+    /* bistro tables on the window side, two chairs each */
+    [2.3, 0.45].forEach(z => { S.deco(2.9, Y, z, 0, b => { b.add(cy(0.42, 0.42, 0.05, 18), WOODL, 0, 0.75, 0); b.add(cy(0.05, 0.07, 0.72, 10), C.dark, 0, 0.37, 0); b.add(cy(0.26, 0.3, 0.03, 14), C.dark, 0, 0.02, 0);
+        b.add(cy(0.04, 0.045, 0.14, 8), 0xa9d6ff, 0, 0.84, 0, { alpha: 0.6 }); b.add(sp(0.04), C.red, 0.01, 0.95, 0, { noOutline: 1 }); }); S.solid(2.9, z, 0.43, 0.43);
+      [-1, 1].forEach(e => S.deco(2.9 + e * 0.7, Y, z, -e * PI / 2, b => pChair(b, WD))); });
+    /* coat rack by the door, a plant, a cocoa-bean sack by the counter */
+    S.deco(-1.35, Y, 3.0, 0, b => pCoatRack(b)); S.solid(-1.35, 3.0, 0.25, 0.25); S.deco(4.0, Y, -0.6, 0, b => { b.add(cy(0.28, 0.22, 0.5, 12), 0xb4603e, 0, 0.25, 0); b.add(sp(0.42, 1, 1.5, 1), C.grass2, 0, 0.95, 0); b.add(sp(0.3, 1, 1.2, 1), C.grass, 0.1, 1.35, 0.05); }); S.solid(4.0, -0.6, 0.3, 0.3);
+    S.deco(3.9, Y, -2.4, 0, b => { b.add(sp(0.3, 1, 1.1, 0.9), 0xc8a26b, 0, 0.3, 0); b.add(cy(0.12, 0.2, 0.15, 8), 0xc8a26b, 0, 0.62, 0); for (let i = 0; i < 6; i++) b.add(sp(0.04), 0x5a3a22, -0.1 + (i % 3) * 0.1, 0.66, -0.05 + Math.floor(i / 3) * 0.1, { noOutline: 1 }); }); S.solid(3.9, -2.4, 0.3, 0.3);
+    /* sign on the front gable: board, letters and a steaming mug */
+    S.deco(0, FY + 3.55, 3.58, 0, b => { b.add(bx(2.0, 0.6, 0.08), 0x33200f, 0, 0, 0); b.add(bx(2.1, 0.7, 0.05), C.wood3, 0, 0, -0.03); hText(b, 'CAFE', -0.25, 0.13, 0.05, 0.05, 0xffd21f);
+      b.add(cy(0.12, 0.1, 0.2, 12), C.white, 0.68, -0.02, 0.05); b.add(new THREE.TorusGeometry(0.06, 0.018, 6, 12), C.white, 0.82, -0.02, 0.05); [0, 1].forEach(k => b.add(sp(0.04), C.white, 0.64 + k * 0.08, 0.16 + k * 0.06, 0.05, { noOutline: 1 })); });
+  } };
 function buildPlaces(R) {
   const lab = (t, x, z, h) => PLACE_LABELS.push({ t: t, x: x, y: tH(x, z) + h, z: RES_Z + z, h: 1.15 });
   /* name, x, z, facing, builder, scale, label height */
@@ -4530,8 +4594,7 @@ function buildResort() {
   putC(R, 'Snowman', snowman(), -6, 50, 0.5, 1.15);
   /* ===== MOUNTAIN LODGE (alpine hotel on its own pad mid-mountain, east of the lift) ===== */
   putAlpine(R, alpine(), ALPX, ALPZ); PLACE_LABELS.push({ t: 'Alpine Cabin', x: ALPX, y: tH(ALPX, ALPZ) + 9.5, z: RES_Z + ALPZ, h: 1.15 });
-  { const cafe = lodge({ W: 5.6, D: 4.2, H: 2.6, rise: 2.0, wall: C.wood2, gable: C.wood, logs: 1, roof: C.red, deck: C.wood, rail: C.wood3, chim: 'stone', canopy: 1, dk: 2.0, rug: C.orange, blanket: C.red });
-    putCab(R, cafe, AX, AZ, 0, 1.35); PLACE_LABELS.push({ t: 'Lodge Café', x: AX, y: tH(AX, AZ) + 7.2, z: RES_Z + AZ, h: 1.15 }); LIGHTS.push({ x: AX, y: tH(AX, AZ) + 2.6, z: RES_Z + AZ, col: 0xffd9a0, r: 8, k: 'in', t: 'warm', b: 1.05 }); }
+  makeStore(R, CAFE_DEF);   /* the Lodge Café: built where the old cabin-café stood, as one unit (editor keys unchanged) */
   fit(putC(R, 'Rock outcrop', hp(pRockOutcrop)(), AX - 4, AZ - 13, 0.6, 1.1), 0.7); fit(putC(R, 'Rock outcrop', hp(pRockOutcrop)(), AX - 10, AZ + 6, 2.4, 0.9), 0.7);
   fit(put(R, hp(pSnowDrift)(), AX - 7, AZ + 9, 0.3, 1.3), 1); fit(put(R, hp(pSnowDrift)(), AX + 8, AZ + 6, 1.2, 1.1), 1);
   /* ===== crest rocks, cliffs, drifts up high ===== */
@@ -4685,7 +4748,7 @@ function buildWorld() {
 }
 
 const rowZ = (h, k) => -30 + (Math.floor(h.i / 10) + k) * 8.6;
-globalThis.SK = { KIT: { B: B, bx: bx, cy: cy, cn: cn, sp: sp, mat: mat, C: C }, DEV: DEV, EDIT: EDIT, get FOOT() { return SK_FOOT; }, ALPD: ALPD, ALPP: [ALPX, ALPZ], get SUNO() { return SUNO; }, BEAM: beamMat, FXDOTS: FXDOTS, TUBS: TUBS, CDOORS: CDOORS, LIGHTS: LIGHTS, HOTEL: HOTEL, nodeModels: nodeModels, STORES: STORES, get GREEN() { return SK_GREEN; }, get HG() { return HG; }, LIFTS: LIFTS, LIFTX: {   /* every lift at once, for the player: one ticket, nearest station wins */
+globalThis.SK = { KIT: { B: B, bx: bx, cy: cy, cn: cn, sp: sp, mat: mat, C: C }, DEV: DEV, EDIT: EDIT, get FOOT() { return SK_FOOT; }, ALPD: ALPD, ALPP: [ALPX, ALPZ], get SUNO() { return SUNO; }, BEAM: beamMat, FXDOTS: FXDOTS, TUBS: TUBS, CDOORS: CDOORS, LIGHTS: LIGHTS, HOTEL: HOTEL, nodeModels: nodeModels, STORES: STORES, CAFE: { MIA: CAFE_MIA, SEATS: CAFE_SEATS }, get GREEN() { return SK_GREEN; }, get HG() { return HG; }, LIFTS: LIFTS, LIFTX: {   /* every lift at once, for the player: one ticket, nearest station wins */
     state: LIFT_TK, door: GON_DOOR, gonWd: GON_WD, gonFy: GON_FY,
     eye: (o, k) => o.userData.lift.eye(o, k), seat: (o, k) => o.userData.lift.seat(o, k), leaveInfo: o => o.userData.lift.leaveInfo(o),
     setRide: (o, on) => { LIFTS.forEach(l => l.setRide(null, false)); if (o && on) o.userData.lift.setRide(o, true); },
@@ -4944,7 +5007,7 @@ W.toggle = (on, where) => {
     W.y = 0; W.pitch = -0.05; W.yaw = 0; W.vx = W.vz = 0;
     if (where === 'gal') { W.x = 0; W.z = -44; W.yaw = PI; } else if (where === 'village') { W.x = -30; W.z = SK.RES_Z + 46; W.yaw = PI * 0.15; } else if (where === 'lift') { W.x = SK.LIFT.xs; W.z = SK.RES_Z + SK.LIFT.zs + 11; } else { W.x = -30; W.z = SK.RES_Z + 50; }
     W.y = SK.groundY(W.x, W.z);
-    hint.textContent = SK.DEV ? 'WASD move, Shift run | drag look | lift: ticket, gate, stand on a blue spot or at a gondola door' : (matchMedia('(pointer: coarse)').matches ? 'Left thumb: walk  |  right thumb: look' : 'WASD walk, Shift run  |  drag to look  |  F interact'); hint.classList.remove('off'); hintOn = true; setTimeout(hideHint, 7000);
+    hint.textContent = SK.DEV ? 'WASD move, Shift run | drag look | lift: ticket, gate, wait at the yellow load line or a gondola door' : (matchMedia('(pointer: coarse)').matches ? 'Left thumb: walk  |  right thumb: look' : 'WASD walk, Shift run  |  drag to look  |  F interact'); hint.classList.remove('off'); hintOn = true; setTimeout(hideHint, 7000);
   } else { go(VIEWS.scene); actEl.style.display = 'none'; hudEl.style.display = 'none'; document.getElementById('leave').style.display = 'none'; }
 };
 
@@ -5691,7 +5754,7 @@ const SHOPS = {
   pro: { n: 'Pro Shop', at: [40, -225], walkin: 1, slots: ['skis', 'pack', 'axe', 'color'] },
   out: { n: 'Summit Outfitters', at: [60, -90], walkin: 1, slots: ['jacket', 'boots', 'helmet', 'pick', 'goggles', 'beacon'] },
   mart: { n: 'Village Mart', at: [19.8, 71], walkin: 1, menu: [['granola', 8], ['sandwich', 20], ['drink', 30], ['cocoa', 12], ['warmers', 15]] },
-  cafe: { n: 'Lodge Café', at: [46, -82], menu: [['granola', 10], ['sandwich', 24], ['cocoa', 12], ['soup', 25], ['fondue', 60]], craft: [['cocoamix', { cacao: 3 }, 5]] },
+  cafe: { n: 'Lodge Café', at: [46, -82], walkin: 1, menu: [['granola', 10], ['sandwich', 24], ['cocoa', 12], ['soup', 25], ['fondue', 60]], craft: [['cocoamix', { cacao: 3 }, 5]] },
   hut: { n: 'Summit Hut', at: [-8, -356], walkin: 1, menu: [['granola', 12], ['sandwich', 30], ['drink', 45], ['cocoa', 18], ['soup', 36], ['warmers', 22]] },
   vend: { n: 'Vending machine', at: [97, -283], r: 2.6, menu: [['granola', 12], ['drink', 45]] },
   trade: { n: 'Trading Post', at: [30.3, 71.25], walkin: 1, trade: 1 },
@@ -5819,7 +5882,7 @@ function renderSheet() {
     if (S.slots) { S.slots.forEach(slot => { h += '<h4>' + SLOT_NAME[slot] + '</h4>'; GEAR[slot].forEach((g, i) => { if (g.earn) return; if (!i && slot !== 'color' && slot !== 'skis' && slot !== 'pack' && slot !== 'axe' && slot !== 'jacket' && slot !== 'boots') return; const own = owns(g.id), on = gear(slot).id === g.id;
         h += row(g.n, g.fx || (g.p ? '' : 'What you started with'), on ? btn('Equipped', 'x', true, true) : own ? btn('Equip', 'equip:' + slot + ':' + g.id, false, true) : btn('Buy ' + coin(g.p), 'buy:' + slot + ':' + g.id, State.coins < g.p)); }); });
       if (S.later) { h += '<h4>Coming later</h4>'; S.later.forEach(l => { h += row(l[0], l[2], btn(coin(l[1]), 'x', true)); }); } foot = 'Gear you buy is yours for good. Equip it here any time.'; }
-    if (S.menu) { h += '<h4>Food and drink</h4>'; S.menu.forEach(m => { const k = m[0], it = ITEMS[k]; if (k === 'fondue') h += row('Fondue (eat here)', 'Full Energy and Warmth, ski score x1.2 for 10 min', btn('Eat ' + m[1], 'fondue:' + m[1], State.coins < m[1]));
+    if (S.menu && (!S.walkin || S.menu.some(m => m[0] === 'fondue'))) { h += S.walkin ? '<h4>Cooked to order</h4>' : '<h4>Food and drink</h4>'; S.menu.filter(m => !S.walkin || m[0] === 'fondue').forEach(m => { const k = m[0], it = ITEMS[k]; if (k === 'fondue') h += row('Fondue (eat here)', 'Full Energy and Warmth, ski score x1.2 for 10 min', btn('Eat ' + m[1], 'fondue:' + m[1], State.coins < m[1]));
         else h += row(it.n, it.fx, btn('Buy ' + m[1], 'food:' + k + ':' + m[1], State.coins < m[1] || used() >= cap()) + btn('Eat', 'eatnow:' + k + ':' + m[1], State.coins < m[1], true)); }); foot = 'Buy goes into your bag (' + used() + '/' + cap() + '). Eat uses it right away.'; }
     if (S.craft) { h += '<h4>Craft</h4>' + recipeRows(S.craft); }
     if (S.trade) { h += '<h4>Today\'s prices · Day ' + State.day + '</h4>'; SELLABLE.forEach(k => { const n = State.inv[k] || 0; h += row(ITEMS[k].n, 'You have ' + n, '<span style="font-weight:800;min-width:46px;text-align:right">' + priceTag(k) + '</span>' + btn('Sell 1', 'sell:' + k + ':1', !n, true) + btn('All', 'sell:' + k + ':' + n, !n)); }); foot = 'Prices change every morning (±25%). Hold on to things for a better day.'; }
@@ -5961,6 +6024,7 @@ function dispInfo(d) {
   }
   if (p[0] === 'f') {
     const S = SHOPS[p[1]], k = p[2], pr = S.menu.find(q => q[0] === k)[1], it = ITEMS[k], full = used() >= cap();
+    if (p[1] === 'cafe' && !cafeOpen()) return { title: it.n, sub: it.fx, tag: 'Closed', st: 'poor', line: 'Café closed · Mia opens at 7:00', act: null };
     if (State.coins < pr) return { title: it.n, sub: it.fx, tag: '' + pr, coin: 1, price: pr, st: 'poor', line: 'Need ' + (pr - State.coins) + ' more', act: null };
     return full ? { title: it.n, sub: it.fx, tag: '' + pr, coin: 1, price: pr, st: 'buy', line: 'Bag full · eat now · ' + pr, act: ['eatnow', k, pr] }
       : { title: it.n, sub: it.fx, tag: '' + pr, coin: 1, price: pr, st: 'buy', line: 'Buy · ' + pr + '  (goes in your bag)', act: ['food', k, pr] };
@@ -6015,7 +6079,7 @@ const SHOPX = {
   prompt(d) { const i = dispInfo(d), conf = CONF && CONF.key === d.key && SK.clock < CONF.t; return { text: conf ? 'Press again to buy · ' + coin(i.price) : i.line, act: i.act ? 'shop' : null }; },   /* the card already names the item */
   act(d) { const i = dispInfo(d); if (!i.act) { SK.toast(i.title + ': ' + i.line); return true; }
     if (i.act[0] === 'buy' && i.price >= 500 && !(CONF && CONF.key === d.key && SK.clock < CONF.t)) { CONF = { key: d.key, t: SK.clock + 4 }; cardK = ''; return true; }
-    CONF = null; econOp(i.act.map(String)); d.pop = 1; d.tagK = ''; cardK = ''; return true; },
+    CONF = null; econOp(i.act.map(String)); d.pop = 1; d.tagK = ''; cardK = ''; if (d.key.indexOf('f:cafe:') === 0 && SK.MIA) SK.MIA.serve(d.key.split(':')[2]); return true; },
   /* tests: act on a display by key, as if you were looking at it */
   actKey(key, n) { const st = STOREX.find(s => s.disp.some(d => d.key === key)), d = st.disp.find(q => q.key === key); for (let k = 0; k < (n || 1); k++) this.act(d); return dispInfo(d); },
   stores: STOREX, storeAt: storeAt, info: dispInfo, focus: () => CUR
@@ -6324,6 +6388,38 @@ function kidTick(dt) {
   KID.g.position.set(KID.x, SK.groundY(KID.x, KID.z + SK.RES_Z) + 0.02, KID.z + SK.RES_Z);
 }
 
+/* ---- Mia, the Lodge Café's barista. On duty 7:00-20:00 behind the counter and never out of the service aisle: she tends the till, brews
+   at the machine, restocks the pastry case, wipes the hot station, and waves when you walk in. Buy something off the counter and she
+   makes it: to the machine (cocoa), the hot station (soup) or the case (granola, sandwiches), then hands it over at the pass. ---- */
+const cafeOpen = () => { const h = State.time / 60; return h >= 7 && h < 20; };
+const MIA = (() => {
+  const st = STOREX.find(s => s.id === 'cafe'), CF = SK.CAFE; if (!st || !CF || !SK.person) return null;
+  const P = CF.MIA, c = Math.cos(st.ry), n = Math.sin(st.ry), fy = st.y + 0.22, toW = (lx, lz) => [st.x + lx * c + lz * n, SK.RES_Z + st.z - lx * n + lz * c];
+  const g = SK.person({ npc: 1, role: 'barista', f: true, skis: false, pack: false, hat: 'none', hairStyle: 'bun', apron: 0xf4efe6, earring: true, skin: 0xf0c09a, jacket: 0xc8553d, jacket2: 0x8a2f25, pants: 0x3b2314, hair: 0x6b3410, glove: 0xf0c09a, boot: 0x3b2314, boot2: 0x6b3410 });
+  g.scale.setScalar(0.5); g.userData.noSnow = true; g.userData.mia = 1; scene.add(g);
+  const M = { x: P.reg[0], z: P.reg[1], yaw: 0, task: null, q: [], greetT: -999, served: null };
+  const ROUT = [['reg', 0, 'Standing', 5, 9], ['brew', PI, 'Snacking', 3, 5], ['case', 0, 'Snacking', 2.5, 4], ['hot', 0, 'Snacking', 2.5, 4], ['pass', 0, 'Standing', 2, 4]];
+  const go = (post, yaw, anim, dur, after) => M.q.push({ to: P[post], yaw: yaw, anim: anim, dur: dur, after: after });
+  const WHERE = { cocoa: 'brew', soup: 'hot', granola: 'case', sandwich: 'case' }, BACK = { brew: 1 };
+  function serve(k) { M.q.length = 0; M.task = null; const w = WHERE[k] || 'case'; go(w, BACK[w] ? PI : 0, 'Snacking', 2.2);
+    go('pass', 0, 'Waving', 1.6, () => { if (SK.toast) SK.toast('Mia hands you your ' + ((ITEMS[k] && ITEMS[k].n) || k).toLowerCase() + '. Enjoy!', 'good'); }); }
+  SK.TICK.push(dt => {
+    const open = cafeOpen(); if (g.visible !== open) g.visible = open; if (!open) { M.q.length = 0; M.task = null; return; }
+    /* greet you when you come in (once a visit) */
+    const lx = W.x - st.x, lz = W.z - SK.RES_Z - st.z, inside = Math.abs(lx) < 4.4 && Math.abs(lz) < 3.4 && W.on;
+    if (inside && SK.clock - M.greetT > 90 && !M.q.length) { M.greetT = SK.clock; M.q.push({ to: P.reg, yaw: 0, anim: 'Waving', dur: 1.8 }); }
+    if (!inside && SK.clock - M.greetT > 20) M.greetT = Math.min(M.greetT, SK.clock - 80);
+    if (!M.task) { if (!M.q.length) { const r = ROUT[Math.floor(Math.random() * ROUT.length)]; go(r[0], r[1], r[2], r[3] + Math.random() * (r[4] - r[3])); } M.task = M.q.shift(); M.task.t = 0; M.task.at = false; }
+    const T = M.task, dx = T.to[0] - M.x, dz = T.to[1] - M.z, d = Math.hypot(dx, dz);
+    if (!T.at) { if (d < 0.05) { T.at = true; g.userData.play(T.anim, true); }
+      else { const s = Math.min(d, 1.15 * dt); M.x += dx / d * s; M.z += dz / d * s; const want = Math.atan2(dx, dz); M.yaw += wrapA(want - M.yaw) * Math.min(1, dt * 8); g.userData.play('Walking'); } }
+    else { M.yaw += wrapA(T.yaw - M.yaw) * Math.min(1, dt * 6); T.t += dt; if (T.t >= T.dur) { if (T.after) T.after(); M.task = null; } }
+    M.x = clamp(M.x, -0.5, 3.4); M.z = clamp(M.z, -2.65, -2.05);   /* her aisle between the counters */
+    const p = toW(M.x, M.z); g.position.set(p[0], fy, p[1]); g.rotation.y = st.ry + M.yaw;
+  });
+  return { g, M, serve, open: cafeOpen, talkAt: toW(1.5, -0.45) };
+})();
+SK.MIA = MIA;
 /* ---- interaction: quest targets come before shops, nodes and stores. Works on skis too when you've stopped ---- */
 function qTarget(x, wz) {
   if (!W.on || W.ride || W.board || W.unboard || !State.q) return null;
@@ -6336,6 +6432,7 @@ function qTarget(x, wz) {
   for (let i = 0; i < PODS.length; i++) { const t = SK.GREEN.trees[i]; if (PODS[i].visible && near(t.x, t.z, 2.4)) return { text: 'Pick a ripe cacao pod', act: () => pickPod(i) }; }
   for (let i = 0; i < COCOA.length; i++) { if (H.cocoa.indexOf(i) >= 0 || !near(COCOA[i][0], COCOA[i][1], 2)) continue;
     return (State.inv.cocoa || 0) > 0 ? { text: 'Give a hot cocoa (+25 and a tip)', act: () => giveCocoa(i) } : { text: 'Cold in the queue: bring hot cocoa (Village Mart)', act: null }; }
+  if (MIA && MIA.open() && near(MIA.talkAt[0], MIA.talkAt[1] - SK.RES_Z, 1.9)) return { text: 'Talk to Chef Mia' + (markOf('cafe') ? '  ' + markOf('cafe') : ''), act: () => openSheet('shop', 'cafe', SHOPS.cafe.at) };   /* at the counter */
   for (const k of ['school', 'board', 'patrol', 'green']) { const P = QP[k]; if (near(P.at[0], P.at[1], P.r)) return { text: (k === 'board' ? 'Read the Quest Board' : 'Talk to ' + P.who) + (markOf(k) ? '  ' + markOf(k) : ''), act: () => openSheet('place', k, P.at) }; }
   return null;
 }
