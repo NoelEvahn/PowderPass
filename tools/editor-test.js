@@ -54,10 +54,10 @@ const { boot, check, OUT } = require('./lib');
   check(LB.t === 'Renamed Place' && LB.e && LB.e.t === 'Renamed Place', 'label renamed', fails);
 
   /* NPC path */
-  const N = await ev(() => { const E = SK.ED, N = E.NPCS.find(n => n.kind === 'foot'); E.selectNpc(N); const r0 = E.routeOf(N).what; N.r.g.getWorldPosition(window.__v = new THREE.Vector3());
+  const N = await ev(() => { const E = SK.ED, N = E.NPCS.find(n => n.kind === 'life'); E.selectNpc(N); const r0 = E.routeOf(N).what; N.r.g.getWorldPosition(window.__v = new THREE.Vector3());
     E.pathStart(); const v = window.__v; E.S.path.wp = [[v.x + 4, v.z], [v.x + 4, v.z + 4], [v.x, v.z + 4]]; E.pathDone(); SK.sim(40); const p = N.r.g.getWorldPosition(new THREE.Vector3());
     return { r0, key: N.key, moved: Math.hypot(p.x - v.x, p.z - v.z), e: E.E.npc[N.key], line: !!E.S.line }; });
-  check(/area/.test(N.r0) && N.e && N.e.wp.length === 3 && N.moved > 1 && N.line, 'NPC route shown, new path set and walked (' + N.moved.toFixed(1) + ' m)', fails);
+  check(/guest/.test(N.r0) && N.e && N.e.wp.length === 3 && N.moved > 1 && N.line, 'NPC route shown, new path set and walked (' + N.moved.toFixed(1) + ' m)', fails);
 
   /* tap-select through the real canvas: snap the camera onto a lamp and tap the screen centre */
   const TP = await ev(() => { const E = SK.ED, o = [...E.ADDED.values()].find(o => E.nameOf(o) === 'Snowman'), c = E.center(o).clone(); E.select(null); SK.snap({ tx: c.x, ty: c.y, tz: c.z, r: 9, theta: 0.3, phi: 1.2 }); return { k: o.userData.ek }; });

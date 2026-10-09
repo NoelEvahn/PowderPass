@@ -1,7 +1,7 @@
 /* D (hotel): elevator centred between equal piers, sliding glass doors solid when shut and open for you, no slab hovering over the
    breakfast floor, every suite's bathroom walled off from the bedroom / lounge. */
 const fails = [], info = {}, chk = (c, m) => { if (!c) fails.push(m); };
-const H = SK.HOTEL, X = H.HX, sh = X.shaft, W = SK.W; SK.P6.setTime(780); SK.play(3);   /* afternoon: no breakfast guests holding the doors open */
+const H = SK.HOTEL, X = H.HX, sh = X.shaft, W = SK.W; SK.P6.setTime(780); if (SK.LIFE) SK.LIFE.hold(true); SK.play(3);   /* afternoon, resort guests held: nobody else holding the doors open */
 /* 1. elevator centred on its shaft */
 info.elev = { ex: X.ex, shaftMid: +((sh.x0 + sh.x1) / 2).toFixed(3) }; chk(Math.abs(X.ex - (sh.x0 + sh.x1) / 2) < 0.02, 'elevator door off the shaft centre ' + JSON.stringify(info.elev));
 /* 2. sliding glass doors: shut = solid, you walking up opens them */
@@ -14,4 +14,4 @@ info.elev = { ex: X.ex, shaftMid: +((sh.x0 + sh.x1) / 2).toFixed(3) }; chk(Math.
 /* 4. suites: a wall solid on every side of the bathroom (west, front with doorway, east) */
 { info.suites = X.rooms.filter(r => r.type === 'suite').map(r => { const yb = H.wy + X.walk[r.floor === 2 ? 2 : 1], x0 = r.hx - (r.hx - Math.floor(r.hx)), n = SK.SOLIDS.filter(s => s.top === undefined && s.bot !== undefined && Math.abs(s.z - (H.z + r.z)) < 2.6 && Math.abs(s.x - H.x - r.hx) < 4.5 && (s.hw < 0.1 || s.hd < 0.1)).length; return { no: r.no, walls: n }; });
   chk(info.suites.length >= 3 && info.suites.every(s => s.walls >= 3), 'suite bathroom walls missing: ' + JSON.stringify(info.suites)); }
-return { ok: !fails.length, fails, info };
+if (SK.LIFE) SK.LIFE.hold(false); return { ok: !fails.length, fails, info };

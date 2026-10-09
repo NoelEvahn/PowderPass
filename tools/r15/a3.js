@@ -1,6 +1,6 @@
 /* A3: everyone seated has their thighs on a real seat. Every person in a seated move ('Sit on chair', 'Eating') is checked: the underside
    of the thighs next to the hips vs the furniture straight below (raycast, people/outlines/glass skipped). Gap must be within -3..+3 cm,
-   and there must be a seat at all (no hit within 25 cm = sitting on air). Optional: PQ_A3_SIM seconds of simulation first. */
+   and there must be a seat at all (no hit within 25 cm = sitting on air). Optional: PQ_A3_SIM seconds of simulation first, from PQ_A3_T minutes (default 07:50; 720 sees the resort guests and café customers seated). */
 const fails = [], info = { seated: [] }, chk = (c, m) => { if (!c) fails.push(m); };
 const V3 = () => new THREE.Vector3(), rc = new THREE.Raycaster(), DOWN = new THREE.Vector3(0, -1, 0); rc.camera = SK.cam;
 const isPerson = o => { for (let p = o; p; p = p.parent) { if (p.userData && p.userData.person) return true; if (!p.visible) return true; } return false; };
@@ -11,7 +11,7 @@ function thigh(g) { const out = []; const v = V3(); g.userData.dbg.legs.forEach(
   l.th.children.find(c => c !== l.sn).traverse(o => { if (!o.isMesh || o.material.type === 'ShaderMaterial') return; const P = o.geometry.attributes.position; for (let i = 0; i < P.count; i++) { v.fromBufferAttribute(P, i).applyMatrix4(o.matrixWorld); if (Math.hypot(v.x - hip.x, v.z - hip.z) < 0.1 && v.y < lo) lo = v.y; } });
   out.push({ hip, lo }); }); return out; }
 /* breakfast time: diners walk in, sit and eat; the player takes a plate and sits too (third person, so the body is placed) */
-const camWas = SK.State.cam.walk; SK.State.cam.walk = 'third'; SK.P6.setTime(470); SK.play(Math.round((window.PQ_A3_SIM || 40) * 30));
+const camWas = SK.State.cam.walk; SK.State.cam.walk = 'third'; SK.P6.setTime(window.PQ_A3_T || 470); SK.play(Math.round((window.PQ_A3_SIM || 40) * 30));
 { const BF = SK.BF, s0 = BF.SEATS.find(q => !q.taken); if (BF.B.seat) BF.standUp(); SK.W.on = true; BF.B.plate = ['eggs', 'juice']; BF.sit(s0); SK.play(60); info.player = !!BF.B.seat; }
 /* diners on their feet: soles on the breakfast floor */
 info.diners = SK.BF.guests.filter(q => (q.g || q).visible && q.st !== 'sit' && q.st !== 'eat').map(q => { const g = q.g || q, w = g.getWorldPosition(V3()), fl = SK.SURF.at(w.x, w.z, w.y - 0.15, w.y + 0.15); return fl === null ? null : +(w.y - fl).toFixed(3); }).filter(v => v !== null);

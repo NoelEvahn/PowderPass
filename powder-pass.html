@@ -4046,7 +4046,7 @@ function makeCrowd(R, HX, HZ) {
     NP.forEach(n => {
       if (n.custom) return;   /* walking a path set in the editor */
       if (n.kind === 'foot') stepFoot(n, dt); else if (n.kind === 'ski') stepSki(n, dt, tm);
-      else if (n.idle) { n.t -= dt; if (n.t <= 0) { const a = pick(n.idle); n.g.userData.play(a, true); n.t = a === 'Standing' ? rnd(4, 10) : FT[a] + 0.5; } }
+      else if (n.idle && n.kind !== 'staff') { n.t -= dt; if (n.t <= 0) { const a = pick(n.idle); n.g.userData.play(a, true); n.t = a === 'Standing' ? rnd(4, 10) : FT[a] + 0.5; } }
     });
   });
   SK.CROWD = NP; SK.CROWDX = { pts: pts, recum: recum };
@@ -4923,7 +4923,7 @@ const SEATFIT = (() => {
     const F = g.userData.seatFit, at = g.position;
     if (F && F.a === a && Math.abs(F.x - at.x) < 0.25 && Math.abs(F.z - at.z) < 0.25 && Math.abs(F.y - at.y) < 0.25) continue;
     let ok = true; for (let p = g; ; p = p.parent) { if (!p.visible) { ok = false; break; } if (!p.parent) { ok = p === scene; break; } } if (!ok) continue;
-    g.updateMatrixWorld(true); if (fit(g)) g.userData.seatFit = { a: a, x: at.x, y: at.y, z: at.z }; } });
+    g.updateMatrixWorld(true); fit(g); g.userData.seatFit = { a: a, x: at.x, y: at.y, z: at.z }; } });   /* no seat found is remembered too: retried only after a move */
   return { fit, seatTop };
 })();
 SK.SEATFIT = SEATFIT;
@@ -6488,7 +6488,7 @@ const LIFE = (() => {
     const cells = []; for (let k = t; k >= 0; k = from[k]) { cells.push(k); if (k === s) break; } cells.reverse();
     const pts = cells.map(k => [G.x0 + (k % G.nx + 0.5) * G.cs, G.z0 + (((k / G.nx) | 0) + 0.5) * G.cs]); pts[pts.length - 1] = [bx, bz];
     const out = [[ax, az]]; let a = 0; while (a < pts.length - 1) { let b = pts.length - 1; while (b > a + 1 && !los(G, out[out.length - 1][0], out[out.length - 1][1], pts[b][0], pts[b][1])) b--; out.push(pts[b]); a = b; }
-    return out.slice(1);
+    return out.length > 1 ? out.slice(1) : [[bx, bz]];
   }
   const GRIDS = {}, AREAS = { village: [-80, RZ + 18, 80, RZ + 96, 0.5], cafe: [26, RZ - 102, 66, RZ - 60, 0.4] };
   const grid = k => GRIDS[k] || (GRIDS[k] = Grid.apply(null, AREAS[k]));
@@ -6503,7 +6503,7 @@ const LIFE = (() => {
   const W2 = (x, zl) => [x, RZ + zl], hp = (x, z) => [Hh.x + x, Hh.z + z];
   const HOTEL_OUT = hp(0, 7.4), HOTEL_IN = hp(0, 0.6);
   const seatsOf = list => list.map(q => ({ x: q[0], z: q[1], yaw: q[2], floor: q[3] || 0, taken: null }));
-  const LOUNGE = seatsOf([[5.8, -1.7], [6.8, -1.7], [7.8, -1.7], [8.8, -1.7], [9.8, -1.7], [10.8, -1.7]].map(p => hp(p[0], p[1]).concat([PI])).concat([hp(6.8, 1.55).concat([0]), hp(8.1, 3.95).concat([PI]), hp(6.0, 1.55).concat([0]), hp(8.9, 3.95).concat([PI])]));
+  const LOUNGE = seatsOf([[5.8, -1.7], [6.8, -1.7], [7.8, -1.7], [8.8, -1.7], [9.8, -1.7], [10.8, -1.7]].map(p => hp(p[0], p[1]).concat([PI])).concat([hp(6.8, 1.55).concat([0]), hp(8.1, 3.95).concat([PI])]));   /* bar stools + the two lounge armchairs */
   const BENCHES = seatsOf([[-22.45, 50.3, PI], [-21.55, 50.3, PI], [-31.45, 50.3, PI], [-30.55, 50.3, PI]].map(q => W2(q[0], q[1]).concat([q[2]])));
   const FIRE = seatsOf([[48, 66.0, PI], [48, 58.0, 0], [46.0, 62, PI / 2, 1], [50.0, 62, -PI / 2, 1]].map(q => W2(q[0], q[1]).concat([q[2], q[3] || 0])));
   const STORE = id => { const s = SK.STORES.find(q => q.id === id); if (!s) return null; const c = Math.cos(s.ry), n = Math.sin(s.ry), tw = (lx, lz) => [s.x + lx * c + lz * n, RZ + s.z - lx * n + lz * c], ctr = tw(0, 0);
@@ -6536,14 +6536,14 @@ const LIFE = (() => {
     if (a.home) { a.home = false; return [{ show: HOTEL_OUT }, doA('Standing', 1)]; }   /* morning: out of the hotel door */
     if (a.lead && a.lead.plan) return null;   /* kids follow their grown-up (see below) */
     const bad = badWx(); let tot = 0; const opts = Object.keys(ACT).filter(k => k !== a.last).map(k => { const q = ACT[k]; let w = q.w * (bad ? (q.indoor ? 2.5 : 0.15) : 1) * (q.eve && h > 15 ? q.eve : 1) * (q.indoor && a.energy < 0.4 ? 3 : 1); tot += w; return [k, w]; });
-    let r = Math.random() * tot; for (const [k, w] of opts) { r -= w; if (r <= 0) { const p = ACT[k].plan(a); if (p) { a.last = k; a.energy = ACT[k].indoor ? Math.min(1, a.energy + 0.4) : a.energy - 0.2; return p; } } }
+    let r = Math.random() * tot; for (const [k, w] of opts) { r -= w; if (r <= 0) { const p = ACT[k].plan(a); if (p) { a.last = k; a.out = !ACT[k].indoor; a.energy = ACT[k].indoor ? Math.min(1, a.energy + 0.4) : a.energy - 0.2; return p; } } }
     return [doA('Standing', 2)];
   }
   /* ---------- running a plan ---------- */
   function startStep(a) {
     const s = a.step; a.t = 0;
-    if (s.go) { const G = grid(s.area); a.path = astar(G, a.x, a.z, s.go[0], s.go[1]); a.pi = 0; a.stuck = 0; if (!a.path) { a.fail = (a.fail || 0) + 1; a.plan = []; a.step = null; } }
-    else if (s.sit) { const st = s.sit; a.x = st.x + Math.sin(st.yaw) * (st.floor ? 0 : 0.2); a.z = st.z + Math.cos(st.yaw) * (st.floor ? 0 : 0.2); a.y = yAt(a.x, a.z, a.y); a.yaw = st.yaw; a.seat = st; a.g.userData.play(st.floor ? 'Sitting' : 'Sit on chair', true); }
+    if (s.go) { const G = grid(s.area); a.path = astar(G, a.x, a.z, s.go[0], s.go[1]); a.pi = 0; a.stuck = 0; a.unstk = 0; a.bestK = -1; if (!a.path) { a.fail = (a.fail || 0) + 1; a.plan = []; a.step = null; } }
+    else if (s.sit) { const st = s.sit; a.x = st.x; a.z = st.z; a.y = yAt(a.x, a.z, a.y); a.yaw = st.yaw; a.seat = st; a.g.userData.play(st.floor ? 'Sitting' : 'Sit on chair', true); }
     else if (s.anim) { if (s.face !== undefined) a.yawT = s.face; a.g.userData.play(s.anim, true); }
     else if (s.hide) { a.g.visible = false; }
     else if (s.home) { a.g.visible = false; a.home = true; }
@@ -6551,20 +6551,27 @@ const LIFE = (() => {
   }
   function endStep(a) { const s = a.step; if (s && s.sit && a.seat) { const ap = approach(a.seat); a.seat.taken = null; a.seat = null; a.x = ap[0]; a.z = ap[1]; a.y = yAt(a.x, a.z, a.y); a.g.userData.play('Standing', true); } a.step = null; }
   function move(a, dt) {
+    if (!a.path || a.pi >= a.path.length) { a.path = null; return true; }
     const p = a.path[a.pi], dx = p[0] - a.x, dz = p[1] - a.z, d = Math.hypot(dx, dz);
-    if (d < 0.25) { a.pi++; if (a.pi >= a.path.length) { a.path = null; return true; } return false; }
+    const last = a.pi === a.path.length - 1; if (d < (last ? 0.3 : 0.45)) { a.pi++; if (a.pi >= a.path.length) { a.path = null; return true; } return false; }
     let vx = dx / d, vz = dz / d;
-    for (const b of A) { if (b === a || !b.g.visible) continue; const ox = a.x - b.x, oz = a.z - b.z, od = Math.hypot(ox, oz); if (od > 0.01 && od < 0.75) { vx += ox / od * (0.75 - od) * 1.6; vz += oz / od * (0.75 - od) * 1.6; } }
+    if (!last || d > 1.2) for (const b of A) { if (b === a || !b.g.visible) continue; const ox = a.x - b.x, oz = a.z - b.z, od = Math.hypot(ox, oz); if (od > 0.01 && od < 0.6) { vx += ox / od * (0.6 - od) * 1.6; vz += oz / od * (0.6 - od) * 1.6; } }   /* keep apart, but let them reach a queue spot / seat */
     if (W.on) { const ox = a.x - W.x, oz = a.z - W.z, od = Math.hypot(ox, oz); if (od > 0.01 && od < 1.0) { vx += ox / od * (1 - od) * 2; vz += oz / od * (1 - od) * 2; } }
     const vl = Math.hypot(vx, vz) || 1, sp = a.kid ? 1.25 : 1.15, tgt = Math.atan2(vx, vz); a.yaw += wrapA(tgt - a.yaw) * Math.min(1, dt * 7);
     a.v += (sp * (Math.abs(wrapA(tgt - a.yaw)) > 1.2 ? 0.3 : 1) - a.v) * Math.min(1, dt * 4); const nx = a.x + Math.sin(a.yaw) * a.v * dt, nz = a.z + Math.cos(a.yaw) * a.v * dt;
-    const G = grid(a.step.area), k = cellOf(G, nx, nz); if (k < 0 || !G.blk[k] || G.blk[cellOf(G, a.x, a.z)]) { a.x = nx; a.z = nz; }   /* never steer into a wall or furniture */
+    const G = grid(a.step.area), ok = (x, z) => { const k = cellOf(G, x, z); return k < 0 || !G.blk[k]; }, x0 = a.x, z0 = a.z, inBlk = !ok(a.x, a.z);   /* never steer into a wall or furniture: slide along it */
+    if (inBlk || ok(nx, nz)) { a.x = nx; a.z = nz; } else if (ok(nx, a.z)) a.x = nx; else if (ok(a.x, nz)) a.z = nz;
     a.y = yAt(a.x, a.z, a.y); a.g.userData.play('Walking'); a.g.userData.rate = a.v / 1.3;
-    if (a.v < 0.15) a.stuck += dt; else a.stuck = Math.max(0, a.stuck - dt * 0.5);
-    if (a.stuck > 2.5) { a.stuck = 0; a.path = astar(G, a.x, a.z, a.step.go[0], a.step.go[1]); a.pi = 0; if (!a.path) { a.plan = []; return true; } }
+    if (a.bestK !== a.pi) { a.bestK = a.pi; a.best = d; a.stuck = 0; }   /* stuck = no real progress toward the next corner (jostling in place counts as stuck) */
+    if (d < a.best - 0.3) { a.best = d; a.stuck = 0; } else a.stuck += dt;
+    if (a.stuck > 3) { a.stuck = 0; a.bestK = -1; a.unstk = (a.unstk || 0) + 1; if (a.unstk > 2) { a.unstk = 0; a.path = null; return true; }   /* third time: give up on this stop */
+      a.path = astar(G, a.x, a.z, a.step.go[0], a.step.go[1]); a.pi = 0; if (!a.path) { a.plan = []; return true; } }
     return false;
   }
+  /* night or a storm breaks off whatever they were doing out in the open (seat freed, straight to the plan's next stop) */
+  function interrupt(a) { if (a.step && a.step.sit && a.seat) { a.seat.taken = null; a.seat = null; a.g.userData.play('Standing', true); } a.step = null; a.path = null; a.plan = []; a.out = false; }
   function stepGuest(a, dt) {
+    if (!a.lead && a.g.visible) { const h = State.time / 60, night = h < 8.5 || h >= 21; if ((night && !a.bed) || (a.out && badWx())) { interrupt(a); a.bed = night; } if (!night) a.bed = false; }
     if (a.lead && a.lead.g.visible !== a.g.visible && !a.step) { a.g.visible = a.lead.g.visible; if (a.g.visible) { a.x = a.lead.x + 0.8; a.z = a.lead.z; } }
     if (!a.step) {
       if (!a.plan.length) { if (a.lead) { const L = a.lead; if (L.seat && !a.seat) { const near = (L.seat === null) ? null : [L.seat.x + Math.cos(L.seat.yaw) * 0.9, L.seat.z - Math.sin(L.seat.yaw) * 0.9]; a.plan = [go(near), doA(a.kid ? 'Jumping' : 'Standing', rnd(3, 6), faceTo(near, [L.x, L.z]))]; }
@@ -6602,15 +6609,15 @@ const LIFE = (() => {
     return [{ show: sp }, go(C_OUT, 'cafe'), go(C_IN, 'cafe'), { queue: 1 }, { order: k }, { seatC: 1 }, go(C_IN, 'cafe'), go(C_OUT, 'cafe'), go(sp, 'cafe'), hide(rnd(15, 50))];
   }
   function stepCafe(a, dt) {
-    if (!a.step) { if (!a.plan.length) a.plan = cafePlan(a); a.step = a.plan.shift(); a.t = 0;
+    if (!a.step) { if (!a.plan.length) { const qi = CQ.indexOf(a); if (qi >= 0) CQ.splice(qi, 1); a.qi = undefined; a.plan = cafePlan(a); } a.step = a.plan.shift(); a.t = 0;
       const s = a.step;
       if (s.queue) { CQ.push(a); }
       else if (s.seatC) { const st = freeSeat(CSEATS, a); if (!st) { a.plan.unshift(doA('Snacking', rnd(10, 18))); a.step = null; return; } a.plan.unshift(go(approach(st), 'cafe'), sitS(st, rnd(22, 45))); a.step = null; return; }
       else if (!s.order) startStep(a); if (!a.step) return; }
     const s = a.step;
-    if (s.queue) { const i = CQ.indexOf(a), spot = QUEUE[Math.min(i, QUEUE.length - 1)]; if (!a.path || a.qi !== i) { a.qi = i; a.path = astar(grid('cafe'), a.x, a.z, spot[0], spot[1]); a.pi = 0; a.step.area = 'cafe'; a.step.go = spot; }
-      if (a.path) { if (move(a, dt)) a.path = []; } else { a.g.userData.play('Standing'); a.yaw += wrapA(PI + CS.ry - a.yaw) * Math.min(1, dt * 5); if (i === 0) { a.step = null; a.path = null; } } }
-    else if (s.order) { if (!s.sent) { s.sent = 1; a.g.userData.play('Standing', true); a.yaw = PI + CS.ry; SK.MIA.serve(s.order, () => { s.got = 1; }); } if (s.got) { a.g.userData.play('Waving', true); CQ.splice(CQ.indexOf(a), 1); a.g.userData.snack = false; a.step = null; } }
+    if (s.queue) { const i = CQ.indexOf(a), spot = QUEUE[Math.min(i, QUEUE.length - 1)]; if (a.qi !== i) { a.qi = i; a.step.area = 'cafe'; a.step.go = spot; a.path = astar(grid('cafe'), a.x, a.z, spot[0], spot[1]); a.pi = 0; }
+      if (a.path) { if (move(a, dt)) a.path = null; } else { a.g.userData.play('Standing'); a.yaw += wrapA(PI + CS.ry - a.yaw) * Math.min(1, dt * 5); if (i === 0) { a.step = null; a.path = null; } } }
+    else if (s.order) { if (!s.sent) { s.sent = 1; a.qi = undefined; a.g.userData.play('Standing', true); a.yaw = PI + CS.ry; SK.MIA.serve(s.order, () => { s.got = 1; }); } if (s.got) { a.g.userData.play('Waving', true); CQ.splice(CQ.indexOf(a), 1); a.g.userData.snack = false; a.step = null; } }
     else if (s.go) { if (!a.path || move(a, dt)) endStep(a); }
     else { a.t += dt; if (s.sit) a.g.userData.snack = Math.sin(a.t * 0.6) > 0.3; if (a.t >= (s.dur || 0.01)) { a.g.userData.snack = false; endStep(a); } }
   }
@@ -6625,17 +6632,18 @@ const LIFE = (() => {
     const g = SK.PEOPLE[q[0]](Object.assign({ npc: 1, skis: false, item: null }, q[1])); g.scale.setScalar(0.5); g.visible = false; g.userData.noSnow = true; scene.add(g);
     const a = agent(g, 'cafe', false); a.plan = [hide(4 + i * 9)]; a.x = C_SPAWN[0][0]; a.z = C_SPAWN[0][1]; a.y = yAt(a.x, a.z); });
   /* ---------- tick (LOD: far away people update a few times a second) ---------- */
-  let acc = 0, f = 0;
+  let acc = 0, f = 0, held = false;   /* held: tests freeze everyone and keep them out of the door sensors */
   SK.TICK.push(dt => {
     if (SK.ED && SK.ED.S && SK.ED.S.on) return;
+    if (held) { DOORP.forEach(p => { p.visible = false; }); return; }
     if (SK.DOORPPL && SK.DOORPPL.indexOf(DOORP[0]) < 0) DOORP.forEach(p => SK.DOORPPL.push(p));
     acc += dt; f++; const cam = SK.cam.position;
-    for (const a of A) { if (a.n && a.n.custom) continue;
-      const far = Math.hypot(a.x - cam.x, a.z - cam.z) > 90; if (far && (f % 4)) { a.lag = (a.lag || 0) + dt; continue; } const d2 = Math.min(0.2, dt + (a.lag || 0)); a.lag = 0;
+    for (const a of A) { if (a.n && a.n.custom) { a.g.getWorldPosition(V3a); a.x = V3a.x; a.y = V3a.y; a.z = V3a.z; if (a.seat) { a.seat.taken = null; a.seat = null; } a.step = null; a.path = null; a.plan = []; continue; }   /* an editor path drives them; pick up from there when it is cleared */
+      const far = Math.hypot(a.x - cam.x, a.z - cam.z) > 90; if (far && (f % 4)) { a.lag = (a.lag || 0) + dt; continue; } const d2 = Math.min(0.4, dt + (a.lag || 0)); a.lag = 0;
       if (a.role === 'staff') stepStaff(a, d2); else if (a.role === 'cafe') stepCafe(a, d2); else stepGuest(a, d2);
       place(a); }
   });
-  return { A, grid, astar, ACT, LOUNGE, BENCHES, CSEATS, CQ, choose, AREAS };
+  return { A, grid, astar, ACT, LOUNGE, BENCHES, CSEATS, CQ, choose, AREAS, hold: on => { held = !!on; } };
 })();
 SK.LIFE = LIFE;
 /* ---- interaction: quest targets come before shops, nodes and stores. Works on skis too when you've stopped ---- */
@@ -7982,7 +7990,7 @@ const ED = SK.DEV ? null : (() => {
   (SK.CROWD || []).forEach((n, i) => NPCS.push({ key: 'c' + i, r: n, home: n.g.parent || RG, kind: n.kind }));
   if (SK.P8) { SK.P8.TSK.forEach((k, i) => NPCS.push({ key: 't' + i, r: k, home: SK.scene, kind: 'trail' })); SK.P8.RID.forEach((x, i) => NPCS.push({ key: 'r' + i, r: x, home: SK.scene, kind: 'rider' })); }
   const npcOf = g => NPCS.find(N => N.r.g === g);
-  const KINDN = { foot: 'Walker', fixed: 'Staff / sitter', ski: 'Summit Express skier', trail: 'Trail skier', rider: 'Lift rider' };
+  const KINDN = { foot: 'Walker', fixed: 'Staff / sitter', staff: 'Staff', life: 'Resort guest', ski: 'Summit Express skier', trail: 'Trail skier', rider: 'Lift rider' };
   function setCustom(N, c) {
     const r = N.r;
     if (!c) { if (!r.custom) return; r.custom = null; r.g.visible = true;
@@ -8007,6 +8015,8 @@ const ED = SK.DEV ? null : (() => {
   function routeOf(N) {
     const r = N.r, w = (x, z) => [x, z + SK.RES_Z];
     if (r.custom) return { pts: r.custom.wp.map(p => [p[0], p[1]]), loop: true, what: 'custom path (' + r.custom.wp.length + ' points, ' + (r.custom.ski ? 'skiing' : 'walking') + ')' };
+    if (N.kind === 'life' && SK.LIFE) { const a = SK.LIFE.A.find(q => q.n === r); if (a) return { pts: [[a.x, a.z]].concat(a.path ? a.path.slice(a.pi) : []), loop: false, what: 'resort guest: ' + (a.last || 'looking around') + ' now (plans by the hour, the weather and how tired they are)' }; }
+    if (N.kind === 'staff') { r.g.getWorldPosition(V1); return { pts: [[V1.x, V1.z]], what: 'works at their post all day' }; }
     if (N.kind === 'foot' && r.zone) { const q = r.zone.r; return { pts: [w(q[0], q[2]), w(q[1], q[2]), w(q[1], q[3]), w(q[0], q[3])], loop: true, what: 'wanders inside this area' }; }
     if (N.kind === 'ski' && SK.CROWDX) return { pts: SK.CROWDX.pts.map(p => w(p[0], p[1])), loop: true, what: 'queue → Summit Express → main piste → queue' };
     if (N.kind === 'trail') { if (!r.t) return { pts: [], what: 'waiting at a lift, picks a random trail next' }; const a = []; for (let s = 0; s <= r.t.len; s += 3) { const p = SK.P8.pointAt(r.t, s); a.push(w(p.x, p.z)); } return { pts: a, what: 'skiing ' + (r.t.name || r.t.id) + ' (random trail each run)' }; }
