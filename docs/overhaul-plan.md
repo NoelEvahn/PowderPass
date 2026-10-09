@@ -16,6 +16,6 @@ Spec: `docs/superpowers/specs/2026-10-08-powder-pass-overhaul-design.md`. Branch
 | E4 | Global architecture / prop / collision audit | `tools/r15/e4.js`, `e4z.js` | done (17 small trim-junction z-fights left: rail/post tops, under 0.2 m² each) |
 | F1–F3 | Sun/snow, sky/moon/clouds, weather states | `tools/r15/f1.js` | done |
 | G1–G3 | NPC framework, nav graph, staff/guests/café customers | `tools/r15/g1.js` | done (LIFE module: 0.5 m nav grids from real solids + A* with string pulling; 7 staff at posts, 11 guests with hour/weather/energy schedules, kids follow a grown-up, 4 café customers through Mia's order queue) |
-| H1–H2 | Ski school lessons, wildlife | | todo |
+| H1–H2 | Ski school lessons, wildlife | `tools/r15/h1.js` | done (Coach Kim + 4 students: 12-step lesson on the Magic Carpet / Snowdrop, skill-based speed and falls, 9:00–16:00, none in blizzards; 4 instanced bird flocks on pine tops / snow, flee and resettle; 2 deer herds graze, wander, bolt, steer round trees, distance LOD) |
 | I1 | Fog, streaming, LOD, metrics | | todo |
 | J1 | Full QA, docs, publish | | todo |

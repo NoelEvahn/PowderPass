@@ -4921,9 +4921,9 @@ const SEATFIT = (() => {
      chair are not refitted every frame. Bodies hidden or not in the scene are skipped (pooled diners) */
   SK.TICK.push(() => { const P = SK.PERSONS; for (let i = 0; i < P.length; i++) { const g = P[i], a = g.userData.animInfo && g.userData.animInfo(); if (!a || !SITS[a.nm]) continue;
     const F = g.userData.seatFit, at = g.position;
-    if (F && F.a === a && Math.abs(F.x - at.x) < 0.25 && Math.abs(F.z - at.z) < 0.25 && Math.abs(F.y - at.y) < 0.25) continue;
+    if (F && F.a === a && Math.abs(F.x - at.x) < 0.25 && Math.abs(F.z - at.z) < 0.25 && Math.abs(F.y - at.y) < 0.25 && !(F.miss && SK.clock - F.miss > 1)) continue;
     let ok = true; for (let p = g; ; p = p.parent) { if (!p.visible) { ok = false; break; } if (!p.parent) { ok = p === scene; break; } } if (!ok) continue;
-    g.updateMatrixWorld(true); fit(g); g.userData.seatFit = { a: a, x: at.x, y: at.y, z: at.z }; } });   /* no seat found is remembered too: retried only after a move */
+    g.updateMatrixWorld(true); const hit = fit(g); g.userData.seatFit = { a: a, x: at.x, y: at.y, z: at.z, miss: hit ? 0 : SK.clock }; } });   /* no seat found: retried once a second, not every frame */
   return { fit, seatTop };
 })();
 SK.SEATFIT = SEATFIT;
@@ -6646,6 +6646,203 @@ const LIFE = (() => {
   return { A, grid, astar, ACT, LOUNGE, BENCHES, CSEATS, CQ, choose, AREAS, hold: on => { held = !!on; } };
 })();
 SK.LIFE = LIFE;
+/* ===================== SKI SCHOOL LESSONS (H1): Coach Kim teaches the beginners on the Magic Carpet =====================
+   Coach Bo keeps the school desk (quests, your lessons); Coach Kim takes the waiting group through a real lesson, all day from 9:00 to 16:00
+   (none in a blizzard): assemble → listen → stance → push-off → wedge → turns → queue for the carpet → ride it one at a time → regroup at
+   the top → down Snowdrop one by one (slow learners wobble, some fall and get up) → feedback at the bottom → back to the school → break.
+   Each student has a skill value: it sets their speed and line down the slope and how often they fall, and grows a little every lesson. */
+const SCHOOLX = (() => {
+  const RZ = SK.RES_Z, C = SK.CARPET, bun = trailBy('bunny'); if (!C || !bun || !SK.PEOPLE || !SK.LIFE) return null;
+  const V = new THREE.Vector3(), rnd = (a, b) => a + Math.random() * (b - a);
+  /* the waiting group by Coach Bo (built with the lift base) become the students; their stand-still collision boxes go (they move now) */
+  const SC = [-4, 38], found = SK.PERSONS.filter(p => { p.getWorldPosition(V); const d = Math.hypot(V.x - SC[0], V.z - RZ - SC[1]); return d > 1 && d < 4 && p.userData.skis; });
+  const P = found.map(g => { g.getWorldPosition(V); SK.SOLIDS.forEach(s => { if (Math.hypot(s.x - V.x, s.z - V.z) < 0.5 && s.hw < 0.5) s.off = 1; }); return { g, x: V.x, z: V.z - RZ, home: [V.x, V.z - RZ, g.rotation.y] }; });
+  const extra = SK.PEOPLE.lady({ npc: 1, jacket: 0x3fb6ff, hat: 'beanie', hatc: 0xff5fa2 }); extra.scale.setScalar(0.5); scene.add(extra);
+  P.push({ g: extra, x: -6.9, z: 42.1, home: [-6.9, 42.1, PI / 2 + 0.4] });
+  const coach = SK.PEOPLE.instructor({ npc: 1, jacket: 0x14b13c, jacket2: 0x0d7a2a, hat: 'helmet', hatc: 0xffffff }); coach.scale.setScalar(0.5); scene.add(coach);
+  const K = { g: coach, x: -9.6, z: 36.4, home: [-9.6, 36.4, PI / 2], coach: 1 }, ALL = [K].concat(P);
+  const NAMES = ['Max', 'Ruby', 'Jonas', 'Ana'], SKILL0 = [0.25, 0.45, 0.6, 0.35];
+  P.forEach((p, i) => { p.name = NAMES[i] || 'Student'; p.skill = SKILL0[i] || 0.4; });
+  ALL.forEach(p => { p.yaw = p.home[2]; p.path = null; p.anim = 'Standing'; p.y = SK.groundY(p.x, p.z + RZ); });
+  /* stations (resort-local) */
+  const LINE = P.map((p, i) => [-10.5 + i * 1.5, 40.5]), KSPOT = [-8.25, 37.4];
+  const QUE = P.map((p, i) => [C.x, C.z0 + 3.2 + i * 1.5]), KQ = [C.x, C.z0 + 1.6];
+  const TOP = P.map((p, i) => [C.x + 2.5 + i * 1.2, C.z1 - 3.6]), KTOP = [bun.pts[0][0] - 1.5, bun.pts[0][1] + 0.5];
+  const BOT = bun.pts[bun.pts.length - 1], FEED = P.map((p, i) => [BOT[0] - 2.2 + i * 1.5, BOT[1] + 3.2]), KFEED = [BOT[0] + 0.1, BOT[1] + 0.8];
+  /* ---- moving one person: a path of points at a speed, playing a move; on the carpet the belt carries them ---- */
+  const G = () => SK.LIFE.grid('village');
+  function walkTo(p, to, anim, sp) { const wp = to[1] >= 18 && p.z >= 18 ? SK.LIFE.astar(G(), p.x, p.z + RZ, to[0], to[1] + RZ) : null, path = wp && wp.map(q => [q[0], q[1] - RZ]);   /* the nav grid is in world z */ p.path = path || [to]; p.pi = 0; p.anim = anim || 'Walking'; p.sp = sp || 1.1; p.g.userData.play(p.anim); }
+  function glide(p, pts, anim, sp) { p.path = pts; p.pi = 0; p.anim = anim; p.sp = sp; p.g.userData.play(anim, true); }
+  function act(p, anim, face) { p.path = null; p.anim = anim; p.g.userData.play(anim, true); if (face !== undefined) p.yawT = face; }
+  const faceTo = (p, q) => Math.atan2(q[0] - p.x, q[1] - p.z);
+  function stepP(p, dt) {
+    if (p.path) { const q = p.path[p.pi], dx = q[0] - p.x, dz = q[1] - p.z, d = Math.hypot(dx, dz), s = Math.min(d, p.sp * dt);
+      if (d < 0.08) { p.pi++; if (p.pi >= p.path.length) { p.path = null; if (p.anim === 'Walking' || p.anim === 'Snowplow' || p.anim === 'Carving turns') p.g.userData.play('Standing'); } }
+      else { p.x += dx / d * s; p.z += dz / d * s; p.yawT = Math.atan2(dx, dz); } }
+    if (p.yawT !== undefined) p.yaw += wrapA(p.yawT - p.yaw) * Math.min(1, dt * 6);
+    const onBelt = p.belt; p.y = SK.groundY(p.x, p.z + RZ) + (onBelt ? 0.1 : 0);
+    V.set(p.x, p.y, p.z + RZ); if (p.g.parent) { p.g.parent.worldToLocal(V); p.g.position.copy(V); } p.g.rotation.set(0, p.yaw, 0);
+  }
+  const idle = L => L.every(p => !p.path && !p.down);
+  /* ---- the lesson ---- */
+  const S = { st: 'off', t: 0, log: [], n: 0, rider: 0, desc: 0, falls: 0 };
+  const go = st => { S.st = st; S.t = 0; S.log.push(st); if (S.log.length > 40) S.log.shift(); };
+  const inHours = () => { const h = State.time / 60, X = SK.P7 && SK.P7.WX; return h >= 9 && h < 16 && !(X && (X.k === 'storm' || X.amt > 0.85)); };
+  function home() { ALL.forEach(p => { p.belt = false; p.down = null; walkTo(p, [p.home[0], p.home[1]], 'Walking'); }); }
+  function tick(dt) {
+    S.t += dt;
+    switch (S.st) {
+      case 'off': if (inHours() && idle(ALL) && S.t > 2) { go('assemble'); walkTo(K, KSPOT); P.forEach((p, i) => walkTo(p, LINE[i])); } else if (!inHours() && S.t > 1 && S.t < 1 + dt * 1.5) ALL.forEach(p => { if (!p.path) { p.yawT = p.home[2]; } }); break;
+      case 'assemble': if (idle(ALL) || S.t > 40) { ALL.forEach(p => { if (p.path) { const e = p.path[p.path.length - 1]; p.x = e[0]; p.z = e[1]; p.path = null; } });
+          go('listen'); act(K, 'Waving', PI); P.forEach(p => act(p, 'Standing', faceTo(p, KSPOT))); K.yawT = faceTo(K, LINE[1]); } break;
+      case 'listen': if (S.t > 3 && K.anim === 'Waving') act(K, 'Standing'); if (S.t > 8) { go('stance'); act(K, 'Snowplow'); P.forEach(p => act(p, 'Snowplow', 0)); } break;
+      case 'stance': if (S.t > 6) { go('pushoff'); act(K, 'Standing'); P.forEach(p => glide(p, [[p.x, p.z + 1.4]], 'Snowplow', 0.7 + p.skill * 0.5)); } break;
+      case 'pushoff': if (idle(P) && S.t > 2) { go('wedge'); P.forEach(p => glide(p, [[p.x, p.z + 2.4]], 'Snowplow', 0.8 + p.skill * 0.6)); } break;
+      case 'wedge': if (idle(P) && S.t > 2) { P.forEach(p => act(p, 'Hockey stop')); go('turns'); } break;
+      case 'turns': if (S.t > 1.5 && !S.sent) { S.sent = 1; P.forEach(p => { const a = 0.35 + p.skill * 0.4, pts = []; for (let k = 1; k <= 6; k++) pts.push([p.x + Math.sin(k * PI / 2) * a, p.z + k * 0.55]); glide(p, pts, 'Carving turns', 0.9 + p.skill * 0.7); }); }
+        if (S.sent && idle(P) && S.t > 4) { S.sent = 0; go('queue'); act(K, 'Waving'); walkTo(K, KQ); P.forEach((p, i) => walkTo(p, QUE[i])); } break;
+      case 'queue': if (idle(ALL) || S.t > 60) { ALL.forEach(p => { if (p.path) { const e = p.path[p.path.length - 1]; p.x = e[0]; p.z = e[1]; p.path = null; } p.yawT = PI; p.g.userData.play('Standing'); }); go('ride'); S.rider = 0; S.next = 0; } break;
+      case 'ride': {   /* one at a time onto the belt (coach first), 2.4 s apart; carried up at the belt speed, step off onto the top apron */
+        const order = [K].concat(P);
+        if (S.rider < order.length && S.t >= S.next) { const p = order[S.rider++]; p.belt = true; glide(p, [[C.x, C.z0 - 0.4], [C.x, C.z1]], 'Standing', 1.2); S.next = S.t + 2.4; }
+        order.forEach((p, i) => { if (p.belt && !p.path) { p.belt = false; walkTo(p, p.coach ? KTOP : TOP[i - 1], 'Walking', 1.0); } });
+        if (S.rider >= order.length && idle(ALL) && !ALL.some(p => p.belt)) { go('regroup'); ALL.forEach(p => { p.yawT = faceTo(p, BOT); p.g.userData.play('Standing'); }); act(K, 'Waving'); } break; }
+      case 'regroup': if (S.t > 5) { go('descend'); S.desc = 0; S.next = 0; skiDown(K); } break;
+      case 'descend': {   /* coach first, then each student once the one before is 8 m down */
+        const prev = S.desc === 0 ? K : P[S.desc - 1];
+        if (S.desc < P.length && (prev.s || 0) > 8 && S.t >= S.next) { skiDown(P[S.desc++]); S.next = S.t + 1; }
+        ALL.forEach(p => { if (p.ski) skiStep(p, dt); });
+        if (S.desc >= P.length && ALL.every(p => !p.ski) && idle(ALL)) { go('feedback'); act(K, 'Cheering'); K.yawT = faceTo(K, FEED[1]);
+          P.forEach(p => { act(p, p.fell ? 'Jumping' : 'Victory pose', faceTo(p, KFEED)); p.skill = Math.min(0.95, p.skill + 0.04); }); } break; }
+      case 'feedback': if (S.t > 6) { go('disperse'); S.n++; home(); } break;
+      case 'disperse': if (idle(ALL) || S.t > 70) { ALL.forEach(p => { if (p.path) { const e = p.path[p.path.length - 1]; p.x = e[0]; p.z = e[1]; p.path = null; } p.yawT = p.home[2]; p.g.userData.play('Standing'); }); go('off'); S.t = -25; } break;   /* 25 s break */
+    }
+    ALL.forEach(p => stepP(p, dt));
+  }
+  /* ---- down Snowdrop: wedge turns along the trail; speed and turn width by skill; a weak skier may fall once and get up ---- */
+  function skiDown(p) { const a = bun.pts[0]; p.x = a[0] + (p.coach ? 0 : (Math.random() - 0.5) * 1.5); p.z = a[1]; p.path = null; p.s = 0; p.fell = false;
+    p.ski = { v: p.coach ? 3.4 : 1.6 + p.skill * 2.2, amp: p.coach ? 1.2 : 2.2 - p.skill * 1.2, ph: Math.random() * 6, fallAt: !p.coach && Math.random() < 0.75 - p.skill * 1.4 ? rnd(6, bun.len - 8) : -1 };
+    p.g.userData.play(p.coach ? 'Carving turns' : 'Snowplow', true); }
+  function skiStep(p, dt) { const k = p.ski;
+    if (p.down) { p.down.t -= dt; if (p.down.t <= 0) { const nx = p.down.q.shift(); if (nx) { p.g.userData.play(nx[0], true); p.down.t = nx[1]; } else { p.down = null; p.g.userData.play('Snowplow', true); } } return; }
+    p.s += k.v * dt; if (k.fallAt > 0 && p.s >= k.fallAt) { k.fallAt = -1; p.fell = true; S.falls++; p.down = { t: 1.3, q: [['Lying on back', 1.6], ['Getting up', 1.5]] }; p.g.userData.play('Falling sideways', true); return; }
+    const end = bun.len - 1.5;
+    if (p.s >= end) { p.ski = null; const i = P.indexOf(p); walkTo(p, p.coach ? KFEED : FEED[i], 'Snowplow', 0.9); return; }
+    const q = pointAt(bun, p.s), w = k.amp * Math.sin(p.s * 0.45 + k.ph) * Math.min(1, p.s / 6, (end - p.s) / 6), x = q.x - q.dz * w, z = q.z + q.dx * w;
+    p.yawT = Math.atan2(x - p.x, z - p.z); p.x = x; p.z = z; }
+  SK.TICK.push(dt => { if (SK.ED && SK.ED.S && SK.ED.S.on) return; tick(Math.min(dt, 0.25)); });
+  return { S, P, K, ALL, inHours, stations: { LINE, QUE, TOP, FEED } };
+})();
+SK.SCHOOLX = SCHOOLX;
+/* ===================== WILDLIFE (H2): birds and deer =====================
+   Birds: four small flocks (instanced: one draw for bodies, one for wings). A flock sits on a pine top or pecks in the snow by the village,
+   hops about, and takes off when you come close (or now and then on its own): the leader flies an arc to another perch, the rest follow
+   with their own offsets and wing beats, and settle in a spread on arrival. They stay put at night.
+   Deer: two herds in the forest near the village. Graze (head down), look up, wander, and bolt when you get close: a bounding run away from
+   you, then a calm walk back home. Always on the ground (groundY), never inside a tree trunk or a building (solids). Far away: updated less
+   often; very far: hidden and paused. */
+const WILD = (() => {
+  const RZ = SK.RES_Z, KIT = SK.KIT; if (!KIT || !SK.TREES) return null;
+  const rnd = (a, b) => a + Math.random() * (b - a), pick = a => a[Math.floor(Math.random() * a.length)], V = new THREE.Vector3();
+  const player = () => ({ on: W.on || !!(SK.P && SK.P.on), x: W.x, y: W.y, z: W.z });
+  /* ---- tree tops from the forest instances (top = base + geometry height x scale) ---- */
+  const tops = new Map(); SK.scene.traverse(o => { if (!o.isInstancedMesh || o.name !== 'forest') return; o.geometry.computeBoundingBox(); const h = o.geometry.boundingBox.max.y, m = new THREE.Matrix4(), s = new THREE.Vector3(), q = new THREE.Quaternion();
+    for (let i = 0; i < o.count; i++) { o.getMatrixAt(i, m); m.decompose(V, q, s); const k = Math.round(V.x * 4) + ',' + Math.round(V.z * 4), y = V.y + h * s.y + (o.parent ? o.parent.position.y : 0); if (!tops.has(k) || tops.get(k).y < y) tops.set(k, { x: V.x, z: V.z, y, sc: s.y }); } });
+  const VC = [-10, 60], near = (x, z, r0, r1) => { const d = Math.hypot(x - VC[0], z - VC[1]); return d > r0 && d < r1; };
+  const PERCH = [];
+  Array.from(tops.values()).filter(t => near(t.x, t.z, 25, 150)).sort(() => Math.random() - 0.5).slice(0, 14).forEach(t => PERCH.push({ kind: 'tree', x: t.x, z: t.z, y: t.y - 0.25 * t.sc, r: 0.35 * t.sc }));
+  [[-26, 47], [-16, 56], [6, 60], [34, 66], [-30, 30], [14, 44]].forEach(p => PERCH.push({ kind: 'ground', x: p[0], z: p[1], r: 1.6 }));   /* pecking spots in the snow round the village */
+  /* ---- birds: instanced body + wings ---- */
+  const NF = 4, PER = 9, NB = NF * PER;
+  const bodyG = new THREE.ConeGeometry(0.045, 0.2, 5); bodyG.rotateX(PI / 2);
+  const wingG = new THREE.BufferGeometry(); wingG.setAttribute('position', new THREE.Float32BufferAttribute([0, 0, 0.05, -0.2, 0.04, -0.02, 0, 0, -0.04, 0, 0, 0.05, 0, 0, -0.04, 0.2, 0.04, -0.02], 3)); wingG.computeVertexNormals();
+  const bm = new THREE.MeshLambertMaterial({ color: 0x2b3350 }), wm = new THREE.MeshLambertMaterial({ color: 0x3b4252, side: THREE.DoubleSide });
+  const IB = new THREE.InstancedMesh(bodyG, bm, NB), IW = new THREE.InstancedMesh(wingG, wm, NB); IB.frustumCulled = IW.frustumCulled = false; IB.name = IW.name = 'birds'; IB.userData.noSnow = IW.userData.noSnow = true; scene.add(IB); scene.add(IW);
+  const M4 = new THREE.Matrix4(), Q = new THREE.Quaternion(), E = new THREE.Euler(0, 0, 0, 'YXZ'), S3 = new THREE.Vector3();
+  const slotY = (p, x, z) => p.kind === 'ground' ? SK.groundY(x, z + RZ) + 0.05 : p.y;
+  function slots(p) { const out = []; for (let i = 0; i < PER; i++) { const a = i * 2.4 + Math.random() * 0.6, r = p.r * (0.4 + Math.random() * 0.6), x = p.x + Math.cos(a) * r, z = p.z + Math.sin(a) * r; out.push([x, slotY(p, x, z) - (p.kind === 'tree' ? Math.random() * 0.4 : 0), z]); } return out; }
+  const FL = []; for (let f = 0; f < NF; f++) { const p = PERCH.filter(q => !FL.some(o => o.p === q))[Math.floor(Math.random() * (PERCH.length - f))] || PERCH[0], sl = slots(p);
+    FL.push({ p, st: 'perch', t: rnd(20, 80), lx: p.x, ly: p.y || 0, lz: p.z, B: sl.map((s, i) => ({ x: s[0], y: s[1], z: s[2], yaw: Math.random() * 6, ph: Math.random() * 6, hop: 0, o: [rnd(-2.5, 2.5), rnd(-1.2, 1.2), rnd(-2.5, 2.5)], slot: s })) }); }
+  function takeOff(f, scare) { const px = scare ? scare.x : f.p.x, pz = scare ? scare.z - RZ : f.p.z;
+    const cand = PERCH.filter(q => q !== f.p && !FL.some(o => o !== f && o.p === q) && Math.hypot(q.x - f.p.x, q.z - f.p.z) > 30 && Math.hypot(q.x - px, q.z - pz) > 25); const to = cand.length ? pick(cand) : pick(PERCH);
+    f.from = [f.p.x, (f.p.kind === 'ground' ? SK.groundY(f.p.x, f.p.z + RZ) : f.p.y), f.p.z]; f.to = to; f.sl = slots(to); f.tt = 0; f.dur = Math.hypot(to.x - f.p.x, to.z - f.p.z) / 9 + 1.5; f.st = 'fly'; f.scared = !!scare; }
+  function birds(dt, cam) {
+    const pl = player(), night = State.time < 7 * 60 || State.time > 19 * 60;
+    FL.forEach((f, fi) => {
+      const far = Math.hypot(f.p.x - cam.x, f.p.z + RZ - cam.z) > 260 && f.st === 'perch'; if (far) return;
+      if (f.st === 'perch') { f.t -= dt;
+        const dp = Math.hypot(pl.x - f.p.x, pl.z - RZ - f.p.z), dy = pl.y - (f.p.kind === 'tree' ? f.p.y : SK.groundY(f.p.x, f.p.z + RZ));
+        if (pl.on && dp < (f.p.kind === 'tree' ? 10 : 8) && Math.abs(dy) < 14) takeOff(f, pl);   /* you came too close */
+        else if (f.t <= 0 && !night) takeOff(f, null);
+        f.B.forEach(b => { if (f.p.kind === 'ground') { b.hop -= dt; if (b.hop <= 0) { b.hop = rnd(0.6, 2.5); b.yaw += rnd(-1.2, 1.2); b.pk = 0.35; } b.pk = Math.max(0, (b.pk || 0) - dt); } }); }
+      else { f.tt += dt; const u = Math.min(1, f.tt / f.dur), e = u * u * (3 - 2 * u), A = f.from, Bp = [f.to.x, f.to.kind === 'ground' ? SK.groundY(f.to.x, f.to.z + RZ) : f.to.y, f.to.z];
+        f.lx = A[0] + (Bp[0] - A[0]) * e; f.lz = A[2] + (Bp[2] - A[2]) * e; f.ly = A[1] + (Bp[1] - A[1]) * e + Math.sin(u * PI) * (10 + f.dur);
+        f.B.forEach((b, i) => { const sp = Math.sin(u * PI), tx = u < 0.85 ? f.lx + b.o[0] * sp : f.sl[i][0], ty = u < 0.85 ? f.ly + b.o[1] * sp : f.sl[i][1], tz = u < 0.85 ? f.lz + b.o[2] * sp : f.sl[i][2], k = Math.min(1, dt * (u < 0.85 ? 4 : 6));
+          const dx = tx - b.x, dz = tz - b.z; if (Math.hypot(dx, dz) > 0.05) b.yaw = Math.atan2(dx, dz); b.x += dx * k; b.y += (ty - b.y) * k; b.z += dz * k; });
+        if (u >= 1 && f.tt > f.dur + 0.8) { f.p = f.to; f.st = 'perch'; f.t = rnd(30, 110); f.B.forEach((b, i) => { b.x = f.sl[i][0]; b.y = f.sl[i][1]; b.z = f.sl[i][2]; }); } }
+      f.B.forEach((b, i) => { const k = fi * PER + i, fly = f.st === 'fly', flap = fly ? Math.sin(SK.clock * 22 + b.ph) : (b.pk ? 0.15 : 0.05);
+        E.set(fly ? -0.15 : (b.pk ? 0.6 : 0), b.yaw, 0); Q.setFromEuler(E); M4.compose(V.set(b.x, b.y + (b.pk ? 0 : 0.03), b.z + RZ), Q, S3.set(1, 1, 1)); IB.setMatrixAt(k, M4);
+        M4.compose(V, Q, S3.set(fly ? 1 : 0.55, fly ? flap * 1.4 : 0.4, 1)); IW.setMatrixAt(k, M4); }); });
+    IB.instanceMatrix.needsUpdate = IW.instanceMatrix.needsUpdate = true;
+  }
+  /* ---- solids lookup (8 m buckets) for the deer ---- */
+  const SH = new Map(), sk = (i, j) => i * 100003 + j;
+  SK.SOLIDS.forEach(s => { const r = Math.hypot(s.hw, s.hd); for (let i = Math.floor((s.x - r) / 8); i <= Math.floor((s.x + r) / 8); i++) for (let j = Math.floor((s.z - r) / 8); j <= Math.floor((s.z + r) / 8); j++) { const k = sk(i, j); (SH.get(k) || SH.set(k, []).get(k)).push(s); } });
+  const blockedAt = (x, zw, inf) => { const L = SH.get(sk(Math.floor(x / 8), Math.floor(zw / 8))); if (!L) return false; for (const s of L) { if (s.off || s.door) continue; const dx = x - s.x, dz = zw - s.z, c = Math.cos(s.a), n = Math.sin(s.a), u = dx * c - dz * n, w = dx * n + dz * c; if (Math.abs(u) < s.hw + inf && Math.abs(w) < s.hd + inf) return true; } return false; };
+  /* ---- deer ---- */
+  const { B, bx } = KIT;
+  function deerModel(buck, fawn) {
+    const fur = 0x8a5a32, pale = 0xd9c3a0, dark = 0x2b2420, g = new THREE.Group(), body = new B();
+    body.add(bx(0.36, 0.4, 1.0), fur, 0, 0.95, 0); body.add(bx(0.3, 0.12, 0.8), pale, 0, 0.76, 0); body.add(bx(0.2, 0.16, 0.06), 0xffffff, 0, 1.06, -0.52);
+    const bg = body.build(); g.add(bg);
+    const neck = new THREE.Group(); neck.position.set(0, 1.08, 0.42); g.add(neck); const nb = new B();
+    nb.add(bx(0.18, 0.5, 0.2), fur, 0, 0.2, 0.06, { rx: 0.45 }); nb.add(bx(0.2, 0.2, 0.36), fur, 0, 0.44, 0.24); nb.add(bx(0.1, 0.09, 0.08), dark, 0, 0.42, 0.44);
+    nb.add(bx(0.05, 0.14, 0.09), fur, -0.11, 0.6, 0.16, { rz: 0.5 }); nb.add(bx(0.05, 0.14, 0.09), fur, 0.11, 0.6, 0.16, { rz: -0.5 });
+    if (buck) [-1, 1].forEach(s => { nb.add(bx(0.03, 0.3, 0.03), pale, s * 0.08, 0.7, 0.18, { rz: -s * 0.35 }); nb.add(bx(0.03, 0.16, 0.03), pale, s * 0.16, 0.8, 0.26, { rx: 0.6 }); nb.add(bx(0.03, 0.14, 0.03), pale, s * 0.14, 0.86, 0.1, { rx: -0.5 }); });
+    neck.add(nb.build());
+    const legs = [[-0.12, 0.38], [0.12, 0.38], [-0.12, -0.4], [0.12, -0.4]].map(q => { const L = new THREE.Group(); L.position.set(q[0], 0.82, q[1]); const lb = new B(); lb.add(bx(0.08, 0.5, 0.1), fur, 0, -0.25, 0); lb.add(bx(0.06, 0.32, 0.07), fur, 0, -0.62, 0); lb.add(bx(0.07, 0.05, 0.09), dark, 0, -0.8, 0.01); L.add(lb.build()); g.add(L); return L; });
+    g.scale.setScalar(fawn ? 0.62 : buck ? 1.08 : 1); g.userData.noSnow = true; return { g, neck, legs };
+  }
+  const homes = []; { const T = SK.TREES;
+    const trailD = (x, z) => { let m = 1e9; SKT.forEach(t => { for (let i = 0; i < t.pts.length - 1; i++) { const a = t.pts[i], b = t.pts[i + 1], dx = b[0] - a[0], dz = b[1] - a[1], L = dx * dx + dz * dz || 1, u = Math.max(0, Math.min(1, ((x - a[0]) * dx + (z - a[1]) * dz) / L)); m = Math.min(m, Math.hypot(x - a[0] - dx * u, z - a[1] - dz * u)); } }); return m; };
+    const cand = T.filter(t => near(t[0], t[1], 45, 170) && trailD(t[0], t[1]) > 16 && T.filter(q => Math.hypot(q[0] - t[0], q[1] - t[1]) < 14).length >= 5).sort(() => Math.random() - 0.5);
+    for (const c of cand) { if (homes.length >= 2) break; if (homes.some(h => Math.hypot(h[0] - c[0], h[1] - c[1]) < 60)) continue; homes.push([c[0] + 3, c[1] + 3]); } }
+  const DEER = []; homes.forEach((h, hi) => [0, 1, 2].forEach(i => { const m = deerModel(i === 0 && hi === 0, i === 2); scene.add(m.g);
+    const d = Object.assign(m, { home: h, x: h[0] + rnd(-4, 4), z: h[1] + rnd(-4, 4), yaw: Math.random() * 6, st: 'graze', t: rnd(2, 8), v: 0, ph: Math.random() * 6, head: -0.9, herd: hi });
+    for (let k = 0; k < 20 && blockedAt(d.x, d.z + RZ, 0.6); k++) { d.x = h[0] + rnd(-8, 8); d.z = h[1] + rnd(-8, 8); } DEER.push(d); }));
+  /* the clear heading nearest the one wanted: look 'ahead' metres along it and fan out up to ±100° (trees, walls, cliffs) */
+  const clearAt = (d, a, ahead) => { const x = d.x + Math.sin(a) * ahead, z = d.z + Math.cos(a) * ahead; return !blockedAt(x, z + RZ, 0.5) && !blockedAt(d.x + Math.sin(a) * ahead * 0.5, d.z + Math.cos(a) * ahead * 0.5 + RZ, 0.5) && Math.abs(SK.groundY(x, z + RZ) - SK.groundY(d.x, d.z + RZ)) < ahead * 1.1; };
+  function steer(d, want, ahead) { for (const o of [0, 0.35, -0.35, 0.7, -0.7, 1.05, -1.05, 1.4, -1.4, 1.75, -1.75]) if (clearAt(d, want + o, ahead)) return want + o; return want; }
+  function deer(dt, cam, frame) {
+    const pl = player();
+    DEER.forEach((d, i) => {
+      const dc = Math.hypot(d.x - cam.x, d.z + RZ - cam.z); d.g.visible = dc < 320; if (!d.g.visible) return;
+      if (dc > 120 && (frame + i) % 4) { d.lag = (d.lag || 0) + dt; return; } const t = Math.min(0.4, dt + (d.lag || 0)); d.lag = 0;
+      const pd = Math.hypot(pl.x - d.x, pl.z - RZ - d.z), fast = SK.P && SK.PL && SK.PL.spd > 6;
+      if (pl.on && pd < (fast ? 30 : 22) && d.st !== 'flee') { const herd = DEER.filter(o => o.herd === d.herd); herd.forEach(o => { o.st = 'flee'; o.t = rnd(4.5, 6.5); o.fx = o.x - pl.x; o.fz = o.z - (pl.z - RZ); const L = Math.hypot(o.fx, o.fz) || 1; o.fx /= L; o.fz /= L; }); }
+      d.t -= t; let sp = 0, headT = 0;
+      if (d.st === 'graze') { headT = -0.95; if (d.t <= 0) { d.st = Math.random() < 0.4 ? 'look' : 'walk'; d.t = rnd(2, 5); if (d.st === 'walk') { const a = Math.random() * 6.28, r = rnd(2, 12); d.tx = d.home[0] + Math.cos(a) * r; d.tz = d.home[1] + Math.sin(a) * r; d.t = 12; } } }
+      else if (d.st === 'look') { headT = 0.15; if (d.t <= 0) { d.st = 'graze'; d.t = rnd(4, 10); } }
+      else if (d.st === 'walk') { headT = -0.1; sp = 0.9; const dx = d.tx - d.x, dz = d.tz - d.z; if (Math.hypot(dx, dz) < 0.6 || d.t <= 0) { d.st = 'graze'; d.t = rnd(4, 10); sp = 0; } else d.yaw += wrapA(steer(d, Math.atan2(dx, dz), 1.6) - d.yaw) * Math.min(1, t * 3); }
+      else if (d.st === 'flee') { headT = 0.25; sp = 7; if (pl.on) { const ax = d.x - pl.x, az = d.z - (pl.z - RZ), L = Math.hypot(ax, az) || 1; d.fx = ax / L; d.fz = az / L; }   /* keep running away from where you are now */
+        d.yaw += wrapA(steer(d, Math.atan2(d.fx, d.fz), 3) - d.yaw) * Math.min(1, t * 5); if (d.t <= 0) { d.st = 'walk'; d.tx = d.home[0] + rnd(-5, 5); d.tz = d.home[1] + rnd(-5, 5); d.t = 40; } }
+      d.v += (sp - d.v) * Math.min(1, t * (d.st === 'flee' ? 3 : 2));
+      if (d.v > 0.02) { let nx = d.x + Math.sin(d.yaw) * d.v * t, nz = d.z + Math.cos(d.yaw) * d.v * t;
+        const steep = Math.abs(SK.groundY(nx, nz + RZ) - SK.groundY(d.x, d.z + RZ)) / Math.max(0.01, d.v * t) > 1.2;
+        if (blockedAt(nx, nz + RZ, 0.45) || steep) { d.yaw += (Math.random() < 0.5 ? 1 : -1) * rnd(0.8, 1.6); if (d.st === 'flee') { d.fx = Math.sin(d.yaw); d.fz = Math.cos(d.yaw); } }   /* tree or wall ahead: turn away */
+        else { d.x = nx; d.z = nz; } }
+      d.head += (headT - d.head) * Math.min(1, t * 3); d.neck.rotation.x = -d.head * 0.9;
+      const run = d.st === 'flee' && d.v > 3; d.ph += t * (run ? 9 : d.v * 5.5);
+      d.legs.forEach((L, k) => { const front = k < 2, s = run ? Math.sin(d.ph + (front ? 0 : PI * 0.6)) : Math.sin(d.ph + (k === 0 || k === 3 ? 0 : PI)); L.rotation.x = s * (run ? 0.75 : d.v > 0.05 ? 0.35 : 0); });
+      const gy = SK.groundY(d.x, d.z + RZ), ga = SK.groundY(d.x + Math.sin(d.yaw) * 0.5, d.z + RZ + Math.cos(d.yaw) * 0.5), gb = SK.groundY(d.x - Math.sin(d.yaw) * 0.5, d.z + RZ - Math.cos(d.yaw) * 0.5);
+      d.y = gy + (run ? Math.abs(Math.sin(d.ph)) * 0.25 : 0) - 0.02; d.g.position.set(d.x, d.y, d.z + RZ); d.g.rotation.set(0, 0, 0); d.g.rotateY(d.yaw); d.g.rotateX(-Math.atan2(ga - gb, 1.0));
+    });
+  }
+  let frame = 0;
+  SK.TICK.push(dt => { if (SK.ED && SK.ED.S && SK.ED.S.on) return; frame++; const cam = SK.cam.position; dt = Math.min(dt, 0.25); birds(dt, cam); deer(dt, cam, frame); });
+  return { FL, PERCH, DEER, homes, blockedAt, IB, IW, takeOff };
+})();
+SK.WILD = WILD;
 /* ---- interaction: quest targets come before shops, nodes and stores. Works on skis too when you've stopped ---- */
 function qTarget(x, wz) {
   if (!W.on || W.ride || W.board || W.unboard || !State.q) return null;
