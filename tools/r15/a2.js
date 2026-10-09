@@ -5,7 +5,7 @@ const fails = [], info = {}, chk = (c, m) => { if (!c) fails.push(m); };
 const V3 = () => new THREE.Vector3(), W = SK.W, PL = SK.PL, H = SK.HOTEL, RZ = SK.RES_Z, camWas = SK.State.cam.walk, inStoreWas = SK.inStore;
 SK.inStore = () => false;   /* stores hide the third-person body; the check needs it placed */
 const rc = new THREE.Raycaster(), DOWN = new THREE.Vector3(0, -1, 0); rc.camera = SK.cam;
-const isPerson = o => { for (let p = o; p; p = p.parent) if (p.userData && (p.userData.person || p.userData.seats)) return true; return false; };
+const isPerson = o => { for (let p = o; p; p = p.parent) { if (p.userData && (p.userData.person || p.userData.seats)) return true; if (!p.visible) return true; } return false; };
 const surfRay = (x, z, yTop) => { rc.set(new THREE.Vector3(x, yTop, z), DOWN); rc.far = 2.5;
   const hits = rc.intersectObjects(SK.scene.children, true).filter(h => h.object.visible && h.object.isMesh && !isPerson(h.object) && h.object.material && h.object.material.type !== 'ShaderMaterial' && !(h.object.material.transparent && h.object.material.opacity < 0.99) && h.face && h.face.normal.y > 0.5);
   return hits.length ? hits[0].point.y : null; };

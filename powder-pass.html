@@ -974,7 +974,7 @@ function pear() {
 /* =====================================================================
    CABINS (hollow, furnished, chimney + deck) and LIFT STATION
    ===================================================================== */
-const NOSNOW = [], SNOWS = [], SPIN = [], ROOFS = [], SOLIDS = [], TICK = [], RES_Z = -136, FY = 0.2, BRICK = 0xb8492b, CREAM = 0xf3e6c8;
+const NOSNOW = [], SNOWS = [], SPIN = [], ROOFS = [], SOLIDS = [], TICK = [], RES_Z = -136, RES_Y = 0.06, FY = 0.2, BRICK = 0xb8492b, CREAM = 0xf3e6c8;
 function wall(b, K, x, z, ry, L, H, T, col, ops) {
   const c = Math.cos(ry), s = Math.sin(ry);
   const P = (u0, u1, y0, y1) => {
@@ -1173,7 +1173,8 @@ const FONT = { 0: '111101101101111', 1: '010110010010111', 2: '111001111100111',
 function hNum(b, str, x, y, z, px, col) { const n = str.length; str.split('').forEach((ch, k) => FONT[ch].split('').forEach((v, i) => { if (v === '1') b.add(bx(px * 0.95, px * 0.95, px * 0.6), col, x + (k - (n - 1) / 2) * px * 4 + (i % 3 - 1) * px, y - Math.floor(i / 3) * px, z, { noOutline: 1 }); })); }
 function hText(b, str, x, y, z, px, col) { const n = str.length; str.split('').forEach((ch, k) => FONT[ch].split('').forEach((v, i) => { if (v === '1') b.add(bx(px * 0.9, px * 0.9, px * 0.5), col, x + (k - (n - 1) / 2) * px * 4 + (i % 3 - 1) * px, y - Math.floor(i / 3) * px, z, { basic: 1 }); })); }
 const hLight = (b, x, y, z) => { b.rod([x, y + 0.45, z], [x, y, z], 0.02, C.metal); b.add(sp(0.2), 0xffe98a, x, y, z, { alpha: 0.45 }); };
-const hStool = (b, x, z, h, col) => { b.add(cy(0.22, 0.22, 0.07, 12), col, x, WY + h, z); b.add(cy(0.04, 0.04, h, 8), C.metal, x, WY + h / 2, z); };
+const hStool = (b, x, z, h, col) => { b.add(cy(0.22, 0.22, 0.07, 12), col, x, WY + h, z); b.add(cy(0.04, 0.04, h, 8), C.metal, x, WY + h / 2, z);
+  b.add(new THREE.TorusGeometry(0.17, 0.018, 6, 18), C.metal, x, WY + h * 0.47, z, { rx: PI / 2 }); [0, 1, 2].forEach(i => { const a = i * TAU / 3; b.rod([x, WY + h * 0.47, z], [x + Math.cos(a) * 0.17, WY + h * 0.47, z + Math.sin(a) * 0.17], 0.012, C.metal); });   /* footring the sitter's boots rest on */ };
 function hCouch(b, K, x, z, len, col, fx, fz) {
   const ax = Math.abs(fx) > 0, F = [fx, fz], R = [-fz, fx];
   const Q = (u, v, su, sv, y, h) => { const px = x + u * R[0] + v * F[0], pz = z + u * R[1] + v * F[1]; b.add(bx(ax ? sv : su, h, ax ? su : sv), col, px, WY + y, pz); };
@@ -1598,7 +1599,7 @@ function putHotel(R, g, x, z) {
   const HX = g.userData.HX, LV2 = g.position.y + HX.lv2;
   g.userData.K.forEach(k => SOLIDS.push(W(k, { top: LV }))); g.userData.K2.forEach(k => SOLIDS.push(W(k, { bot: LV, top: LV2 }))); g.userData.K4.forEach(k => SOLIDS.push(W(k, { bot: LV2 }))); g.userData.K3.forEach(k => SOLIDS.push(W(k, {})));
   (g.userData.KS || []).forEach(k => SOLIDS.push(W(k, { top: g.position.y + k.top }))); (g.userData.KR || []).forEach(k => SOLIDS.push(W(k, { bot: g.position.y + k.bot, top: g.position.y + k.top })));
-  const gy0 = g.position.y; HOTEL.x = x; HOTEL.z = RES_Z + z; HOTEL.gy = gy0; HOTEL.HX = HX; HOTEL.doors = [];
+  const gy0 = g.position.y; HOTEL.x = x; HOTEL.z = RES_Z + z; HOTEL.gy = gy0; HOTEL.wy = gy0 + RES_Y;   /* gy: in the resort group; wy: world (the resort group sits RES_Y up) */ HOTEL.HX = HX; HOTEL.doors = [];
   HX.rooms.forEach(rm => { const piv = new THREE.Group(), pb = new B(), su = rm.type === 'suite', cs = -(rm.sg || 1);   /* cs: the corridor side of the leaf */
     pb.add(bx(0.8, 2.1, 0.06), su ? 0x6b4226 : TIMB, 0.4, 1.05, 0);
     [-1, 1].forEach(f => { const pc = su ? 0x7d5030 : 0xb37a3f; pb.add(bx(0.56, 0.86, 0.016), pc, 0.4, 1.47, f * 0.036); pb.add(bx(0.56, 0.7, 0.016), pc, 0.4, 0.55, f * 0.036);   /* raised panels both faces */
@@ -1885,8 +1886,8 @@ const DEMO_EX = { Waving: { smile: 1.2, brow: 0.4, blush: 0.4 }, Walking: { smil
   Tumbling: { mo: 1.3, brow: 1, ang: -0.7, eye: 1.35, smile: -0.5 }, 'Crash tumble': { mo: 1.3, brow: 1, ang: -0.7, eye: 1.35, smile: -0.5 }, 'Trip and fall': { mo: 1, brow: 1, ang: -0.7, eye: 1.3, smile: -0.4, lid: 0.0 }, 'Catch an edge': { mo: 1, brow: 1, ang: -0.7, eye: 1.3, smile: -0.4 }, 'Falling sideways': { mo: 0.8, brow: 0.9, ang: -0.5, eye: 1.25, smile: -0.3, daze: 0.6 },
   'Lying on back': { lid: 0.55, mo: 0.25, smile: -0.2, daze: 1, brow: 0.2, ang: -0.4 },
   'Getting up': { smile: 0.2, lid: 0.3, ang: -0.3, mo: 0.2 }, Snowplow: { ang: 0.3, smile: 0.2, wide: 0.8, blush: 0.4 }, 'Tuck / straight run': { ang: 0.7, smile: 0, wide: 0.7, eye: 0.8, blush: 0.5 }, 'Hockey stop': { mo: 0.6, brow: 0.5, ang: 0.2, smile: 0.4 },
-  '360 spin jump': { mo: 0.8, smile: 1.3, brow: 0.7, blush: 0.6 }, 'Victory pose': { smile: 1.4, mo: 0.8, brow: 0.5, blush: 0.7 } };
-const DEMO_ACT = { Waving: 0.2, Walking: 0.3, Sprinting: 1, Jumping: 0.5, Jump: 0.6, Backflip: 0.8, 'Front flip': 0.8, Cheering: 0.7, Tumbling: 0.8, 'Crash tumble': 0.8, 'Hockey stop': 0.9, '360 spin jump': 0.8, 'Tuck / straight run': 0.9, Snowplow: 0.5, 'Victory pose': 0.6 };
+  '360 spin jump': { mo: 0.8, smile: 1.3, brow: 0.7, blush: 0.6 }, 'Victory pose': { smile: 1.4, mo: 0.8, brow: 0.5, blush: 0.7 }, Skate: { smile: 0.7, mo: 0.3, blush: 0.7, wide: 0.9 } };
+const DEMO_ACT = { Waving: 0.2, Walking: 0.3, Sprinting: 1, Jumping: 0.5, Jump: 0.6, Backflip: 0.8, 'Front flip': 0.8, Cheering: 0.7, Tumbling: 0.8, 'Crash tumble': 0.8, 'Hockey stop': 0.9, '360 spin jump': 0.8, 'Tuck / straight run': 0.9, Snowplow: 0.5, 'Victory pose': 0.6, Skate: 0.7 };
 /* particle pool with kinds: soft (snow/breath/smoke/steam), fire, spark, ember, water drips (with splash), snowflakes */
 const PG = new THREE.Group(), PP = [], pGeo = new THREE.SphereGeometry(1, 7, 5), pOut = new THREE.MeshBasicMaterial({ color: 0x232a4a, side: THREE.BackSide, transparent: true, opacity: 0.25, depthWrite: false });
 const PK = { snow: { c: 0xeaf4ff, o: 0.5, ol: 1, gy: 0.1 }, breath: { c: 0xffffff, o: 0.8, ol: 1, gy: 0.1 }, fire: { c: 0xffd23a, o: 0.92, gy: 2.2 }, smoke: { c: 0x5a606e, o: 0.4, gy: 0.5 }, mist: { c: 0xffffff, o: 0.16, gy: 0.25 }, steam: { c: 0xffffff, o: 0.3, ol: 1, gy: 0.4 },
@@ -2031,6 +2032,7 @@ TICK.push(dt => FXL.forEach(f => {
     if (f.t >= 2.5) { f.t = 0; const col = FXC[Math.floor(Math.random() * FXC.length)]; for (let n = 0; n < 52; n++) { const th = Math.random() * TAU, ph = Math.acos(2 * Math.random() - 1), sp2 = 2.2 + Math.random() * 1.6; puff(x, y + 6.8, z, Math.sin(ph) * Math.cos(th) * sp2, Math.cos(ph) * sp2, Math.sin(ph) * Math.sin(th) * sp2, 0.11, 1.4 + Math.random() * 0.4, 0, 'spark', col); } }
   }
 }));
+const PERSONS = [];   /* every human ever built (player avatars, NPCs, gallery figures): seat fitting and LOD walk this list */
 function person(o) {
   o = o || {}; const seed = (PNUM++) * 2.3 + 0.7, kid = !!o.kid, fem = !!o.f, role = o.role || '', skis = o.skis !== false, amp = o.amp === undefined ? (skis ? 0.85 : 0.12) : o.amp;
   const cSkin = o.skin === undefined ? 0xf2c6a0 : o.skin, cSkin2 = shade(cSkin, 0.82), cJ = o.jacket === undefined ? 0xff3232 : o.jacket, cJ2 = o.jacket2 === undefined ? shade(cJ, 0.78) : o.jacket2,
@@ -2158,12 +2160,12 @@ function person(o) {
   const bl = (c, t, kk) => { if (typeof t === 'number') return c + (t - c) * kk; for (let j = 0; j < t.length; j++) c[j] = bl(c[j], t[j], kk); return c; };
   const cross = (k, v, thr) => { const pv = DS[k]; DS[k] = v; return pv !== undefined && pv < thr && v >= thr; };
   const burst = (n, spd, sz) => { g.getWorldPosition(vM); const x = vM.x, y = vM.y, z = vM.z; for (let i = 0; i < n; i++) { const an = i / n * TAU + Math.random() * 0.5; puff(x + Math.cos(an) * 0.35, y + 0.1, z + Math.sin(an) * 0.35, Math.cos(an) * spd, 0.5 + Math.random() * 0.6, Math.sin(an) * spd, sz * 0.7, 0.9, 1.7); } };
-  const live = () => ({ pelY: pel.position.y, pelX: pel.position.x, pelZ: 0, pry: pel.rotation.y, prz: pel.rotation.z, torX: tor.rotation.x, torY: tor.rotation.y, pp: 0, fx: 1, f: [[0, 0], [0, 0]], fr: sk.map(q => [q.rotation.x, q.rotation.y, q.rotation.z]), arm: [-1, 1].map(sd => { const a = arms.find(q => q.s === sd); return [a.sh.rotation.x, a.el.rotation.x]; }) });
+  const live = () => ({ pelY: pel.position.y, pelX: pel.position.x, pelZ: 0, pry: pel.rotation.y, prz: pel.rotation.z, torX: tor.rotation.x, torY: tor.rotation.y, pp: 0, fx: 1, f: [[0, 0], [0, 0]], fr: sk.map(q => [q.rotation.x, q.rotation.y, q.rotation.z]), arm: [-1, 1].map(sd => { const a = arms.find(q => q.s === sd); return [a.sh.rotation.x, a.el.rotation.x]; }), pa: [0.32, 0.32] });
   const demoPose = (dt, t0) => {
     let T = 0; DM.forEach(m => { T += m[1]; }); const u = ((t0 % T) + T) % T; let i = 0, a0 = 0; while (i < DM.length - 1 && u >= a0 + DM[i][1]) a0 += DM[i++][1];
     const nm = ctl ? ctl.nm : DM[i][0], lt = ctl ? ctl.t : u - a0, p = ctl ? Math.min(1, lt / ((DM.find(m => m[0] === nm) || [0, 3])[1])) : lt / DM[i][1], hp = AY + D0, def = nm === 'Carving turns' || nm === 'Standing'; if (ctl) ctl.t += dt * (g.userData.rate || 1); else (globalThis.DEMOS = globalThis.DEMOS || {})[o.demo] = i;
     kneeUp = nm === 'Sitting'; DS.ex = DEMO_EX[nm]; DS.act = DEMO_ACT[nm]; DS.spray = def ? undefined : 0;
-    const P = live(); let rx = 0, ry = 0, rY = def ? root.position.y : 0, rZ = 0, rzz = 0, rX = 0; if (!DS.v) DS.v = live();
+    const P = live(); let rx = 0, ry = 0, rY = def ? root.position.y : 0, rZ = 0, rzz = 0, rX = 0, pa = null; if (!DS.v) DS.v = live();
     const air = (q, spin, dir) => {
       if (cross('take', q, 0.25)) burst(5, 1.1, 0.1); if (cross('land', q, 0.8)) burst(8, 1.7, 0.14);
       if (q < 0.25) { const c = sm(q / 0.25); P.pelY = hp - 0.7 * c; P.torX = (skis ? 0.2 : 0.03) + 0.5 * c; P.arm = [[0.9 * c, -0.3], [0.9 * c, -0.3]]; }
@@ -2188,12 +2190,12 @@ function person(o) {
       case 'Backflip': air((lt / 1.6) % 1, false, -1); break;
       case 'Front flip': air((lt / 1.6) % 1, false, 1); break;
       case 'Sitting': { const c = sm(lt / 0.9); if (cross('sit', lt / 0.9, 1)) burst(5, 1.1, 0.12); P.pelX = 0; P.pry = 0; P.prz = 0; P.torY = 0; P.fx = 1 + 0.45 * c; P.pelY = hp - (hp - 0.5) * c; P.f = [[1.35 * c, 0], [1.35 * c, 0]]; P.fr = [[0, -0.3 * c, 0], [0, 0.3 * c, 0]]; P.arm = [[-0.1 - 0.8 * c, -0.7 * c - 0.4 * (1 - c)], [-0.1 - 0.8 * c, -0.7 * c - 0.4 * (1 - c)]]; P.torX = 0.1; break; }
-      case 'Sit on chair': { const c = sm(lt / 0.7), h = seatPel(), dv = Math.max(0.2, h - AY - 0.25), f = Math.sqrt(Math.max(0.12, (L1 * L1 + L2 * L2) - dv * dv)) * 0.9;
-        P.pelX = 0; P.pry = 0; P.prz = 0; P.torY = 0; P.fx = 1 + 0.14 * c; P.pelY = hp - (hp - h) * c; P.f = [[f * c, 0], [f * c, 0]]; P.fr = [[0, -0.12 * c, 0], [0, 0.12 * c, 0]];
+      case 'Sit on chair': { const c = sm(lt / 0.7), h = seatPel(), fl = footLift(), dv = Math.max(0.2, h - AY - fl - 0.25), f = Math.sqrt(Math.max(0.12, (L1 * L1 + L2 * L2) - dv * dv)) * 0.9;
+        P.pelX = 0; P.pry = 0; P.prz = 0; P.torY = 0; P.fx = 1 + 0.14 * c; P.pelY = hp - (hp - h) * c; P.f = [[f * c, fl * c], [f * c, fl * c]]; P.fr = [[0, -0.12 * c, 0], [0, 0.12 * c, 0]];
         P.arm = [[-0.1 - 0.7 * c, -0.4 - 0.7 * c], [-0.1 - 0.7 * c, -0.4 - 0.7 * c]]; P.torX = 0.04; break; }
       case 'Eating': case 'Snacking': {   /* right hand to the mouth and back, every 0.8 s; Eating is seated */
         const sitE = nm === 'Eating', up = Math.pow(Math.max(0, Math.sin(PI * ((lt % 0.8) / 0.8))), 0.7);
-        if (sitE) { const h = seatPel(), dv = Math.max(0.2, h - AY - 0.25), f = Math.sqrt(Math.max(0.12, (L1 * L1 + L2 * L2) - dv * dv)) * 0.9; P.fx = 1.14; P.pelY = h; P.f = [[f, 0], [f, 0]]; P.fr = [[0, -0.12, 0], [0, 0.12, 0]]; P.arm[0] = [-0.8, -1.1]; P.torX = 0.12; }
+        if (sitE) { const h = seatPel(), fl = footLift(), dv = Math.max(0.2, h - AY - fl - 0.25), f = Math.sqrt(Math.max(0.12, (L1 * L1 + L2 * L2) - dv * dv)) * 0.9; P.fx = 1.14; P.pelY = h; P.f = [[f, fl], [f, fl]]; P.fr = [[0, -0.12, 0], [0, 0.12, 0]]; P.arm[0] = [-0.8, -1.1]; P.torX = 0.12; }
         else { P.pelY = hp; P.arm[0] = [-0.5, -1.2]; P.torX = 0.03; }
         P.arm[1] = [-0.6 - 0.9 * up, -1.0 - 1.4 * up]; P.pelX = 0; P.pry = 0; P.prz = 0; P.torY = 0.06 * up; break; }
       case 'Tumbling': case 'Crash tumble': {
@@ -2218,6 +2220,15 @@ function person(o) {
         if (skis) P.fr = [[0.3 * gd, 0.5 * gd, 0], [0.3 * gd, -0.5 * gd, 0]]; if (skis) DS.spray = 2 * fl * (1 - up); break; }
       case 'Lying on back': if (cross('lie', lt / 0.7, 1)) burst(8, 2, 0.16); lie(sm(lt / 0.7)); break;
       case 'Getting up': lie(1 - sm(p)); P.pelY = hp - 0.45 * Math.sin(PI * p); break;
+      case 'Skate': {   /* skating push-off on the flats (V2): each push one ski yaws out onto its inside edge and drives back while the weight rides the
+          other ski; both poles plant ahead and drive back through the push; the free ski lifts and swings forward to become the glide ski.
+          Phase from g.userData.skate.ph (distance travelled), so the stride matches the speed */
+        const sk0 = g.userData.skate || { ph: lt * 4, amt: 1 }, ph = sk0.ph, w = Math.sin(ph), half = ((ph % PI) + PI) % PI / PI, dr = half < 0.6 ? sm(half / 0.6) : 1 - sm((half - 0.6) / 0.4);
+        for (let j = 0; j < 2; j++) { const s = j ? 1 : -1, pv = Math.sin(ph + j * PI), push = Math.max(0, pv), rec = Math.max(0, -pv);
+          P.f[j] = [0.12 - 0.62 * push + 0.2 * rec, 0.16 * Math.pow(Math.max(0, Math.sin(ph + j * PI - PI * 1.15)), 2) * (rec > 0.2 ? 1 : 0)];
+          P.fr[j] = [0.04 * push, s * (0.2 + 0.24 * push), s * 0.24 * push]; }
+        P.fx = 1.25; P.pelX = 0.17 * w; P.pelZ = -0.08; P.pelY = hp - 0.3 - 0.08 * Math.abs(w); P.pry = -0.12 * w; P.prz = 0.09 * w; P.torX = 0.42; P.torY = 0.1 * w;
+        P.arm = [[-1.15 + 1.75 * dr, -0.62 + 0.42 * dr], [-1.15 + 1.75 * dr, -0.62 + 0.42 * dr]]; pa = [0.42 + 0.75 * dr, 0.42 + 0.75 * dr]; P.pp = pa[0]; DS.spray = 0.35 * Math.max(0, Math.abs(w) - 0.6); break; }
       case 'Snowplow': P.fx = 1.9; P.fr = [[0, 0.2, -0.22], [0, -0.2, 0.22]]; P.pelX = 0; P.pelY = hp - 0.3; P.torX = 0.3; P.pry = 0.12 * Math.sin(3 * lt); P.prz = 0; P.torY = 0; P.arm = [[-0.9, -0.9], [-0.9, -0.9]]; P.pp = 0.5; DS.spray = 1.2; break;
       case 'Tuck / straight run': P.pelX = 0; P.pelY = hp - 0.85; P.pelZ = -0.55; P.torX = 1.1; P.pry = 0; P.prz = 0; P.torY = 0; P.arm = [[-0.35, -2.0], [-0.35, -2.0]]; P.pp = 1.2; DS.spray = 1.0; break;
       case 'Hockey stop': { const sw = p < 0.7 ? sm(p / 0.25) : 1 - sm((p - 0.7) / 0.3); P.fr = [[0, 1.3 * sw, 0.45 * sw], [0, 1.3 * sw, 0.45 * sw]]; P.pelX = 0; P.pry = 0.8 * sw; P.prz = -0.3 * sw; P.torY = -0.5 * sw; P.pelY = hp - 0.3 * sw; P.torX = 0.2 + 0.3 * sw; P.arm = [[-0.6 - 0.4 * sw, -0.9], [-0.6 - 0.4 * sw, -0.9]]; P.pp = 0.5; DS.spray = 3 * sw; break; }
@@ -2228,10 +2239,11 @@ function person(o) {
       case 'Grab': P.pelX = 0; P.pelY = hp - 0.9; P.torX = 0.75; P.pry = 0; P.prz = 0; P.torY = 0.2; P.f = [[0.35, 0.7], [0.35, 0.7]]; P.arm = [[-0.4, -0.2], [-2.4, -0.3]]; P.pp = 1.0; DS.spray = 0; break;
       case 'Victory pose': P.pelX = 0; P.pelY = hp - 0.05; P.torX = -0.05; P.pry = 0; P.prz = 0; P.torY = 0.15 * Math.sin(2 * lt); P.arm = [[-2.6, -0.2], [-2.6, -0.2]]; P.pp = 0.3; break;
     }
+    P.pa = pa || [P.pp || 0.32, P.pp || 0.32];   /* pole angle per hand (skating plants both; other moves share pp) */
     if (g.userData.snack && nm !== 'Eating' && nm !== 'Snacking') {   /* eating / drinking on top of whatever the body is doing: only the right arm takes the food to the mouth */
       DS.snT = (DS.snT || 0) + dt; const u = Math.pow(Math.max(0, Math.sin(PI * ((DS.snT % 0.8) / 0.8))), 0.7); P.arm[1] = [-0.6 - 0.9 * u, -1.0 - 1.4 * u];
     } else DS.snT = 0;
-    const kk = 1 - Math.exp(-dt * (nm === 'Walking' || nm === 'Sprinting' || nm === 'Hop' || nm === 'Land' ? 24 : 10)), D = DS.v; Object.keys(P).forEach(k => { if (typeof P[k] === 'number') D[k] = bl(D[k], P[k], kk); else bl(D[k], P[k], kk); });
+    const kk = 1 - Math.exp(-dt * (nm === 'Walking' || nm === 'Sprinting' || nm === 'Hop' || nm === 'Land' || (nm === 'Skate' && lt > 0.3) ? 24 : 10)), D = DS.v; Object.keys(P).forEach(k => { if (typeof P[k] === 'number') D[k] = bl(D[k], P[k], kk); else bl(D[k], P[k], kk); });
     /* root motion cross-fade: when the move changes, ease the whole body from where it was instead of snapping */
     if (DS.lastNm !== nm) { DS.lastNm = nm; DS.bt = DS.R ? 0.45 : 0; }
     const RT = [rx, ry, rzz, rX, rY, rZ];
@@ -2241,7 +2253,7 @@ function person(o) {
     root.rotation.set(DS.R[0], DS.R[1], DS.R[2]); root.position.set(DS.R[3], DS.R[4], DS.R[5]);
     sk.forEach((q, j) => { q.position.set(fx(j ? 1 : -1) * D.fx, D.f[j][1], D.f[j][0]); q.rotation.set(D.fr[j][0], D.fr[j][1], D.fr[j][2]); });
     pel.position.set(D.pelX, D.pelY, D.pelZ); pel.rotation.set(0, D.pry, D.prz); tor.rotation.set(D.torX, D.torY, 0);
-    arms.forEach(a => { const d = D.arm[a.s < 0 ? 0 : 1]; a.sh.rotation.set(d[0], 0, a.s * 0.2); a.el.rotation.x = d[1]; a.pp = D.pp; if (a.pole) a.pole.rotation.x = (D.pp || 0.32) - (tor.rotation.x + d[0] + d[1]); });
+    arms.forEach(a => { const d = D.arm[a.s < 0 ? 0 : 1]; a.sh.rotation.set(d[0], 0, a.s * 0.2); a.el.rotation.x = d[1]; a.pp = D.pa[a.s < 0 ? 0 : 1]; if (a.pole) a.pole.rotation.x = (a.pp || 0.32) - (tor.rotation.x + d[0] + d[1]); });
   };
   const fx = sd => sd * 0.34 * (kid ? 0.85 : 1);
   /* boots on uneven snow: on a slope the feet used to stay level with the body, burying the uphill sole up to 20 cm. Each foot is
@@ -2262,6 +2274,8 @@ function person(o) {
   /* seatH is the hip height (body-group units) of an unscaled adult on that seat: the seat surface is seatH - SEAT_T. Hips go on that
      surface for any body size (kids, women and the 0.9 HUMAN_K scale included), so nobody floats above or sinks into the seat */
   function seatPel() { const SEAT_T = 0.37, s = Math.max(0.43, (g.userData.seatH || 1.02) - SEAT_T); return s / RS + SEAT_T; }
+  /* high seats (bar stools): feet go up onto the footrest by however much the seat is above a normal chair, so the thighs stay level */
+  function footLift() { const s = Math.max(0.43, (g.userData.seatH || 1.02) - 0.37); return Math.max(0, s - 0.68) / RS; }
   let lodAcc = 0, lodN = PNUM, lodF = 0; const lodV = V(0, 0, 0);
   TICK.push((dt0, t0) => {
     /* level of detail: people far from the camera are animated every 3rd frame (time still adds up, so nothing slows down) */
@@ -2328,7 +2342,7 @@ function person(o) {
           else SNPFX.clump(vA.x, vA.y, vA.z, vN.x * 1.2, vN.y * 1.1, vN.z * 1.2, 0.016 + 0.02 * Math.random() * (0.5 + sf)); } }
     }
   });
-  g.userData.person = 1; g.userData.skis = skis; g.userData.bodyK = RS;
+  g.userData.person = 1; g.userData.skis = skis; g.userData.bodyK = RS; PERSONS.push(g);
   g.userData.play = (nm, force) => { if (force || !ctl || ctl.nm !== nm) ctl = { nm: nm, t: 0 }; };
   g.userData.animInfo = () => ctl;
   return g;
@@ -2498,7 +2512,8 @@ const TOWER_Z = [8.5, 17, 25.5];
    tower, gentle wind gusts) and the swing dies away slowly; guide rails at the stations damp it out completely, so cars
    arrive calm at the drop-off. */
 const V_LINE = 4.5, V_ST = 0.825, LIFT_HEAD = 8, GRAV = 9.81;
-const CHAIR_SEAT = k => [0.32, -2.68, k ? 0.45 : -0.45], CHAIR_EYE = k => [0.3, -1.42, k ? 0.45 : -0.45];
+/* two riders per chair, each centred on an outer cushion (cushions at z -0.8 / 0 / 0.8, dividers at +-0.4: +-0.45 sat on the divider) */
+const CHAIR_SEAT = k => [0.32, -2.68, k ? 0.8 : -0.8], CHAIR_EYE = k => [0.3, -1.42, k ? 0.8 : -0.8];
 const GON_FY = -2.42 * GK + 0.05, GON_WD = 1.4 * GK;
 const GON_SPOT = k => [k ? 0.62 : -0.62, GON_FY + 0.02, -GON_WD / 2 + 0.62], GON_EYE = k => [k ? 0.62 : -0.62, GON_FY + 1.12, -GON_WD / 2 + 0.55], GON_DOOR = [0, GON_FY + 0.02, GON_WD / 2 + 0.2];
 /* ===== POWDER PASS: lifts with a heading. Built in the lift's own frame (bottom wheel at the origin, running up local -z) inside a
@@ -4614,7 +4629,7 @@ function buildSouth(R, tagG) {
 
 function buildWorld() {
   const root = new THREE.Group(), labels = [];
-  if (!DEV) { root.add(PG); root.add(SNPFX.obj); const r0 = buildResort(); r0.position.set(0, 0.06, RES_Z); root.add(r0); return { root: root, labels: PLACE_LABELS, res: r0 }; }
+  if (!DEV) { root.add(PG); root.add(SNPFX.obj); const r0 = buildResort(); r0.position.set(0, RES_Y, RES_Z); root.add(r0); return { root: root, labels: PLACE_LABELS, res: r0 }; }
   const GZ1 = GAL_Z1 + 7, fl = new B(); fl.add(bx(120, 0.7, GZ1 + 140), C.white, 0, -0.35, (GZ1 - 140) / 2); root.add(fl.build());
   const cols = 10, dx = 9.2, dz = 8.6, x0 = -(cols - 1) * dx / 2, z0 = -30, ped = new B();
   GALLERY.forEach((it, i) => {
@@ -4648,7 +4663,7 @@ function buildWorld() {
     root.add(pf.build()); const mk2 = new THREE.Group(); mk2.position.set(x, 0.12, z); root.add(mk2); addFx(mk2, d[1]); labels.push({ t: d[0], x: x, y: 0.6, z: z + 4.6, h: 1.0 });
   });
   HEADS.forEach(h => labels.push({ t: h.t, x: 0, y: 0.7, z: z0 + Math.floor(h.i / cols) * dz, h: 2.2 }));
-  const res = buildResort(); res.position.set(0, 0.06, RES_Z); root.add(res);
+  const res = buildResort(); res.position.set(0, RES_Y, RES_Z); root.add(res);
   labels.push({ t: 'Ski resort', x: 0, y: 0.7, z: -42, h: 2.2 });
   return { root: root, labels: labels };
 }
@@ -4661,7 +4676,7 @@ globalThis.SK = { KIT: { B: B, bx: bx, cy: cy, cn: cn, sp: sp, mat: mat, C: C },
     nearby: (px, pz) => { for (let i = 0; i < LIFTS.length; i++) { const q = LIFTS[i].nearby(px, pz); if (q) return q; } return null; },
     act: (px, pz) => { for (let i = 0; i < LIFTS.length; i++) { const q = LIFTS[i].act(px, pz); if (q) return q; } return null; },
     boardable: (px, pz, py) => { let b = null; LIFTS.forEach(l => { const q = l.boardable(px, pz, py); if (q && (!b || q.d < b.d)) b = q; }); return b; },
-    inQueue: (px, pz) => LIFTS.some(l => l.inQueue(px, pz)) }, polyDist: polyDist, collFor: collFor, addSolids: addSolids, person: person, PEOPLE: PEOPLE, SNOWS: SNOWS, TRAILS: TRAILS, LIFT_LINES: LIFT_LINES, BOWL: BOWL, VP: { hotel: { x: -33, y: 3, z: RES_Z + 68 }, alpine: { x: AX, y: AY + 5, z: RES_Z + AZ }, lift: { x: LIFTX - 4, y: PADT * 0.5 + 4, z: RES_Z + (LIFT_ZS + TOPZ) / 2 }, scene: { x: 0, y: 10, z: RES_Z + (TZ0 + TZ1) / 2 + 10 } }, TB: { x0: TX0, x1: TX1, z0: RES_Z + TZ0, z1: RES_Z + TZ1 }, SNPFX: SNPFX, POS: { people: { x: 0, z: rowZ(POS.people, 1.5) }, parts: { x: -23, z: rowZ(POS.parts, 1) }, moves: { x: 0, z: ZM }, fx: { x: 0, z: ZF + 9 } }, buildWorld: buildWorld, OUT: OUT, GALLERY: GALLERY, SPIN: SPIN, ROOFS: ROOFS, SOLIDS: SOLIDS, FLOORS: FLOORS, STEAM: STEAM, RES_Z: RES_Z, GAL_Z1: GAL_Z1, TICK: TICK, groundY: (wx, wz) => { const z = wz - RES_Z; return (z < TZ0 || z > TZ1 || wx < TX0 || wx > TX1) ? 0 : tH(wx, z); } };
+    inQueue: (px, pz) => LIFTS.some(l => l.inQueue(px, pz)) }, polyDist: polyDist, collFor: collFor, addSolids: addSolids, person: person, PEOPLE: PEOPLE, SNOWS: SNOWS, TRAILS: TRAILS, LIFT_LINES: LIFT_LINES, BOWL: BOWL, VP: { hotel: { x: -33, y: 3, z: RES_Z + 68 }, alpine: { x: AX, y: AY + 5, z: RES_Z + AZ }, lift: { x: LIFTX - 4, y: PADT * 0.5 + 4, z: RES_Z + (LIFT_ZS + TOPZ) / 2 }, scene: { x: 0, y: 10, z: RES_Z + (TZ0 + TZ1) / 2 + 10 } }, TB: { x0: TX0, x1: TX1, z0: RES_Z + TZ0, z1: RES_Z + TZ1 }, SNPFX: SNPFX, PERSONS: PERSONS, RES_Y: RES_Y, POS: { people: { x: 0, z: rowZ(POS.people, 1.5) }, parts: { x: -23, z: rowZ(POS.parts, 1) }, moves: { x: 0, z: ZM }, fx: { x: 0, z: ZF + 9 } }, buildWorld: buildWorld, OUT: OUT, GALLERY: GALLERY, SPIN: SPIN, ROOFS: ROOFS, SOLIDS: SOLIDS, FLOORS: FLOORS, STEAM: STEAM, RES_Z: RES_Z, GAL_Z1: GAL_Z1, TICK: TICK, groundY: (wx, wz) => { const z = wz - RES_Z; return (z < TZ0 || z > TZ1 || wx < TX0 || wx > TX1) ? 0 : tH(wx, z); } };
 })();
 </script>
 <script id="pp-game">function ppBoot() {
@@ -4785,6 +4800,32 @@ const SURF = (() => {
   return { at, reset() { bins.clear(); built.clear(); unitBoxes = null; warm = 0; }, stats: () => ({ bins: bins.size, built: built.size }) };
 })();
 SK.SURF = SURF;
+/* ---- seats: hips on the real seat ----
+   Seat heights used to be hand-typed per sitter (bar stools 1.62, sofas 1.02, the boot bench 0.95, chairlift 1.02...) and none matched
+   the furniture: thighs sank 10-19 cm into stools, sofas, benches and lift chairs. Now whenever anyone sits down (player, diners, lounge
+   guests, lift riders) the seat surface straight under their hips is measured once and seatH set from it, for that person's scale. */
+const SEATFIT = (() => {
+  const SITS = { 'Sit on chair': 1, Eating: 1 }, rc = new THREE.Raycaster(), DN = new THREE.Vector3(0, -1, 0), vP = new THREE.Vector3(), vS = new THREE.Vector3();
+  /* hits that count as a seat: shown (every ancestor visible: hidden view-models and pooled props hang around invisible), solid, not a person */
+  const isPerson = o => { for (let p = o; p; p = p.parent) { if (p.userData && p.userData.person) return true; if (!p.visible) return true; } return false; };
+  /* surface of the seat under a person standing/sitting at g (feet at g's origin), or null */
+  /* one ray under each hip joint (a single centre ray falls between slats or onto a frame bar); the higher hit is the seat */
+  function seatTop(g) { g.getWorldPosition(vP); const s = g.getWorldScale(vS).y, y0 = vP.y, legs = g.userData.dbg && g.userData.dbg.legs; let best = null;
+    (legs ? legs.map(l => l.th.getWorldPosition(new THREE.Vector3())) : [vP.clone()]).forEach(p => { rc.set(new THREE.Vector3(p.x, y0 + 2.5 * s, p.z), DN); rc.far = 2.5 * s - 0.08; rc.camera = camera;
+      const h = rc.intersectObjects(scene.children, true).find(h => h.object.visible && h.object.isMesh && h.face && h.face.normal.y > 0.3 && !isPerson(h.object) && h.object.material && h.object.material.type !== 'ShaderMaterial' && !(h.object.material.transparent && h.object.material.opacity < 0.99));
+      if (h && (best === null || h.point.y > best)) best = h.point.y; });
+    return best; }
+  function fit(g) { const top = seatTop(g); if (top === null) return false; g.getWorldPosition(vP); const s = g.getWorldScale(vS).y; g.userData.seatH = (top - vP.y) / s + 0.37; return true; }
+  /* refit when someone sits down (new move) or moves to another seat; position is checked in the parent's frame, so riders on a moving
+     chair are not refitted every frame. Bodies hidden or not in the scene are skipped (pooled diners) */
+  SK.TICK.push(() => { const P = SK.PERSONS; for (let i = 0; i < P.length; i++) { const g = P[i], a = g.userData.animInfo && g.userData.animInfo(); if (!a || !SITS[a.nm]) continue;
+    const F = g.userData.seatFit, at = g.position;
+    if (F && F.a === a && Math.abs(F.x - at.x) < 0.25 && Math.abs(F.z - at.z) < 0.25 && Math.abs(F.y - at.y) < 0.25) continue;
+    let ok = true; for (let p = g; ; p = p.parent) { if (!p.visible) { ok = false; break; } if (!p.parent) { ok = p === scene; break; } } if (!ok) continue;
+    g.updateMatrixWorld(true); if (fit(g)) g.userData.seatFit = { a: a, x: at.x, y: at.y, z: at.z }; } });
+  return { fit, seatTop };
+})();
+SK.SEATFIT = SEATFIT;
 /* ---- walk mode ---- */
 const W = { y: 0, on: false, x: 0, z: 0, yaw: 0, pitch: 0, ptr: new Map() };
 W.down = e => { cvs.setPointerCapture(e.pointerId); W.ptr.set(e.pointerId, { x: e.clientX, y: e.clientY, sx: e.clientX, sy: e.clientY, mv: e.pointerType === 'touch' && e.clientX < innerWidth * 0.45 }); };
@@ -4792,7 +4833,7 @@ W.move = e => { const p = W.ptr.get(e.pointerId); if (!p) return; if (!p.mv) { W
 W.up = e => { W.ptr.delete(e.pointerId); };
 const ease = t => { t = clamp(t, 0, 1); return t * t * (3 - 2 * t); }, angd = (a, b) => { let d = (b - a) % (2 * PI); if (d > PI) d -= 2 * PI; if (d < -PI) d += 2 * PI; return d; };
 /* eye height above the avatar's feet (the HUMAN_K 0.9 body, short neck); the avatar wrap sits 0.06 above W.y */
-const EYE = 1.87, SIT_EYE = 1.42, vE = new THREE.Vector3(), qC = new THREE.Quaternion(), qY = new THREE.Quaternion(), qL = new THREE.Quaternion(), eL = new THREE.Euler(0, 0, 0, 'YXZ'), UPY = new THREE.Vector3(0, 1, 0);
+const EYE = 1.87, SIT_EYE = 1.51, vE = new THREE.Vector3(), qC = new THREE.Quaternion(), qY = new THREE.Quaternion(), qL = new THREE.Quaternion(), eL = new THREE.Euler(0, 0, 0, 'YXZ'), UPY = new THREE.Vector3(0, 1, 0);
 const lerpA = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
 const pathAt = (P, t) => { const m = P.length - 1, f = clamp(t, 0, 1) * m, i = Math.min(m - 1, Math.floor(f)); return lerpA(P[i], P[i + 1], f - i); };
 /* camera fixed to a carrier: position = local eye point, orientation = carrier frame (swing included, softened) * local look */
@@ -5244,6 +5285,10 @@ PL.tryToggle = () => {
   else if (canSki()) PL.enterSki(); else SK.toast('Step out onto open snow to put your skis on');
 };
 
+/* ---- tuck: from 25 km/h with W held, back out below 23 km/h (hysteresis: no flicker between poses around the threshold) ---- */
+const TUCK_ON = 25 / 3.6, TUCK_OFF = 23 / 3.6;
+PL.tuckGate = I => tuckGate(I);
+function tuckGate(I) { const sp = Math.hypot(PL.vx, PL.vy, PL.vz); if (I.fwd > 0.3 && !I.brake && PL.crash <= 0) { if (sp >= TUCK_ON) PL.tuck = true; else if (sp < TUCK_OFF) PL.tuck = false; } else PL.tuck = false; return PL.tuck; }
 /* ---- physics: substepped at 120 Hz ---- */
 function setV(v) { PL.vx = v.x; PL.vy = v.y; PL.vz = v.z; }
 function phys(h, I) {
@@ -5265,12 +5310,12 @@ function phys(h, I) {
     vV.x += G * nrm.y * nrm.x * h; vV.y += (-G + G * nrm.y * nrm.y) * h; vV.z += G * nrm.y * nrm.z * h;   /* gravity along the slope */
     sp = vV.length();
     if (sp > 1e-4) {
-      const soft = softAt(PL.x, PL.z), tuck = !crashing && I.fwd > 0.3 && sp > 4 && !I.brake;
+      const soft = softAt(PL.x, PL.z), tuck = !crashing && PL.tuck;
       let dec = (0.035 + 0.09 * soft * PL.mods.powder) * G * nrm.y + (tuck ? 0.0045 : 0.0075) * PL.mods.drag * sp * sp;
       if (crashing) dec += 5.5; else if (I.brake) dec += sp > 7 ? 6.5 : 3.6;
       const ns = sp - dec * h; if (ns <= 0) vV.set(0, 0, 0); else vV.multiplyScalar(ns / sp);
     }
-    if (!crashing && I.fwd > 0.3 && sp < 4.5) vV.addScaledVector(vF, 2.4 * I.fwd * h);   /* skate / pole push on the flats */
+    if (!crashing && I.fwd > 0.3 && !PL.tuck && sp < TUCK_ON) vV.addScaledVector(vF, 2.4 * I.fwd * h * Math.min(1, (TUCK_ON - sp) / 2.4));   /* skate / pole push: full to ~16 km/h, fading out by 25 km/h where the tuck takes over */
     setV(vV);
   }
   PL.x += PL.vx * h; PL.z += PL.vz * h; PL.y += PL.vy * h;
@@ -5347,7 +5392,7 @@ PL.ski = dt => {
   if (PL.jLock && !I.jump) PL.jLock = 0;
   if (!PL.air && PL.crash <= 0 && !PL.jLock) { if (I.jump) PL.charge = Math.min(0.6, PL.charge + dt); else if (PL.charge > 0) launch(); }
   if (onCarpet(PL.x, PL.z) && !PL.air && PL.crash <= 0) { const Cp = SK.CARPET, dir = Math.sign(Cp.z1 - Cp.z0); PL.z += dir * Cp.speed * dt; PL.x += (Cp.x - PL.x) * Math.min(1, dt * 4); PL.y = gY(PL.x, PL.z); PL.vx = PL.vy = 0; PL.vz = dir * Cp.speed; if (dir * (PL.z - SK.RES_Z - Cp.z1) > -0.4) PL.z += dir * 1.2; }
-  else { const n = Math.max(1, Math.ceil(dt * 120)), h = dt / n; for (let i = 0; i < n; i++) phys(h, I); }
+  else { tuckGate(I); const n = Math.max(1, Math.ceil(dt * 120)), h = dt / n; for (let i = 0; i < n; i++) phys(h, I); }
   collide();
   if (!PL.air) PL.y = Math.max(PL.y, gY(PL.x, PL.z)); }
   PL.spd = Math.hypot(PL.vx, PL.vy, PL.vz);
@@ -5366,7 +5411,9 @@ function pose(dt, I) {
   else if (PL.charge > 0) nm = 'Tuck / straight run';
   else if (I.brake && PL.spd > 7) { nm = 'Hockey stop'; const ai = A.animInfo(); if (ai && ai.nm === nm && ai.t > 1.9) A.play(nm, true); }
   else if (I.brake && PL.spd > 0.6) nm = 'Snowplow';
-  else if (I.fwd > 0.3 && PL.spd > 4) nm = 'Tuck / straight run';
+  else if (PL.tuck) nm = 'Tuck / straight run';
+  else if (I.fwd > 0.3 && !I.brake && (normalAt(PL.x, PL.z, nrm), nrm.y > 0.99)) {   /* accelerating on the flats (grade < ~8 %): skate. Steeper, gravity does the work */
+    nm = 'Skate'; PL.skPh = (PL.skPh || 0) + dt * Math.max(2.6, PL.spd * PI / 1.7); A.skate = { ph: PL.skPh, amt: 1 }; }
   else if (PL.spd < 0.5) nm = 'Standing';
   else nm = 'Carving turns';
   if (nm) A.play(nm);
@@ -5417,7 +5464,7 @@ PL.walkPost = dt => {
   const wj = !!(W.on && !busy && !W.sit && PL.mode !== 'ski'); if (document.body.classList.contains('walkjump') !== wj) document.body.classList.toggle('walkjump', wj);
   PL.snackT = Math.max(0, (PL.snackT || 0) - dt);
   if (!third) return;
-  if (W.sit) { AVW.wrap.position.set(W.x, W.sit.fy, W.z); qT.setFromAxisAngle(YUP, (W.sit.yaw || 0) + PI); AVW.wrap.quaternion.copy(qT); AVW.p.userData.seatH = 1.02; AVW.p.userData.rate = 1; AVW.p.userData.snack = PL.snackT > 0; AVW.p.userData.play('Sit on chair');
+  if (W.sit) { AVW.wrap.position.set(W.x, W.sit.fy, W.z); qT.setFromAxisAngle(YUP, (W.sit.yaw || 0) + PI); AVW.wrap.quaternion.copy(qT); AVW.p.userData.rate = 1; AVW.p.userData.snack = PL.snackT > 0; AVW.p.userData.play('Sit on chair');
     /* watch yourself eat: of the angles near where you look, take the one with the most room (a wall behind the chair swings the camera round) */
     let by = W.yaw, bt = -1; [0, 0.5, -0.5, 1.0, -1.0, 1.5, -1.5].forEach(o => { const yw = W.yaw + o; camClear(W.x, W.sit.fy + 1.3, W.z, W.x + Math.sin(yw) * 2.4, W.sit.fy + 2.0, W.z + Math.cos(yw) * 2.4, W.sit.fy); if (camClear.t > bt + 0.08) { bt = camClear.t; by = yw; } });
     camera.position.copy(camClear(W.x, W.sit.fy + 1.3, W.z, W.x + Math.sin(by) * 2.4, W.sit.fy + 2.0, W.z + Math.cos(by) * 2.4, W.sit.fy)); camera.lookAt(W.x, W.sit.fy + 0.75, W.z); return; }
@@ -6537,7 +6584,7 @@ function doorTick(dt) {
 }
 /* ---- interaction: your bed, the breakfast buffet, the elevator ---- */
 const FLOORN = ['Ground floor', 'Floor 1', 'Floor 2'];
-const floorOf = () => { const y = W.y - HOT.gy; return y > HXd.floors[2] - 1 ? 2 : y > HXd.floors[1] - 1 ? 1 : 0; };
+const floorOf = () => { const y = W.y - HOT.wy; return y > HXd.floors[2] - 1 ? 2 : y > HXd.floors[1] - 1 ? 1 : 0; };
 /* =====================================================================
    POWDER PASS: park features you can ride (ramps, fun box, rails + grinding), a walking jump, eating / drinking in your hands,
    the hotel breakfast with a real plate, seats and guests, and a working elevator cab with sliding doors.
@@ -6733,7 +6780,7 @@ SK.VM = VM;
    buttons: look at one and press F (or tap). Doors are fitted to the real opening (slab to header) and move in under half a second. */
 const ELEV = (() => {
   const H = SK.HOTEL, X = H && H.HX, sh = X && X.shaft; if (!sh) return null;
-  const SLAB = X.floors.map((v, f) => H.gy + (f ? v + 0.23 : v)), FL = SLAB.slice(), OPEN_H = 2.25;   /* the cab stops level with each slab: no step in or out */   /* walk heights vs the slab the doorway is built on */
+  const SLAB = X.floors.map((v, f) => H.wy + (f ? v + 0.23 : v)), FL = SLAB.slice(), OPEN_H = 2.25;   /* the cab stops level with each slab: no step in or out */   /* walk heights vs the slab the doorway is built on */
   const cxl = (sh.x0 + sh.x1) / 2, czl = (sh.z0 + sh.z1) / 2, w = sh.x1 - sh.x0, d = sh.z1 - sh.z0, EXl = -11.0, DOOR_T = 0.42, HOLD = 3.2, ARRIVE = 0.3;
   const M = c => new THREE.MeshLambertMaterial({ color: c }), box = (gx, gy, gz, m) => new THREE.Mesh(new THREE.BoxGeometry(gx, gy, gz), m);
   const ez = x => x * x * (3 - 2 * x);
@@ -6789,7 +6836,7 @@ const ELEV = (() => {
   SK.TICK.push(dt => {
     const was = S.phase;
     if (!S.lvl && SK.SURF && SK.ED && SK.ED.UNITS) {   /* once: each stop level with the landing's real floor (slab + runner), so there is no lip at the door */
-      S.lvl = 1; FL.forEach((v, f) => { const s = SK.SURF.at(H.x + EXl, H.z + sh.door + 0.45, v - 0.12, v + 0.2); if (s !== null) FL[f] = s; X.walk[f] = FL[f] - H.gy; });
+      S.lvl = 1; FL.forEach((v, f) => { const s = SK.SURF.at(H.x + EXl, H.z + sh.door + 0.45, v - 0.12, v + 0.2); if (s !== null) FL[f] = s; X.walk[f] = FL[f] - H.wy; });
       if (S.phase === 'idle' && S.target === null) S.y = FL[S.at]; }
     if (S.phase === 'idle' && S.queue.length) { S.target = S.queue.shift(); S.phase = S.door > 0.01 ? 'closing' : (S.target === S.at ? 'opening' : 'moving'); }
     if (S.phase === 'open') { S.door = 1; S.t -= dt; if (S.t <= 0 && (S.queue.length || !inside(W.x, W.z, W.y))) S.phase = 'closing'; }
@@ -6824,7 +6871,7 @@ const ELEV = (() => {
 SK.ELEV = ELEV;
 /* the hotel is boots only: walk in on skis and they go in the ski room racks (you get them back outside with K) */
 { let rackMsgT = -99; SK.TICK.push(() => { if (SK.DEV || PL.mode !== 'ski') return; const H = SK.HOTEL, lx = W.x - H.x, lz = W.z - H.z;
-  if (lx > -12.3 && lx < 12.3 && lz > -11.2 && lz < 4.95 && W.y < H.gy + 1.5) { PL.exitSki(); if (SK.clock - rackMsgT > 6) { rackMsgT = SK.clock; SK.toast('Skis racked in the ski room. Boots only inside the hotel.'); } } }); }
+  if (lx > -12.3 && lx < 12.3 && lz > -11.2 && lz < 4.95 && W.y < H.wy + 1.5) { PL.exitSki(); if (SK.clock - rackMsgT > 6) { rackMsgT = SK.clock; SK.toast('Skis racked in the ski room. Boots only inside the hotel.'); } } }); }
 
 /* ---------- breakfast: take a plate, fill it at the stations, sit at a table, eat ---------- */
 const BF = (() => {
@@ -6838,7 +6885,7 @@ const BF = (() => {
   const open = () => { const h = State.time / 60; return h >= 6 && h < 11; };
   /* guests: a chef at the west end of the buffet and diners who walk in from the lobby archway during breakfast (6-11), take a free seat,
      eat for a while and walk out again. The hall is empty the rest of the day. Positions are hall-local; y is the hall floor. */
-  const guests = [], FLY = H.gy + X.floors[0], GX = (x, z, o) => o.position.set(H.x + x, FLY, H.z + z), ENTRY = [0, -5.6], SKI_IN = [0, 4.55];
+  const guests = [], FLY = H.wy + X.floors[0], GX = (x, z, o) => o.position.set(H.x + x, FLY, H.z + z), ENTRY = [0, -5.6], SKI_IN = [0, 4.55];
   const DINERS = [];
   { const P = SK.PEOPLE, looks = [[P.lady, { jacket: 0x8b3dff }], [P.man, { jacket: 0x2f7bff }], [P.teen, {}], [P.man, { jacket: 0x14b13c, beard: false }], [P.lady, { jacket: 0xff8a1f }], [P.man, { jacket: 0xc8553d }]];
     /* diners come in off the slopes: in boots (no skis on their feet indoors), carrying their skis and poles to a rack in the ski room first */
@@ -6898,7 +6945,7 @@ const BF = (() => {
   }
   function sit(s) {
     B.seat = s; s.taken = 1; B.onTable = B.plate.slice(); B.plate = null; B.eaten = 0; VM.clear(); State.bfDay = State.day;
-    const fy = H.gy + X.floors[0]; W.sit = { x: H.x + s.x, z: H.z + s.z, y: fy + SK.SIT_EYE, fy: fy, yaw: s.yaw };   /* yaw: which way the chair faces (the third-person body needs it) */ W.x = W.sit.x; W.z = W.sit.z; W.y = fy - 0.5; W.yaw = s.yaw; W.pitch = -0.35; W.vx = W.vz = 0;
+    const fy = H.wy + X.floors[0]; W.sit = { x: H.x + s.x, z: H.z + s.z, y: fy + SK.SIT_EYE, fy: fy, yaw: s.yaw };   /* yaw: which way the chair faces (the third-person body needs it) */ W.x = W.sit.x; W.z = W.sit.z; W.y = fy - 0.5; W.yaw = s.yaw; W.pitch = -0.35; W.vx = W.vz = 0;
     /* the plate on the table in front of you */
     const g = new THREE.Group(), pm = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.14, 0.015, 22), new THREE.MeshLambertMaterial({ color: 0xffffff })); g.add(pm);
     B.onTable.forEach((k, i) => { const o = VM.FOOD[k](); o.scale.setScalar(1.3); o.position.set([-0.06, 0.06, 0, -0.08, 0.08][i], 0.01, [-0.05, -0.05, 0.07, 0.06, 0.06][i]); o.traverse(m => { if (m.material) m.material.depthTest = true; m.renderOrder = 0; }); g.add(o); });
@@ -6909,7 +6956,7 @@ const BF = (() => {
     const k = B.onTable[B.eaten], it = B.tableG.children[1 + B.eaten];
     VM.consume(k, () => { if (it) it.visible = false; const e = EFF[k]; State.energy = Math.min(100, State.energy + e[0]); State.warmth = Math.min(100, State.warmth + e[1]); B.eaten++; next(); }, 2);
   }
-  function standUp() { if (!B.seat) return; B.seat.taken = 0; B.seat = null; if (B.tableG) { scene.remove(B.tableG); B.tableG = null; } B.onTable = null; W.sit = null; W.y = H.gy + X.floors[0]; W.pitch = -0.05; }
+  function standUp() { if (!B.seat) return; B.seat.taken = 0; B.seat = null; if (B.tableG) { scene.remove(B.tableG); B.tableG = null; } B.onTable = null; W.sit = null; W.y = H.wy + X.floors[0]; W.pitch = -0.05; }
   return { prompt, sit, standUp, B, ST, SEATS, guests, open };
 })();
 SK.BF = BF;
@@ -6923,7 +6970,7 @@ function p6Target(x, wz) {
   if (f === 0) { const b = BF.prompt(lx, lz); if (b) return b; }
   if (false) { const h = State.time / 60, open = h >= 6 && h < 11, had = State.bfDay === State.day;
     return { text: had ? 'Breakfast: you already ate today' : open ? 'Have breakfast (free for everyone)' : 'Breakfast is served 6 to 11 am (now ' + clockTxt(State.time) + ')', act: had || !open ? null : () => { State.bfDay = State.day; State.energy = Math.min(100, State.energy + 45); State.warmth = Math.min(100, State.warmth + 25); SK.toast('Breakfast! Coffee, eggs, croissants, fruit. +45 Energy, +25 Warmth'); writeSave(); } }; }
-  if (roomValid()) { const bd = HXd.beds.find(b2 => b2.no === State.room.no); if (bd && Math.abs(W.y - HOT.gy - bd.y) < 1.6 && near(bd.x, bd.z, 2.2))
+  if (roomValid()) { const bd = HXd.beds.find(b2 => b2.no === State.room.no); if (bd && Math.abs(W.y - HOT.wy - bd.y) < 1.6 && near(bd.x, bd.z, 2.2))
     return canSleep() ? { text: 'Sleep in room ' + bd.no + ' until morning', act: () => newDay(null) } : { text: 'Room ' + bd.no + ': you can sleep from 8 pm (now ' + clockTxt(State.time) + ')', act: null }; }
   return null;
 }
@@ -6932,7 +6979,7 @@ ECON.nearby = (x, z) => { const t = p6Target(x, z); return t ? { text: t.text, a
 ECON.act = (x, z) => { const t = p6Target(x, z); if (t) { if (t.act) t.act(); return true; } return E1.act(x, z); };
 function ride(f) {
   closeSheet(); const fe = document.getElementById('fade'); fe.classList.add('on');
-  setTimeout(() => { W.x = HOT.x + HXd.elev.x; W.z = HOT.z + HXd.elev.z + 0.2; W.y = HOT.gy + HXd.walk[f]; W.vx = W.vz = 0; W.yaw = 0; lastY = null; SK.toast(FLOORN[f] + (f === 0 ? ': breakfast hall and lobby' : f === 1 ? ': rooms 101 to 109' : ': rooms 201 to 208, suites')); setTimeout(() => fe.classList.remove('on'), 250); }, 300);
+  setTimeout(() => { W.x = HOT.x + HXd.elev.x; W.z = HOT.z + HXd.elev.z + 0.2; W.y = HOT.wy + HXd.walk[f]; W.vx = W.vz = 0; W.yaw = 0; lastY = null; SK.toast(FLOORN[f] + (f === 0 ? ': breakfast hall and lobby' : f === 1 ? ': rooms 101 to 109' : ': rooms 201 to 208, suites')); setTimeout(() => fe.classList.remove('on'), 250); }, 300);
 }
 /* ---- sheets: reception (check-in) and the elevator panel ---- */
 SK.P6 = {

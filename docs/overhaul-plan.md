@@ -7,9 +7,9 @@ Spec: `docs/superpowers/specs/2026-10-08-powder-pass-overhaul-design.md`. Branch
 | T0 | Probe tool, plan, spec | — | done |
 | A1 | Humans −10 % height, shorter neck, body-scale-aware seat math, eye height follows | `tools/r15/a1.js` | done |
 | A2 | Sole grounding: hotel ground floors in FLOORS, upper-floor y fix, SURF sampler, per-foot slope conform | `tools/r15/a2.js` | done |
-| A3 | Seat anchors (bar stools, benches, café) + occupancy | `tools/r15/a3.js` | todo |
-| B1 | 25 km/h tuck with hysteresis + physics gate | | todo |
-| B2 | Skate push-off pose + pole plants | | todo |
+| A3 | Seat anchors (bar stools, benches, café) + occupancy | `tools/r15/a3.js` | done |
+| B1 | 25 km/h tuck with hysteresis + physics gate | `tools/r15/b1.js` | done |
+| B2 | Skate push-off pose + pole plants | `tools/r15/b1.js` | done |
 | C1 | First person = real avatar, head hidden, independent look | | todo |
 | D1–D6 | Hotel: entrance, elevator, lobby/breakfast/bar clutter, lamps, upstairs rail, suite | | todo |
 | E1–E4 | Café rebuild + Mia + in-world ordering, Pro Shop, gondola pad, global audit | | todo |

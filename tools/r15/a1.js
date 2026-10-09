@@ -24,7 +24,8 @@ const thighLow = g => { let lo = 1e9; const v = V3(); g.userData.dbg.legs.forEac
   info.seatGap = out; const v = Object.values(out); info.seatSpread = +(Math.max(...v) - Math.min(...v)).toFixed(3);
   chk(info.seatSpread < 0.02, 'seat contact differs by body size: ' + JSON.stringify(out));
   chk(v.every(q => Math.abs(q) < 0.035), 'hips not on the seat surface: ' + JSON.stringify(out)); }
-/* 3. seated player: camera at the seated avatar's eyes */
-{ const A = SK.AVW, fy = gy; A.wrap.position.set(x0, fy + 0.06, z0); A.wrap.visible = true; pose(A.p, 'Sit on chair', 1.02); info.sitEye = +(eyeOf(A.p) - fy).toFixed(3); A.wrap.visible = false;
-  info.sitCam = SK.SIT_EYE; chk(SK.SIT_EYE !== undefined && Math.abs(SK.SIT_EYE - info.sitEye) < 0.05, 'seated camera ' + SK.SIT_EYE + ' vs seated eyes ' + info.sitEye); }
+/* 3. seated player at a real breakfast chair: camera at the seated avatar's eyes */
+{ const BF = SK.BF, camW = SK.State.cam.walk; SK.State.cam.walk = 'third'; W.on = true; if (BF.B.seat) BF.standUp(); BF.B.plate = ['eggs']; BF.sit(BF.SEATS.find(q => !q.taken)); SK.play(60);
+  info.sitEye = +(eyeOf(SK.AVW.p) - W.sit.fy).toFixed(3); info.sitCam = +(W.sit.y - W.sit.fy).toFixed(3); BF.standUp(); SK.State.cam.walk = camW;
+  chk(Math.abs(info.sitCam - info.sitEye) < 0.05, 'seated camera ' + info.sitCam + ' vs seated eyes ' + info.sitEye); }
 return { ok: !fails.length, fails, info };
