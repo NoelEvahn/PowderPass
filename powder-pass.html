@@ -1352,17 +1352,12 @@ function hotel() {
   [[-6, 2], [-6, -1], [0, 2], [0, -3], [6, 2], [6, -1], [9.5, 2]].forEach(p => { hLight(b, p[0], WY + 2.95, p[1]); lightFx(g, [p[0], WY + 2.95, p[1]], [p[0], WY + 0.05, p[1]], 1.1, { n: 8, size: 0.09 }); });
   /* ---- lobby finish: wainscot + crown + coffered ceiling + sconces + a stone fireplace feature ---- */
   { const wc = 0x7a4a2e, rl = 0x33200f;
-    hWainscot(b, -hx + 0.1, hx - 0.1, hz - T / 2, WY, -1, [[-1.5, 1.5], [-hx, -8.2]], 1.05, wc, rl);   /* south (street) wall inside */
+    /* (no wainscot on the street wall: it is glass from 0.1 m up, and the panelling showed as boards behind every window) */
     hWainscot(b, -hx + 0.1, -4.0, -hz + T / 2, WY, 1, [[-3.4, -2.3], [-2.4, 2.4]], 1.05, wc, rl); hWainscot(b, 10.2, hx - 0.1, -hz + T / 2, WY, 1, [[11.2, 13]], 1.05, wc, rl);
     hCrown(b, -hx, hx, hz - T / 2, WY + 3.4, -1, 0xf2eee4); hCrown(b, -hx, hx, -hz + T / 2, WY + 3.4, 1, 0xf2eee4);
     hCoffer(b, -9.6, 9.6, -4.4, 4.4, WY + 3.4, 0xe9e1d3, 2.4);
     [[-8.2, -hz + 0.2, 0], [8.5, -hz + 0.2, 0]].forEach(q => hSconce(b, q[0], WY + 2.1, q[1], q[2]));   /* only on solid wall: the street side is glass */
-    /* stone fireplace on the east wall, between the windows: hearth, surround, mantel, logs, flames */
-    const fx = hx - 0.45, fz = -2.6;   /* (the lounge sofas face east: the fireplace sits behind the armchair) */
-    b.add(bx(0.7, 1.3, 2.2), C.stone, fx, WY + 0.65, fz); b.add(bx(0.14, 2.6, 2.0), C.stone, fx + 0.14, WY + 1.7, fz); b.add(bx(0.9, 0.12, 2.5), C.wood3, fx - 0.05, WY + 1.35, fz);
-    b.add(bx(0.05, 0.7, 1.2), C.dark, fx - 0.34, WY + 0.45, fz); b.add(cn(0.26, 0.55, 6), C.orange, fx - 0.3, WY + 0.5, fz, { basic: 1 }); b.add(cn(0.17, 0.4, 6), C.yellow, fx - 0.3, WY + 0.46, fz + 0.12, { basic: 1 });
-    [-0.3, 0.3].forEach(t => b.add(cy(0.07, 0.07, 0.9, 8), C.wood3, fx - 0.25, WY + 0.15, fz + t, { rx: PI / 2 })); K.push({ x: fx, z: fz, ry: 0, hw: 0.45, hd: 1.1 });
-    HX.L.push([fx - 1.0, WY + 1.4, fz, 0, 'warm', 0.8]); }
+    /* (no stone fireplace on the east wall: it stood in front of a window, beside the bar) */ }
   /* lobby floor: oak planks with a dark herringbone-style inlay border, a stone threshold inside the glass door */
   b.add(bx(W - 1.2, 0.012, 8.2), 0xb88a56, 0, WY + 0.022, 0, { noOutline: 1 }); for (let z = -4; z <= 4; z += 0.45) b.add(bx(W - 1.2, 0.006, 0.012), 0x8a6238, 0, WY + 0.029, z, { noOutline: 1 });
   [-1, 1].forEach(sd => { b.add(bx(0.18, 0.014, 8.2), 0x4a2f1a, sd * (W / 2 - 0.7), WY + 0.026, 0, { noOutline: 1 }); }); b.add(bx(W - 1.2, 0.014, 0.18), 0x4a2f1a, 0, WY + 0.026, -4.0, { noOutline: 1 }); b.add(bx(W - 1.2, 0.014, 0.18), 0x4a2f1a, 0, WY + 0.026, 4.0, { noOutline: 1 });
@@ -1508,8 +1503,7 @@ function hotel() {
     /* (the grey rug that hovered 20 cm over the tiles at the breakfast entrance is gone) */ }
   { /* breakfast hall finish: green-painted wainscot, crown, timber ceiling beams, wall sconces, a patterned runner under the tables */
     const wc = 0x3f6a4a, rl = 0xf2eee4, yb = FY;
-    hWainscot(b, -hx + 0.1, hx - 0.1, ZN + T / 2, yb, 1, [[-6.5, -2.5], [-1.5, 2.5], [3.5, 7.5], [-12, -10]], 1.0, wc, rl);   /* north wall (buffet side) between the windows */
-    hWainscot(b, ZN + 0.1, -hz - 0.1, -hx + T / 2 + 0.08, yb, 1, [[-8.5, -6.5]], 1.0, wc, rl);
+    /* (no painted wainscot in the breakfast hall: the windows come down to 0.6-0.8 m and the panelling ran across them) */
     hCrown(b, -hx + 0.1, hx - 0.1, ZN + T / 2, FY + 3.4, 1, rl);
     for (let x = -10; x <= 10.1; x += 3.4) b.add(bx(0.2, 0.2, -ZN - hz - 0.4), 0x6b4226, x, FY + 3.3, (ZN - hz) / 2, { noOutline: 1 });
     [[-9.75, ZN + 0.25], [-3.0, ZN + 0.25], [8.5, ZN + 0.25], [11.3, ZN + 0.25]].forEach(q => hSconce(b, q[0], FY + 2.2, q[1], 0));   /* on the piers between the windows (two hung on glass, one on the door) */
@@ -3462,10 +3456,13 @@ const PADS = [[AX, AZ, 7.5, 6.5, 7], [LIFTX, TOPZ - 5.5, 7.2, 11.9, 16], [LIFTX,
 PADS.forEach(p => { const q = PADS[1]; if (p.cut && Math.abs(p.x - q.x) < p.hx + q.hx + q.b && Math.abs(p.z - q.z) < p.hz + q.hz + q.b) p.y = Math.max(p.y, q.y); });
 /* Summit Express top: a level plateau from the station exit west to the Pine Ribbon start gate, at the station's height (no snow bank in the way) */
 PADS.push({ x: (LIFTX + PISTE(TOPZ - 8)) / 2, z: TOPZ - 7, hx: (LIFTX - PISTE(TOPZ - 8)) / 2 + 6, hz: 9, b: 14, y: PADS[1].y });
+/* the Lodge Café pad overlaps the Crest station's plateau: it sits on that level (it used to be 2.2 m higher, and the station's blend,
+   applied after it, tilted the café floor into a 1.5 m ramp with snow poking through the boards) */
+{ const c = PADS[0]; PADS.forEach((p, i) => { if (i && Math.abs(p.x - c.x) < p.hx + c.hx && Math.abs(p.z - c.z) < p.hz + c.hz) c.y = Math.min(c.y, p.y); }); }
 const AY = PADS[0].y, PADT = PADS[1].y;
 function tHx(x, z) {
   let h = tH0(x, z);
-  for (let i = 0; i < PADS.length; i++) { const p = PADS[i], ex = Math.abs(x - p.x) - p.hx, ez = Math.abs(z - p.z) - p.hz; if (ex > p.b || ez > p.b) continue; const w = 1 - sstep(0, p.b, Math.hypot(Math.max(0, ex), Math.max(0, ez))); h += (p.y - h) * w; }
+  for (let k = 1; k <= PADS.length; k++) { const p = PADS[k % PADS.length], ex = Math.abs(x - p.x) - p.hx, ez = Math.abs(z - p.z) - p.hz; if (ex > p.b || ez > p.b) continue; const w = 1 - sstep(0, p.b, Math.hypot(Math.max(0, ex), Math.max(0, ez))); h += (p.y - h) * w; }   /* the café pad (0) last: nothing tilts its floor */
   return h;
 }
 /* height lookups: exact maths until buildTerrain bakes the grid, then a bilinear sample of the same grid the mesh uses (cheap, and matches what you see) */
@@ -4755,7 +4752,7 @@ globalThis.SK = { KIT: { B: B, bx: bx, cy: cy, cn: cn, sp: sp, mat: mat, C: C },
     nearby: (px, pz) => { for (let i = 0; i < LIFTS.length; i++) { const q = LIFTS[i].nearby(px, pz); if (q) return q; } return null; },
     act: (px, pz) => { for (let i = 0; i < LIFTS.length; i++) { const q = LIFTS[i].act(px, pz); if (q) return q; } return null; },
     boardable: (px, pz, py) => { let b = null; LIFTS.forEach(l => { const q = l.boardable(px, pz, py); if (q && (!b || q.d < b.d)) b = q; }); return b; },
-    inQueue: (px, pz) => LIFTS.some(l => l.inQueue(px, pz)) }, polyDist: polyDist, collFor: collFor, addSolids: addSolids, person: person, PEOPLE: PEOPLE, SNOWS: SNOWS, TRAILS: TRAILS, LIFT_LINES: LIFT_LINES, BOWL: BOWL, VP: { hotel: { x: -33, y: 3, z: RES_Z + 68 }, alpine: { x: AX, y: AY + 5, z: RES_Z + AZ }, lift: { x: LIFTX - 4, y: PADT * 0.5 + 4, z: RES_Z + (LIFT_ZS + TOPZ) / 2 }, scene: { x: 0, y: 10, z: RES_Z + (TZ0 + TZ1) / 2 + 10 } }, TB: { x0: TX0, x1: TX1, z0: RES_Z + TZ0, z1: RES_Z + TZ1 }, SNPFX: SNPFX, PERSONS: PERSONS, RES_Y: RES_Y, POS: { people: { x: 0, z: rowZ(POS.people, 1.5) }, parts: { x: -23, z: rowZ(POS.parts, 1) }, moves: { x: 0, z: ZM }, fx: { x: 0, z: ZF + 9 } }, buildWorld: buildWorld, OUT: OUT, GALLERY: GALLERY, SPIN: SPIN, ROOFS: ROOFS, SOLIDS: SOLIDS, FLOORS: FLOORS, STEAM: STEAM, RES_Z: RES_Z, GAL_Z1: GAL_Z1, TICK: TICK, groundY: (wx, wz) => { const z = wz - RES_Z; return (z < TZ0 || z > TZ1 || wx < TX0 || wx > TX1) ? 0 : tH(wx, z); } };
+    inQueue: (px, pz) => LIFTS.some(l => l.inQueue(px, pz)) }, polyDist: polyDist, collFor: collFor, addSolids: addSolids, person: person, PEOPLE: PEOPLE, SNOWS: SNOWS, TRAILS: TRAILS, LIFT_LINES: LIFT_LINES, BOWL: BOWL, VP: { hotel: { x: -33, y: 3, z: RES_Z + 68 }, alpine: { x: AX, y: AY + 5, z: RES_Z + AZ }, lift: { x: LIFTX - 4, y: PADT * 0.5 + 4, z: RES_Z + (LIFT_ZS + TOPZ) / 2 }, scene: { x: 0, y: 10, z: RES_Z + (TZ0 + TZ1) / 2 + 10 } }, TB: { x0: TX0, x1: TX1, z0: RES_Z + TZ0, z1: RES_Z + TZ1 }, SNPFX: SNPFX, PERSONS: PERSONS, RES_Y: RES_Y, PADS: PADS, tH0: tH0, tHx: tHx, POS: { people: { x: 0, z: rowZ(POS.people, 1.5) }, parts: { x: -23, z: rowZ(POS.parts, 1) }, moves: { x: 0, z: ZM }, fx: { x: 0, z: ZF + 9 } }, buildWorld: buildWorld, OUT: OUT, GALLERY: GALLERY, SPIN: SPIN, ROOFS: ROOFS, SOLIDS: SOLIDS, FLOORS: FLOORS, STEAM: STEAM, RES_Z: RES_Z, GAL_Z1: GAL_Z1, TICK: TICK, groundY: (wx, wz) => { const z = wz - RES_Z; return (z < TZ0 || z > TZ1 || wx < TX0 || wx > TX1) ? 0 : tH(wx, z); } };
 })();
 </script>
 <script id="pp-game">function ppBoot() {
