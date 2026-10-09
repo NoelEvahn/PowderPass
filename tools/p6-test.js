@@ -23,8 +23,8 @@ const { boot, check, OUT } = require('./lib');
     T.go(other.x, other.z - 0.9 * other.rm.sg, other.y); SK.sim(30); a.otherOpen = other.sol.off; a.msg = document.getElementById('toast').textContent; return a; });
   check(r.mineOpen && !r.otherOpen && /locked/i.test(r.msg), 'your room door opens, another room stays locked with a message (' + JSON.stringify(r) + ')', fails);
   /* elevator */
-  r = await ev(() => new Promise(res => { const H = SK.HOTEL; SK.P6.ride(2); setTimeout(() => { SK.sim(5); res({ y: +(SK.W.y - H.gy).toFixed(2), want: H.HX.floors[2] }); }, 800); }));
-  check(Math.abs(r.y - r.want) < 0.3, 'elevator takes you to floor 2 (' + JSON.stringify(r) + ')', fails);
+  r = await ev(() => new Promise(res => { const H = SK.HOTEL; SK.P6.ride(2); setTimeout(() => { SK.sim(5); res({ y: +(SK.W.y - H.wy).toFixed(2), want: H.HX.walk[2] }); }, 800); }));
+  check(Math.abs(r.y - r.want) < 0.05,   /* walk level = the visible floor */ 'elevator takes you to floor 2 (' + JSON.stringify(r) + ')', fails);
   await page.waitForTimeout(800); await page.screenshot({ path: OUT + '/p6-floor2.png' });
   /* breakfast */
   r = await ev(() => { const H = SK.HOTEL, S = SK.State, BF = SK.BF, sz = -10.25 + 0.85, fy = H.gy + 0.23; SK.P6.setTime(8 * 60); S.energy = 30; const at = x => { T.go(H.x + x, H.z + sz, fy); const p = SK.ECON.nearby(SK.W.x, SK.W.z); SK.ECON.act(SK.W.x, SK.W.z); return p && p.text; };

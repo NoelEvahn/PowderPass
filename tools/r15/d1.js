@@ -1,7 +1,7 @@
 /* D (hotel): elevator centred between equal piers, sliding glass doors solid when shut and open for you, no slab hovering over the
    breakfast floor, every suite's bathroom walled off from the bedroom / lounge. */
 const fails = [], info = {}, chk = (c, m) => { if (!c) fails.push(m); };
-const H = SK.HOTEL, X = H.HX, sh = X.shaft, W = SK.W;
+const H = SK.HOTEL, X = H.HX, sh = X.shaft, W = SK.W; SK.P6.setTime(780); SK.play(3);   /* afternoon: no breakfast guests holding the doors open */
 /* 1. elevator centred on its shaft */
 info.elev = { ex: X.ex, shaftMid: +((sh.x0 + sh.x1) / 2).toFixed(3) }; chk(Math.abs(X.ex - (sh.x0 + sh.x1) / 2) < 0.02, 'elevator door off the shaft centre ' + JSON.stringify(info.elev));
 /* 2. sliding glass doors: shut = solid, you walking up opens them */
