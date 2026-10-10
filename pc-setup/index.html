@@ -70,6 +70,15 @@
       <button data-action="hideui" title="Hide UI (H)"><span class="ic">◌</span><span>Hide UI</span></button>
     </nav>
   </div>
+  <div id="capture" hidden>
+    <div class="capture-inner">
+      <div class="capture-head">
+        <span>Screenshot — long-press or right-click the image to save it</span>
+        <button class="icon-btn" id="capture-close" title="Close">✕</button>
+      </div>
+      <img id="capture-img" alt="Captured screenshot of the 3D scene">
+    </div>
+  </div>
   <div id="ui-restore" hidden>Press <kbd>H</kbd> to show the interface</div>
 
   <script type="module" src="js/main.js"></script>

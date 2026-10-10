@@ -4,6 +4,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
 import { ROOM } from '../scene/room.js';
 
+const TOUCH = typeof window !== 'undefined' && window.matchMedia?.( '(pointer: coarse)' ).matches;
 const easeInOut = ( t ) => t < 0.5 ? 4 * t * t * t : 1 - Math.pow( - 2 * t + 2, 3 ) / 2;
 
 export const HOME = {
@@ -102,7 +103,7 @@ export class CameraRig extends THREE.EventDispatcher {
 
 		} else if ( mode === 'orbit' ) {
 
-			this.dispatchEvent( { type: 'hint', text: 'Drag to orbit · Right-drag to pan · Scroll to zoom · Click a component to inspect' } );
+			this.dispatchEvent( { type: 'hint', text: TOUCH ? 'Drag to orbit · pinch to zoom · two-finger drag to pan · tap a part to inspect' : 'Drag to orbit · Right-drag to pan · Scroll to zoom · Click a component to inspect' } );
 
 		}
 

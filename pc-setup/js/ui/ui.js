@@ -70,6 +70,7 @@ export class UI {
 		$( '#toolbar [data-action="fullscreen"]' ).addEventListener( 'click', () => this.fullscreen() );
 		$( '#toolbar [data-action="hideui"]' ).addEventListener( 'click', () => this.setHidden( true ) );
 		$( '#ip-close' ).addEventListener( 'click', () => app.exitInspect() );
+		$( '#capture-close' ).addEventListener( 'click', () => { $( '#capture' ).hidden = true; } );
 		document.addEventListener( 'pointerdown', ( e ) => {
 
 			if ( this.openMenu && ! this.pop.contains( e.target ) && ! e.target.closest( '#toolbar' ) ) this.closeMenu();
@@ -250,6 +251,17 @@ export class UI {
 	hideInspect() {
 
 		$( '#inspect-panel' ).hidden = true;
+
+	}
+
+	showCapture( url ) {
+
+		const box = $( '#capture' );
+		const img = $( '#capture-img' );
+		if ( img.dataset.url ) URL.revokeObjectURL( img.dataset.url );
+		img.src = url;
+		img.dataset.url = url;
+		box.hidden = false;
 
 	}
 

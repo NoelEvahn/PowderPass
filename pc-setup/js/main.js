@@ -347,13 +347,20 @@ async function main() {
 
 			}
 
-			if ( ! blob ) return ui.hint( 'Screenshot failed' );
-			const a = document.createElement( 'a' );
-			a.href = URL.createObjectURL( blob );
-			a.download = `pc-setup-${ new Date().toISOString().replace( /[:.]/g, '-' ) }.png`;
-			a.click();
-			setTimeout( () => URL.revokeObjectURL( a.href ), 4000 );
-			ui.hint( 'Screenshot saved' );
+			if ( ! blob ) return ui.hint( 'Screenshot failed — try a lower resolution' );
+			// Show the capture in a preview (long-press or right-click to save it; this
+			// also works where the page is not allowed to start downloads), and try a
+			// direct download as well.
+			const url = URL.createObjectURL( blob );
+			ui.showCapture( url );
+			try {
+
+				const a = document.createElement( 'a' );
+				a.href = url;
+				a.download = `pc-setup-${ new Date().toISOString().replace( /[:.]/g, '-' ) }.png`;
+				a.click();
+
+			} catch { /* downloads blocked: the preview remains */ }
 
 		},
 	};
@@ -645,7 +652,9 @@ async function main() {
 
 	// --- Init visual state --------------------------------------------------
 	app.setLighting( 'day' );
-	app.setQuality( 'high' );
+	// phones / tablets start on the lighter preset; desktops on High
+	const touch = window.matchMedia?.( '(pointer: coarse)' ).matches;
+	app.setQuality( touch || Math.min( window.innerWidth, window.innerHeight ) < 600 ? 'performance' : 'high' );
 	window.addEventListener( 'resize', () => {
 
 		pipeline.resize();
@@ -677,7 +686,7 @@ async function main() {
 	probeAt = Infinity;
 	await loader.progress( 1, 'Ready' );
 	loader.done();
-	ui.hint( 'Drag to orbit · Right-drag to pan · Scroll to zoom · Click a component to inspect', 6000 );
+	ui.hint( touch ? 'Drag to orbit · pinch to zoom · two-finger drag to pan · tap a part to inspect' : 'Drag to orbit · Right-drag to pan · Scroll to zoom · Click a component to inspect', 6000 );
 
 	// --- Loop ------------------------------------------------------------------
 	clock.getDelta();
