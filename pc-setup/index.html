@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PC Setup — Interactive 3D</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "./vendor/three/build/three.module.js",
+      "three/addons/": "./vendor/three/addons/",
+      "three/examples/jsm/": "./vendor/three/addons/",
+      "three-mesh-bvh": "./vendor/three-mesh-bvh/index.module.js",
+      "three-gpu-pathtracer": "./vendor/three-gpu-pathtracer/index.module.js"
+    }
+  }
+  </script>
+</head>
+<body>
+  <div id="viewport"></div>
+  <div id="labels"></div>
+
+  <!-- Loading screen -->
+  <div id="loader">
+    <div class="loader-inner">
+      <div class="loader-title">Preparing workspace</div>
+      <div class="loader-bar"><div id="loader-fill"></div></div>
+      <div id="loader-step">Initializing renderer…</div>
+    </div>
+  </div>
+
+  <!-- Fatal error -->
+  <div id="fatal" hidden>
+    <div class="fatal-inner">
+      <h2>Unable to start the 3D renderer</h2>
+      <p id="fatal-msg"></p>
+      <p class="muted">This scene requires WebGL 2. Enable hardware acceleration in your browser settings and update your graphics driver, then reload.</p>
+    </div>
+  </div>
+
+  <!-- HUD -->
+  <div id="hud">
+    <div id="fps" hidden>— fps</div>
+    <div id="mode-hint"></div>
+    <div id="pt-status" hidden></div>
+
+    <aside id="inspect-panel" hidden>
+      <div class="ip-head">
+        <div>
+          <div class="ip-kicker" id="ip-kicker"></div>
+          <h3 id="ip-title"></h3>
+        </div>
+        <button class="icon-btn" id="ip-close" title="Return to overview (Esc)">✕</button>
+      </div>
+      <dl id="ip-specs"></dl>
+      <p class="ip-note" id="ip-note"></p>
+    </aside>
+
+    <div id="popover" hidden></div>
+
+    <nav id="toolbar" aria-label="Scene controls">
+      <button data-menu="camera" title="Camera mode"><span class="ic">◎</span><span>Camera</span></button>
+      <button data-menu="components" title="Components"><span class="ic">▣</span><span>Components</span></button>
+      <button data-menu="lighting" title="Room lighting"><span class="ic">☀</span><span>Lighting</span></button>
+      <button data-menu="rgb" title="RGB lighting"><span class="ic">◐</span><span>RGB</span></button>
+      <button data-menu="graphics" title="Graphics quality"><span class="ic">⚙</span><span>Graphics</span></button>
+      <button data-menu="screenshot" title="Screenshot"><span class="ic">⧉</span><span>Capture</span></button>
+      <button data-action="fullscreen" title="Fullscreen (F)"><span class="ic">⤢</span><span>Full</span></button>
+      <button data-action="hideui" title="Hide UI (H)"><span class="ic">◌</span><span>Hide UI</span></button>
+    </nav>
+  </div>
+  <div id="ui-restore" hidden>Press <kbd>H</kbd> to show the interface</div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
