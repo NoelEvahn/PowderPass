@@ -65,6 +65,7 @@ public final class TerrainSampler {
         public double boundaryDist;
         public final Geology.GeoSample geo = new Geology.GeoSample(); // base geology/overlays at this column
         public double precip, baseTemp;
+        public double gridSlope;       // slope at the 8-block simulation scale (rise/run)
     }
 
     public void sample(double x, double z, Column c) {
@@ -88,6 +89,10 @@ public final class TerrainSampler {
         c.sediment = Math.max(0, bilinear(sim.sed, sim.w, sim.h, gx, gz));
         c.drainage = bilinear(sim.area, sim.w, sim.h, gx, gz);
         c.ice = bilinear(sim.ice, sim.w, sim.h, gx, gz);
+        // Slope over a 32-block stencil: smooth enough that biome boundaries do not follow individual rills.
+        double sx = bilinear(sim.z, sim.w, sim.h, gx + 2, gz) - bilinear(sim.z, sim.w, sim.h, gx - 2, gz);
+        double sz = bilinear(sim.z, sim.w, sim.h, gx, gz + 2) - bilinear(sim.z, sim.w, sim.h, gx, gz - 2);
+        c.gridSlope = Math.sqrt(sx * sx + sz * sz) / (4.0 * DomainSim.RES);
 
         // Seam blend toward the canonical boundary height.
         double bd = sc.owner.bd;

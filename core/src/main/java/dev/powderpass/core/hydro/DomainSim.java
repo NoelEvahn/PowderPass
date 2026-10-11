@@ -412,34 +412,82 @@ public final class DomainSim {
             double depth = F[pit] - z[pit];
             if (depth < 2.0 && sizeCells < 40 && (pit * 0x9E3779B1L & 0xFF) < 40) continue; // occasional small pond
             if (sizeCells > 1500 && depth > 25) { rejKeepLarge++; continue; }              // genuine large basin: keep as lake
-            // Trace the parent chain from the pit toward the outlet; lower cells to a gently falling grade.
+            // Least-cost breach path from the pit to lower ground outside the depression: cost favours low
+            // terrain (little excavation) with slight noise, so channels follow natural lows instead of straight lines.
+            int[] path = breachPath(pit, label, labels - 1);
+            if (path == null) { rejCut++; continue; }
             double target = z[pit];
-            int c = par[pit];
-            int len = 0;
-            double maxCut = 0;
-            while (c >= 0 && len < 260) {
+            for (int c : path) {
                 target -= 0.0008 * RES;
-                if (z[c] <= target) break;
-                if (fixedKind(kind[c]) || kind[c] == SEA) { if (seedKind(kind[c])) break; maxCut = 1e9; rejFixed++; break; }
-                maxCut = Math.max(maxCut, z[c] - target);
-                c = par[c];
-                len++;
-            }
-            if (maxCut > 70 || len >= 260) { if (maxCut <= 1e8) { if (len >= 260) rejLen++; else rejCut++; } continue; }
-            target = z[pit];
-            c = par[pit];
-            len = 0;
-            while (c >= 0 && len < 260) {
-                target -= 0.0008 * RES;
-                if (z[c] <= target || seedKind(kind[c])) break;
-                z[c] = (float) target;
-                c = par[c];
-                len++;
+                if (z[c] > target && !fixedKind(kind[c]) && !seedKind(kind[c]) && kind[c] != SEA) z[c] = (float) target;
             }
             changed = true;
             breaches++;
         }
         return changed;
+    }
+
+    private MinHeap bheap;
+    private float[] bcost;
+    private int[] bprev;
+    private int[] btouched;
+
+    /** Dijkstra from the pit; returns the cell sequence (excluding the pit) or null if too long/deep. */
+    private int[] breachPath(int pit, int[] label, int myLabel) {
+        int n = w * h;
+        if (bheap == null) {
+            bheap = new MinHeap(1024);
+            bcost = new float[n];
+            bprev = new int[n];
+            btouched = new int[n];
+            java.util.Arrays.fill(bcost, Float.MAX_VALUE);
+        }
+        bheap.clear();
+        int touched = 0;
+        bcost[pit] = 0;
+        bprev[pit] = -1;
+        btouched[touched++] = pit;
+        bheap.push(0, pit);
+        float zp = z[pit];
+        int goal = -1, expanded = 0;
+        while (!bheap.isEmpty() && expanded < 30000) {
+            int c = bheap.pop();
+            double cc = bheap.lastKey;
+            if (cc > bcost[c]) continue;
+            expanded++;
+            if (c != pit && label[c] != myLabel && (seedKind(kind[c]) || (!Float.isNaN(F[c]) && F[c] < zp - 0.2))) { goal = c; break; }
+            int ci = c % w, cj = c / w;
+            for (int d = 0; d < 8; d++) {
+                int ni = ci + DI[d], nj = cj + DJ[d];
+                if (ni < 0 || nj < 0 || ni >= w || nj >= h) continue;
+                int nk = nj * w + ni;
+                byte nkind = kind[nk];
+                if (nkind == OUT || nkind == ISO || nkind == RING || nkind == INFLOW || nkind == FIXED) continue;
+                double dig = Math.max(0, z[nk] - zp);
+                if (dig > 70) continue;
+                double noise = ((nk * 0x9E3779B1L) >>> 20 & 0xFF) / 255.0;
+                double step = DD[d] / RES * (0.6 + 0.5 * noise) + dig * 1.5;
+                float nc = (float) (cc + step);
+                if (nc < bcost[nk]) {
+                    if (bcost[nk] == Float.MAX_VALUE) btouched[touched++] = nk;
+                    bcost[nk] = nc;
+                    bprev[nk] = c;
+                    bheap.push(nc, nk);
+                }
+            }
+        }
+        int[] path = null;
+        if (goal >= 0) {
+            int len = 0;
+            for (int c = goal; c != pit && c >= 0; c = bprev[c]) len++;
+            if (len <= 300) {
+                path = new int[len];
+                int i = len - 1;
+                for (int c = goal; c != pit && c >= 0; c = bprev[c]) path[i--] = c;
+            }
+        }
+        for (int t = 0; t < touched; t++) bcost[btouched[t]] = Float.MAX_VALUE;
+        return path;
     }
 
     static final boolean DEBUG = Boolean.getBoolean("powderpass.debugSim");

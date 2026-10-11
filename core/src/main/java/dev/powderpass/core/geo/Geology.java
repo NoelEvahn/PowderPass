@@ -106,7 +106,7 @@ public final class Geology {
         Tectonics.Sample ts = o.plate;
         double mf = s.mountainFrequency();
         double widthScale = sc * (0.6 + 0.4 * mf);
-        tect.sample(x, z, 2400 * widthScale + 200, ts);
+        tect.sample(x, z, 2900 * widthScale + 200, ts);
 
         // ---- continentality ----
         double C = ts.crust * 0.62
@@ -124,15 +124,17 @@ public final class Geology {
             double d = ts.edgeDist[i], sgn = ts.edgeSigned[i];
             double conv = e.convergence;
             boolean contLo = e.crustLo > 0, contHi = e.crustHi > 0;
-            double width = (700 + 1100 * e.pairRand) * widthScale * (0.7 + 0.6 * (0.5 + 0.5 * alongPhase));
+            double width = (950 + 1350 * e.pairRand) * widthScale * (0.7 + 0.6 * (0.5 + 0.5 * alongPhase));
             double cs = smoothstep(0.02, 0.30, conv);
             double oi = 0, volc = 0;
             if (cs > 0) {
                 if (contLo && contHi) {
-                    oi = cs * profile(d, width);
+                    // Broad highland with a narrower spine.
+                    oi = cs * (0.6 * (1 - smoothstep(0.25 * width, width, d)) + 0.4 * profile(d, 0.55 * width));
                 } else if (contLo || contHi) {
                     double toCont = contHi ? sgn : -sgn; // positive on the continental side
-                    oi = cs * profile(Math.abs(toCont - 0.45 * width), width * 0.75);
+                    double dd = Math.abs(toCont - 0.45 * width);
+                    oi = cs * (0.6 * (1 - smoothstep(0.2 * width, 0.8 * width, dd)) + 0.4 * profile(dd, 0.45 * width));
                     volc = cs * profile(Math.abs(toCont - 0.8 * width), 500 * sc);
                 } else {
                     oi = cs * 0.35 * profile(d, width * 0.5);
@@ -164,7 +166,7 @@ public final class Geology {
 
         // Intraplate (old) ranges: rare ridged belts far from boundaries.
         double interior = Simplex.ridged(interiorSeed, x / (5200 * sc), z / (5200 * sc), 2, 2.0, 0.5);
-        double oInterior = smoothstep(0.80 - 0.10 * (mf - 1), 0.97, interior) * 0.7 * Math.min(1.0, mf);
+        double oInterior = smoothstep(0.73 - 0.10 * (mf - 1), 0.93, interior) * 0.78 * Math.min(1.0, mf);
         double orogeny = MathUtil.clamp(1 - (1 - oBoundary) * (1 - oInterior), 0, 1);
         if (orogeny > 1e-6) youth = (youth * oBoundary + 0.15 * oInterior) / (oBoundary + oInterior);
         o.orogeny = orogeny;
@@ -195,8 +197,8 @@ public final class Geology {
         // Mountains: spine profile x along-strike modulation (saddles, passes, uneven peaks) x ridged texture.
         double along = Simplex.fbm(alongSeed, x / (2100 * sc), z / (2100 * sc), 3, 2.0, 0.5);
         double peak = Simplex.fbm(peakSeed, x / (2600 * sc), z / (2600 * sc), 2, 2.0, 0.5);
-        double landmark = smoothstep(0.38, 0.62, peak) * 140;
-        double mtnAmp = (220 + 520 * youth) * (0.55 + 0.45 * along) + landmark * youth;
+        double landmark = smoothstep(0.34, 0.6, peak) * 180;
+        double mtnAmp = (250 + 560 * youth) * (0.6 + 0.4 * along) + landmark * youth;
         double ridged;
         if (full) {
             double ridgeYoung = Simplex.ridged(mtnSeed, x / (950 * sc), z / (950 * sc), 5, 2.05, 0.5);
@@ -287,7 +289,7 @@ public final class Geology {
         long lo = Math.min(k1, k2), hi = Math.max(k1, k2);
         long ph = Hash.hash(faultSeed ^ 0xFA17L, lo, hi);
         double amp = 0;
-        if (Hash.unit(ph) < 0.08) {
+        if (Hash.unit(ph) < 0.05) {
             amp = (8 + 22 * Hash.unit(Hash.mix(ph))) * (Hash.unit(Hash.mix(ph + 1)) < 0.5 ? -1 : 1);
         }
         if (amp != 0) {
