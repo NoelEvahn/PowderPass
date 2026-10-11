@@ -143,8 +143,24 @@ public final class Diagnostics {
         TerrainSampler.Column c = new TerrainSampler.Column(), n = new TerrainSampler.Column();
         int sea = world.settings.seaLevel();
         Predicate<TerrainSampler.Column> pred = switch (lf) {
-            case PLAIN -> col -> Double.isNaN(col.waterLevel) && col.gridSlope < 0.03 && col.height - sea > 4 && col.height - sea < 70
-                    && (biomes.surface(col) == PBiome.ROLLING_GRASSLAND || biomes.surface(col) == PBiome.ALLUVIAL_MEADOW);
+            case PLAIN -> col -> {
+                if (!Double.isNaN(col.waterLevel) || col.gridSlope > 0.04 || col.height - sea < 3 || col.height - sea > 90) return false;
+                PBiome b = biomes.surface(col);
+                if (!(b == PBiome.ROLLING_GRASSLAND || b == PBiome.ALLUVIAL_MEADOW || b == PBiome.STEPPE || b == PBiome.WARM_SAVANNA)) return false;
+                // Broad: relief below 12 blocks across a 200x200 window.
+                double lo = col.height, hi = col.height;
+                double cx0 = col.x, cz0 = col.z;
+                for (int dz = -100; dz <= 100; dz += 25) {
+                    for (int dx = -100; dx <= 100; dx += 25) {
+                        sampler.sample(cx0 + dx, cz0 + dz, n);
+                        if (!Double.isNaN(n.waterLevel) && n.waterKind != TerrainSampler.WATER_RIVER) return false;
+                        lo = Math.min(lo, n.height);
+                        hi = Math.max(hi, n.height);
+                        if (hi - lo > 14) return false;
+                    }
+                }
+                return true;
+            };
             case MOUNTAIN_VALLEY -> col -> col.channel && col.height - sea > 120 && col.riverQ > 150000 && col.erosionDepth > 15;
             case HILL_TRANSITION -> col -> Double.isNaN(col.waterLevel) && col.gridSlope > 0.12 && col.gridSlope < 0.4 && col.height - sea > 40;
             case FAULT_SCARP -> col -> Math.abs(col.geo.faultScarp) > 10 && col.geo.faultDist < 20 || col.geo.overlay == 100 + Anomaly.Type.FAULT_ESCARPMENT.ordinal();

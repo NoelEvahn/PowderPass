@@ -1,0 +1,37 @@
+{
+  "_comment": "new_world applies only when creating a new world with the PowderPass preset; it is then stored in that world. runtime is reloadable with /powderpass reload. terrain_cap can be lowered but never raised above 700.",
+  "new_world": {
+    "generator_version": 1,
+    "terrain_cap": 700,
+    "sea_level": 63,
+    "horizontal_scale": 1.0,
+    "mountain_frequency": 1.0,
+    "flatland_bias": 0.0,
+    "river_density": 1.0,
+    "erosion_strength": 1.0,
+    "erosion_iterations": 40,
+    "glaciation": true,
+    "biome_size": 1.0,
+    "vegetation_density": 1.0,
+    "slab_detail": 1.0,
+    "anomaly_frequency": 1.0,
+    "volcano_frequency": 1.0,
+    "vanilla_structures": true
+  },
+  "runtime": {
+    "volcanoActivity": true,
+    "destructiveVolcanism": false,
+    "ambientEffects": true,
+    "maxActiveEruptions": 1,
+    "lavaPlacementsPerTick": 3,
+    "eruptionLavaBudget": 180,
+    "dormancyDaysMin": 4.0,
+    "dormancyDaysMax": 12.0,
+    "unrestDays": 1.0,
+    "eruptionTicks": 9000,
+    "coolingTicks": 6000,
+    "inhabitedTicksThreshold": 6000,
+    "simulationCacheMb": 384,
+    "volcanoScanRadius": 640
+  }
+}

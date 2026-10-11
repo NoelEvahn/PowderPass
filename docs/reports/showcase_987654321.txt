@@ -1,0 +1,12 @@
+seed 987654321
+spawn -40 114 56 biome conifer_foothills slope 0.11 water NaN
+plain -1152 71 1536 relief over 200x200: 10.1 blocks
+mountain valley 2880 187 1824: river surface 186, floor 184, eroded 17.9 blocks here, valley side +42 within 60 blocks, discharge 2.76e+05
+hilly biome transition -32 137 -32: conifer_foothills -> stony_shore at 64 blocks
+slab-detailed rock slope near 83 67 -17: 12 slabs in best chunk
+fault scarp (tectonic fault trace) 128 71 -4416: scarp offset 11.2, fault distance 20
+straight fault escarpment -13506 -15173 (length 2415): step across trace 47.3 blocks
+working volcano STRATO at -809 -1843: vent at y 272, 3 lava channels, radius 434
+flat basin (salt flat) -36214 -6385 radius 327: 1893 samples within 0.6R, top-block y range 70..70
+impact crater -3352 -11245 radius 123: floor y 28, rim max y 76, depth 48
+deep pit 7457 1989 radius 62: floor y -40 (bedrock floor kept at y<=-60), surrounding y 199, depth 239

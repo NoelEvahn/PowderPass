@@ -1,0 +1,45 @@
+seed 987654321 centre 0 0 size 8192 step 8 erosion true
+columns 1048576 sampled in 21.6s (4 threads); domains 144; river segments 41469
+land fraction 0.518  max surface y 597
+  plains/rolling lowland       0.195
+  hills/foothills              0.363
+  mountains/highlands          0.302
+  plateau/badlands/escarp.     0.005
+  unusual (anomaly/volcano)    0.134
+biome sample counts:
+  ocean                    0.1473
+  conifer_foothills        0.1179
+  deep_ocean               0.1096
+  cold_ocean               0.0886
+  beach_dunes              0.0820
+  frozen_tundra            0.0810
+  snowy_summit             0.0679
+  ash_barrens              0.0443
+  lukewarm_ocean           0.0408
+  rolling_grassland        0.0379
+  boreal_forest            0.0290
+  basalt_highlands         0.0275
+  alpine_meadow            0.0268
+  deep_lukewarm_ocean      0.0245
+  deep_cold_ocean          0.0231
+  temperate_mixed_forest   0.0140
+  warm_ocean               0.0082
+  rocky_alpine_ridge       0.0078
+  dry_scrubland            0.0076
+  stony_shore              0.0044
+  steppe                   0.0043
+  alluvial_meadow          0.0028
+  river                    0.0011
+  windswept_plateau        0.0006
+  glacial_valley           0.0005
+  birch_uplands            0.0002
+  frozen_river             0.0001
+  karst_country            0.0001
+  floodplain_woodland      0.0000
+volcano STRATO ARC at -809 -1843 radius 434 height 274 extinct false id 4554379723640065459
+volcano STRATO ARC at -3879 892 radius 442 height 344 extinct false id -6812232838269560673
+volcano SHIELD ARC at 3768 1002 radius 698 height 166 extinct false id -5974950124890145795
+volcano SHIELD RIFT at 434 2406 radius 688 height 178 extinct true id 996420944424057821
+volcano STRATO ARC at 2774 2280 radius 387 height 286 extinct true id -4669157752147294244
+volcano SHIELD RIFT at 2436 3696 radius 510 height 101 extinct false id 7564867225677955942
+volcano CINDER RIFT at 3446 3954 radius 87 height 39 extinct false id -221207286723258815

@@ -1,0 +1,12 @@
+seed 12345
+spawn -136 77 152 biome boreal_forest slope 0.20 water NaN
+plain -576 72 -160 relief over 200x200: 13.4 blocks
+mountain valley 1888 239 -928: river surface 238, floor 236, eroded 36.4 blocks here, valley side +68 within 60 blocks, discharge 3.98e+05
+hilly biome transition -32 220 -32: frozen_tundra -> boreal_forest at 32 blocks
+slab-detailed rock slope near 92 155 -17: 88 slabs in best chunk
+fault scarp (tectonic fault trace) -2944 199 3584: scarp offset 0.0, fault distance 392
+straight fault escarpment -3190 5254 (length 3151): step across trace 27.3 blocks
+working volcano SHIELD at 6819 4220: vent at y 161, 5 lava channels, radius 650
+flat basin (salt flat) -6609 3350 radius 668: 7909 samples within 0.6R, top-block y range 74..74
+impact crater -11631 2041 radius 117: floor y 32, rim max y 77, depth 45
+deep pit -1682 2633 radius 59: floor y -40 (bedrock floor kept at y<=-60), surrounding y 120, depth 160

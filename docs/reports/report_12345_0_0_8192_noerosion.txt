@@ -1,0 +1,44 @@
+seed 12345 centre 0 0 size 8192 step 8 erosion false
+columns 1048576 sampled in 17.8s (4 threads); domains 143; river segments 76036
+land fraction 0.771  max surface y 575
+  plains/rolling lowland       0.311
+  hills/foothills              0.301
+  mountains/highlands          0.257
+  plateau/badlands/escarp.     0.089
+  unusual (anomaly/volcano)    0.042
+biome sample counts:
+  rolling_grassland        0.1525
+  frozen_tundra            0.1247
+  boreal_forest            0.1121
+  conifer_foothills        0.1009
+  deep_ocean               0.0905
+  snowy_summit             0.0823
+  ocean                    0.0629
+  temperate_mixed_forest   0.0451
+  windswept_plateau        0.0404
+  alluvial_meadow          0.0234
+  steppe                   0.0230
+  alpine_meadow            0.0196
+  rocky_alpine_ridge       0.0175
+  beach_dunes              0.0161
+  deep_lukewarm_ocean      0.0145
+  deep_cold_ocean          0.0133
+  lukewarm_ocean           0.0122
+  birch_uplands            0.0120
+  cold_ocean               0.0114
+  dry_scrubland            0.0065
+  river                    0.0047
+  karst_country            0.0047
+  stony_shore              0.0043
+  wet_coastal_forest       0.0034
+  floodplain_woodland      0.0006
+  basalt_highlands         0.0005
+  tropical_rainforest      0.0004
+  mangrove_wetland         0.0002
+  crater_basin             0.0002
+  warm_savanna             0.0001
+  frozen_river             0.0001
+  red_badlands             0.0000
+  marsh                    0.0000
+anomaly circular_basin at -1749 -2788 radius 589 depth 55 level 79 wet false
+anomaly deep_pit at -1683 2634 radius 59 depth 205 level -40 wet false

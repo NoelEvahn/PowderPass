@@ -1,0 +1,11 @@
+seed 42
+spawn -40 140 -136 biome conifer_foothills slope 0.07 water NaN
+plain -1184 77 1312 relief over 200x200: 14.0 blocks
+mountain valley -1152 193 192: river surface 192, floor 190, eroded 24.9 blocks here, valley side +41 within 60 blocks, discharge 1.68e+05
+hilly biome transition -64 148 -64: conifer_foothills -> boreal_forest at 96 blocks
+slab-detailed rock slope near -30 218 14: 36 slabs in best chunk
+straight fault escarpment -19358 1254 (length 2468): step across trace 64.2 blocks
+working volcano STRATO at 354 4837: vent at y 236, 3 lava channels, radius 391
+flat basin (salt flat) -5917 1694 radius 441: 3449 samples within 0.6R, top-block y range 65..65
+impact crater 7414 10979 radius 360: floor y 9, rim max y 258, depth 249
+deep pit 2071 -10083 radius 113: floor y -40 (bedrock floor kept at y<=-60), surrounding y 178, depth 218

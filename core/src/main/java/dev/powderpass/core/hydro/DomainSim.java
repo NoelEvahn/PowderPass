@@ -256,6 +256,7 @@ public final class DomainSim {
     private int orderLen;
     private float[] rdist;
     private int[] par;
+    private float[] flatNoise;
     private MinHeap heap;
     private static final int[] DI = {1, -1, 0, 0, 1, 1, -1, -1};
     private static final int[] DJ = {0, 0, 1, -1, 1, -1, 1, -1};
@@ -273,6 +274,13 @@ public final class DomainSim {
             heap = new MinHeap(n);
         }
         heap.clear();
+        if (flatNoise == null) {
+            flatNoise = new float[n];
+            for (int k = 0; k < n; k++) {
+                long gxk = (ox / RES) + (k % w), gzk = (oz / RES) + (k / w);
+                flatNoise[k] = (float) (0.15 + 3.0 * dev.powderpass.core.util.Hash.unit(dev.powderpass.core.util.Hash.hash(0xF1A7L, gxk, gzk)));
+            }
+        }
         boolean[] done = new boolean[n];
         for (int k = 0; k < n; k++) {
             rec[k] = -1;
@@ -304,7 +312,8 @@ public final class DomainSim {
                 if (ni < 0 || nj < 0 || ni >= w || nj >= h) continue;
                 int nk = nj * w + ni;
                 if (done[nk] || kind[nk] == OUT) continue;
-                float nf = Math.max(z[nk], fc + EPS);
+                // Noise-weighted epsilon: flow paths across flats wander instead of following straight grid lines.
+                float nf = Math.max(z[nk], fc + EPS * flatNoise[nk]);
                 if (Float.isNaN(F[nk]) || nf < F[nk]) {
                     F[nk] = nf;
                     par[nk] = c;
