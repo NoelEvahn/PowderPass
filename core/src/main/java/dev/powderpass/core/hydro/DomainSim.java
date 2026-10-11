@@ -188,8 +188,11 @@ public final class DomainSim {
                 if (kind[k] == SEA) continue;
                 double x = cellX(i), zz = cellZ(j);
                 final int kk = k;
-                dom.forEachPassNear(x, zz, HydroRules.NOTCH_R, (f, d) -> {
-                    float nv = (float) HydroRules.notch(d, f.level);
+                dom.forEachPassNear(x, zz, HydroRules.PASS_LOOKUP_R, (f, d) -> {
+                    double ux = x - f.outPass.x, uz = zz - f.outPass.z;
+                    double nvd = HydroRules.notch(ux * f.outPass.tx + uz * f.outPass.tz, -ux * f.outPass.tz + uz * f.outPass.tx, f.level);
+                    if (nvd == Double.POSITIVE_INFINITY) return;
+                    float nv = (float) nvd;
                     if (nv < z[kk] && kind[kk] != FIXED && kind[kk] != SINK && kind[kk] != WETSINK) z[kk] = nv;
                 });
             }

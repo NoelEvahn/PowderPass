@@ -55,9 +55,13 @@ public final class BaseTerrain {
         if (v == null) return;
         double r = Math.hypot(x - v.x(), z - v.z());
         o.h0 = base + best[0];
-        if (r < v.radius()) {
+        // Irregular, patchy edge of the volcanic zone (deposits thin out unevenly; no perfect circles).
+        double an = volcanoes.angleNoise(v, x - v.x(), z - v.z());
+        double patch = dev.powderpass.core.noise.Simplex.fbm(volcanoes.noiseSeed() + 7, x / 70.0, z / 70.0, 2, 2.0, 0.5);
+        double rEff = r / (v.radius() * (1 + 0.12 * an)) - 0.12 * patch;
+        if (rEff < 1) {
             o.overlay = OVERLAY_VOLCANO_BASE + v.type().ordinal();
-            o.overlayStrength = 1 - r / v.radius();
+            o.overlayStrength = 1 - rEff;
             o.resistanceOverride = v.type() == VolcanoSite.Type.ERODED ? 1.4 : 2.6;
         }
         if (r < v.craterRadius() * 0.6) {

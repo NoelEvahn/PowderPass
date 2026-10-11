@@ -14,6 +14,8 @@ public final class HydroRules {
     public static final double BLEND_W = 28;
     /** Radius around a pass inside which the canonical notch and canonical channel apply. */
     public static final double NOTCH_R = 112;
+    /** Lookup radius for passes; larger than the trough's extent so the constraint never ends abruptly. */
+    public static final double PASS_LOOKUP_R = 160;
     /** Half length of the canonical straight channel carved through every pass. */
     public static final double PASS_CHANNEL_HALF = 30;
 
@@ -32,11 +34,25 @@ public final class HydroRules {
         return o.h0 - denud + bump;
     }
 
-    /** V-shaped valley notch through a divide at a pass: minimum allowed surface at distance d from the pass. */
-    public static double notch(double d, int level) {
-        double floorHalf = 6;
-        return level + 1.5 + Math.max(0, d - floorHalf) * 0.62;
+    /**
+     * Water gap through a divide at a pass: a V-shaped trough aligned with the flow axis (seed-to-seed direction),
+     * floor at the pass level rising gently away from it, tapering out at both ends. Returns the maximum allowed
+     * surface at (along, across) relative to the pass, or +infinity outside the trough. Elongated (not radial) so it
+     * reads as a gorge rather than a crater.
+     */
+    public static double notch(double along, double across, int level) {
+        double a = Math.abs(along), c = Math.abs(across);
+        if (a > NOTCH_LEN || c > NOTCH_R) return Double.POSITIVE_INFINITY;
+        double floor = level + 1.5 + 0.035 * a;
+        double v = floor + Math.max(0, c - 5) * 0.8;
+        double t = (a - NOTCH_LEN * 0.55) / (NOTCH_LEN * 0.45);
+        if (t > 0) v += t * t * 400; // fade into the surrounding terrain toward the trough ends
+        double sTaper = (c - NOTCH_R * 0.6) / (NOTCH_R * 0.4);
+        if (sTaper > 0) v += sTaper * sTaper * 400; // and sideways, well before the lookup radius
+        return v;
     }
+
+    public static final double NOTCH_LEN = 100;
 
     /** Canonical channel width for a discharge. */
     public static double width(double q) {

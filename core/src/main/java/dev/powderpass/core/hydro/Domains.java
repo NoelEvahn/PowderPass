@@ -36,6 +36,7 @@ public final class Domains {
     public static final double SPACING = 768;
     public static final int COARSE = 64;
     public static final int MAX_UPSTREAM = 96;
+    public static final double MAX_GAP = 24;
     static final double WARP_AMP = 130, WARP_LAMBDA = 1200, WARP2_AMP = 22, WARP2_LAMBDA = 300;
 
     private final BaseTerrain base;
@@ -382,8 +383,10 @@ public final class Domains {
                     int nk = nj * size + ni;
                     if (done[nk]) continue;
                     long nid = Hash.pack(gx + ni - W, gz + nj - W);
-                    if (pass(cid, nid) == null) continue;
-                    double f = Math.max(info(nid).E, fill[k]);
+                    Pass ps = pass(cid, nid);
+                    if (ps == null) continue;
+                    // Water leaving n through this pass must rise to the pass: low passes are preferred spillways.
+                    double f = Math.max(Math.max(info(nid).E, ps.h0), fill[k]);
                     int hp = f == fill[k] ? hops[k] + 1 : 0;
                     if (f < fill[nk] || (f == fill[nk] && hp < hops[nk])) {
                         fill[nk] = f;
@@ -430,12 +433,20 @@ public final class Domains {
         for (int i = 0; i < order.length; i++) order[i] = i;
         Arrays.sort(order, (p, q) -> lowerKey(nb[p], nb[q]) ? -1 : (lowerKey(nb[q], nb[p]) ? 1 : 0));
         boolean terminal = key(id)[2] == 1;
+        // Among neighbours with a strictly lower key (acyclicity), take the one reached over the lowest pass.
+        Pass bestPass = null;
+        Info bestN = null;
         for (int oi : order) {
             if (terminal) break;
             Info n = ni[oi];
             if (!lowerKey(n.id, id)) break;
             Pass p = pass(id, n.id);
             if (p == null) continue;
+            if (bestPass == null || p.h0 < bestPass.h0 - 1e-9) { bestPass = p; bestN = n; }
+        }
+        if (bestPass != null) {
+            Info n = bestN;
+            Pass p = bestPass;
             f.type = FlowType.DOWN;
             f.down = n.id;
             f.outPass = p;
@@ -448,6 +459,8 @@ public final class Domains {
             double est = p.h0 - 0.45 * (p.h0 - df.level);
             double dLow = Math.hypot(p.x - in.lowX, p.z - in.lowZ);
             est = Math.min(est, in.minH + 1 + 0.0008 * dLow);
+            // Water gaps are at most MAX_GAP deep; anything deeper becomes a lake behind the divide instead.
+            est = Math.max(est, p.h0 - MAX_GAP);
             f.level = (int) Math.floor(Math.max(zmin, est));
             return f;
         }

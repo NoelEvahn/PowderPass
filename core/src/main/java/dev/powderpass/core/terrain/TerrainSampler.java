@@ -136,13 +136,15 @@ public final class TerrainSampler {
         // Canonical pass notches and pass channels (identical on both sides of every border).
         final double hh = h;
         double[] hm = {hh, Double.NaN};
-        dom.forEachPassNear(x, z, HydroRules.NOTCH_R, (f, d) -> {
-            hm[0] = Math.min(hm[0], HydroRules.notch(d, f.level));
+        dom.forEachPassNear(x, z, HydroRules.PASS_LOOKUP_R, (f, d) -> {
             // Straight canonical channel through the pass along the seed-to-seed direction.
             Domains.Pass p = f.outPass;
             double ux = x - p.x, uz = z - p.z;
             double along = ux * p.tx + uz * p.tz;
-            double across = Math.abs(-ux * p.tz + uz * p.tx);
+            double acrossSigned = -ux * p.tz + uz * p.tx;
+            hm[0] = Math.min(hm[0], HydroRules.notch(along, acrossSigned, f.level));
+            // Gentle deterministic sinuosity (zero at the pass point so both polylines still meet there).
+            double across = Math.abs(acrossSigned - 3.5 * Math.sin(along / 13.0));
             double halfLen = HydroRules.PASS_CHANNEL_HALF;
             if (Math.abs(along) > halfLen + 8) return;
             double q = dom.outflowDischarge(f.id);
