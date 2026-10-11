@@ -14,6 +14,8 @@ public final class HydroRules {
     public static final double BLEND_W = 28;
     /** Radius around a pass inside which the canonical notch and canonical channel apply. */
     public static final double NOTCH_R = 112;
+    /** Half length of the canonical straight channel carved through every pass. */
+    public static final double PASS_CHANNEL_HALF = 30;
 
     /**
      * Elevation enforced on domain boundaries (both sides converge to this exactly at the boundary). Divides keep

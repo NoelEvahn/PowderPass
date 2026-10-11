@@ -34,6 +34,8 @@ public final class TerrainSampler {
     private static final class Scratch {
         final Geology.GeoSample geo = new Geology.GeoSample();
         final Domains.Owner owner = new Domains.Owner();
+        long lastId = Long.MIN_VALUE;
+        DomainSim lastSim;
     }
 
     public TerrainSampler(PowderWorld world) {
@@ -76,7 +78,14 @@ public final class TerrainSampler {
         dom.owner(x, z, sc.owner);
         c.domain = sc.owner.id;
         c.boundaryDist = sc.owner.bd;
-        DomainSim sim = world.sim(sc.owner.id);
+        DomainSim sim;
+        if (sc.lastId == sc.owner.id && sc.lastSim != null) {
+            sim = sc.lastSim;
+        } else {
+            sim = world.sim(sc.owner.id);
+            sc.lastId = sc.owner.id;
+            sc.lastSim = sim;
+        }
         Geology.GeoSample o = c.geo;
         world.base.sample(x, z, o);
         c.precip = world.climate.precipitation(x, z);
@@ -101,15 +110,34 @@ public final class TerrainSampler {
             double t = smoothstep(0, HydroRules.BLEND_W, bd);
             h = hb + (h - hb) * t;
         }
-        // Canonical pass notches (identical on both sides of every border).
-        double[] passNear = {Double.MAX_VALUE};
+        // Canonical pass notches and pass channels (identical on both sides of every border).
         final double hh = h;
-        double[] hm = {hh};
+        double[] hm = {hh, Double.NaN};
         dom.forEachPassNear(x, z, HydroRules.NOTCH_R, (f, d) -> {
             hm[0] = Math.min(hm[0], HydroRules.notch(d, f.level));
-            passNear[0] = Math.min(passNear[0], d);
+            // Straight canonical channel through the pass along the seed-to-seed direction.
+            Domains.Pass p = f.outPass;
+            double ux = x - p.x, uz = z - p.z;
+            double along = ux * p.tx + uz * p.tz;
+            double across = Math.abs(-ux * p.tz + uz * p.tx);
+            double halfLen = HydroRules.PASS_CHANNEL_HALF;
+            if (Math.abs(along) > halfLen + 8) return;
+            double q = dom.outflowDischarge(f.id);
+            double halfW = HydroRules.width(q) * 0.5;
+            double endFade = 1 - smoothstep(halfLen, halfLen + 8, Math.abs(along));
+            double target;
+            if (across < halfW) {
+                double t = across / halfW;
+                target = f.level - 1 - HydroRules.depth(q) * Math.pow(1 - t * t, 0.6);
+                if (Math.abs(along) <= halfLen) hm[1] = Double.isNaN(hm[1]) ? f.level : Math.min(hm[1], f.level);
+            } else {
+                target = f.level + 0.6 + (across - halfW) * 0.5;
+            }
+            double carved = hm[0] + (Math.min(hm[0], target) - hm[0]) * endFade;
+            hm[0] = Math.min(hm[0], carved);
         });
         h = hm[0];
+        double passWater = hm[1];
         boolean pinned = !Double.isNaN(o.fixedLevel);
         if (pinned) h = o.fixedLevel;
 
@@ -123,14 +151,25 @@ public final class TerrainSampler {
         c.riverDist = Double.MAX_VALUE;
         c.riverFlags = 0;
         if (!pinned) {
-            double carveFade = Math.max(smoothstep(0, HydroRules.BLEND_W, bd), passNear[0] < HydroRules.NOTCH_R ? 1 : 0);
+            double carveFade = smoothstep(0, HydroRules.BLEND_W, bd);
             h = carveAll(sim, h, carveFade, x, z, c);
+        }
+
+        if (!Double.isNaN(passWater) && Math.floor(h) < passWater - 1) {
+            c.channel = true;
+            if (Double.isNaN(c.waterLevel)) {
+                c.waterLevel = passWater;
+                c.waterKind = WATER_RIVER;
+            } else {
+                c.waterLevel = Math.min(c.waterLevel, passWater);
+            }
         }
 
         // Small-scale roughness, damped near water, on flats and in channels.
         if (!pinned) {
-            double wDamp = c.riverDist < Double.MAX_VALUE ? smoothstep(0, 24, c.riverDist - c.riverWidth * 0.5) : 1;
-            if (!Double.isNaN(c.waterLevel)) wDamp = 0;
+            double ownDamp = c.riverDist < Double.MAX_VALUE ? smoothstep(0, 24, c.riverDist - c.riverWidth * 0.5) : 1;
+            double wDamp = 1 - (1 - ownDamp) * smoothstep(0, HydroRules.BLEND_W, bd);
+            if (!Double.isNaN(c.waterLevel) || !Double.isNaN(passWater)) wDamp = 0;
             double rough = 0.6 + 2.2 * o.orogeny + 0.8 * o.hills;
             double fixedFade = o.overlay >= 100 ? 1 - o.overlayStrength : 1;
             h += Simplex.fbm(detailSeed, x / 23.0, z / 23.0, 2, 2.0, 0.5) * rough * wDamp * fixedFade;
