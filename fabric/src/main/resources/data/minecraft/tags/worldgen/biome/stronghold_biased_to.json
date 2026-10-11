@@ -1,0 +1,27 @@
+{
+  "replace": false,
+  "values": [
+    "powderpass:alluvial_meadow",
+    "powderpass:floodplain_woodland",
+    "powderpass:rolling_grassland",
+    "powderpass:temperate_mixed_forest",
+    "powderpass:birch_uplands",
+    "powderpass:conifer_foothills",
+    "powderpass:boreal_forest",
+    "powderpass:wet_coastal_forest",
+    "powderpass:dry_scrubland",
+    "powderpass:steppe",
+    "powderpass:warm_savanna",
+    "powderpass:tropical_rainforest",
+    "powderpass:sandy_desert",
+    "powderpass:red_badlands",
+    "powderpass:karst_country",
+    "powderpass:marsh",
+    "powderpass:mangrove_wetland",
+    "powderpass:windswept_plateau",
+    "powderpass:basalt_highlands",
+    "powderpass:beach_dunes",
+    "powderpass:glacial_valley",
+    "powderpass:frozen_tundra"
+  ]
+}

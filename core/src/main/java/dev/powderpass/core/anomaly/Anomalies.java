@@ -102,7 +102,8 @@ public final class Anomalies {
                 double R = 110 + 380 * u1 * u1;
                 double ref = Math.min(hc, ringMin(x, z, R, o) + 10);
                 double depth = Math.min(0.32 * R, ref - (-40));
-                a = new Anomaly(id, type, x, z, R, depth, ref, u2 * Math.PI * 2, u3 < 0.45);
+                // Crater lakes where the climate is wet enough to keep them filled; dry craters elsewhere.
+                a = new Anomaly(id, type, x, z, R, depth, ref, u2 * Math.PI * 2, precip > 0.55 && u3 < 0.75);
             }
             case DEEP_PIT -> {
                 if (orog > 0.3) return null;
@@ -236,7 +237,7 @@ public final class Anomalies {
                     // Fractured terraced walls.
                     h += 2.5 * Simplex.noise2(noiseSeed + a.id(), x / 18.0, z / 18.0) * w * (1 - w) * 4;
                     o.h0 = h;
-                    o.resistanceOverride = 1.6;
+                    o.resistanceOverride = a.wet() ? 1.8 : 3.0;
                     if (r < 0.45 * R) {
                         o.sinkLevel = floor;
                         if (a.wet()) o.sinkWater = Math.floor(floor + 0.45 * a.depth());

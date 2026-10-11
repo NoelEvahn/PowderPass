@@ -68,9 +68,32 @@ public final class TerrainSampler {
         public final Geology.GeoSample geo = new Geology.GeoSample(); // base geology/overlays at this column
         public double precip, baseTemp;
         public double gridSlope;       // slope at the 8-block simulation scale (rise/run)
+        public int lavaFeature;        // 0 none, 1 lava groove/basin, 2 vent, 3 basin levee
+    }
+
+    private volatile dev.powderpass.core.volcano.VolcanoChannels channels;
+
+    public dev.powderpass.core.volcano.VolcanoChannels volcanoChannels() {
+        dev.powderpass.core.volcano.VolcanoChannels v = channels;
+        if (v == null) {
+            synchronized (this) {
+                if (channels == null) channels = new dev.powderpass.core.volcano.VolcanoChannels(this);
+                v = channels;
+            }
+        }
+        return v;
     }
 
     public void sample(double x, double z, Column c) {
+        sample(x, z, c, true);
+    }
+
+    /** Column without volcano lava grooves (used to derive the grooves themselves). */
+    public void sampleBase(double x, double z, Column c) {
+        sample(x, z, c, false);
+    }
+
+    private void sample(double x, double z, Column c, boolean grooves) {
         Scratch sc = tl.get();
         c.x = x;
         c.z = z;
@@ -173,6 +196,21 @@ public final class TerrainSampler {
             double rough = 0.6 + 2.2 * o.orogeny + 0.8 * o.hills;
             double fixedFade = o.overlay >= 100 ? 1 - o.overlayStrength : 1;
             h += Simplex.fbm(detailSeed, x / 23.0, z / 23.0, 2, 2.0, 0.5) * rough * wDamp * fixedFade;
+        }
+        // Lava pathways of eruption-capable volcanoes.
+        c.lavaFeature = 0;
+        if (grooves && o.overlay >= dev.powderpass.core.geo.BaseTerrain.OVERLAY_VOLCANO_BASE
+                && o.overlay < dev.powderpass.core.geo.BaseTerrain.OVERLAY_VOLCANO_BASE + 10) {
+            final double hv = h;
+            double[] hr = {hv};
+            int[] fl = {0};
+            world.volcanoes.forEachNear(x, z, v -> {
+                if (!v.canErupt()) return;
+                if (Math.hypot(x - v.x(), z - v.z()) > v.radius()) return;
+                hr[0] = volcanoChannels().apply(volcanoChannels().geometry(v), x, z, hr[0], fl);
+            });
+            h = hr[0];
+            c.lavaFeature = fl[0];
         }
         // Elevation envelope and hard cap.
         h = world.geology.envelope(h);

@@ -34,7 +34,7 @@ import java.util.Set;
  */
 public final class Domains {
     public static final double SPACING = 768;
-    public static final int COARSE = 48;
+    public static final int COARSE = 64;
     public static final int MAX_UPSTREAM = 96;
     static final double WARP_AMP = 130, WARP_LAMBDA = 1200, WARP2_AMP = 22, WARP2_LAMBDA = 300;
 
@@ -46,6 +46,7 @@ public final class Domains {
     private final BoundedCache<Flow> flows;
     private final BoundedCache<Pass> passes;
     private final BoundedCache<double[]> discharge;
+    private final BoundedCache<double[]> keys;
     private final ThreadLocal<Geology.GeoSample> tl = ThreadLocal.withInitial(Geology.GeoSample::new);
 
     public Domains(long worldSeed, GenSettings s, BaseTerrain base, int coarseCacheEntries) {
@@ -58,6 +59,7 @@ public final class Domains {
         flows = BoundedCache.ofCount(coarseCacheEntries);
         passes = BoundedCache.ofCount(coarseCacheEntries * 2L);
         discharge = BoundedCache.ofCount(coarseCacheEntries);
+        keys = BoundedCache.ofCount(coarseCacheEntries);
     }
 
     // ------------------------------------------------------------------------------------------------ ownership
@@ -142,6 +144,7 @@ public final class Domains {
         public double seaX, seaZ;
         public boolean coastal;
         public double E;                       // representative elevation used for graph ordering
+        public double regional;                // smoothed regional elevation around the domain
     }
 
     public Info info(long id) {
@@ -155,7 +158,7 @@ public final class Domains {
         in.gx = gx;
         in.gz = gz;
         double cx = seedX(gx, gz), cz = seedZ(gx, gz);
-        double reach = 1.7 * SPACING;
+        double reach = 1.4 * SPACING;
         int i0 = MathUtil.fastFloor((cx - reach) / COARSE), i1 = MathUtil.fastFloor((cx + reach) / COARSE);
         int j0 = MathUtil.fastFloor((cz - reach) / COARSE), j1 = MathUtil.fastFloor((cz + reach) / COARSE);
         double minX = Double.MAX_VALUE, minZ = Double.MAX_VALUE, maxX = -Double.MAX_VALUE, maxZ = -Double.MAX_VALUE;
@@ -174,7 +177,10 @@ public final class Domains {
                 double h = o.h0;
                 sumH += h;
                 sumP += base.climate().precipitation(x, z);
-                if (h < minH || (h == minH && (x < lowX || (x == lowX && z < lowZ)))) { minH = h; lowX = x; lowZ = z; }
+                // Intentional sinks and anomaly overlays (craters, pits, flats) are local features: they must not
+                // redefine the regional drainage graph, so they are excluded from the representative minimum.
+                boolean overlaySink = !Double.isNaN(o.sinkLevel) || o.overlay >= 100 || !Double.isNaN(o.fixedLevel);
+                if (!overlaySink && (h < minH || (h == minH && (x < lowX || (x == lowX && z < lowZ))))) { minH = h; lowX = x; lowZ = z; }
                 if (o.sea) {
                     in.seaSamples++;
                     double d = (x - cx) * (x - cx) + (z - cz) * (z - cz);
@@ -182,6 +188,7 @@ public final class Domains {
                 }
             }
         }
+        if (minH == Double.MAX_VALUE && count > 0) { minH = sumH / count; }
         if (count == 0) {
             // Degenerate (fully squeezed) cell: give it a tiny box around the seed so callers stay robust.
             minX = maxX = cx; minZ = maxZ = cz; minH = sea; lowX = cx; lowZ = cz; count = 1; sumH = sea; sumP = 0.5;
@@ -192,7 +199,25 @@ public final class Domains {
         in.meanH = sumH / count;
         in.precip = sumP / count;
         in.coastal = in.seaSamples >= 2;
-        in.E = in.coastal ? sea - 1 : minH;
+        // Graph ordering uses a regional elevation (rings of the smooth geological proxy, ~1-3 km) blended with the
+        // domain's own low point. Local noise depressions therefore do not trap drainage; only genuine regional
+        // lows become terminal basins. Pass levels still use the real local elevations.
+        double regional = 0;
+        int rn = 0;
+        for (int ring = 1; ring <= 2; ring++) {
+            double rr = ring * 1800.0;
+            for (int k = 0; k < 8; k++) {
+                double ang = k * Math.PI / 4 + ring * 0.39;
+                regional += base.geology().proxyHeight(cx + Math.cos(ang) * rr, cz + Math.sin(ang) * rr, o);
+                rn++;
+            }
+        }
+        regional = (regional / rn + base.geology().proxyHeight(cx, cz, o)) * 0.5;
+        double cont = o.continental; // proxyHeight just sampled the domain seed
+        in.regional = regional;
+        // Continentality decreases smoothly toward coasts at the scale of whole continents, so including it makes
+        // routing follow the continent's broad slope to the sea; genuine interior lows remain terminal basins.
+        in.E = in.coastal ? sea - 1 : 0.5 * minH + 0.3 * regional + 0.2 * (sea + 260 * cont);
         return in;
     }
 
@@ -225,26 +250,41 @@ public final class Domains {
         double dx = bx - ax, dz = bz - az;
         double len = Math.hypot(dx, dz);
         double tx = dx / len, tz = dz / len;
-        double px = -tz, pz = tx;
         Geology.GeoSample o = tl.get();
         double bestH = Double.MAX_VALUE, bestX = 0, bestZ = 0;
         boolean found = false;
-        for (int k = -4; k <= 4; k++) {
-            double off = k * 0.07 * SPACING;
-            double sx = ax + px * off, sz = az + pz * off, ex = bx + px * off, ez = bz + pz * off;
-            if (owner(sx, sz) != lo || owner(ex, ez) != hi) continue;
-            double t0 = 0, t1 = 1;
-            for (int it = 0; it < 22; it++) {
-                double tm = (t0 + t1) * 0.5;
-                if (owner(sx + (ex - sx) * tm, sz + (ez - sz) * tm) == lo) t0 = tm; else t1 = tm;
+        // Band search along the bisector for lo|hi boundary crossings: probes step across the bisector (direction
+        // lo->hi), so diagonal and warped neighbours whose seed-to-seed line crosses a third domain are still found.
+        double mx = (ax + bx) * 0.5, mz = (az + bz) * 0.5;
+        double px = -tz, pz = tx; // along the bisector
+        double halfAlong = 0.85 * SPACING, halfAcross = 2.6 * WARP_AMP;
+        double stepAlong = 40, stepAcross = 40;
+        for (double u = -halfAlong; u <= halfAlong; u += stepAlong) {
+            long prevOwner = 0;
+            double prevX = 0, prevZ = 0;
+            boolean havePrev = false;
+            for (double v = -halfAcross; v <= halfAcross; v += stepAcross) {
+                double qx = mx + px * u + tx * v, qz = mz + pz * u + tz * v;
+                long oq = owner(qx, qz);
+                if (havePrev && prevOwner == lo && oq == hi) {
+                    double x0 = prevX, z0 = prevZ, x1 = qx, z1 = qz;
+                    for (int it = 0; it < 12; it++) {
+                        double xm = (x0 + x1) * 0.5, zm = (z0 + z1) * 0.5;
+                        if (owner(xm, zm) == lo) { x0 = xm; z0 = zm; } else { x1 = xm; z1 = zm; }
+                    }
+                    if (owner(x1, z1) == hi) {
+                        double cx = (x0 + x1) * 0.5, cz = (z0 + z1) * 0.5;
+                        base.sample(cx, cz, o);
+                        if (Double.isNaN(o.fixedLevel) && Double.isNaN(o.sinkLevel)) {
+                            double h = o.h0;
+                            if (h < bestH || (h == bestH && (cx < bestX || (cx == bestX && cz < bestZ)))) {
+                                bestH = h; bestX = cx; bestZ = cz; found = true;
+                            }
+                        }
+                    }
+                }
+                prevOwner = oq; prevX = qx; prevZ = qz; havePrev = true;
             }
-            double qx0 = sx + (ex - sx) * t0, qz0 = sz + (ez - sz) * t0;
-            double qx1 = sx + (ex - sx) * t1, qz1 = sz + (ez - sz) * t1;
-            if (owner(qx1, qz1) != hi) continue; // boundary is with a third domain here
-            double qx = (qx0 + qx1) * 0.5, qz = (qz0 + qz1) * 0.5;
-            base.sample(qx, qz, o);
-            double h = o.h0;
-            if (h < bestH) { bestH = h; bestX = qx; bestZ = qz; found = true; }
         }
         if (!found) return NONE;
         return new Pass(lo, hi, bestX, bestZ, bestH, tx, tz);
@@ -282,9 +322,90 @@ public final class Domains {
         return n;
     }
 
-    /** Strict total order on (E, id): guarantees an acyclic graph. */
-    private static boolean lower(Info a, Info b) {
-        return a.E < b.E || (a.E == b.E && a.id < b.id);
+    public static final int KEY_WINDOW = 4;
+
+    /**
+     * Routing key of a domain: {filled level, hops, terminal flag}. Computed by a priority flood over the domain
+     * graph inside a fixed (2*KEY_WINDOW+1)^2 window centred on the domain, seeded by coastal domains, arid
+     * terminal depressions and the window rim. The filled level is the minimax spill elevation to an outlet; hops
+     * break ties toward the outlet. Domains route only to neighbours with a strictly smaller key, so the graph is
+     * acyclic by construction even though each key is computed in its own window.
+     */
+    public double[] key(long id) {
+        return keys.getOrCompute(id, this::computeKey);
+    }
+
+    /** Arid local depressions stay closed (endorheic) instead of spilling: evaporation balances inflow. */
+    private boolean aridTerminal(Info in) {
+        if (in.coastal || in.precip >= 0.42) return false;
+        for (long n : neighbours(in.id)) if (info(n).E < in.E) return false;
+        return true;
+    }
+
+    private double[] computeKey(long id) {
+        int gx = Hash.unpackX(id), gz = Hash.unpackZ(id);
+        int W = KEY_WINDOW, size = 2 * W + 1;
+        double[] fill = new double[size * size];
+        int[] hops = new int[size * size];
+        boolean[] done = new boolean[size * size];
+        java.util.Arrays.fill(fill, Double.MAX_VALUE);
+        java.util.PriorityQueue<double[]> pq = new java.util.PriorityQueue<>((a, b) -> {
+            int c = Double.compare(a[0], b[0]);
+            if (c != 0) return c;
+            c = Double.compare(a[1], b[1]);
+            return c != 0 ? c : Double.compare(a[2], b[2]);
+        });
+        for (int j = 0; j < size; j++) {
+            for (int i = 0; i < size; i++) {
+                Info in = info(Hash.pack(gx + i - W, gz + j - W));
+                boolean rim = i == 0 || j == 0 || i == size - 1 || j == size - 1;
+                if (in.coastal || rim || aridTerminal(in)) {
+                    int k = j * size + i;
+                    fill[k] = in.E;
+                    hops[k] = 0;
+                    pq.add(new double[]{in.E, 0, k});
+                }
+            }
+        }
+        while (!pq.isEmpty()) {
+            double[] top = pq.poll();
+            int k = (int) top[2];
+            if (done[k]) continue;
+            done[k] = true;
+            int ci = k % size, cj = k / size;
+            long cid = Hash.pack(gx + ci - W, gz + cj - W);
+            for (int dz = -1; dz <= 1; dz++) {
+                for (int dx = -1; dx <= 1; dx++) {
+                    if (dx == 0 && dz == 0) continue;
+                    int ni = ci + dx, nj = cj + dz;
+                    if (ni < 0 || nj < 0 || ni >= size || nj >= size) continue;
+                    int nk = nj * size + ni;
+                    if (done[nk]) continue;
+                    long nid = Hash.pack(gx + ni - W, gz + nj - W);
+                    if (pass(cid, nid) == null) continue;
+                    double f = Math.max(info(nid).E, fill[k]);
+                    int hp = f == fill[k] ? hops[k] + 1 : 0;
+                    if (f < fill[nk] || (f == fill[nk] && hp < hops[nk])) {
+                        fill[nk] = f;
+                        hops[nk] = hp;
+                        pq.add(new double[]{f, hp, nk});
+                    }
+                }
+            }
+        }
+        int c = W * size + W;
+        Info self = info(id);
+        if (fill[c] == Double.MAX_VALUE) return new double[]{self.E, 0, 1}; // isolated: terminal
+        boolean terminal = self.coastal || aridTerminal(self);
+        return new double[]{fill[c], terminal ? -1 : hops[c], terminal ? 1 : 0};
+    }
+
+    /** Strict total order on routing keys (filled level, hops, id). */
+    private boolean lowerKey(long a, long b) {
+        double[] ka = key(a), kb = key(b);
+        if (ka[0] != kb[0]) return ka[0] < kb[0];
+        if (ka[1] != kb[1]) return ka[1] < kb[1];
+        return a < b;
     }
 
     public Flow flow(long id) {
@@ -307,10 +428,12 @@ public final class Domains {
         for (int i = 0; i < nb.length; i++) ni[i] = info(nb[i]);
         Integer[] order = new Integer[nb.length];
         for (int i = 0; i < order.length; i++) order[i] = i;
-        Arrays.sort(order, (p, q) -> lower(ni[p], ni[q]) ? -1 : (lower(ni[q], ni[p]) ? 1 : 0));
+        Arrays.sort(order, (p, q) -> lowerKey(nb[p], nb[q]) ? -1 : (lowerKey(nb[q], nb[p]) ? 1 : 0));
+        boolean terminal = key(id)[2] == 1;
         for (int oi : order) {
+            if (terminal) break;
             Info n = ni[oi];
-            if (!lower(n, in)) break;
+            if (!lowerKey(n.id, id)) break;
             Pass p = pass(id, n.id);
             if (p == null) continue;
             f.type = FlowType.DOWN;

@@ -116,7 +116,7 @@ public final class Decorator {
         c.z = gz * CELL + Hash.range(Hash.mix(h + 2), CELL);
         c.priority = Hash.unit(Hash.mix(h + 3));
         composer.sampler.sample(c.x + 0.0, c.z + 0.0, col);
-        if (!Double.isNaN(col.waterLevel) || col.channel || col.riverDist < col.riverWidth * 0.5 + 2) return c;
+        if (!Double.isNaN(col.waterLevel) || col.channel || col.riverDist < col.riverWidth * 0.5 + 2 || col.lavaFeature != 0) return c;
         c.top = (int) Math.floor(col.height);
         PBiome b = composer.biomes.surface(col);
         double slope = col.gridSlope;
@@ -330,7 +330,7 @@ public final class Decorator {
                 int top = g.top[k];
                 if (top + 2 > cap) continue;
                 PBiome b = res.surfaceBiome[lz * 16 + lx];
-                B topBlock = B.byOrdinal(composer.blockAt(res, lx, lz, top));
+                B topBlock = B.byOrdinal(composer.topBlock(res, lx, lz));
                 long h = Hash.hash(flowerSeed, x, z);
                 double u = Hash.unit(h);
                 double t = world.climate.temperatureAt(c.baseTemp, top);
@@ -345,7 +345,7 @@ public final class Decorator {
                     }
                     continue;
                 }
-                if (covered[lz * 16 + lx]) continue;
+                if (covered[lz * 16 + lx] || c.lavaFeature != 0) continue;
                 // Snow cover above the local freezing level.
                 if (t < -0.45 && topBlock != B.WATER && topBlock != B.ICE && topBlock != B.AIR) {
                     int layers = g.slope[k] > 1.0 ? 1 : 1 + (int) (Hash.unit(Hash.mix(h)) * 2);

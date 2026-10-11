@@ -24,10 +24,23 @@ public final class ColumnGrid {
     public final boolean[] raised = new boolean[SIZE * SIZE];
 
     public ColumnGrid(TerrainSampler sampler, int chunkX, int chunkZ) {
+        this(sampler, chunkX, chunkZ, -1, -1);
+    }
+
+    /**
+     * @param onlyX,onlyZ when >= 0, sample just that local column and its 8 neighbours (single-column queries);
+     *                    other columns are left null and must not be read.
+     */
+    public ColumnGrid(TerrainSampler sampler, int chunkX, int chunkZ, int onlyX, int onlyZ) {
         x0 = chunkX * 16 - PAD;
         z0 = chunkZ * 16 - PAD;
+        boolean single = onlyX >= 0;
         for (int j = 0; j < SIZE; j++) {
             for (int i = 0; i < SIZE; i++) {
+                if (single && (Math.abs(i - (onlyX + PAD)) > 1 || Math.abs(j - (onlyZ + PAD)) > 1)) {
+                    waterTop[j * SIZE + i] = NO_WATER;
+                    continue;
+                }
                 int k = j * SIZE + i;
                 TerrainSampler.Column c = new TerrainSampler.Column();
                 sampler.sample(x0 + i, z0 + j, c);
@@ -49,12 +62,15 @@ public final class ColumnGrid {
         for (int j = 0; j < SIZE; j++) {
             for (int i = 0; i < SIZE; i++) {
                 int k = j * SIZE + i;
+                if (cols[k] == null) continue;
                 top[k] = containedTop(i, j);
                 raised[k] = top[k] != rawTop[k];
             }
         }
         for (int j = 1; j < SIZE - 1; j++) {
             for (int i = 1; i < SIZE - 1; i++) {
+                if (cols[j * SIZE + i] == null || cols[j * SIZE + i + 1] == null || cols[j * SIZE + i - 1] == null
+                        || cols[(j + 1) * SIZE + i] == null || cols[(j - 1) * SIZE + i] == null) continue;
                 double dx = (cols[j * SIZE + i + 1].height - cols[j * SIZE + i - 1].height) * 0.5;
                 double dz = (cols[(j + 1) * SIZE + i].height - cols[(j - 1) * SIZE + i].height) * 0.5;
                 slope[j * SIZE + i] = (float) Math.sqrt(dx * dx + dz * dz);

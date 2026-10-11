@@ -1,0 +1,14 @@
+{
+  "replace": false,
+  "values": [
+    "powderpass:rolling_grassland",
+    "powderpass:temperate_mixed_forest",
+    "powderpass:birch_uplands",
+    "powderpass:boreal_forest",
+    "powderpass:alluvial_meadow",
+    "powderpass:steppe",
+    "powderpass:karst_country",
+    "powderpass:beach_dunes",
+    "powderpass:stony_shore"
+  ]
+}

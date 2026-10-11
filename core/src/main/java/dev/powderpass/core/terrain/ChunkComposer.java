@@ -51,9 +51,27 @@ public final class ChunkComposer {
         public final PBiome[] surfaceBiome = new PBiome[256];
         public short[] blocks;           // index ((lz*16+lx) * height + (y - minY))
         public final int[] columnMax = new int[256]; // highest non-air y per column
+        public final short[] topBlock = new short[256]; // block at the solid top of each column
+        /** Water blocks that must receive a fluid tick after load (overflow points of stepped reaches). */
+        public int[] tickX = new int[16], tickY = new int[16], tickZ = new int[16];
+        public int tickCount;
+
+        void addTick(int x, int y, int z) {
+            if (tickCount == tickX.length) {
+                tickX = java.util.Arrays.copyOf(tickX, tickCount * 2);
+                tickY = java.util.Arrays.copyOf(tickY, tickCount * 2);
+                tickZ = java.util.Arrays.copyOf(tickZ, tickCount * 2);
+            }
+            tickX[tickCount] = x; tickY[tickCount] = y; tickZ[tickCount] = z; tickCount++;
+        }
     }
 
     public Result compose(int chunkX, int chunkZ) {
+        return compose(chunkX, chunkZ, true);
+    }
+
+    /** @param full false skips caves (used when only surface information is needed, e.g. for decoration) */
+    public Result compose(int chunkX, int chunkZ, boolean full) {
         Result r = new Result();
         r.grid = new ColumnGrid(sampler, chunkX, chunkZ);
         r.blocks = new short[256 * height];
@@ -66,8 +84,42 @@ public final class ChunkComposer {
                 fillColumn(r, lx, lz, k, c, b);
             }
         }
-        carveCaves(r, chunkX, chunkZ);
+        if (full) carveCaves(r, chunkX, chunkZ);
+        markOverflowTicks(r, chunkX, chunkZ);
         return r;
+    }
+
+    /** Water at a higher level next to lower water will spill over after load; schedule those blocks. */
+    private void markOverflowTicks(Result r, int chunkX, int chunkZ) {
+        ColumnGrid g = r.grid;
+        for (int lz = 0; lz < 16; lz++) for (int lx = 0; lx < 16; lx++) {
+            int k = g.index(lx, lz);
+            int wt = g.waterTop[k];
+            if (wt == ColumnGrid.NO_WATER) continue;
+            int[][] d4 = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
+            for (int[] d : d4) {
+                int nk = k + d[1] * ColumnGrid.SIZE + d[0];
+                if (g.waterTop[nk] != ColumnGrid.NO_WATER && g.waterTop[nk] < wt) {
+                    r.addTick(chunkX * 16 + lx, wt, chunkZ * 16 + lz);
+                    break;
+                }
+            }
+        }
+    }
+
+    /** One column without caves (for structure placement queries); index y - minY. */
+    public short[] column(int x, int z) {
+        int cx = Math.floorDiv(x, 16), cz = Math.floorDiv(z, 16);
+        Result r = new Result();
+        r.grid = new ColumnGrid(sampler, cx, cz, x - cx * 16, z - cz * 16);
+        r.blocks = new short[256 * height];
+        int lx = x - cx * 16, lz = z - cz * 16;
+        int k = r.grid.index(lx, lz);
+        TerrainSampler.Column c = r.grid.cols[k];
+        fillColumn(r, lx, lz, k, c, biomes.surface(c));
+        short[] out = new short[height];
+        System.arraycopy(r.blocks, (lz * 16 + lx) * height, out, 0, height);
+        return out;
     }
 
     // ------------------------------------------------------------------------------------------------ columns
@@ -108,6 +160,7 @@ public final class ChunkComposer {
             maxY = Math.max(maxY, wt);
         }
         r.columnMax[lz * 16 + lx] = maxY;
+        r.topBlock[lz * 16 + lx] = r.blocks[base + (top - minY)];
     }
 
     private static final class Surface {
@@ -151,6 +204,14 @@ public final class ChunkComposer {
         if (raisedBank) {
             sf.top = c.channel || c.riverDist < 6 ? B.GRAVEL : B.DIRT;
             if (temp > -0.4 && !c.channel && c.riverDist > 3) sf.top = B.GRASS;
+        }
+        if (c.lavaFeature != 0) {
+            sf.top = c.lavaFeature == 2 ? B.MAGMA : (c.lavaFeature == 3 ? B.BASALT : (patch2 > 0.2 ? B.BLACKSTONE : B.SMOOTH_BASALT));
+            sf.under = B.BASALT;
+            sf.fill = B.BASALT;
+            sf.topDepth = 2;
+            sf.fillDepth = 2;
+            return sf;
         }
         if (steep) {
             // Bare rock exposures (cliff bands); scree/gravel on the less steep parts.
@@ -357,6 +418,10 @@ public final class ChunkComposer {
         double c00 = MathUtil.lerp(tx, a[i000], a[i100]), c10 = MathUtil.lerp(tx, a[i010], a[i110]);
         double c01 = MathUtil.lerp(tx, a[i000 + up], a[i100 + up]), c11 = MathUtil.lerp(tx, a[i010 + up], a[i110 + up]);
         return MathUtil.lerp(ty, MathUtil.lerp(tz, c00, c10), MathUtil.lerp(tz, c01, c11));
+    }
+
+    public short topBlock(Result r, int lx, int lz) {
+        return r.topBlock[lz * 16 + lx];
     }
 
     public short blockAt(Result r, int lx, int lz, int y) {

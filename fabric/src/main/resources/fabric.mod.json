@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "id": "powderpass",
+  "version": "${version}",
+  "name": "PowderPass",
+  "description": "Geology-first Overworld world preset: plate tectonics, simulated drainage and erosion, rivers that carve their valleys, rare uncanny landforms and bounded working volcanoes, using only vanilla blocks. Terrain never exceeds Y=700.",
+  "authors": ["PowderPass contributors"],
+  "license": "MIT",
+  "environment": "*",
+  "entrypoints": {
+    "main": ["dev.powderpass.mod.PowderPassMod"]
+  },
+  "depends": {
+    "fabricloader": ">=0.19.5",
+    "minecraft": "~1.21.11",
+    "java": ">=21",
+    "fabric-api": "*"
+  }
+}

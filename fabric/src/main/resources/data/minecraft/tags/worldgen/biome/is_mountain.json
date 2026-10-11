@@ -1,0 +1,8 @@
+{
+  "replace": false,
+  "values": [
+    "powderpass:rocky_alpine_ridge",
+    "powderpass:snowy_summit",
+    "powderpass:alpine_meadow"
+  ]
+}

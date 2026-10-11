@@ -92,8 +92,9 @@ class SeamAndHydrologyTest {
             long cur = id;
             int hops = 0;
             while (f.type == Domains.FlowType.DOWN) {
-                Domains.Info a = w.domains.info(cur), b = w.domains.info(f.down);
-                assertTrue(b.E < a.E || (b.E == a.E && b.id < a.id), "domain graph must descend");
+                double[] ka = w.domains.key(cur), kb = w.domains.key(f.down);
+                boolean lowerKey = kb[0] < ka[0] || (kb[0] == ka[0] && (kb[1] < ka[1] || (kb[1] == ka[1] && f.down < cur)));
+                assertTrue(lowerKey, "domain graph must strictly descend in routing key");
                 assertTrue(w.domains.flow(f.down).level <= f.level, "outlet levels must not rise downstream");
                 cur = f.down;
                 f = w.domains.flow(cur);

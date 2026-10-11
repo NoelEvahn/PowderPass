@@ -151,9 +151,24 @@ public final class Tectonics {
         out.nearestDist = nearest;
     }
 
+    private static final class EdgeMemo {
+        final long[] keys = new long[32];
+        final Edge[][] vals = new Edge[32][];
+        EdgeMemo() { java.util.Arrays.fill(keys, Long.MIN_VALUE); }
+    }
+
+    private final ThreadLocal<EdgeMemo> edgeMemo = ThreadLocal.withInitial(EdgeMemo::new);
+
     /** Clipped Voronoi edges of plate (gx,gz). Cached; pure function of the seed. */
     public Edge[] edgesOf(int gx, int gz) {
-        return edgeCache.getOrCompute(Hash.pack(gx, gz), k -> computeEdges(gx, gz));
+        long key = Hash.pack(gx, gz);
+        EdgeMemo m = edgeMemo.get();
+        int slot = (int) (Hash.mix(key) & 31);
+        if (m.keys[slot] == key) return m.vals[slot];
+        Edge[] e = edgeCache.getOrCompute(key, k -> computeEdges(gx, gz));
+        m.keys[slot] = key;
+        m.vals[slot] = e;
+        return e;
     }
 
     private Edge[] computeEdges(int gx, int gz) {

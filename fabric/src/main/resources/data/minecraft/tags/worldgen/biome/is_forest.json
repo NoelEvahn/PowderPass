@@ -1,0 +1,8 @@
+{
+  "replace": false,
+  "values": [
+    "powderpass:temperate_mixed_forest",
+    "powderpass:birch_uplands",
+    "powderpass:floodplain_woodland"
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "replace": false,
+  "values": [
+    "powderpass:rolling_grassland",
+    "powderpass:warm_savanna",
+    "powderpass:sandy_desert",
+    "powderpass:boreal_forest",
+    "powderpass:steppe"
+  ]
+}

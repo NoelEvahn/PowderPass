@@ -51,13 +51,14 @@ public final class BoundedCache<V> {
     }
 
     public V getIfPresent(long key) {
-        Entry<V> e = map.get(key);
+        Entry<V> e = map.get(Hash.mix(key));
         if (e == null || !e.future.isDone()) return null;
         e.lastAccess = clock.incrementAndGet();
         return e.future.getNow(null);
     }
 
-    public V getOrCompute(long key, LongFunction<V> fn) {
+    public V getOrCompute(long rawKey, LongFunction<V> fn) {
+        long key = Hash.mix(rawKey); // packed (x,z) keys collide under Long.hashCode; SplitMix64 is a bijection
         Entry<V> e = map.get(key);
         if (e != null && e.future.isDone() && !e.future.isCompletedExceptionally()) {
             e.lastAccess = clock.incrementAndGet();
@@ -65,7 +66,7 @@ public final class BoundedCache<V> {
             return e.future.join();
         }
         misses.incrementAndGet();
-        V v = fn.apply(key);
+        V v = fn.apply(rawKey);
         Entry<V> fresh = new Entry<>(CompletableFuture.completedFuture(v), clock.incrementAndGet());
         Entry<V> prev = map.putIfAbsent(key, fresh);
         if (prev == null) {
@@ -80,7 +81,8 @@ public final class BoundedCache<V> {
         return v;
     }
 
-    public V getOrComputeShared(long key, LongFunction<V> fn) {
+    public V getOrComputeShared(long rawKey, LongFunction<V> fn) {
+        long key = Hash.mix(rawKey);
         while (true) {
             Entry<V> e = map.get(key);
             if (e != null) {
@@ -99,7 +101,7 @@ public final class BoundedCache<V> {
             if (map.putIfAbsent(key, mine) != null) continue;
             misses.incrementAndGet();
             try {
-                V v = fn.apply(key);
+                V v = fn.apply(rawKey);
                 f.complete(v);
                 weight.addAndGet(weigher.applyAsLong(v));
                 maybeEvict();
