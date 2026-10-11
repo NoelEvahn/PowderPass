@@ -1,0 +1,45 @@
+plugins {
+    id 'java-library'
+}
+
+group = 'dev.powderpass'
+version = rootProject.findProperty('mod_version') ?: '0.1.0'
+
+java {
+    toolchain { languageVersion = JavaLanguageVersion.of(21) }
+    withSourcesJar()
+}
+
+repositories { mavenCentral() }
+
+dependencies {
+    testImplementation platform('org.junit:junit-bom:5.11.4')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.release = 21
+}
+
+test {
+    useJUnitPlatform()
+    maxHeapSize = '3g'
+    testLogging { events 'failed'; exceptionFormat 'full'; showStandardStreams = true }
+}
+
+// Offline diagnostic map export: ./gradlew :core:exportMaps -Pseed=123 -Pcx=0 -Pcz=0 -Psize=8192
+tasks.register('exportMaps', JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'dev.powderpass.core.export.MapExport'
+    maxHeapSize = '4g'
+    args = [
+        project.findProperty('seed') ?: '12345',
+        project.findProperty('cx') ?: '0',
+        project.findProperty('cz') ?: '0',
+        project.findProperty('size') ?: '8192',
+        project.findProperty('out') ?: "${rootProject.projectDir}/docs/maps",
+        project.findProperty('noErosion') ?: 'false'
+    ]
+}

@@ -1,0 +1,6 @@
+rootProject.name = 'powderpass'
+include 'core'
+// The Fabric module needs maven.fabricmc.net and Mojang hosts; it is included only when present.
+if (file('fabric/build.gradle').exists() && !Boolean.getBoolean('powderpass.coreOnly')) {
+    include 'fabric'
+}
