@@ -41,6 +41,24 @@ public final class BackroomsConfig {
     public final boolean displaysEnabled, hazards;
     public final int activationRadius, outdoorActivationRadius, maxPerChunk, maxPerWorld, chunksPerTick, animationInterval;
     public final float viewRange;
+    public final boolean detailsEnabled, performanceMode;
+    public final boolean fogEnabled;
+    // audio
+    public final boolean audioEnabled, audioMusic, audioAmbient, audioVoices;
+    public final double audioDensity, audioRare, audioMusicFrequency, audioDistanceScale;
+    public final int audioMaxSources, audioQuality;
+    public final Map<Level, Double> audioLevelIntensity = new EnumMap<>(Level.class);
+    // resource pack delivery
+    public final boolean packEnabled, packRequired, packHostEnabled, bedrockCustomSounds;
+    public final String packUrl, packPrompt, packHostBind, packHostPublicAddress;
+    public final int packHostPort;
+    public final int fogBankDistance;
+    public final Map<Level, Integer> fogDistance = new EnumMap<>(Level.class);
+    public final double detailDensity, detailAging, detailEnvironment;
+    public final int detailMaxPerChunk;
+    public final float detailViewRange;
+    public final Map<Level, Boolean> detailLevelEnabled = new EnumMap<>(Level.class);
+    public final Map<Level, Double> detailLevelDensity = new EnumMap<>(Level.class);
 
     public final boolean creaturesEnabled;
     public final boolean fallEnabled, suffocationEnter;
@@ -117,9 +135,51 @@ public final class BackroomsConfig {
         displaysEnabled = c.getBoolean("displays.enabled", true);
         activationRadius = clamp(c.getInt("displays.activation-radius-chunks", 3), 1, 8);
         outdoorActivationRadius = clamp(c.getInt("displays.outdoor-activation-radius-chunks", 8), 1, 16);
-        maxPerChunk = clamp(c.getInt("displays.max-entities-per-chunk", 60), 4, 400);
+        maxPerChunk = clamp(c.getInt("displays.max-entities-per-chunk", 80), 4, 400);
         maxPerWorld = clamp(c.getInt("displays.max-entities-per-world", 2500), 50, 20000);
         chunksPerTick = clamp(c.getInt("displays.chunks-per-tick", 3), 1, 32);
+        audioEnabled = c.getBoolean("audio.enabled", true);
+        audioMusic = c.getBoolean("audio.music", true);
+        audioAmbient = c.getBoolean("audio.ambient", true);
+        audioVoices = c.getBoolean("audio.voices", true);
+        audioDensity = Math.max(0, Math.min(4, c.getDouble("audio.event-density", 1.0)));
+        audioRare = Math.max(0, Math.min(4, c.getDouble("audio.rare-frequency", 1.0)));
+        audioMusicFrequency = Math.max(0.05, Math.min(4, c.getDouble("audio.music-frequency", 1.0)));
+        audioDistanceScale = Math.max(0.25, Math.min(3, c.getDouble("audio.distance-scale", 1.0)));
+        audioMaxSources = clamp(c.getInt("audio.max-sources", 6), 1, 24);
+        audioQuality = switch (c.getString("audio.acoustic-quality", "medium").toLowerCase(Locale.ROOT)) {
+            case "low" -> 0;
+            case "high" -> 2;
+            default -> 1;
+        };
+        for (Level l : Level.values()) audioLevelIntensity.put(l, Math.max(0, Math.min(2, c.getDouble("audio.levels." + l.key(), 1.0))));
+        packEnabled = c.getBoolean("resource-pack.enabled", true);
+        packUrl = c.getString("resource-pack.url", "https://download.mc-packs.net/pack/{sha1}.zip");
+        packRequired = c.getBoolean("resource-pack.required", false);
+        packPrompt = c.getString("resource-pack.prompt", "<gray>The Backrooms uses custom ambient sound. Accept to hear it.");
+        packHostEnabled = c.getBoolean("resource-pack.host.enabled", false);
+        packHostBind = c.getString("resource-pack.host.bind", "0.0.0.0");
+        packHostPort = clamp(c.getInt("resource-pack.host.port", 8163), 1, 65535);
+        packHostPublicAddress = c.getString("resource-pack.host.public-address", "");
+        bedrockCustomSounds = c.getBoolean("bedrock.custom-sounds", false);
+        fogEnabled = c.getBoolean("fog.enabled", true);
+        fogBankDistance = clamp(c.getInt("fog.bank-view-distance", 3), 2, 32);
+        Map<Level, Integer> fogDefaults = Map.of(Level.LEVEL_0, 0, Level.POOLROOMS, 7, Level.LEVEL_1, 5, Level.LEVEL_4, 0, Level.PLAINS, 6);
+        for (Level l : Level.values()) {
+            int d = c.getInt("fog.levels." + l.key(), fogDefaults.getOrDefault(l, 0));
+            fogDistance.put(l, d <= 0 ? 0 : clamp(d, 2, 32));
+        }
+        detailsEnabled = c.getBoolean("displays.details.enabled", true);
+        performanceMode = c.getBoolean("displays.details.performance-mode", false);
+        detailDensity = Math.max(0, Math.min(2, c.getDouble("displays.details.density", 1.0)));
+        detailAging = Math.max(0, Math.min(2, c.getDouble("displays.details.aging", 1.0)));
+        detailEnvironment = Math.max(0, Math.min(2, c.getDouble("displays.details.environment", 1.0)));
+        detailMaxPerChunk = clamp(c.getInt("displays.details.max-per-chunk", 28), 0, 200);
+        detailViewRange = (float) Math.max(0.1, Math.min(2.0, c.getDouble("displays.details.view-range", 0.45)));
+        for (Level l : Level.values()) {
+            detailLevelEnabled.put(l, c.getBoolean("displays.details.levels." + l.key() + ".enabled", true));
+            detailLevelDensity.put(l, Math.max(0, Math.min(2, c.getDouble("displays.details.levels." + l.key() + ".density", 1.0))));
+        }
         animationInterval = clamp(c.getInt("displays.animation-interval-ticks", 4), 1, 40);
         viewRange = (float) c.getDouble("displays.view-range", 0.7);
         hazards = c.getBoolean("displays.hazards", true);

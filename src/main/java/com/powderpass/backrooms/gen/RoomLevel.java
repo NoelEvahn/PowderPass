@@ -215,6 +215,24 @@ public abstract class RoomLevel extends LevelGenerator {
         };
     }
 
+    /**
+     * A wall-plane detail (see {@code display.Details}) on the inside face of a cell wall, covering
+     * {@code along0..along0+width} along the wall, with its bottom edge at {@code y}. Accounts for the direction the
+     * model's +X takes for each wall's yaw and lifts it a hair off the face so it never z-fights.
+     */
+    protected DecorSpec wallDetail(int tier, long h, String model, int cx, int cz, int side, double along0, double width, double y) {
+        boolean reversed = side == 0 || side == 3;
+        double[] p = wallFace(cx, cz, side, reversed ? along0 + width : along0, y);
+        double off = 0.003;
+        switch (side) {
+            case 0 -> p[0] += off;
+            case 1 -> p[2] += off;
+            case 2 -> p[0] -= off;
+            default -> p[2] -= off;
+        }
+        return detail(tier, h, model, p[0], p[1], p[2], yawAwayFrom(side), 0f);
+    }
+
     /** Generic "stairs going down into a pit" transition structure used by several levels. */
     protected void stairPit(CellCtx c, Style st, B wall, B floorB, Material stairMat, B light) {
         int y0 = c.fy;

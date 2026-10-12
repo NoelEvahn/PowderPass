@@ -16,34 +16,43 @@ import org.bukkit.Material;
 import java.util.List;
 
 /**
- * Level 1 — Habitable Zone. Not a maze: an endless grid of straight corridors running along every cell line,
- * each line with its own width (3 to 9) and height (4 to 12). Every corridor crosses every other one, so the
- * whole level is connected by construction. Between corridors is solid concrete with rooms carved into it,
- * each opening onto the corridor beside it.
+ * Level 1 — Habitable Zone, as an endless underground parking garage. One continuous low concrete floor plate:
+ * 32-block bays, each with a drive aisle down the middle (v 12..19) and a row of stalls either side, polished
+ * andesite columns on an 8-block grid, beams under the ceiling, yellow stall lines. Open by construction, so every
+ * spot is reachable. Some bays have a back wall with gaps; a rare few hide a supply room or a safe room.
+ * Deterioration (andesite and tuff patches, puddles, stains) clusters in localised zones.
  */
 public final class HabitableGenerator extends LevelGenerator {
     private static final int FLOOR = 64;
-    static final int R_NONE = 0, R_STORAGE = 1, R_CACHE = 2, R_SAFE = 3, R_EMPTY = 4, R_FLOODED = 5;
-    private static final String[] ROOMS = {"none", "storage", "cache", "safe-room", "empty", "flooded"};
+    private static final int CEIL = FLOOR + 5;
+    static final int AISLE0 = 12, AISLE1 = 19;
+    static final int R_NONE = 0, R_CACHE = 1, R_SAFE = 2;
 
     private static final B MASS = B.of(Material.GRAY_CONCRETE);
     private static final B FLOOR_B = B.of(Material.SMOOTH_STONE);
-    private static final B CEIL = B.of(Material.LIGHT_GRAY_CONCRETE);
+    private static final B FLOOR_ALT = B.of(Material.ANDESITE);
+    private static final B DAMAGED = B.of(Material.TUFF);
+    private static final B WALL = B.of(Material.LIGHT_GRAY_CONCRETE);
+    private static final B CEIL_B = B.of(Material.GRAY_CONCRETE);
+    private static final B PILLAR = B.of(Material.POLISHED_ANDESITE);
+    private static final B BEAM = B.of(Material.POLISHED_ANDESITE);
     private static final B LINE = B.of(Material.YELLOW_CONCRETE);
     private static final B WOOD = B.of(Material.SPRUCE_PLANKS);
     private static final B BARREL = B.of(Material.BARREL, "[facing=up]");
+    private static final B TILE = B.of(Material.WHITE_CONCRETE);
+    private static final B IRON = B.of(Material.IRON_BLOCK);
 
     public HabitableGenerator(long seed, GenSettings gs) {
-        super(Level.LEVEL_1, seed, gs, 40, 3, 2, new int[]{FLOOR}, FLOOR - 6, FLOOR + 14, 0.0, 0.0);
+        super(Level.LEVEL_1, seed, gs, 32, 4, 2, new int[]{FLOOR}, FLOOR - 8, FLOOR + 10, 0.0, 0.0);
     }
 
     @Override
     protected List<FeatureDef> featureDefs() {
         return List.of(
-                FeatureDef.transition("wallpaper_door", Dest.to(Level.LEVEL_0), 1.0),
-                FeatureDef.transition("freight_elevator", Dest.to(Level.LEVEL_4), 1.0).withEffect("dwell"),
-                FeatureDef.transition("loading_shutter", Dest.to(Level.PLAINS), gs.get("plains-chance", 0.7)),
-                FeatureDef.landmark("supply_depot", 1.0));
+                // onward to the Office in every district; back down to the Poolrooms more rarely
+                FeatureDef.transition("elevator_lobby", Dest.to(Level.LEVEL_4), 1.0).withEffect("dwell"),
+                FeatureDef.transition("flooded_stairs", Dest.to(Level.POOLROOMS), gs.get("back-chance", 0.4)),
+                FeatureDef.landmark("supply_depot", gs.get("landmark-chance", 0.3)));
     }
 
     @Override
@@ -51,77 +60,39 @@ public final class HabitableGenerator extends LevelGenerator {
         return "minecraft:plains";
     }
 
-    // ------------------------------------------------------------------ corridor lines
-
-    /** Half-width of the corridor on a line (axis 0 = runs along X at z=line*S, axis 1 = runs along Z at x=line*S). */
-    int half(int axis, int line) {
-        double r = Rng.unit(Rng.hash(seed ^ 0xC0EEL, axis, line));
-        if (r < gs.get("grand-hall-chance", 0.15)) return 4;
-        if (r < 0.45) return 1;
-        if (r < 0.8) return 2;
-        return 3;
-    }
-
-    int height(int axis, int line) {
-        int h = half(axis, line);
-        return h == 4 ? 12 : h == 1 ? 4 : 5 + Rng.pick(Rng.hash(seed ^ 0x4E16L, axis, line), 2);
-    }
+    // ------------------------------------------------------------------ layout queries
 
     private boolean dark(int cx, int cz) {
-        return zone(cx, cz, 0xDA41L, 140) > 1.0 - gs.get("dark-zone-chance", 0.25) * 0.6;
+        return zone(cx, cz, 0xDA41L, 160) > 1.0 - gs.get("dark-zone-chance", 0.25) * 0.6;
     }
 
-    /** Which corridor lines cover a cell-local column: bit 1 north, 2 south, 4 west, 8 east. */
-    private int corridorMask(int cx, int cz, int u, int v) {
-        int m = 0;
-        if (v <= half(0, cz)) m |= 1;
-        if (v >= S - half(0, cz + 1)) m |= 2;
-        if (u <= half(1, cx)) m |= 4;
-        if (u >= S - half(1, cx + 1)) m |= 8;
-        return m;
+    /** Columns stand on the stall lines at the back of each stall row, never inside a stall or the aisle. */
+    static boolean pillar(int u, int v) {
+        return Math.floorMod(u, 8) == 2 && (v == 4 || v == 27);
     }
 
-    private int corridorCeil(int cx, int cz, int mask) {
-        int h = 0;
-        if ((mask & 1) != 0) h = Math.max(h, height(0, cz));
-        if ((mask & 2) != 0) h = Math.max(h, height(0, cz + 1));
-        if ((mask & 4) != 0) h = Math.max(h, height(1, cx));
-        if ((mask & 8) != 0) h = Math.max(h, height(1, cx + 1));
-        return FLOOR + 1 + h;
+    /** Back wall along v=1 with two gaps (bays where the garage has been partitioned). */
+    boolean backWall(int cx, int cz) {
+        return zone(cx, cz, 0xBA77L, 96) > 0.62;
     }
 
-    // ------------------------------------------------------------------ rooms
+    static boolean backWallGap(int u) {
+        int m = Math.floorMod(u, 16);
+        return m >= 5 && m <= 9;
+    }
 
-    /** Room carved along the north (side 0) or south (side 1) corridor: {u0, v0, u1, v1, doorU, kind} interior, inclusive. */
-    int[] room(int cx, int cz, int side) {
-        Feature f = featureAt(0, cx, cz);
-        if (f != null) {
-            if (side != 0) return null;
-            int v0 = half(0, cz) + 2;
-            return new int[]{10, v0, 21, v0 + 8, 15, R_NONE};
-        }
-        long h = ch(0, cx, cz, 0x2001 + side);
-        if (!Rng.chance(h, gs.get("room-chance", 0.7))) return null;
-        int west = half(1, cx) + 3, east = S - half(1, cx + 1) - 4;
-        int w = 6 + Rng.pick(Rng.hash(h, 1), 9);
-        int u0 = west + Rng.pick(Rng.hash(h, 2), Math.max(1, east - west - w));
-        int depth = 4 + Rng.pick(Rng.hash(h, 3), 5);
-        double r = Rng.unit(Rng.hash(h, 4));
-        int kind = r < 0.35 ? R_STORAGE : r < 0.35 + gs.get("cache-chance", 0.08) ? R_CACHE : r < 0.55 ? R_SAFE : r < 0.65 ? R_FLOODED : R_EMPTY;
-        if (side == 0) {
-            int v0 = half(0, cz) + 2;
-            return new int[]{u0, v0, u0 + w - 1, v0 + depth - 1, u0 + w / 2, kind};
-        }
-        int v1 = S - half(0, cz + 1) - 2;
-        return new int[]{u0, v1 - depth + 1, u0 + w - 1, v1, u0 + w / 2, kind};
+    /** Rare enclosed room in the north stall row: {u0, v0, u1, v1, kind}, interior inclusive; door at v1+1. */
+    int[] room(int cx, int cz) {
+        if (featureAt(0, cx, cz) != null) return null;
+        long h = ch(0, cx, cz, 0x2001);
+        if (!Rng.chance(h, gs.get("supply-room-chance", 0.06))) return null;
+        int kind = Rng.chance(Rng.hash(h, 1), 0.35) ? R_SAFE : R_CACHE;
+        return new int[]{18, 3, 23, 8, kind};
     }
 
     private int roomKindAt(int cx, int cz, int u, int v) {
-        for (int side = 0; side < 2; side++) {
-            int[] r = room(cx, cz, side);
-            if (r != null && u >= r[0] && u <= r[2] && v >= r[1] && v <= r[3]) return r[5];
-        }
-        return -1;
+        int[] r = room(cx, cz);
+        return r != null && u >= r[0] && u <= r[2] && v >= r[1] && v <= r[3] ? r[4] : -1;
     }
 
     @Override
@@ -136,115 +107,125 @@ public final class HabitableGenerator extends LevelGenerator {
         return k == R_CACHE || (f != null && f.id().equals("supply_depot")) ? 2 : 1;
     }
 
+    /** Is this column a stall row (where cars, puddles and damage go), not the aisle? */
+    static boolean stallRow(int v) {
+        return (v >= 3 && v <= 11) || (v >= 20 && v <= 28);
+    }
+
+    private boolean puddle(int wx, int wz, int cx, int cz) {
+        double w = wear(cx, cz, 0x3EA1L);
+        return w > 0.25 && ValueNoise.sample(seed ^ 0x9E, wx / 4.0, wz / 4.0) > 0.93 - 0.1 * w;
+    }
+
     // ------------------------------------------------------------------ painting
 
     @Override
     protected void paintCell(CellCtx c) {
-        int[][] rooms = {room(c.cx, c.cz, 0), room(c.cx, c.cz, 1)};
-        boolean darkZone = dark(c.cx, c.cz);
+        int[] room = room(c.cx, c.cz);
+        boolean back = backWall(c.cx, c.cz);
+        double w = wear(c.cx, c.cz, 0x3EA1L);
         for (int u = c.u0; u <= c.u1; u++) {
             for (int v = c.v0; v <= c.v1; v++) {
                 c.set(u, bottomY, v, B.BEDROCK);
                 for (int y = bottomY + 1; y < c.fy; y++) c.set(u, y, v, MASS);
                 c.set(u, roofY, v, B.BEDROCK);
-                int mask = corridorMask(c.cx, c.cz, u, v);
-                int ceil;
-                B floor = FLOOR_B;
-                if (mask != 0) {
-                    ceil = corridorCeil(c.cx, c.cz, mask);
-                    boolean centre = (v == 0 && (mask & 1) != 0) || (u == 0 && (mask & 4) != 0);
-                    boolean intersection = (mask & 3) != 0 && (mask & 12) != 0;
-                    if (centre && !intersection && Math.floorMod(c.wx(u) + c.wz(v), 3) != 0) floor = LINE;
-                    boolean nearX = u <= half(1, c.cx) + 1 || u >= S - half(1, c.cx + 1) - 1;
-                    boolean nearZ = v <= half(0, c.cz) + 1 || v >= S - half(0, c.cz + 1) - 1;
-                    if (!(nearX && nearZ) && ValueNoise.sample(seed ^ 0x9E, c.wx(u) / 4.0, c.wz(v) / 4.0) > (darkZone ? 0.74 : 0.82)) {
-                        c.set(u, c.fy - 1, v, MASS);
-                        floor = B.WATER;
-                    }
-                } else {
-                    int[] room = null;
-                    for (int[] r : rooms) if (r != null && u >= r[0] && u <= r[2] && v >= r[1] && v <= r[3]) room = r;
-                    boolean door = false;
-                    for (int[] r : rooms) {
-                        if (r == null || u < r[4] - 1 || u > r[4]) continue;
-                        if ((r[1] == half(0, c.cz) + 2 && v == r[1] - 1) || (r[3] == S - half(0, c.cz + 1) - 2 && v == r[3] + 1)) door = true;
-                    }
-                    if (room == null && !door) {
-                        for (int y = c.fy; y < roofY; y++) c.set(u, y, v, MASS);
-                        continue;
-                    }
-                    ceil = c.fy + (door ? 4 : 5);
-                    if (room != null && room[5] == R_SAFE) floor = WOOD;
-                    if (room != null && room[5] == R_FLOODED) {
-                        c.set(u, c.fy - 1, v, MASS);
-                        floor = B.WATER;
-                    }
-                }
+                for (int y = CEIL + 1; y < roofY; y++) c.set(u, y, v, MASS);
+                c.set(u, CEIL, v, CEIL_B);
+                int wx = c.wx(u), wz = c.wz(v);
+                // floor: smooth stone, broad andesite discolouration, tuff where it is breaking up
+                double n = ValueNoise.sample(seed ^ 0xF10, wx / 9.0, wz / 9.0);
+                B floor = n > 0.7 ? FLOOR_ALT : FLOOR_B;
+                if (w > 0.3 && ValueNoise.sample(seed ^ 0x7FF, wx / 3.0, wz / 3.0) > 0.88 - 0.1 * w) floor = DAMAGED;
+                // stall lines and the dashed aisle centre line
+                int su = Math.floorMod(u, 4);
+                if (su == 2 && ((v >= 5 && v <= 10) || (v >= 21 && v <= 26))) floor = LINE;
+                if ((v == 15 || v == 16) && Math.floorMod(wx, 6) < 3 && v == 15) floor = LINE;
                 c.set(u, c.fy, v, floor);
-                for (int y = c.fy + 1; y < ceil; y++) c.set(u, y, v, B.AIR);
-                c.set(u, ceil, v, CEIL);
-                for (int y = ceil + 1; y < roofY; y++) c.set(u, y, v, MASS);
+                for (int y = c.fy + 1; y < CEIL; y++) c.set(u, y, v, B.AIR);
+                if (stallRow(v) && floor != LINE && room == null && featureAt(c.floor, c.cx, c.cz) == null && puddle(wx, wz, c.cx, c.cz)) {
+                    c.set(u, c.fy - 1, v, MASS);
+                    c.set(u, c.fy, v, B.WATER);
+                }
+                // beams under the ceiling on every 8th line across the bay
+                if (Math.floorMod(u, 8) == 2) c.set(u, CEIL - 1, v, BEAM);
+                if (pillar(u, v)) c.column(u, v, c.fy + 1, CEIL - 1, PILLAR);
+                if (back && v == 1 && !backWallGap(u)) c.column(u, v, c.fy + 1, CEIL - 1, WALL);
             }
         }
-        // pillar rows down the middle of grand halls
-        if (half(0, c.cz) == 4) {
-            for (int u = 8; u < S - 6; u += 8) if (u > half(1, c.cx) + 2) c.column(u, 0, c.fy + 1, corridorCeil(c.cx, c.cz, 1) - 1, MASS);
-        }
-        if (half(1, c.cx) == 4) {
-            for (int v = 8; v < S - 6; v += 8) if (v > half(0, c.cz) + 2) c.column(0, v, c.fy + 1, corridorCeil(c.cx, c.cz, 4) - 1, MASS);
-        }
-        for (int[] r : rooms) if (r != null) furnish(c, r);
+        if (room != null) paintRoom(c, room);
         Feature f = featureAt(c.floor, c.cx, c.cz);
-        if (f != null) feature(c, f, rooms[0]);
+        if (f != null) feature(c, f);
     }
 
-    private void furnish(CellCtx c, int[] r) {
-        long h = Rng.hash(seed ^ 0xF00D, c.cx, c.cz, r[0] * 31L + r[1]);
-        switch (r[5]) {
-            case R_STORAGE, R_CACHE -> {
-                double fill = r[5] == R_CACHE ? 0.3 : 0.55;
-                B[] goods = r[5] == R_CACHE ? new B[]{BARREL} : new B[]{BARREL, B.of(Material.STRIPPED_SPRUCE_WOOD), MASS};
-                for (int u = r[0]; u <= r[2]; u++) {
-                    for (int v : new int[]{r[1], r[3]}) {
-                        if (u >= r[4] - 1 && u <= r[4]) continue;
-                        long hh = Rng.hash(h, u, v);
-                        if (!Rng.chance(hh, fill)) continue;
-                        int height = r[5] == R_CACHE ? 1 : 1 + Rng.pick(Rng.hash(hh, 1), 2);
-                        for (int y = 0; y < height; y++) c.set(u, c.fy + 1 + y, v, goods[Rng.pick(Rng.hash(hh, 2 + y), goods.length)]);
-                    }
-                }
+    /** Box of wall with a 2-wide doorway onto the aisle side (v1+1). */
+    private void enclose(CellCtx c, int u0, int v0, int u1, int v1, int doorU, B wall) {
+        for (int u = u0 - 1; u <= u1 + 1; u++) {
+            for (int v = v0 - 1; v <= v1 + 1; v++) {
+                boolean edge = u == u0 - 1 || u == u1 + 1 || v == v0 - 1 || v == v1 + 1;
+                if (!c.in(u, v)) continue;
+                for (int y = c.fy + 1; y < CEIL; y++) c.set(u, y, v, edge ? wall : B.AIR);
+                if (!edge) c.set(u, c.fy, v, FLOOR_B);
             }
-            default -> {
+        }
+        for (int u = doorU; u <= doorU + 1; u++) {
+            if (!c.in(u, v1 + 1)) continue;
+            for (int y = c.fy + 1; y <= c.fy + 3; y++) c.set(u, y, v1 + 1, B.AIR);
+            c.set(u, c.fy, v1 + 1, FLOOR_B);
+        }
+    }
+
+    private void paintRoom(CellCtx c, int[] r) {
+        enclose(c, r[0], r[1], r[2], r[3], r[0] + 2, WALL);
+        long h = Rng.hash(seed ^ 0xF00D, c.cx, c.cz);
+        for (int u = r[0]; u <= r[2]; u++) {
+            for (int v = r[1]; v <= r[3]; v++) {
+                if (!c.in(u, v)) continue;
+                if (r[4] == R_SAFE) c.set(u, c.fy, v, WOOD);
+                boolean shelf = r[4] == R_CACHE && (u == r[0] || u == r[2]) && v < r[3];
+                if (shelf && Rng.chance(Rng.hash(h, u, v), 0.55)) c.set(u, c.fy + 1, v, BARREL);
             }
         }
     }
 
-    private void feature(CellCtx c, Feature f, int[] r) {
-        int far = r[3];
+    private void feature(CellCtx c, Feature f) {
         switch (f.id()) {
-            case "wallpaper_door" -> {
-                for (int u = 13; u <= 17; u++) {
-                    for (int y = c.fy + 1; y <= c.fy + 4; y++) {
-                        c.set(u, y, far, (u == 15 && y <= c.fy + 2) ? B.AIR : B.of(Material.SMOOTH_SANDSTONE));
-                    }
-                    c.set(u, c.fy, far, B.of(Material.YELLOW_TERRACOTTA));
-                }
-                c.set(15, c.fy + 1, far + 1, B.AIR);
-                c.set(15, c.fy + 2, far + 1, B.AIR);
-                c.set(15, c.fy, far + 1, B.of(Material.YELLOW_TERRACOTTA));
-            }
-            case "freight_elevator" -> {
-                for (int u = 13; u <= 17; u++) {
-                    for (int y = c.fy + 1; y <= c.fy + 4; y++) {
-                        c.set(u, y, far - 3, (u >= 14 && u <= 16) ? B.AIR : B.of(Material.IRON_BLOCK));
+            case "elevator_lobby" -> {
+                enclose(c, 11, 1, 20, 9, 15, WALL);
+                // the car: iron walls, open toward the lobby
+                for (int u = 13; u <= 18; u++) {
+                    for (int v = 1; v <= 5; v++) {
+                        boolean wall = u == 13 || u == 18 || v == 1 || (v == 5 && (u < 15 || u > 16));
+                        if (!c.in(u, v)) continue;
+                        for (int y = c.fy + 1; y < CEIL; y++) c.set(u, y, v, wall ? IRON : B.AIR);
                     }
                 }
-                c.fill(13, c.fy + 1, far - 2, 13, c.fy + 4, far, B.of(Material.IRON_BLOCK));
-                c.fill(17, c.fy + 1, far - 2, 17, c.fy + 4, far, B.of(Material.IRON_BLOCK));
-                c.set(15, c.fy + 4, far - 1, B.light(10));
+                if (c.in(15, 3)) c.set(15, CEIL - 1, 3, B.light(10));
             }
-            case "loading_shutter" -> {
-                for (int u = 12; u <= 18; u++) c.set(u, c.fy, far, B.of(Material.GRASS_BLOCK));
+            case "flooded_stairs" -> {
+                // a tiled stairwell going down from the aisle into black water
+                enclose(c, 13, 2, 17, 10, 15, WALL);
+                for (int u = 13; u <= 17; u++) {
+                    for (int v = 2; v <= 10; v++) {
+                        if (!c.in(u, v)) continue;
+                        int drop = Math.max(0, Math.min(6, 10 - v));
+                        for (int y = c.fy - 7; y < c.fy - drop; y++) c.set(u, y, v, TILE);
+                        c.set(u, c.fy - drop, v, drop > 0 ? B.stairs(Material.STONE_STAIRS, "south", false) : TILE);
+                        for (int y = c.fy - drop + 1; y < CEIL; y++) c.set(u, y, v, B.AIR);
+                        for (int y = c.fy - 6; y <= c.fy - 3; y++) {
+                            if (c.type(u, y, v) == Material.AIR || c.type(u, y, v) == Material.STONE_STAIRS) {
+                                c.set(u, y, v, c.type(u, y, v) == Material.STONE_STAIRS
+                                        ? B.of(Material.STONE_STAIRS, "[facing=south,half=bottom,waterlogged=true]") : B.WATER);
+                            }
+                        }
+                    }
+                }
+            }
+            case "supply_depot" -> {
+                for (int u = 10; u <= 21; u += 3) {
+                    for (int v = 4; v <= 8; v += 4) {
+                        if (c.in(u, v)) c.set(u, c.fy + 1, v, BARREL);
+                    }
+                }
             }
             default -> {
             }
@@ -253,18 +234,16 @@ public final class HabitableGenerator extends LevelGenerator {
 
     @Override
     protected int[] triggerBox(Feature f) {
-        int far = half(0, f.cz()) + 2 + 8;
         return switch (f.id()) {
-            case "wallpaper_door" -> new int[]{15, 0, far + 1, 15, 1, far + 1};
-            case "freight_elevator" -> new int[]{14, 0, far - 2, 16, 1, far};
-            case "loading_shutter" -> new int[]{12, 0, far, 18, 1, far};
+            case "elevator_lobby" -> new int[]{14, 0, 2, 17, 1, 4};
+            case "flooded_stairs" -> new int[]{13, -6, 2, 17, -5, 4};
             default -> null;
         };
     }
 
     @Override
     public int[] safeLocal(int floor, int cx, int cz) {
-        return new int[]{0, 0}; // corridor intersection
+        return new int[]{6, 15}; // the drive aisle, away from columns and puddles
     }
 
     @Override
@@ -274,7 +253,9 @@ public final class HabitableGenerator extends LevelGenerator {
 
     @Override
     public String zoneName(int floor, int cx, int cz) {
-        return (dark(cx, cz) ? "dead-sector" : "concrete") + " halls N" + (half(0, cz) * 2 + 1) + "/W" + (half(1, cx) * 2 + 1);
+        int[] r = room(cx, cz);
+        return (dark(cx, cz) ? "dead-sector" : "garage") + (backWall(cx, cz) ? "/partitioned" : "")
+                + (r == null ? "" : r[4] == R_SAFE ? " +safe-room" : " +supply-room");
     }
 
     // ------------------------------------------------------------------ decorations
@@ -282,79 +263,103 @@ public final class HabitableGenerator extends LevelGenerator {
     @Override
     protected void cellDecor(int floor, int cx, int cz, List<DecorSpec> out) {
         long h = ch(floor, cx, cz, 0xDEC2);
+        double ox = cx * S, oz = cz * S;
         int fy = FLOOR + 1;
-        double lit = dark(cx, cz) ? 0.05 : 0.8;
-        // corridor lamps hang along the north (z) and west (x) lines this cell owns
-        int hn = half(0, cz), hw = half(1, cx);
-        int ceilN = FLOOR + 1 + height(0, cz), ceilW = FLOOR + 1 + height(1, cx);
-        for (int u = 6; u < S - 2; u += 10) {
-            if (u <= hw + 1) continue;
-            int off = hn == 4 ? 2 : 0;
+        double lit = dark(cx, cz) ? 0.05 : 0.75;
+        // tube lights down the aisle, cage lamps over the stall rows
+        for (int u = 4; u < S; u += 8) {
             long hh = Rng.hash(h, 1, u);
-            out.add(lamp(hn >= 3 ? "cage_lamp" : "tube_light", cx * S + u + 0.5, ceilN, cz * S + off + 0.5, 90f, hh, lampState(hh, lit),
-                    cx * S + u, ceilN - 2, cz * S + off, 14));
+            out.add(lamp("tube_light", ox + u + 0.5, CEIL, oz + 16.0, 90f, hh, lampState(hh, lit), cx * S + u, CEIL - 2, cz * S + 15, 14));
         }
-        for (int v = 6; v < S - 2; v += 10) {
-            if (v <= hn + 1) continue;
-            int off = hw == 4 ? 2 : 0;
-            long hh = Rng.hash(h, 2, v);
-            out.add(lamp(hw >= 3 ? "cage_lamp" : "tube_light", cx * S + off + 0.5, ceilW, cz * S + v + 0.5, 0f, hh, lampState(hh, lit),
-                    cx * S + off, ceilW - 2, cz * S + v, 14));
+        for (int u = 4; u < S; u += 16) {
+            for (int v : new int[]{7, 24}) {
+                long hh = Rng.hash(h, 2, u * 31L + v);
+                out.add(lamp("cage_lamp", ox + u + 0.5, CEIL, oz + v + 0.5, 0f, hh, lampState(hh, lit * 0.7), cx * S + u, CEIL - 2, cz * S + v, 12));
+            }
         }
-        if (Rng.chance(Rng.hash(h, 3), 0.3)) {
-            out.add(spec("ceiling_pipes", cx, cz, hw + 2.0, ceilN - 0.5, Math.max(1, hn) - 0.5, -90f, h));
+        int[] room = room(cx, cz);
+        if (room != null) {
+            long hr = Rng.hash(h, 10);
+            double mu = (room[0] + room[2]) / 2.0 + 0.5, mv = (room[1] + room[3]) / 2.0 + 0.5;
+            boolean safe = room[4] == R_SAFE;
+            out.add(lamp("cage_lamp", ox + mu, CEIL, oz + mv, 0f, hr, safe ? 0 : lampState(hr, 0.7), cx * S + (int) mu, CEIL - 2, cz * S + (int) mv, safe ? 13 : 11));
+            out.add(new DecorSpec(safe ? "chalk_safe" : "supply_sign", ox + room[0] + 1.0, fy + 2.2, oz + room[3] + 2.0, 0f, 0f, 0f, hr));
+            if (safe) out.add(spec("bench", cx, cz, mu, fy, room[1] + 0.5, 0f, hr));
         }
         Feature f = featureAt(floor, cx, cz);
-        for (int side = 0; side < 2; side++) {
-            int[] r = room(cx, cz, side);
-            if (r == null) continue;
-            double mu = (r[0] + r[2]) / 2.0 + 0.5, mv = (r[1] + r[3]) / 2.0 + 0.5;
-            int ceil = FLOOR + 5;
-            long hr = Rng.hash(h, 10, side);
-            boolean safe = r[5] == R_SAFE;
-            out.add(lamp("cage_lamp", cx * S + mu, ceil, cz * S + mv, 0f, hr, safe ? 0 : lampState(hr, lit * 0.8),
-                    cx * S + (int) mu, ceil - 2, cz * S + (int) mv, safe ? 13 : 11));
-            if (f != null) continue;
-            int wallV = side == 0 ? r[1] - 1 : r[3] + 1;
-            switch (r[5]) {
-                case R_SAFE -> {
-                    out.add(spec("bench", cx, cz, mu, fy, (side == 0 ? r[3] : r[1]) + 0.5, side == 0 ? 180f : 0f, hr));
-                    out.add(new DecorSpec("chalk_safe", cx * S + r[0] + 1.5, fy + 2.6, cz * S + wallV + (side == 0 ? 1.0 : 0.0), side == 0 ? 0f : 180f, 0f, 0f, hr));
-                    if (Rng.chance(hr, 0.4)) out.add(spec("radio", cx, cz, r[0] + 0.5, fy, r[1] + 0.5, 30f, hr));
-                }
-                case R_CACHE -> out.add(new DecorSpec("supply_sign", cx * S + r[0] + 2.0, fy + 3.0, cz * S + wallV + (side == 0 ? 0.0 : 1.0), side == 0 ? 180f : 0f, 0f, 0f, hr));
-                case R_FLOODED -> out.add(spec("drip_emitter", cx, cz, mu, ceil - 0.05, mv, 0f, hr));
-                default -> {
-                }
-            }
-        }
         if (f != null) {
-            int[] r = room(cx, cz, 0);
-            int far = r[3];
             switch (f.id()) {
-                case "wallpaper_door" -> out.add(spec("noclip_shimmer", cx, cz, 15.5, fy, far + 0.5, 0f, f.seed()));
-                case "freight_elevator" -> {
-                    out.add(spec("freight_doors", cx, cz, 15.5, fy, far - 3.0, 180f, f.seed()));
-                    out.add(spec("elevator_panel", cx, cz, 13.0, fy + 1.4, far - 3.02, 180f, f.seed()));
+                case "elevator_lobby" -> {
+                    out.add(spec("freight_doors", cx, cz, 16.0, fy, 5.5, 0f, f.seed()));
+                    out.add(spec("elevator_panel", cx, cz, 17.6, fy + 1.4, 6.02, 0f, f.seed()));
+                    out.add(new DecorSpec("stencil_sign", ox + 16.0, fy + 3.4, oz + 11.02, 0f, 0f, 0f, f.seed()));
                 }
-                case "loading_shutter" -> out.add(spec("roll_shutter", cx, cz, 15.5, fy, far + 0.98, 180f, f.seed()));
+                case "flooded_stairs" -> out.add(spec("drip_emitter", cx, cz, 15.5, CEIL - 0.05, 5.5, 0f, f.seed()));
                 case "supply_depot" -> {
-                    for (int i = 0; i < 4; i++) out.add(spec("pallet_stack", cx, cz, 12.5 + i * 2.5, fy, far - 1.5, (float) (i * 17), Rng.hash(f.seed(), i)));
+                    for (int i = 0; i < 3; i++) out.add(spec("pallet_stack", cx, cz, 25.5 + i * 2.2, fy, 6.5, (float) (i * 17), Rng.hash(f.seed(), i)));
                 }
                 default -> {
                 }
             }
-            return;
         }
-        double r = Rng.unit(Rng.hash(h, 5)) / Math.max(0.05, gs.get("decor-density", 1.0));
-        if (r < 0.15) {
-            out.add(spec("pallet_stack", cx, cz, hw + 1.5 + Rng.pick(h, 20), fy, hn + 0.5 - (hn == 1 ? 0 : 0.0), (float) Rng.pick(h, 40) - 20f, h));
-        } else if (r < 0.22) {
-            out.add(new DecorSpec("stencil_sign", cx * S + hw + 4.5, fy + 2.0, cz * S + hn + 1.0, 180f, 0f, 0f, h));
-        } else if (r < 0.28) {
-            out.add(new DecorSpec("fuse_box", cx * S + hw + 4.5, fy + 1.4, cz * S + hn + 1.0, 180f, 0f, 0f, h));
-        } else if (r < 0.31 && hn >= 2) {
-            out.add(spec("forklift", cx, cz, hw + 14.5, fy, 0.5, 90f, h));
+        // parked cars in a few stalls; most of the garage is empty
+        double density = gs.get("decor-density", 1.0);
+        for (int row = 0; row < 2; row++) {
+            for (int s = 0; s < 7; s++) {
+                double su = s * 4 + 4.5;
+                long hs = Rng.hash(h, 20 + row, s);
+                if (!Rng.chance(hs, 0.09 * density)) continue;
+                if (row == 0 && (f != null || room != null) && su > 9 && su < 25) continue;
+                double sv = row == 0 ? 7.5 : 24.5;
+                out.add(new DecorSpec("d:car", ox + su, fy, oz + sv, row == 0 ? 0f : 180f, 0f, 0f, hs));
+            }
+        }
+    }
+
+    @Override
+    protected void cellDetails(int floor, int cx, int cz, List<DecorSpec> out) {
+        long h = ch(floor, cx, cz, 0xD7A3);
+        double ox = cx * S, oz = cz * S;
+        int fy = FLOOR + 1;
+        double w = wear(cx, cz, 0x3EA1L);
+        // overhead services: two pipe runs over the north stalls, a duct over the south ones in some bays
+        out.add(detail(DecorSpec.TIER_ARCH, Rng.hash(h, 1), "d:pipe:light_gray_concrete:15.5:0.22", ox + 0.3, CEIL - 1.2, oz + 2.5, 0f, 0f));
+        out.add(detail(DecorSpec.TIER_ARCH, Rng.hash(h, 2), "d:pipe:light_gray_concrete:15.5:0.22", ox + 16.3, CEIL - 1.2, oz + 2.5, 0f, 0f));
+        if (zone(cx, cz, 0xD0C7L, 80) > 0.55) {
+            out.add(detail(DecorSpec.TIER_ARCH, Rng.hash(h, 3), "d:duct:15", ox + 1.5, CEIL - 1.0, oz + 29.5, 0f, 0f));
+        }
+        // a construction joint in the ceiling slab, parallel to the beams and between them
+        out.add(detail(DecorSpec.TIER_ARCH, Rng.hash(h, 4), "d:strip:light_gray_concrete:" + S + ":0.008:0.05", ox + 6.02, CEIL - 0.009, oz, 90f, 0f));
+        // a junction box with conduit on one column
+        if (Rng.chance(Rng.hash(h, 5), 0.5)) {
+            out.add(detail(DecorSpec.TIER_ENV, Rng.hash(h, 6), "d:jbox:1.6", ox + 10.5, fy + 1.4, oz + 28.003, 0f, 0f));
+        }
+        if (backWall(cx, cz)) {
+            // panels and a vent grille on the partition wall
+            out.add(detail(DecorSpec.TIER_ARCH, Rng.hash(h, 7), "d:grille:0.9:0.45", ox + 2.0, fy + 2.6, oz + 2.003, 0f, 0f));
+            for (int u = 4; u < S; u += 16) {
+                out.add(detail(DecorSpec.TIER_ARCH, Rng.hash(h, 8, u), "d:strip:gray_concrete:0.05:" + (CEIL - fy) + ":0.01", ox + u, fy, oz + 2.003, 0f, 0f));
+            }
+            if (Rng.chance(Rng.hash(h, 9), 0.1 + 0.5 * w)) {
+                out.add(detail(DecorSpec.TIER_AGING, Rng.hash(h, 10), "d:streak:brown_terracotta:2.2", ox + 11.5, CEIL - 0.3, oz + 2.006, 0f, 0f));
+            }
+        }
+        // deterioration, clustered: discoloured slab, cracks, stains on columns and ceiling
+        if (Rng.chance(Rng.hash(h, 11), 0.1 + 0.6 * w)) {
+            out.add(detail(DecorSpec.TIER_AGING, Rng.hash(h, 12), "d:fpatch:andesite:3.2:2.4", ox + 3 + Rng.pick(Rng.hash(h, 13), 20), fy + 0.001, oz + 12.5, (float) Rng.pick(h, 4) * 90f, 0f));
+        }
+        if (Rng.chance(Rng.hash(h, 14), 0.08 + 0.5 * w)) {
+            out.add(detail(DecorSpec.TIER_AGING, Rng.hash(h, 15), "d:crack:gray_concrete:2.6:f", ox + 6 + Rng.pick(Rng.hash(h, 16), 20), fy + 0.002, oz + 14 + Rng.pick(Rng.hash(h, 17), 4), 0f, 0f));
+        }
+        if (Rng.chance(Rng.hash(h, 18), 0.05 + 0.45 * w)) {
+            // a moisture run down the south face of a column
+            out.add(detail(DecorSpec.TIER_AGING, Rng.hash(h, 19), "d:streak:gray_concrete:2.2", ox + 18.5, CEIL - 1.1, oz + 5.003, 0f, 0f));
+        }
+        if (Rng.chance(Rng.hash(h, 20), 0.04 + 0.35 * w)) {
+            out.add(detail(DecorSpec.TIER_AGING, Rng.hash(h, 21), "d:cpatch:brown_terracotta:2.0:1.4", ox + 20, CEIL, oz + 4, 0f, 0f));
+        }
+        if (Rng.chance(Rng.hash(h, 22), 0.03 + 0.3 * w)) {
+            out.add(detail(DecorSpec.TIER_AGING, Rng.hash(h, 23), "d:crack:gray_concrete:1.8:c", ox + 28, CEIL, oz + 14, 0f, 0f));
         }
     }
 }

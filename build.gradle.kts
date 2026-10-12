@@ -3,8 +3,8 @@ plugins {
 }
 
 group = "com.powderpass"
-version = "1.0.0"
-description = "Backrooms: a seven-level alternate dimension built from custom worlds and display entities."
+version = "1.1.0"
+description = "Backrooms: a five-level alternate dimension built from custom worlds, display entities and original positional audio."
 
 java {
     toolchain.languageVersion.set(JavaLanguageVersion.of(21))
@@ -46,5 +46,16 @@ tasks.processResources {
 }
 
 tasks.jar {
-    archiveFileName.set("Backrooms-${project.version}.jar")
+    // one file to install: the plugin, the embedded Java resource pack and the Bedrock companion pack
+    archiveFileName.set("Backrooms.jar")
 }
+
+tasks.register("verifyEmbeddedPack") {
+    description = "Fails the build if the audio pack built by tools/audio/build_pack.py is missing from resources."
+    val required = listOf("backrooms-pack.zip", "pack-index.json")
+    doLast {
+        val missing = required.filter { !file("src/main/resources/$it").exists() }
+        if (missing.isNotEmpty()) throw GradleException("Missing $missing: run python3 tools/audio/generate.py && python3 tools/audio/build_pack.py")
+    }
+}
+tasks.named("jar") { dependsOn("verifyEmbeddedPack") }

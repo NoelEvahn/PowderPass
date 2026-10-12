@@ -33,9 +33,12 @@ public final class OfficeGenerator extends LevelGenerator {
 
     private static final B WALL_B = B.of(Material.WHITE_CONCRETE);
     private static final B CARPET = B.of(Material.GRAY_WOOL);
-    private static final B HALL_CARPET = B.of(Material.LIGHT_GRAY_WOOL);
+    private static final B CARPET_BLUE = B.of(Material.LIGHT_BLUE_WOOL);
+    private static final B CARPET_TILE = B.of(Material.LIGHT_GRAY_WOOL);
+    private static final B HALL_CARPET = B.of(Material.GRAY_WOOL);
+    private static final B TRIM = B.of(Material.LIGHT_GRAY_CONCRETE);
     private static final B CEIL = B.of(Material.SMOOTH_QUARTZ);
-    private static final B GLASS_B = B.of(Material.GLASS);
+    private static final B GLASS_B = B.of(Material.LIGHT_GRAY_STAINED_GLASS);
     private static final B PART = B.of(Material.LIGHT_GRAY_WOOL);
     private static final B PART_TOP = B.slab(Material.SMOOTH_STONE_SLAB, false);
     private static final B DESK = B.slab(Material.SPRUCE_SLAB, true);
@@ -64,9 +67,9 @@ public final class OfficeGenerator extends LevelGenerator {
     @Override
     protected List<FeatureDef> featureDefs() {
         return List.of(
-                FeatureDef.transition("stairwell", Dest.to(Level.LEVEL_1), 1.0),
-                FeatureDef.transition("fire_exit", Dest.EXIT, gs.get("exit-chance", 0.45)),
-                FeatureDef.transition("bright_window", Dest.to(Level.PLAINS), gs.get("plains-chance", 0.6)),
+                // onward to the Plains through a far too bright window in every district; back down the stairs rarer
+                FeatureDef.transition("bright_window", Dest.to(Level.PLAINS), 1.0),
+                FeatureDef.transition("stairwell", Dest.to(Level.LEVEL_1), gs.get("back-chance", 0.4)),
                 FeatureDef.landmark("conference_hall", gs.get("landmark-chance", 0.5)));
     }
 
@@ -197,7 +200,7 @@ public final class OfficeGenerator extends LevelGenerator {
                         for (int y = c.fy + 1; y < ceil; y++) c.set(u, y, v, B.AIR);
                     }
                     case ROOM -> {
-                        c.set(u, c.fy, v, (((c.wx(u) >> 1) + (c.wz(v) >> 1)) & 1) == 0 ? CARPET : HALL_CARPET);
+                        c.set(u, c.fy, v, roomCarpet(c, l, u, v));
                         for (int y = c.fy + 1; y < ceil; y++) c.set(u, y, v, B.AIR);
                     }
                     case DOOR -> {
@@ -206,11 +209,11 @@ public final class OfficeGenerator extends LevelGenerator {
                     }
                     case GLASS -> {
                         c.set(u, c.fy, v, WALL_B);
-                        for (int y = c.fy + 1; y < ceil; y++) c.set(u, y, v, y == c.fy + 1 ? WALL_B : GLASS_B);
+                        for (int y = c.fy + 1; y < ceil; y++) c.set(u, y, v, y == c.fy + 1 ? TRIM : GLASS_B);
                     }
                     default -> {
                         c.set(u, c.fy, v, WALL_B);
-                        for (int y = c.fy + 1; y < ceil; y++) c.set(u, y, v, WALL_B);
+                        for (int y = c.fy + 1; y < ceil; y++) c.set(u, y, v, y == c.fy + 1 ? TRIM : WALL_B);
                     }
                 }
             }
@@ -222,6 +225,19 @@ public final class OfficeGenerator extends LevelGenerator {
             if (r != fr) furnish(c, r);
         }
         if (f != null) feature(c, f, featureRoom(c.cx, c.cz));
+    }
+
+    /**
+     * Commercial carpet: every room is laid in one colour section (mostly grey, some light blue), and the open-plan
+     * farms in a 2x2 tile pattern of two close greys.
+     */
+    private B roomCarpet(CellCtx c, Layout l, int u, int v) {
+        for (Room r : l.rooms) {
+            if (!r.contains(u, v)) continue;
+            if (r.type == T_FARM) return (((c.wx(u) >> 1) + (c.wz(v) >> 1)) & 1) == 0 ? CARPET : CARPET_TILE;
+            return Rng.chance(Rng.hash(seed ^ 0xCA4E, c.cx, c.cz, r.x0 * 64L + r.z0), 0.3) ? CARPET_BLUE : CARPET;
+        }
+        return CARPET;
     }
 
     /** Small rooms get a real door block in their single-column doorway. */
@@ -311,11 +327,6 @@ public final class OfficeGenerator extends LevelGenerator {
                 }
                 c.set(mu, c.fy - 1, mv + 2, B.light(8));
             }
-            case "fire_exit" -> {
-                for (int u = mu - 1; u <= mu + 1; u++) for (int y = c.fy + 1; y <= c.fy + 3; y++) c.set(u, y, mv, WALL_B);
-                c.set(mu, c.fy + 1, mv, B.of(Material.WAXED_COPPER_DOOR, "[facing=south,half=lower,hinge=left,open=false]"));
-                c.set(mu, c.fy + 2, mv, B.of(Material.WAXED_COPPER_DOOR, "[facing=south,half=upper,hinge=left,open=false]"));
-            }
             case "bright_window" -> {
                 for (int u = mu - 2; u <= mu + 2; u++) {
                     for (int y = c.fy + 1; y <= c.fy + 3; y++) c.set(u, y, mv, (u >= mu - 1 && u <= mu + 1 && y >= c.fy + 1) ? B.AIR : WALL_B);
@@ -334,7 +345,6 @@ public final class OfficeGenerator extends LevelGenerator {
         int mu = (r.x0 + r.x1) / 2, mv = (r.z0 + r.z1) / 2;
         return switch (f.id()) {
             case "stairwell" -> new int[]{mu - 1, -3, mv + 1, mu + 1, -1, mv + 2};
-            case "fire_exit" -> new int[]{mu, 0, mv, mu, 1, mv};
             case "bright_window" -> new int[]{mu - 1, 0, mv, mu + 1, 1, mv};
             default -> null;
         };
@@ -382,8 +392,8 @@ public final class OfficeGenerator extends LevelGenerator {
         for (Room r : l.rooms) {
             idx++;
             long hr = Rng.hash(h, 100, idx);
-            for (int u = r.x0 + 2; u <= r.x1 - 1; u += 7) {
-                for (int v = r.z0 + 2; v <= r.z1 - 1; v += 7) {
+            for (int u = r.x0 + 2; u <= r.x1 - 1; u += 8) {
+                for (int v = r.z0 + 2; v <= r.z1 - 1; v += 8) {
                     long hl = Rng.hash(hr, u, v);
                     int state = r.lit ? lampState(hl, lit + 0.1) : 2;
                     out.add(lamp("ceiling_panel", cx * S + u + 0.5, ceil, cz * S + v + 0.5, 0f, hl, state, cx * S + u, ceil - 1, cz * S + v, 13));
@@ -435,16 +445,73 @@ public final class OfficeGenerator extends LevelGenerator {
             int mu = (fr.x0 + fr.x1) / 2, mv = (fr.z0 + fr.z1) / 2;
             switch (f.id()) {
                 case "stairwell" -> out.add(spec("basement_sign", cx, cz, mu + 0.5, fy + 1.2, mv - 2.8, 0f, f.seed()));
-                case "fire_exit" -> {
-                    out.add(spec("exit_sign", cx, cz, mu + 0.5, fy + 2.75, mv + 0.0, 180f, f.seed()));
-                    out.add(spec("exit_sign", cx, cz, mu + 0.5, fy + 2.75, mv + 1.0, 0f, f.seed()));
-                }
                 case "bright_window" -> out.add(spec("daylight_window", cx, cz, mu + 0.5, fy, mv + 0.5, 0f, f.seed()));
                 case "conference_hall" -> {
                     for (int i = 0; i < 3; i++) out.add(spec("office_chair", cx, cz, fr.x0 + 2.5 + i * 2, fy, mv + 1.8, 0f, Rng.hash(f.seed(), i)));
                 }
                 default -> {
                 }
+            }
+        }
+    }
+
+    // ------------------------------------------------------------------ surface details
+
+    @Override
+    protected void cellDetails(int floor, int cx, int cz, List<DecorSpec> out) {
+        Layout l = layout(cx, cz);
+        long h = ch(floor, cx, cz, 0xD7A4);
+        double ox = cx * S, oz = cz * S;
+        int fy = FLOOR + 1, ceil = FLOOR + 5;
+        double w = wear(cx, cz, 0x3EA4L);
+        Feature f = featureAt(floor, cx, cz);
+        Room fr = f == null ? null : featureRoom(cx, cz);
+        int idx = 0;
+        for (Room r : l.rooms) {
+            idx++;
+            if (r == fr) continue;
+            long hr = Rng.hash(h, idx);
+            int wx = r.x1 - r.x0 + 1, wz = r.z1 - r.z0 + 1;
+            // suspended ceiling grid: a line each way through the room
+            if (wx >= 5 && wz >= 5) {
+                out.add(detail(DecorSpec.TIER_ARCH, Rng.hash(hr, 1), "d:strip:light_gray_concrete:" + wx + ":0.008:0.04",
+                        ox + r.x0, ceil - 0.009, oz + r.z0 + wz / 2.0 + 0.48, 0f, 0f));
+                out.add(detail(DecorSpec.TIER_ARCH, Rng.hash(hr, 2), "d:strip:light_gray_concrete:" + wz + ":0.008:0.04",
+                        ox + r.x0 + wx / 2.0 + 0.52, ceil - 0.009, oz + r.z0, 90f, 0f));
+            }
+            // details on the north wall's inside face (z = z0), kept clear of a door in that wall
+            boolean doorNorth = r.doorV == r.z0 - 1;
+            // clear of a door in that wall and of the corner where a plant may stand
+            double safeX = doorNorth && r.doorU - r.x0 < wx / 2 ? r.x1 - 1.2 : r.x0 + 1.6;
+            double faceZ = oz + r.z0 + 0.003;
+            boolean counterWall = r.type == T_BREAK || r.type == T_STORAGE; // counters and shelving line z0
+            if (wx >= 4 && !counterWall) {
+                out.add(detail(DecorSpec.TIER_ENV, Rng.hash(hr, 3), "d:outlet", ox + safeX + 0.3, fy + 0.35, faceZ, 0f, 0f));
+                if (Rng.chance(Rng.hash(hr, 4), 0.35)) {
+                    // a drywall joint running floor to ceiling
+                    out.add(detail(DecorSpec.TIER_ARCH, Rng.hash(hr, 5), "d:strip:light_gray_concrete:0.03:" + (ceil - fy - 1) + ":0.006",
+                            ox + r.x0 + wx / 2.0, fy + 1, faceZ, 0f, 0f));
+                }
+            }
+            if (r.type == T_FARM && wx >= 6 && !doorNorth) {
+                out.add(detail(DecorSpec.TIER_ENV, Rng.hash(hr, 6), "d:strip:light_gray_concrete:" + (wx - 1) + ":0.08:0.05",
+                        ox + r.x0 + 0.5, fy + 1.05, faceZ, 0f, 0f)); // cable channel above the skirting
+            }
+            if (r.type == T_MEETING && wx >= 4) {
+                // window sill and head along the glass on the south side
+                out.add(detail(DecorSpec.TIER_ARCH, Rng.hash(hr, 7), "d:sill:" + wx + ":2.9", ox + r.x1 + 1, fy + 1, oz + r.z1 + 1 - 0.003, 180f, 0f));
+            }
+            if (wx * wz >= 30 && Rng.chance(Rng.hash(hr, 8), 0.5)) {
+                out.add(detail(DecorSpec.TIER_ARCH, Rng.hash(hr, 9), "d:vent:0.9", ox + r.x0 + 1.5, ceil, oz + r.z1 - 0.5, 0f, 0f));
+            }
+            // rare decay: peeling paint, a damp stain on the ceiling tiles
+            if (wx >= 4 && Rng.chance(Rng.hash(hr, 10), 0.02 + 0.15 * w)) {
+                out.add(detail(DecorSpec.TIER_AGING, Rng.hash(hr, 11), "d:peel:white_concrete:light_gray_concrete:0.5:0.8",
+                        ox + r.x1 - 1.0, ceil - 0.6, faceZ, 0f, 0f));
+            }
+            if (Rng.chance(Rng.hash(hr, 12), 0.015 + 0.12 * w)) {
+                out.add(detail(DecorSpec.TIER_AGING, Rng.hash(hr, 13), "d:cpatch:terracotta:1.4:1.1",
+                        ox + r.x0 + 1, ceil, oz + r.z0 + 1, 0f, 0f));
             }
         }
     }

@@ -1,0 +1,92 @@
+package com.powderpass.backrooms.audio;
+
+import com.powderpass.backrooms.Level;
+
+import java.util.EnumMap;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * What each level sounds like between its loops: one-shot events with weights, cooldowns and placement. Rare events
+ * are scaled by {@code audio.rare-frequency}; voices and music also share their own long cooldowns in the engine.
+ */
+final class Soundscape {
+    enum Kind { ONE, STEPS, VOICE, MUSIC }
+
+    enum Place { LISTENER, BEHIND, NEAR, MID, FAR }
+
+    /** One possible event. {@code id} is the event's identity for cooldowns; {@code sound} the pack id. */
+    record Ev(String id, String sound, Kind kind, Place placement, double weight, int cooldownSeconds, float volume,
+              boolean rare, boolean reflect, boolean underwaterOnly) {
+        static Ev one(String sound, Place p, double w, int cd, float vol) {
+            return new Ev(sound, sound, Kind.ONE, p, w, cd, vol, false, false, false);
+        }
+
+        Ev rarely() {
+            return new Ev(id, sound, kind, placement, weight, cooldownSeconds, volume, true, reflect, underwaterOnly);
+        }
+
+        Ev reflecting() {
+            return new Ev(id, sound, kind, placement, weight, cooldownSeconds, volume, rare, true, underwaterOnly);
+        }
+
+        Ev as(Kind k) {
+            return new Ev(id, sound, k, placement, weight, cooldownSeconds, volume, rare, reflect, underwaterOnly);
+        }
+
+        Ev named(String newId) {
+            return new Ev(newId, sound, kind, placement, weight, cooldownSeconds, volume, rare, reflect, underwaterOnly);
+        }
+    }
+
+    private static final Map<Level, List<Ev>> TABLE = new EnumMap<>(Level.class);
+
+    static {
+        TABLE.put(Level.LEVEL_0, List.of(
+                Ev.one("light.flicker", Place.NEAR, 5, 40, 0.5f),
+                Ev.one("light.pop", Place.MID, 2, 90, 0.5f),
+                Ev.one("knock.distant", Place.FAR, 2, 120, 0.8f).reflecting(),
+                Ev.one("step.carpet", Place.MID, 2, 150, 0.6f).as(Kind.STEPS).rarely(),
+                Ev.one("impact.distant", Place.FAR, 1, 300, 0.9f).rarely().reflecting(),
+                Ev.one("voice.whisper", Place.BEHIND, 1, 400, 0.35f).as(Kind.VOICE).rarely(),
+                Ev.one("light.arc", Place.MID, 0.6, 400, 0.6f).rarely(),
+                Ev.one("movement.distant", Place.FAR, 1, 240, 0.7f).rarely()));
+        TABLE.put(Level.POOLROOMS, List.of(
+                Ev.one("water.drip", Place.NEAR, 6, 15, 0.6f),
+                Ev.one("water.drip", Place.FAR, 4, 15, 0.5f).named("water.drip.far"),
+                Ev.one("water.splash", Place.FAR, 1.2, 180, 0.7f).rarely(),
+                Ev.one("water.bubbles", Place.NEAR, 1.5, 60, 0.5f),
+                Ev.one("step.tile", Place.MID, 1, 240, 0.5f).as(Kind.STEPS).rarely(),
+                Ev.one("voice.murmur", Place.FAR, 0.6, 500, 0.4f).as(Kind.VOICE).rarely(),
+                Ev.one("music.pool_1", Place.LISTENER, 0.25, 900, 0.5f).as(Kind.MUSIC).rarely()));
+        TABLE.put(Level.LEVEL_1, List.of(
+                Ev.one("metal.creak", Place.MID, 4, 60, 0.6f).reflecting(),
+                Ev.one("pipe.knock", Place.MID, 3, 90, 0.7f).reflecting(),
+                Ev.one("water.drip", Place.NEAR, 3, 30, 0.5f),
+                Ev.one("machine.start", Place.FAR, 1, 400, 0.9f).rarely().reflecting(),
+                Ev.one("step.concrete", Place.FAR, 1.5, 200, 0.7f).as(Kind.STEPS).rarely(),
+                Ev.one("knock.distant", Place.FAR, 1, 200, 0.8f).reflecting(),
+                Ev.one("voice.conversation", Place.FAR, 0.6, 500, 0.5f).as(Kind.VOICE).rarely(),
+                Ev.one("impact.distant", Place.FAR, 0.8, 400, 1.0f).rarely().reflecting()));
+        TABLE.put(Level.LEVEL_4, List.of(
+                Ev.one("office.click", Place.MID, 4, 40, 0.5f),
+                Ev.one("office.printer", Place.FAR, 1.5, 300, 0.6f),
+                Ev.one("office.phone", Place.FAR, 1, 400, 0.7f).rarely(),
+                Ev.one("speaker.broken", Place.MID, 1, 300, 0.4f).rarely(),
+                Ev.one("step.carpet", Place.MID, 1.2, 240, 0.6f).as(Kind.STEPS).rarely(),
+                Ev.one("voice.conversation", Place.MID, 0.8, 420, 0.45f).as(Kind.VOICE).rarely(),
+                Ev.one("voice.announce", Place.FAR, 0.4, 900, 0.6f).as(Kind.VOICE).rarely(),
+                Ev.one("voice.phrase", Place.FAR, 0.3, 900, 0.45f).as(Kind.VOICE).rarely(),
+                Ev.one("music.office_radio_1", Place.LISTENER, 0.2, 1200, 0.25f).as(Kind.MUSIC).rarely()));
+        TABLE.put(Level.PLAINS, List.of(
+                Ev.one("grass.rustle", Place.NEAR, 3, 60, 0.4f),
+                Ev.one("plains.distant", Place.FAR, 0.8, 400, 0.8f).rarely(),
+                Ev.one("music.plains_1", Place.LISTENER, 0.25, 1200, 0.45f).as(Kind.MUSIC).rarely(),
+                Ev.one("music.plains_2", Place.LISTENER, 0.25, 1200, 0.45f).as(Kind.MUSIC).rarely(),
+                Ev.one("voice.cry", Place.FAR, 0.15, 1800, 0.3f).as(Kind.VOICE).rarely()));
+    }
+
+    static List<Ev> events(Level level) {
+        return TABLE.getOrDefault(level, List.of());
+    }
+}

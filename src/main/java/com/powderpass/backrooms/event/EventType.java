@@ -18,6 +18,7 @@ public enum EventType {
     POOL_ECHO("pool_echo", "Echoing splashes and drips across the water.", EnumSet.of(Level.POOLROOMS)),
     PHONE_RING("phone_ring", "A phone rings somewhere nearby.", EnumSet.of(Level.LEVEL_0, Level.LEVEL_4, Level.PLAINS)),
     WIND("wind", "Wind across the field, and nothing moves.", EnumSet.of(Level.PLAINS)),
+    FOG("fog", "A fog bank rolls in. You can see a few chunks, then less.", EnumSet.of(Level.PLAINS, Level.POOLROOMS, Level.LEVEL_1)),
     DEJA_VU("deja_vu", "You've been here before. Something else was too.", EnumSet.allOf(Level.class)),
     HUM_SHIFT("hum_shift", "The fluorescent hum bends in pitch.", EnumSet.of(Level.LEVEL_0, Level.LEVEL_4, Level.POOLROOMS));
 

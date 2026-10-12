@@ -39,6 +39,51 @@ public final class BackroomsCommand implements TabExecutor {
         return plugin.cfg();
     }
 
+    private void audio(CommandSender s, String[] a) {
+        String sub = a.length < 2 ? "status" : a[1].toLowerCase(Locale.ROOT);
+        switch (sub) {
+            case "reload" -> {
+                plugin.pack().start();
+                plugin.audio().start();
+                send(s, "<green>Audio and resource pack reloaded. <gray>" + plugin.pack().describe());
+            }
+            case "test" -> {
+                if (a.length < 3) {
+                    send(s, "<red>Usage: /backrooms audio test <sound> [player]");
+                    return;
+                }
+                Player target = a.length > 3 ? Bukkit.getPlayerExact(a[3]) : s instanceof Player p ? p : null;
+                if (target == null) {
+                    send(s, "<red>Name a player to play the sound to.");
+                    return;
+                }
+                send(s, "<gray>Sent " + plugin.audio().test(target, a[2]) + " to " + target.getName());
+            }
+            case "debug" -> {
+                if (!(s instanceof Player p)) {
+                    s.sendMessage(cfg().msg("player-only"));
+                    return;
+                }
+                send(s, "<gray>Audio debug overlay " + (plugin.audio().toggleDebug(p) ? "<green>on" : "<red>off"));
+            }
+            default -> {
+                send(s, "<gold>Backrooms audio");
+                send(s, "<gray>Engine: <white>" + plugin.audio().describe());
+                send(s, "<gray>Pack: <white>" + plugin.pack().describe());
+                int loaded = 0, total = 0;
+                for (Player p : Bukkit.getOnlinePlayers()) {
+                    total++;
+                    if (plugin.pack().loaded(p)) loaded++;
+                }
+                send(s, "<gray>Players with the pack loaded: <white>" + loaded + "/" + total);
+                if (s instanceof Player p) {
+                    var st = plugin.pack().status(p);
+                    send(s, "<gray>Your pack status: <white>" + (st == null ? "not offered" : st.name()));
+                }
+            }
+        }
+    }
+
     private boolean need(CommandSender s, String perm) {
         if (s.hasPermission(perm)) return true;
         s.sendMessage(cfg().msg("no-permission"));
@@ -92,6 +137,9 @@ public final class BackroomsCommand implements TabExecutor {
             case "give" -> {
                 if (need(s, "backrooms.admin")) give(s, a);
             }
+            case "audio" -> {
+                if (need(s, "backrooms.admin.audio")) audio(s, a);
+            }
             case "confirm" -> confirm(s);
             default -> help(s);
         }
@@ -105,10 +153,11 @@ public final class BackroomsCommand implements TabExecutor {
         if (cfg().allowSelfLeave || s.hasPermission("backrooms.admin.teleport")) send(s, "<white>/backrooms leave</white> <gray>return to where you came from");
         send(s, "<dark_gray>Inside: follow the hum of transitions; read the damp notes; drink almond water; keep the lights on.");
         if (s.hasPermission("backrooms.admin")) {
-            send(s, "<gold>Admin:</gold> <white>enter|leave [player]</white>, <white>level <0|poolrooms|1|2|3|4|5> [player]</white>, "
+            send(s, "<gold>Admin:</gold> <white>enter|leave [player]</white>, <white>level <0|poolrooms|1|4|plains> [player]</white>, "
                     + "<white>setspawn <level></white>, <white>status</white>, <white>debug <on|off></white>, <white>reload</white>");
             send(s, "<gold>Admin:</gold> <white>entity list|spawn <type> [amount]|clear [radius|level]</white>, "
                     + "<white>event list|trigger <event> [level]</white>, <white>give <item> [player]</white>");
+            send(s, "<gold>Admin:</gold> <white>audio status|reload|test <sound> [player]|debug</white>");
         }
     }
 
@@ -410,6 +459,7 @@ public final class BackroomsCommand implements TabExecutor {
             if (s.hasPermission("backrooms.admin.events")) out.add("event");
             if (s.hasPermission("backrooms.admin.reload")) out.add("reload");
             if (s.hasPermission("backrooms.admin")) out.add("give");
+            if (s.hasPermission("backrooms.admin.audio")) out.add("audio");
             if (pending.containsKey(s.getName())) out.add("confirm");
         } else {
             String sub = a[0].toLowerCase(Locale.ROOT);
@@ -426,6 +476,11 @@ public final class BackroomsCommand implements TabExecutor {
                 }
                 case "debug" -> {
                     if (a.length == 2) out.addAll(List.of("on", "off"));
+                }
+                case "audio" -> {
+                    if (a.length == 2) out.addAll(List.of("status", "reload", "test", "debug"));
+                    else if (a.length == 3 && a[1].equalsIgnoreCase("test")) out.addAll(new java.util.TreeSet<>(plugin.audio().index().ids()));
+                    else if (a.length == 4 && a[1].equalsIgnoreCase("test")) out.addAll(players());
                 }
                 case "entity" -> {
                     if (a.length == 2) out.addAll(List.of("list", "spawn", "clear"));

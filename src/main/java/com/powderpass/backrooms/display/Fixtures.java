@@ -37,8 +37,10 @@ final class Fixtures {
         switch (id) {
             // ---------------------------------------------------------------- light fixtures
             case "ceiling_panel" -> {
-                m.box(LIGHT_GRAY_CONCRETE, -0.72, -0.06, -0.27, 1.44, 0.06, 0.54);
-                diffuser(m, m.group(1).box(WHITE_CONCRETE, -0.66, -0.085, -0.21, 1.32, 0.03, 0.42), suffix, GRAY_CONCRETE);
+                // a long recessed troffer: dark frame, housing, and a narrow diffuser
+                m.box(GRAY_CONCRETE, -0.95, -0.012, -0.26, 1.9, 0.012, 0.52);
+                m.box(LIGHT_GRAY_CONCRETE, -0.88, -0.05, -0.2, 1.76, 0.04, 0.4);
+                diffuser(m, m.group(1).box(WHITE_CONCRETE, -0.82, -0.07, -0.13, 1.64, 0.025, 0.26), suffix, GRAY_CONCRETE);
                 if (!suffix.equals("dead")) m.sound(Sound.BLOCK_BEACON_AMBIENT, 0, -0.5, 0, 160, 0.15, 0.08, 1.8);
             }
             case "tube_light" -> {

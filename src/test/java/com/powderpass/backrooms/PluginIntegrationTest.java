@@ -187,20 +187,20 @@ class PluginIntegrationTest {
 
     @Test
     void transitionTriggerMovesPlayerToTheNextLevel() {
-        LevelGenerator g0 = plugin.worlds().generator(Level.LEVEL_0);
+        LevelGenerator g0 = plugin.worlds().generator(Level.POOLROOMS);
         Feature stair = null;
         for (int d = 0; d < 9 && stair == null; d++) {
             for (Feature f : g0.districtFeatures(d % 3, d / 3)) {
-                if (f.id().equals("stairwell")) {
+                if (f.id().equals("service_door")) {
                     stair = f;
                     break;
                 }
             }
         }
         assertNotNull(stair);
-        World l0 = plugin.worlds().world(Level.LEVEL_0);
-        int x = stair.cx() * g0.S + 4, z = stair.cz() * g0.S + 5, y = g0.floorY[0] - 2;
-        assertNotNull(g0.triggerAt(x, y, z), "landing is inside the trigger");
+        World l0 = plugin.worlds().world(Level.POOLROOMS);
+        int x = stair.cx() * g0.S + 6, z = stair.cz() * g0.S + 6, y = g0.floorY[0] + 1;
+        assertNotNull(g0.triggerAt(x, y, z), "standing in the booth is inside the trigger");
         PlayerMock p = playerAt(0, 70, 0);
         floor(l0, x, y - 1, z, 1);
         p.teleport(new Location(l0, x + 0.5, y, z + 0.5));
@@ -212,7 +212,7 @@ class PluginIntegrationTest {
         plugin.transitions().onMove(p, p.getLocation());
         assertTrue(plugin.sessions().get(p).inTransition);
         server.getScheduler().performTicks(60);
-        assertEquals(l1, p.getWorld(), "stairwell leads to Level 1");
+        assertEquals(l1, p.getWorld(), "the Poolrooms service door leads to Level 1");
         assertFalse(plugin.sessions().get(p).inTransition);
         assertTrue(plugin.sessions().get(p).cooldownUntil > plugin.sessions().now(), "arrival cooldown prevents bouncing back");
     }

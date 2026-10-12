@@ -394,6 +394,7 @@ public abstract class LevelGenerator {
                 for (int cz = cellOf(minZ) - 1; cz <= cellOf(minZ + 15) + 1; cz++) {
                     all.clear();
                     cellDecor(f, cx, cz, all);
+                    cellDetails(f, cx, cz, all);
                     for (DecorSpec d : all) {
                         int bx = (int) Math.floor(d.x), bz = (int) Math.floor(d.z);
                         if (bx >= minX && bx < minX + 16 && bz >= minZ && bz < minZ + 16) {
@@ -403,7 +404,30 @@ public abstract class LevelGenerator {
                 }
             }
         }
+        // functional decorations first, then details by tier and rank, so budgets always drop details first
+        out.sort(java.util.Comparator.comparingInt((DecorSpec d) -> d.tier).thenComparingDouble(d -> d.rank));
         return out;
+    }
+
+    /**
+     * Surface details for one cell (thin display overlays: trims, seams, stains, pipes...). Pure and deterministic
+     * like {@link #cellDecor}; the runtime filters them by tier and rank. Default: none.
+     */
+    protected void cellDetails(int floor, int cx, int cz, List<DecorSpec> out) {
+    }
+
+    /** Builds a detail spec with a deterministic rank. */
+    protected static DecorSpec detail(int tier, long h, String model, double x, double y, double z, float yaw, float pitch) {
+        return new DecorSpec(model, x, y, z, yaw, pitch, 0f, h).tier(tier, Rng.unit(Rng.hash(h, 0x7A11)));
+    }
+
+    /**
+     * Localised deterioration in [0,1]: smooth noise so damage clusters in patches instead of being sprinkled
+     * evenly. Multiply chances by this.
+     */
+    protected double wear(int cx, int cz, long salt) {
+        double n = zone(cx, cz, salt, S * 6.0);
+        return Math.max(0, Math.min(1, (n - 0.45) / 0.4));
     }
 
     // ------------------------------------------------------------------ shared painting helpers

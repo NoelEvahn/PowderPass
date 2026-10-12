@@ -15,7 +15,8 @@ public final class Mats {
         return n.endsWith("_CARPET") || n.endsWith("_PRESSURE_PLATE") || n.endsWith("_BUTTON")
                 || n.endsWith("_TORCH") || n.equals("TORCH") || n.endsWith("_DOOR") || n.equals("LADDER")
                 || n.endsWith("_WALL_TORCH") || n.equals("LEVER") || n.equals("RAIL") || n.equals("TRIPWIRE")
-                || n.endsWith("_CANDLE") || n.equals("CANDLE") || n.equals("COBWEB") || n.equals("REDSTONE_WIRE");
+                || n.endsWith("_CANDLE") || n.equals("CANDLE") || n.equals("COBWEB") || n.equals("REDSTONE_WIRE")
+                || n.equals("SHORT_GRASS") || n.equals("TALL_GRASS");
     }
 
     public static boolean liquid(Material m) {

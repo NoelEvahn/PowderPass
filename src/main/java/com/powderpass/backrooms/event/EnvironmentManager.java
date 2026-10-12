@@ -89,6 +89,11 @@ public final class EnvironmentManager {
         ThreadLocalRandom r = ThreadLocalRandom.current();
         for (Map.Entry<Level, World> e : plugin.worlds().worlds().entrySet()) {
             for (Player p : e.getValue().getPlayers()) {
+                if (plugin.audio().custom(p) && cfg().audioAmbient) {
+                    // the custom soundscape replaces this vanilla ambience for players who loaded the pack
+                    featureCue(p, e.getKey());
+                    continue;
+                }
                 Location near = p.getLocation().add(r.nextDouble(-6, 6), 2, r.nextDouble(-6, 6));
                 Location far = p.getLocation().add(r.nextDouble(-24, 24), 0, r.nextDouble(-24, 24));
                 switch (e.getKey()) {
@@ -128,7 +133,9 @@ public final class EnvironmentManager {
     /** Transitions announce themselves with a recognisable sound when you are close: they are meant to be found. */
     private void featureCue(Player p, Level level) {
         LevelGenerator g = plugin.worlds().generator(level);
-        for (Feature f : g.featuresNear(p.getLocation().getBlockX(), p.getLocation().getBlockZ(), 28)) {
+        // Level 0's one way on is meant to be hard to find: it only gives itself away up close
+        int radius = level == Level.LEVEL_0 ? 10 : 28;
+        for (Feature f : g.featuresNear(p.getLocation().getBlockX(), p.getLocation().getBlockZ(), radius)) {
             if (!f.isTransition()) continue;
             double[] c = g.featureCenter(f);
             Location l = new Location(p.getWorld(), c[0], c[1] + 1, c[2]);
@@ -139,13 +146,22 @@ public final class EnvironmentManager {
 
     // ------------------------------------------------------------------ events
 
+    private static final java.util.Set<EventType> SOUND_ONLY = java.util.EnumSet.of(EventType.FOOTSTEPS, EventType.KNOCKING,
+            EventType.MACHINERY, EventType.POOL_ECHO, EventType.PHONE_RING, EventType.HUM_SHIFT, EventType.WIND);
+
     private void eventPass() {
         ThreadLocalRandom r = ThreadLocalRandom.current();
         for (Map.Entry<Level, World> e : plugin.worlds().worlds().entrySet()) {
             for (Player p : e.getValue().getPlayers()) {
                 if (p.getGameMode() == GameMode.SPECTATOR || r.nextDouble() >= cfg().eventChance) continue;
                 List<EventType> options = new ArrayList<>();
-                for (EventType t : EventType.values()) if (t.levels.contains(e.getKey())) options.add(t);
+                boolean custom = plugin.audio().custom(p);
+                for (EventType t : EventType.values()) {
+                    if (!t.levels.contains(e.getKey())) continue;
+                    // sound-only events are covered by the positional soundscape for players with the pack
+                    if (custom && SOUND_ONLY.contains(t)) continue;
+                    options.add(t);
+                }
                 if (!options.isEmpty()) trigger(options.get(r.nextInt(options.size())), p);
             }
         }
@@ -200,6 +216,10 @@ public final class EnvironmentManager {
                 for (int k = 0; k < 6; k++) {
                     plugin.getServer().getScheduler().runTaskLater(plugin, () -> p.playSound(far, Sound.BLOCK_NOTE_BLOCK_BELL, SoundCategory.AMBIENT, 0.6f, 1.9f), (k / 2) * 30L + (k % 2) * 5L);
                 }
+            }
+            case FOG -> {
+                if (!plugin.fog().bank(p, 60 + java.util.concurrent.ThreadLocalRandom.current().nextInt(60))) return false;
+                p.playSound(pl, Sound.ITEM_ELYTRA_FLYING, SoundCategory.AMBIENT, 0.25f, 0.3f);
             }
             case WIND -> {
                 p.playSound(pl, Sound.ITEM_ELYTRA_FLYING, SoundCategory.AMBIENT, 0.5f, 0.4f);
@@ -300,6 +320,7 @@ public final class EnvironmentManager {
     public void flicker(Location c, int radius, int duration) {
         if (plugin.worlds().levelOf(c.getWorld()) == null) return;
         plugin.decorations().dimLamps(c, radius, duration, true);
+        plugin.audio().onFlicker(c);
         List<Block> lights = lightsAround(c, radius);
         if (lights.isEmpty()) return;
         List<Player> v = viewers(c, 48);
@@ -319,6 +340,7 @@ public final class EnvironmentManager {
         List<Block> lights = lightsAround(c, radius);
         List<Player> v = viewers(c, 48);
         c.getWorld().playSound(c, Sound.BLOCK_BEACON_DEACTIVATE, SoundCategory.AMBIENT, 1f, 0.5f);
+        plugin.audio().onBlackout(c, duration);
         plugin.decorations().dimLamps(c, radius + 4, duration, false);
         for (Block b : lights) send(v, b, off(b));
         for (Player p : v) p.addPotionEffect(new PotionEffect(PotionEffectType.DARKNESS, Math.min(duration, 80), 0, false, false));

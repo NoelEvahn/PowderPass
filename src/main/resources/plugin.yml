@@ -24,6 +24,7 @@ permissions:
       backrooms.admin.events: true
       backrooms.admin.debug: true
       backrooms.admin.reload: true
+      backrooms.admin.audio: true
       backrooms.bypass.commands: true
   backrooms.admin.teleport:
     description: enter/leave other players, /backrooms level, /backrooms setspawn.
@@ -36,6 +37,9 @@ permissions:
     default: op
   backrooms.admin.debug:
     description: /backrooms status and /backrooms debug.
+    default: op
+  backrooms.admin.audio:
+    description: /backrooms audio status|reload|test|debug.
     default: op
   backrooms.admin.reload:
     description: /backrooms reload.

@@ -1,0 +1,29 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "PowderPass Backrooms Sounds",
+    "description": "Original CC0 Backrooms ambience",
+    "uuid": "13076765-d044-5b76-8142-71ec26fa3369",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      20,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "resources",
+      "uuid": "1b31ed73-dee1-58af-aae5-eb4b43233f18",
+      "version": [
+        1,
+        0,
+        0
+      ]
+    }
+  ]
+}

@@ -57,8 +57,25 @@ class GenerationTest {
     @EnumSource(Level.class)
     void connectedSafeAndTransitionsReachable(Level level) {
         LevelGenerator g = Generators.create(level, SEED, GenSettings.defaults());
-        // three windows of 3x3 regions in different places
-        int[][] origins = {{0, 0}, {-7, 4}, {11, -9}};
+        // three windows of 3x3 regions in different places, plus (for levels whose transitions are rare) one
+        // window centred on the nearest transition, so every transition type still gets walked to
+        List<int[]> origins = new ArrayList<>(List.of(new int[]{0, 0}, new int[]{-7, 4}, new int[]{11, -9}));
+        boolean rare = g.districtFeatures(0, 0).stream().noneMatch(f -> f.isTransition() && f.def().chance() >= 1.0);
+        if (rare) {
+            outer:
+            for (int r = 0; r < 6; r++) {
+                for (int dx = -r; dx <= r; dx++) {
+                    for (int dz = -r; dz <= r; dz++) {
+                        for (Feature f : g.districtFeatures(dx, dz)) {
+                            if (!f.isTransition()) continue;
+                            origins.add(new int[]{Math.floorDiv(f.cx(), g.R) - 1, Math.floorDiv(f.cz(), g.R) - 1});
+                            break outer;
+                        }
+                    }
+                }
+            }
+        }
+        int windowsWithTransitions = 0;
         for (int[] o : origins) {
             Area area = regionWindow(g, o[0], o[1], 3);
             int[] start = null;
@@ -116,8 +133,10 @@ class GenerationTest {
                     }
                 }
             }
-            assertTrue(transitions > 0, level + " window has no transitions");
+            if (transitions > 0) windowsWithTransitions++;
+            else assertTrue(rare, level + " window has no transitions");
         }
+        assertTrue(windowsWithTransitions > 0, level + " no window with a transition");
     }
 
     @ParameterizedTest
@@ -162,13 +181,36 @@ class GenerationTest {
 
     @ParameterizedTest
     @EnumSource(Level.class)
-    void everyDistrictHasItsGuaranteedTransitions(Level level) {
+    void levelsGoInOrderAndOnlyThePlainsHasAnExit(Level level) {
         LevelGenerator g = Generators.create(level, SEED, GenSettings.defaults());
+        java.util.Map<Level, Level> next = java.util.Map.of(Level.LEVEL_0, Level.POOLROOMS, Level.POOLROOMS, Level.LEVEL_1,
+                Level.LEVEL_1, Level.LEVEL_4, Level.LEVEL_4, Level.PLAINS);
+        java.util.Map<Level, Level> prev = java.util.Map.of(Level.POOLROOMS, Level.LEVEL_0, Level.LEVEL_1, Level.POOLROOMS,
+                Level.LEVEL_4, Level.LEVEL_1, Level.PLAINS, Level.LEVEL_4);
+        int forwardDistricts = 0;
         for (int dx = -3; dx <= 3; dx++) {
             for (int dz = -3; dz <= 3; dz++) {
-                long mandatory = g.districtFeatures(dx, dz).stream().filter(f -> f.isTransition() && f.def().chance() >= 1.0).count();
-                assertTrue(mandatory >= 1, level + " district " + dx + "," + dz);
+                boolean forward = false;
+                for (Feature f : g.districtFeatures(dx, dz)) {
+                    if (!f.isTransition()) continue;
+                    Dest d = f.dest();
+                    if (d.isExit()) {
+                        assertEquals(Level.PLAINS, level, "exits only exist in the Plains");
+                        forward = true;
+                    } else {
+                        assertTrue(d.level() == next.get(level) || d.level() == prev.get(level),
+                                level + " leads to " + d.level() + ", which is not next or previous in the chain");
+                        if (d.level() == next.get(level)) forward = true;
+                    }
+                }
+                if (forward) forwardDistricts++;
+                // past Level 0 the way on is guaranteed in every district
+                if (level != Level.LEVEL_0) assertTrue(forward, level + " district " + dx + "," + dz + " has no way on");
             }
+        }
+        if (level == Level.LEVEL_0) {
+            // rare, but not absent: somewhere between 15% and 60% of districts
+            assertTrue(forwardDistricts >= 7 && forwardDistricts <= 30, "Level 0 seams in " + forwardDistricts + "/49 districts");
         }
     }
 

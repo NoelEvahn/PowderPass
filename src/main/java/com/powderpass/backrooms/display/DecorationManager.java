@@ -192,9 +192,10 @@ public final class DecorationManager implements Listener {
 
     private List<Instance> spawnChunk(WorldState ws, int cx, int cz) {
         List<Instance> out = new ArrayList<>();
-        int used = 0;
+        int used = 0, details = 0;
         float view = cfg().viewRange;
         for (DecorSpec spec : ws.gen.decorations(cx, cz)) {
+            if (spec.tier > 0 && (!keepDetail(ws.gen.level, spec) || details >= cfg().detailMaxPerChunk)) continue;
             Model model;
             try {
                 model = ModelLibrary.build(spec.model, spec.seed);
@@ -209,7 +210,8 @@ public final class DecorationManager implements Listener {
             int n = model.entityCount();
             if (used + n > cfg().maxPerChunk || ws.entities + n > cfg().maxPerWorld) continue;
             Location anchor = new Location(ws.world, spec.x, spec.y, spec.z, 0, 0);
-            float range = model.viewRange > 0 ? model.viewRange : view;
+            if (spec.tier > 0 && details + n > cfg().detailMaxPerChunk) continue;
+            float range = spec.tier > 0 ? cfg().detailViewRange : model.viewRange > 0 ? model.viewRange : view;
             Matrix4f base = new Matrix4f()
                     .rotateY((float) Math.toRadians(-spec.yaw))
                     .rotateX((float) Math.toRadians(spec.pitch))
@@ -222,10 +224,24 @@ public final class DecorationManager implements Listener {
                 if (p.kind == Part.Kind.INTERACTION) interactions.put(inst.ents[i].getUniqueId(), inst);
             }
             used += n;
+            if (spec.tier > 0) details += n;
             ws.entities += n;
             out.add(inst);
         }
         return out;
+    }
+
+    /** Runtime density filter for surface details (tiers 1-3), using each spec's deterministic rank. */
+    boolean keepDetail(com.powderpass.backrooms.Level level, DecorSpec spec) {
+        var c = cfg();
+        if (!c.detailsEnabled || !c.detailLevelEnabled.getOrDefault(level, true)) return false;
+        double dens = c.detailDensity * c.detailLevelDensity.getOrDefault(level, 1.0) * (c.performanceMode ? 0.4 : 1.0);
+        double keep = switch (spec.tier) {
+            case DecorSpec.TIER_ARCH -> dens;
+            case DecorSpec.TIER_AGING -> c.performanceMode ? 0 : dens * c.detailAging;
+            default -> dens * c.detailEnvironment * (c.performanceMode ? 0.3 : 1.0);
+        };
+        return spec.rank < keep;
     }
 
     private void despawnList(WorldState ws, List<Instance> list) {
@@ -351,7 +367,17 @@ public final class DecorationManager implements Listener {
                 w.spawnParticle(em.particle(), l, em.count(), em.spread(), em.spread() * 0.5, em.spread(), em.speed());
             }
             if (em.sound() != null) {
-                w.playSound(l, em.sound(), SoundCategory.AMBIENT, em.volume(), em.pitch() * (0.95f + rnd.nextFloat() * 0.1f));
+                float pitch = em.pitch() * (0.95f + rnd.nextFloat() * 0.1f);
+                if (em.sound() == org.bukkit.Sound.BLOCK_BEACON_AMBIENT) {
+                    // fixture hum: players with the custom pack hear the real ballast loop instead
+                    for (Player p : w.getPlayers()) {
+                        if (p.getLocation().distanceSquared(l) < 24 * 24 && !plugin.audio().custom(p)) {
+                            p.playSound(l, em.sound(), SoundCategory.AMBIENT, em.volume(), pitch);
+                        }
+                    }
+                } else {
+                    w.playSound(l, em.sound(), SoundCategory.AMBIENT, em.volume(), pitch);
+                }
             }
         }
     }

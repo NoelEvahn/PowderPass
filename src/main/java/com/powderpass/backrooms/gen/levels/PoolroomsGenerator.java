@@ -22,12 +22,15 @@ import java.util.List;
  */
 public final class PoolroomsGenerator extends LevelGenerator {
     private static final int FLOOR = 64;
-    static final int K_DRY = 0, K_SHALLOW = 1, K_DEEP = 2;
-    private static final String[] KINDS = {"dry", "shallow", "deep"};
+    static final int K_DRY = 0, K_SHALLOW = 1, K_DEEP = 2, K_RAISED = 3, K_TERRACE = 4;
+    private static final String[] KINDS = {"dry", "shallow", "deep", "raised", "terrace-pool"};
 
-    private static final B TILE = B.of(Material.WHITE_CONCRETE);
+    private static final B TILE = B.of(Material.SMOOTH_QUARTZ);
+    private static final B GROUT = B.of(Material.WHITE_CONCRETE);
     private static final B POOL = B.of(Material.LIGHT_BLUE_CONCRETE);
+    private static final B ACCENT = B.of(Material.LIGHT_BLUE_CONCRETE);
     private static final B UNDER = B.of(Material.WHITE_CONCRETE);
+    private static final B STEP = B.of(Material.QUARTZ_STAIRS, "[facing=west,half=bottom,waterlogged=true]");
     private static final B UNDERWATER_LIGHT = B.of(Material.LIGHT, "[level=12,waterlogged=true]");
 
     public PoolroomsGenerator(long seed, GenSettings gs) {
@@ -37,9 +40,9 @@ public final class PoolroomsGenerator extends LevelGenerator {
     @Override
     protected List<FeatureDef> featureDefs() {
         return List.of(
-                FeatureDef.transition("drain", Dest.to(Level.LEVEL_0), 1.0),
+                // onward to the Habitable Zone in every district; the drain back to Level 0 is rarer
                 FeatureDef.transition("service_door", Dest.to(Level.LEVEL_1), 1.0),
-                FeatureDef.transition("sunlit_arch", Dest.to(Level.PLAINS), gs.get("plains-chance", 0.7)),
+                FeatureDef.transition("drain", Dest.to(Level.LEVEL_0), gs.get("back-chance", 0.4)),
                 new FeatureDef("slide_tower", null, gs.get("landmark-chance", 0.5), 0, "slide"),
                 FeatureDef.landmark("lifeguard_post", gs.get("landmark-chance", 0.5)));
     }
@@ -59,6 +62,9 @@ public final class PoolroomsGenerator extends LevelGenerator {
         double w = wet(cx, cz) + (gs.get("water-ratio", 0.55) - 0.55);
         if (w > 0.60) return K_DEEP;
         if (w > 0.48) return K_SHALLOW;
+        // dry bays: some are raised platforms, a few of those hold a pool of their own one step up
+        double e = zone(cx, cz, 0xE1E7L, 60);
+        if (e > 0.72) return Rng.chance(ch(floor, cx, cz, 0x7E44), 0.4) ? K_TERRACE : K_RAISED;
         return K_DRY;
     }
 
@@ -70,6 +76,7 @@ public final class PoolroomsGenerator extends LevelGenerator {
 
     int ceil(int cx, int cz) {
         double n = zone(cx, cz, 0xCE11L, 90);
+        if (kind(0, cx, cz) >= K_RAISED) return Math.max(FLOOR + 10, n > 0.74 ? FLOOR + 16 : FLOOR + 10);
         if (n > 0.74) return FLOOR + 16;
         if (n > 0.55) return FLOOR + 10;
         return FLOOR + 7;
@@ -98,27 +105,48 @@ public final class PoolroomsGenerator extends LevelGenerator {
                 c.set(u, roofY, v, B.BEDROCK);
                 boolean pillar = u <= 1 && v <= 1;
                 if (pillar) {
-                    for (int y = c.fy; y < roofY; y++) c.set(u, y, v, TILE);
+                    // tiled pillar with a pale blue accent band at knee and head height
+                    for (int y = c.fy; y < roofY; y++) c.set(u, y, v, (y == c.fy + 1 || y == c.fy + 4) ? ACCENT : TILE);
                     continue;
                 }
+                int wx = c.wx(u), wz = c.wz(v);
+                boolean grid = Math.floorMod(wx, 4) == 0 || Math.floorMod(wz, 4) == 0;
+                B tile = grid ? GROUT : TILE, lining = grid ? GROUT : POOL;
                 switch (k) {
                     case K_SHALLOW -> {
-                        c.set(u, c.fy - 1, v, POOL);
+                        c.set(u, c.fy - 1, v, lining);
                         c.set(u, c.fy, v, B.WATER);
                     }
                     case K_DEEP -> {
-                        c.set(u, c.fy - d, v, POOL);
+                        c.set(u, c.fy - d, v, lining);
                         for (int y = c.fy - d + 1; y <= c.fy; y++) c.set(u, y, v, B.WATER);
+                        // submerged steps along the west side, so you can walk out instead of climbing
+                        if (u <= 3 && v >= 4 && v <= 8 && d >= 4) {
+                            int top = c.fy - u;
+                            for (int y = c.fy - d + 1; y < top; y++) c.set(u, y, v, POOL);
+                            c.set(u, top, v, STEP);
+                        }
                     }
-                    default -> c.set(u, c.fy, v, TILE);
+                    case K_RAISED, K_TERRACE -> {
+                        c.set(u, c.fy, v, tile);
+                        boolean inner = u >= 3 && u <= S - 2 && v >= 3 && v <= S - 2;
+                        if (k == K_TERRACE && inner) {
+                            c.set(u, c.fy, v, lining);
+                            c.set(u, c.fy + 1, v, B.WATER);
+                        } else if (u >= 1 && v >= 1) {
+                            c.set(u, c.fy + 1, v, tile);
+                        }
+                    }
+                    default -> c.set(u, c.fy, v, tile);
                 }
-                for (int y = c.fy + 1; y < ceil; y++) c.set(u, y, v, B.AIR);
+                int air0 = (k == K_RAISED || k == K_TERRACE) && u >= 1 && v >= 1 ? c.fy + 2 : c.fy + 1;
+                for (int y = air0; y < ceil; y++) c.set(u, y, v, B.AIR);
                 for (int y = ceil; y < roofY; y++) c.set(u, y, v, TILE);
                 boolean screenN = north != null && v == 0 && (u < north[0] || u >= north[0] + north[1]);
                 boolean screenW = west != null && u == 0 && (v < west[0] || v >= west[0] + west[1]);
                 if (screenN || screenW) {
                     int top = Math.min(ceil - 1, c.fy + (screenN ? north[2] : west[2]));
-                    int from = k == K_DEEP ? c.fy - d + 1 : k == K_SHALLOW ? c.fy : c.fy + 1;
+                    int from = k == K_DEEP ? c.fy - d + 1 : k == K_SHALLOW ? c.fy : k >= K_RAISED ? c.fy + 2 : c.fy + 1;
                     for (int y = from; y <= top; y++) c.set(u, y, v, TILE);
                 }
             }
@@ -134,15 +162,6 @@ public final class PoolroomsGenerator extends LevelGenerator {
                 for (int u = 5; u <= 7; u++) for (int v = 5; v <= 7; v++) c.set(u, c.fy - 8, v, B.of(Material.BLACK_CONCRETE));
             }
             case "service_door" -> booth(c, B.of(Material.GRAY_CONCRETE), B.of(Material.GRAY_CONCRETE));
-            case "sunlit_arch" -> {
-                for (int u = 3; u <= 9; u++) {
-                    for (int y = c.fy + 1; y < ceil; y++) {
-                        boolean opening = u >= 5 && u <= 7 && y <= c.fy + 4;
-                        c.set(u, y, 6, opening ? B.AIR : TILE);
-                    }
-                }
-                c.set(6, c.fy + 2, 6, B.light(15));
-            }
             case "slide_tower" -> {
                 for (int kk = 1; kk <= 4; kk++) {
                     for (int u = 3; u <= 4; u++) {
@@ -181,7 +200,6 @@ public final class PoolroomsGenerator extends LevelGenerator {
         return switch (f.id()) {
             case "drain" -> new int[]{5, -9, 5, 7, -6, 7};
             case "service_door" -> new int[]{6, 0, 6, 6, 1, 6};
-            case "sunlit_arch" -> new int[]{5, 0, 6, 7, 2, 6};
             case "slide_tower" -> new int[]{4, 4, 6, 4, 5, 7};
             default -> null;
         };
@@ -213,7 +231,6 @@ public final class PoolroomsGenerator extends LevelGenerator {
             switch (f.id()) {
                 case "drain" -> out.add(spec("drain_vortex", cx, cz, 6.5, fy - 8.95, 6.5, 0f, f.seed()));
                 case "service_door" -> out.add(spec("staff_sign", cx, cz, 6.5, fy + 3.3, 8.02, 0f, f.seed()));
-                case "sunlit_arch" -> out.add(spec("sunbeam", cx, cz, 6.5, fy, 6.5, 0f, f.seed()));
                 case "slide_tower" -> out.add(spec("water_slide", cx, cz, 5.0, fy + 4, 7.0, -90f, f.seed()));
                 case "lifeguard_post" -> out.add(spec("lifeguard_chair", cx, cz, 6.5, fy, 6.5, (float) (f.rot() * 90), f.seed())
                         .barrier(cx * S + 6, fy, cz * S + 6));
@@ -238,6 +255,44 @@ public final class PoolroomsGenerator extends LevelGenerator {
                 else if (r < 0.16) out.add(new DecorSpec("impossible_stairs", cx * S + 9.5, fy + 2.0, cz * S + 9.5, 135f, 0f, 0f, h));
                 else if (r < 0.19) out.add(spec("lifebuoy", cx, cz, 2.0, fy + 1.8, 1.0, -90f, h));
             }
+        }
+    }
+
+    // ------------------------------------------------------------------ surface details
+
+    private boolean wetKind(int k) {
+        return k == K_SHALLOW || k == K_DEEP;
+    }
+
+    @Override
+    protected void cellDetails(int floor, int cx, int cz, List<DecorSpec> out) {
+        if (featureAt(floor, cx, cz) != null) return;
+        int k = kind(floor, cx, cz);
+        long h = ch(floor, cx, cz, 0xD7A2);
+        double ox = cx * S, oz = cz * S;
+        double fy = FLOOR + 1;
+        int len = S - 2;
+        if (k == K_DRY) {
+            // coping along every edge where this dry bay meets water (skipping edges with a screen)
+            if (wetKind(kind(floor, cx - 1, cz)) && screen(cx, cz, 1) == null)
+                out.add(detail(DecorSpec.TIER_ARCH, Rng.hash(h, 1), "d:coping:" + len, ox, fy, oz + 2, 90f, 0f));
+            if (wetKind(kind(floor, cx, cz - 1)) && screen(cx, cz, 0) == null)
+                out.add(detail(DecorSpec.TIER_ARCH, Rng.hash(h, 2), "d:coping:" + len, ox + S, fy, oz, 180f, 0f));
+            if (wetKind(kind(floor, cx + 1, cz)) && screen(cx + 1, cz, 1) == null)
+                out.add(detail(DecorSpec.TIER_ARCH, Rng.hash(h, 3), "d:coping:" + len, ox + S, fy, oz + S, -90f, 0f));
+            if (wetKind(kind(floor, cx, cz + 1)) && screen(cx, cz + 1, 0) == null)
+                out.add(detail(DecorSpec.TIER_ARCH, Rng.hash(h, 4), "d:coping:" + len, ox + 2, fy, oz + S, 0f, 0f));
+        }
+        if (k == K_DEEP) {
+            // a recessed drain cover on the pool floor
+            out.add(detail(DecorSpec.TIER_ARCH, Rng.hash(h, 5), "d:drain:1.2", ox + 9.5, fy - depth(cx, cz) + 0.002, oz + 9.5, 0f, 0f));
+        }
+        // softened corner on the pillar edge facing into the bay
+        int top = ceil(cx, cz);
+        out.add(detail(DecorSpec.TIER_ARCH, Rng.hash(h, 6), "d:rcorner:smooth_quartz:" + (top - FLOOR - 1), ox + 2, fy, oz + 2, 0f, 0f));
+        // a small recessed grille low on the pillar's east face
+        if (k != K_DEEP && Rng.chance(Rng.hash(h, 7), 0.25)) {
+            out.add(detail(DecorSpec.TIER_ENV, Rng.hash(h, 8), "d:grille:0.6:0.3", ox + 2.003, fy + 0.25, oz + 1.7, -90f, 0f));
         }
     }
 }

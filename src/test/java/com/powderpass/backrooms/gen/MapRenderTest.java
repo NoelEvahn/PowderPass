@@ -43,7 +43,11 @@ class MapRenderTest {
         c(Material.STRIPPED_SPRUCE_WOOD, 0x8C6E44); c(Material.STONE_STAIRS, 0x7D7D7D); c(Material.SPRUCE_STAIRS, 0x73552F);
         c(Material.QUARTZ_STAIRS, 0xEBE5DE); c(Material.POLISHED_ANDESITE, 0x868886); c(Material.ANDESITE_STAIRS, 0x868886);
         c(Material.DARK_OAK_SLAB, 0x42301A); c(Material.CAULDRON, 0x4A4A4A); c(Material.BOOKSHELF, 0x6B5434);
-        c(Material.BLACK_CONCRETE, 0x101216); c(Material.BARRIER, 0xFF00FF); c(Material.LADDER, 0x9C7B45);
+        c(Material.BLACK_CONCRETE, 0x101216);
+        c(Material.END_STONE, 0xDBDE9E); c(Material.BONE_BLOCK, 0xE5E1CF); c(Material.BIRCH_PLANKS, 0xC5B57B);
+        c(Material.STRIPPED_BIRCH_WOOD, 0xC4B07B); c(Material.LIGHT_BLUE_WOOL, 0x3AAFD9); c(Material.LIGHT_GRAY_STAINED_GLASS, 0x99999D);
+        c(Material.MOSS_BLOCK, 0x596E2D); c(Material.COARSE_DIRT, 0x77553B); c(Material.TUFF, 0x6C6D66); c(Material.ANDESITE, 0x888888);
+        c(Material.SHORT_GRASS, 0x7FA35A); c(Material.TALL_GRASS, 0x7FA35A); c(Material.STONE_STAIRS, 0x7D7D7D); c(Material.BARRIER, 0xFF00FF); c(Material.LADDER, 0x9C7B45);
     }
 
     private static void c(Material m, int rgb) {
@@ -226,11 +230,11 @@ class MapRenderTest {
 
     private static String legendFor(Level l) {
         return switch (l) {
-            case LEVEL_0 -> "Sandstone walls, yellow carpet, brown stains, blue = damp puddles. The only maze.";
-            case LEVEL_1 -> "Concrete corridor grid; grey rooms off the halls; brown floor = safe rooms; blue = flooding.";
-            case POOLROOMS -> "Tiled bays between pillars; lighter blue = shallow, darker = deep.";
-            case LEVEL_4 -> "Office blocks split into rooms; dark = carpet, light = corridors, cyan = glass walls.";
-            case PLAINS -> "Grass field, dirt roads, white houses with dark roofs. Shading = height.";
+            case LEVEL_0 -> "End-stone walls with birch seams, yellow carpet, brown stains, blue = damp puddles. The only maze.";
+            case LEVEL_1 -> "Parking garage: drive aisles, yellow stall lines, columns, rare supply/safe rooms; blue = puddles.";
+            case POOLROOMS -> "Tiled bays between pillars; lighter blue = shallow, darker = deep; raised platforms and terrace pools.";
+            case LEVEL_4 -> "Office blocks split into rooms; grey / light-blue carpet sections, corridors, glass meeting rooms.";
+            case PLAINS -> "Grass with moss and coarse-dirt patches, dirt roads, wrong houses. Shading = height.";
         };
     }
 
@@ -248,6 +252,7 @@ class MapRenderTest {
             float t = Math.min(1f, depth / 9f);
             return blend(new Color(0x7CC8F0), new Color(0x0B3F9A), t);
         }
+        if (!Mats.passable(feet) && Mats.passable(head) && feet != Material.BARREL) return blend(color(feet), Color.WHITE, 0.15f); // raised floor
         boolean open = Mats.passable(feet) && Mats.passable(head);
         if (!open) {
             Material wall = Mats.passable(feet) ? head : feet;

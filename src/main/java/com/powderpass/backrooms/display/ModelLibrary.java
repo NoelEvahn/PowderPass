@@ -44,6 +44,7 @@ public final class ModelLibrary {
             }
         }
         Model m = new Model();
+        if (base.equals("d")) return Details.build(suffix, seed, m) ? m : null;
         switch (base) {
             // ---------------------------------------------------------------- Level 0
             case "chair" -> Shapes.chair(m, BIRCH_PLANKS, BROWN_WOOL);

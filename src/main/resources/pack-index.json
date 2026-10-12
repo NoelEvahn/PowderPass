@@ -1,0 +1,1056 @@
+{
+  "version": 1,
+  "sounds": {
+    "hum.fluorescent": {
+      "category": "ambient",
+      "duration_ticks": 160,
+      "loop": true,
+      "positional": true,
+      "variants": 3,
+      "profiles": [],
+      "muffled": false,
+      "stream": false,
+      "event_ticks": {
+        "hum.fluorescent": 160
+      }
+    },
+    "hum.fluorescent_dense": {
+      "category": "ambient",
+      "duration_ticks": 160,
+      "loop": true,
+      "positional": true,
+      "variants": 1,
+      "profiles": [],
+      "muffled": false,
+      "stream": false,
+      "event_ticks": {
+        "hum.fluorescent_dense": 160
+      }
+    },
+    "hum.mains": {
+      "category": "ambient",
+      "duration_ticks": 200,
+      "loop": true,
+      "positional": true,
+      "variants": 1,
+      "profiles": [],
+      "muffled": false,
+      "stream": true,
+      "event_ticks": {
+        "hum.mains": 200
+      }
+    },
+    "light.flicker": {
+      "category": "event",
+      "duration_ticks": 37,
+      "loop": false,
+      "positional": true,
+      "variants": 4,
+      "profiles": [],
+      "muffled": false,
+      "stream": false,
+      "event_ticks": {
+        "light.flicker": 37
+      }
+    },
+    "light.pop": {
+      "category": "event",
+      "duration_ticks": 12,
+      "loop": false,
+      "positional": true,
+      "variants": 3,
+      "profiles": [],
+      "muffled": false,
+      "stream": false,
+      "event_ticks": {
+        "light.pop": 12
+      }
+    },
+    "light.arc": {
+      "category": "event",
+      "duration_ticks": 26,
+      "loop": false,
+      "positional": true,
+      "variants": 3,
+      "profiles": [],
+      "muffled": false,
+      "stream": false,
+      "event_ticks": {
+        "light.arc": 26
+      }
+    },
+    "power.down": {
+      "category": "event",
+      "duration_ticks": 46,
+      "loop": false,
+      "positional": true,
+      "variants": 1,
+      "profiles": [],
+      "muffled": false,
+      "stream": false,
+      "event_ticks": {
+        "power.down": 46
+      }
+    },
+    "power.up": {
+      "category": "event",
+      "duration_ticks": 45,
+      "loop": false,
+      "positional": true,
+      "variants": 1,
+      "profiles": [],
+      "muffled": false,
+      "stream": false,
+      "event_ticks": {
+        "power.up": 45
+      }
+    },
+    "vent.hvac": {
+      "category": "ambient",
+      "duration_ticks": 200,
+      "loop": true,
+      "positional": true,
+      "variants": 1,
+      "profiles": [],
+      "muffled": false,
+      "stream": true,
+      "event_ticks": {
+        "vent.hvac": 200
+      }
+    },
+    "vent.small": {
+      "category": "ambient",
+      "duration_ticks": 160,
+      "loop": true,
+      "positional": true,
+      "variants": 1,
+      "profiles": [],
+      "muffled": false,
+      "stream": false,
+      "event_ticks": {
+        "vent.small": 160
+      }
+    },
+    "machine.distant": {
+      "category": "ambient",
+      "duration_ticks": 240,
+      "loop": true,
+      "positional": true,
+      "variants": 1,
+      "profiles": [],
+      "muffled": false,
+      "stream": true,
+      "event_ticks": {
+        "machine.distant": 240
+      }
+    },
+    "machine.start": {
+      "category": "event",
+      "duration_ticks": 83,
+      "loop": false,
+      "positional": true,
+      "variants": 1,
+      "profiles": [
+        "carpet",
+        "office",
+        "concrete",
+        "pool",
+        "corridor",
+        "open"
+      ],
+      "muffled": false,
+      "stream": false,
+      "event_ticks": {
+        "machine.start": 83,
+        "machine.start.carpet": 81,
+        "machine.start.office": 83,
+        "machine.start.concrete": 93,
+        "machine.start.pool": 115,
+        "machine.start.corridor": 83,
+        "machine.start.open": 81
+      }
+    },
+    "transformer.hum": {
+      "category": "ambient",
+      "duration_ticks": 160,
+      "loop": true,
+      "positional": true,
+      "variants": 1,
+      "profiles": [],
+      "muffled": false,
+      "stream": false,
+      "event_ticks": {
+        "transformer.hum": 160
+      }
+    },
+    "pipe.knock": {
+      "category": "event",
+      "duration_ticks": 46,
+      "loop": false,
+      "positional": true,
+      "variants": 3,
+      "profiles": [
+        "carpet",
+        "office",
+        "concrete",
+        "pool",
+        "corridor",
+        "open"
+      ],
+      "muffled": false,
+      "stream": false,
+      "event_ticks": {
+        "pipe.knock": 46,
+        "pipe.knock.carpet": 45,
+        "pipe.knock.office": 47,
+        "pipe.knock.concrete": 59,
+        "pipe.knock.pool": 87,
+        "pipe.knock.corridor": 48,
+        "pipe.knock.open": 45
+      }
+    },
+    "metal.creak": {
+      "category": "event",
+      "duration_ticks": 49,
+      "loop": false,
+      "positional": true,
+      "variants": 4,
+      "profiles": [
+        "carpet",
+        "office",
+        "concrete",
+        "pool",
+        "corridor",
+        "open"
+      ],
+      "muffled": false,
+      "stream": false,
+      "event_ticks": {
+        "metal.creak": 49,
+        "metal.creak.carpet": 47,
+        "metal.creak.office": 50,
+        "metal.creak.concrete": 69,
+        "metal.creak.pool": 101,
+        "metal.creak.corridor": 54,
+        "metal.creak.open": 47
+      }
+    },
+    "water.drip": {
+      "category": "event",
+      "duration_ticks": 12,
+      "loop": false,
+      "positional": true,
+      "variants": 5,
+      "profiles": [
+        "carpet",
+        "office",
+        "concrete",
+        "pool",
+        "corridor",
+        "open"
+      ],
+      "muffled": false,
+      "stream": false,
+      "event_ticks": {
+        "water.drip": 12,
+        "water.drip.carpet": 11,
+        "water.drip.office": 13,
+        "water.drip.concrete": 32,
+        "water.drip.pool": 68,
+        "water.drip.corridor": 18,
+        "water.drip.open": 11
+      }
+    },
+    "water.splash": {
+      "category": "event",
+      "duration_ticks": 37,
+      "loop": false,
+      "positional": true,
+      "variants": 3,
+      "profiles": [
+        "carpet",
+        "office",
+        "concrete",
+        "pool",
+        "corridor",
+        "open"
+      ],
+      "muffled": false,
+      "stream": false,
+      "event_ticks": {
+        "water.splash": 37,
+        "water.splash.carpet": 33,
+        "water.splash.office": 34,
+        "water.splash.concrete": 42,
+        "water.splash.pool": 71,
+        "water.splash.corridor": 35,
+        "water.splash.open": 32
+      }
+    },
+    "water.lap": {
+      "category": "ambient",
+      "duration_ticks": 200,
+      "loop": true,
+      "positional": true,
+      "variants": 2,
+      "profiles": [],
+      "muffled": false,
+      "stream": true,
+      "event_ticks": {
+        "water.lap": 200
+      }
+    },
+    "water.circulation": {
+      "category": "ambient",
+      "duration_ticks": 200,
+      "loop": true,
+      "positional": true,
+      "variants": 1,
+      "profiles": [],
+      "muffled": false,
+      "stream": true,
+      "event_ticks": {
+        "water.circulation": 200
+      }
+    },
+    "water.bubbles": {
+      "category": "event",
+      "duration_ticks": 39,
+      "loop": false,
+      "positional": true,
+      "variants": 3,
+      "profiles": [],
+      "muffled": false,
+      "stream": false,
+      "event_ticks": {
+        "water.bubbles": 39
+      }
+    },
+    "water.underwater": {
+      "category": "ambient",
+      "duration_ticks": 160,
+      "loop": true,
+      "positional": false,
+      "variants": 1,
+      "profiles": [],
+      "muffled": false,
+      "stream": false,
+      "event_ticks": {
+        "water.underwater": 160
+      }
+    },
+    "room.damp": {
+      "category": "ambient",
+      "duration_ticks": 200,
+      "loop": true,
+      "positional": true,
+      "variants": 1,
+      "profiles": [],
+      "muffled": false,
+      "stream": true,
+      "event_ticks": {
+        "room.damp": 200
+      }
+    },
+    "knock.distant": {
+      "category": "event",
+      "duration_ticks": 25,
+      "loop": false,
+      "positional": true,
+      "variants": 4,
+      "profiles": [
+        "carpet",
+        "office",
+        "concrete",
+        "pool",
+        "corridor",
+        "open"
+      ],
+      "muffled": true,
+      "stream": false,
+      "event_ticks": {
+        "knock.distant": 25,
+        "knock.distant.carpet": 22,
+        "knock.distant.office": 25,
+        "knock.distant.concrete": 42,
+        "knock.distant.pool": 79,
+        "knock.distant.corridor": 28,
+        "knock.distant.open": 22,
+        "knock.distant.carpet.muffled": 25,
+        "knock.distant.office.muffled": 26,
+        "knock.distant.concrete.muffled": 42,
+        "knock.distant.pool.muffled": 78,
+        "knock.distant.corridor.muffled": 29,
+        "knock.distant.open.muffled": 24
+      }
+    },
+    "impact.distant": {
+      "category": "event",
+      "duration_ticks": 50,
+      "loop": false,
+      "positional": true,
+      "variants": 3,
+      "profiles": [
+        "carpet",
+        "office",
+        "concrete",
+        "pool",
+        "corridor",
+        "open"
+      ],
+      "muffled": true,
+      "stream": false,
+      "event_ticks": {
+        "impact.distant": 50,
+        "impact.distant.carpet": 51,
+        "impact.distant.office": 53,
+        "impact.distant.concrete": 56,
+        "impact.distant.pool": 80,
+        "impact.distant.corridor": 52,
+        "impact.distant.open": 51,
+        "impact.distant.carpet.muffled": 54,
+        "impact.distant.office.muffled": 54,
+        "impact.distant.concrete.muffled": 56,
+        "impact.distant.pool.muffled": 80,
+        "impact.distant.corridor.muffled": 54,
+        "impact.distant.open.muffled": 53
+      }
+    },
+    "step.carpet": {
+      "category": "event",
+      "duration_ticks": 13,
+      "loop": false,
+      "positional": true,
+      "variants": 6,
+      "profiles": [
+        "carpet",
+        "office",
+        "concrete",
+        "pool",
+        "corridor",
+        "open"
+      ],
+      "muffled": false,
+      "stream": false,
+      "event_ticks": {
+        "step.carpet": 13,
+        "step.carpet.carpet": 11,
+        "step.carpet.office": 15,
+        "step.carpet.concrete": 35,
+        "step.carpet.pool": 68,
+        "step.carpet.corridor": 17,
+        "step.carpet.open": 11
+      }
+    },
+    "step.concrete": {
+      "category": "event",
+      "duration_ticks": 10,
+      "loop": false,
+      "positional": true,
+      "variants": 6,
+      "profiles": [
+        "carpet",
+        "office",
+        "concrete",
+        "pool",
+        "corridor",
+        "open"
+      ],
+      "muffled": false,
+      "stream": false,
+      "event_ticks": {
+        "step.concrete": 10,
+        "step.concrete.carpet": 8,
+        "step.concrete.office": 12,
+        "step.concrete.concrete": 27,
+        "step.concrete.pool": 52,
+        "step.concrete.corridor": 15,
+        "step.concrete.open": 8
+      }
+    },
+    "step.tile": {
+      "category": "event",
+      "duration_ticks": 10,
+      "loop": false,
+      "positional": true,
+      "variants": 6,
+      "profiles": [
+        "carpet",
+        "office",
+        "concrete",
+        "pool",
+        "corridor",
+        "open"
+      ],
+      "muffled": false,
+      "stream": false,
+      "event_ticks": {
+        "step.tile": 10,
+        "step.tile.carpet": 8,
+        "step.tile.office": 11,
+        "step.tile.concrete": 27,
+        "step.tile.pool": 53,
+        "step.tile.corridor": 15,
+        "step.tile.open": 7
+      }
+    },
+    "step.water": {
+      "category": "event",
+      "duration_ticks": 22,
+      "loop": false,
+      "positional": true,
+      "variants": 4,
+      "profiles": [
+        "carpet",
+        "office",
+        "concrete",
+        "pool",
+        "corridor",
+        "open"
+      ],
+      "muffled": false,
+      "stream": false,
+      "event_ticks": {
+        "step.water": 22,
+        "step.water.carpet": 20,
+        "step.water.office": 23,
+        "step.water.concrete": 38,
+        "step.water.pool": 71,
+        "step.water.corridor": 25,
+        "step.water.open": 20
+      }
+    },
+    "movement.distant": {
+      "category": "event",
+      "duration_ticks": 67,
+      "loop": false,
+      "positional": true,
+      "variants": 3,
+      "profiles": [
+        "carpet",
+        "office",
+        "concrete",
+        "pool",
+        "corridor",
+        "open"
+      ],
+      "muffled": true,
+      "stream": false,
+      "event_ticks": {
+        "movement.distant": 67,
+        "movement.distant.carpet": 65,
+        "movement.distant.office": 67,
+        "movement.distant.concrete": 78,
+        "movement.distant.pool": 109,
+        "movement.distant.corridor": 69,
+        "movement.distant.open": 65,
+        "movement.distant.carpet.muffled": 65,
+        "movement.distant.office.muffled": 65,
+        "movement.distant.concrete.muffled": 78,
+        "movement.distant.pool.muffled": 108,
+        "movement.distant.corridor.muffled": 69,
+        "movement.distant.open.muffled": 65
+      }
+    },
+    "breath.heavy": {
+      "category": "event",
+      "duration_ticks": 80,
+      "loop": false,
+      "positional": true,
+      "variants": 3,
+      "profiles": [],
+      "muffled": false,
+      "stream": false,
+      "event_ticks": {
+        "breath.heavy": 80
+      }
+    },
+    "radio.static": {
+      "category": "ambient",
+      "duration_ticks": 160,
+      "loop": true,
+      "positional": true,
+      "variants": 1,
+      "profiles": [],
+      "muffled": false,
+      "stream": false,
+      "event_ticks": {
+        "radio.static": 160
+      }
+    },
+    "speaker.broken": {
+      "category": "event",
+      "duration_ticks": 40,
+      "loop": false,
+      "positional": true,
+      "variants": 3,
+      "profiles": [],
+      "muffled": false,
+      "stream": false,
+      "event_ticks": {
+        "speaker.broken": 40
+      }
+    },
+    "voice.whisper": {
+      "category": "voice",
+      "duration_ticks": 80,
+      "loop": false,
+      "positional": true,
+      "variants": 6,
+      "profiles": [
+        "carpet",
+        "office",
+        "concrete",
+        "pool",
+        "corridor",
+        "open"
+      ],
+      "muffled": false,
+      "stream": false,
+      "event_ticks": {
+        "voice.whisper": 80,
+        "voice.whisper.carpet": 83,
+        "voice.whisper.office": 88,
+        "voice.whisper.concrete": 105,
+        "voice.whisper.pool": 136,
+        "voice.whisper.corridor": 91,
+        "voice.whisper.open": 83
+      }
+    },
+    "voice.murmur": {
+      "category": "voice",
+      "duration_ticks": 76,
+      "loop": false,
+      "positional": true,
+      "variants": 4,
+      "profiles": [
+        "carpet",
+        "office",
+        "concrete",
+        "pool",
+        "corridor",
+        "open"
+      ],
+      "muffled": true,
+      "stream": false,
+      "event_ticks": {
+        "voice.murmur": 76,
+        "voice.murmur.carpet": 79,
+        "voice.murmur.office": 82,
+        "voice.murmur.concrete": 100,
+        "voice.murmur.pool": 133,
+        "voice.murmur.corridor": 86,
+        "voice.murmur.open": 79,
+        "voice.murmur.carpet.muffled": 83,
+        "voice.murmur.office.muffled": 84,
+        "voice.murmur.concrete.muffled": 99,
+        "voice.murmur.pool.muffled": 133,
+        "voice.murmur.corridor.muffled": 86,
+        "voice.murmur.open.muffled": 82
+      }
+    },
+    "voice.conversation": {
+      "category": "voice",
+      "duration_ticks": 129,
+      "loop": false,
+      "positional": true,
+      "variants": 4,
+      "profiles": [],
+      "muffled": true,
+      "stream": false,
+      "event_ticks": {
+        "voice.conversation": 129,
+        "voice.conversation.muffled": 130
+      }
+    },
+    "voice.phrase": {
+      "category": "voice",
+      "duration_ticks": 40,
+      "loop": false,
+      "positional": true,
+      "variants": 4,
+      "profiles": [
+        "carpet",
+        "office",
+        "concrete",
+        "pool",
+        "corridor",
+        "open"
+      ],
+      "muffled": true,
+      "stream": false,
+      "event_ticks": {
+        "voice.phrase": 40,
+        "voice.phrase.carpet": 41,
+        "voice.phrase.office": 45,
+        "voice.phrase.concrete": 61,
+        "voice.phrase.pool": 94,
+        "voice.phrase.corridor": 50,
+        "voice.phrase.open": 40,
+        "voice.phrase.carpet.muffled": 45,
+        "voice.phrase.office.muffled": 46,
+        "voice.phrase.concrete.muffled": 61,
+        "voice.phrase.pool.muffled": 94,
+        "voice.phrase.corridor.muffled": 50,
+        "voice.phrase.open.muffled": 45
+      }
+    },
+    "voice.announce": {
+      "category": "voice",
+      "duration_ticks": 94,
+      "loop": false,
+      "positional": true,
+      "variants": 3,
+      "profiles": [
+        "carpet",
+        "office",
+        "concrete",
+        "pool",
+        "corridor",
+        "open"
+      ],
+      "muffled": false,
+      "stream": false,
+      "event_ticks": {
+        "voice.announce": 94,
+        "voice.announce.carpet": 90,
+        "voice.announce.office": 92,
+        "voice.announce.concrete": 100,
+        "voice.announce.pool": 138,
+        "voice.announce.corridor": 91,
+        "voice.announce.open": 91
+      }
+    },
+    "voice.radio": {
+      "category": "voice",
+      "duration_ticks": 56,
+      "loop": false,
+      "positional": true,
+      "variants": 3,
+      "profiles": [],
+      "muffled": false,
+      "stream": false,
+      "event_ticks": {
+        "voice.radio": 56
+      }
+    },
+    "voice.cry": {
+      "category": "voice",
+      "duration_ticks": 107,
+      "loop": false,
+      "positional": true,
+      "variants": 2,
+      "profiles": [
+        "carpet",
+        "office",
+        "concrete",
+        "pool",
+        "corridor",
+        "open"
+      ],
+      "muffled": false,
+      "stream": false,
+      "event_ticks": {
+        "voice.cry": 107,
+        "voice.cry.carpet": 102,
+        "voice.cry.office": 100,
+        "voice.cry.concrete": 103,
+        "voice.cry.pool": 121,
+        "voice.cry.corridor": 101,
+        "voice.cry.open": 100
+      }
+    },
+    "office.ac": {
+      "category": "ambient",
+      "duration_ticks": 200,
+      "loop": true,
+      "positional": true,
+      "variants": 1,
+      "profiles": [],
+      "muffled": false,
+      "stream": true,
+      "event_ticks": {
+        "office.ac": 200
+      }
+    },
+    "office.printer": {
+      "category": "event",
+      "duration_ticks": 79,
+      "loop": false,
+      "positional": true,
+      "variants": 2,
+      "profiles": [
+        "carpet",
+        "office",
+        "concrete",
+        "pool",
+        "corridor",
+        "open"
+      ],
+      "muffled": false,
+      "stream": false,
+      "event_ticks": {
+        "office.printer": 79,
+        "office.printer.carpet": 77,
+        "office.printer.office": 79,
+        "office.printer.concrete": 91,
+        "office.printer.pool": 116,
+        "office.printer.corridor": 83,
+        "office.printer.open": 77
+      }
+    },
+    "office.phone": {
+      "category": "event",
+      "duration_ticks": 76,
+      "loop": false,
+      "positional": true,
+      "variants": 1,
+      "profiles": [
+        "carpet",
+        "office",
+        "concrete",
+        "pool",
+        "corridor",
+        "open"
+      ],
+      "muffled": true,
+      "stream": false,
+      "event_ticks": {
+        "office.phone": 76,
+        "office.phone.carpet": 74,
+        "office.phone.office": 76,
+        "office.phone.concrete": 90,
+        "office.phone.pool": 127,
+        "office.phone.corridor": 80,
+        "office.phone.open": 74,
+        "office.phone.carpet.muffled": 75,
+        "office.phone.office.muffled": 76,
+        "office.phone.concrete.muffled": 91,
+        "office.phone.pool.muffled": 128,
+        "office.phone.corridor.muffled": 80,
+        "office.phone.open.muffled": 75
+      }
+    },
+    "office.click": {
+      "category": "event",
+      "duration_ticks": 10,
+      "loop": false,
+      "positional": true,
+      "variants": 4,
+      "profiles": [],
+      "muffled": false,
+      "stream": false,
+      "event_ticks": {
+        "office.click": 10
+      }
+    },
+    "wind.plains": {
+      "category": "ambient",
+      "duration_ticks": 240,
+      "loop": true,
+      "positional": true,
+      "variants": 2,
+      "profiles": [],
+      "muffled": false,
+      "stream": true,
+      "event_ticks": {
+        "wind.plains": 240
+      }
+    },
+    "grass.rustle": {
+      "category": "event",
+      "duration_ticks": 37,
+      "loop": false,
+      "positional": true,
+      "variants": 3,
+      "profiles": [],
+      "muffled": false,
+      "stream": false,
+      "event_ticks": {
+        "grass.rustle": 37
+      }
+    },
+    "plains.distant": {
+      "category": "event",
+      "duration_ticks": 133,
+      "loop": false,
+      "positional": true,
+      "variants": 3,
+      "profiles": [],
+      "muffled": false,
+      "stream": false,
+      "event_ticks": {
+        "plains.distant": 133
+      }
+    },
+    "silence.transition": {
+      "category": "event",
+      "duration_ticks": 60,
+      "loop": false,
+      "positional": false,
+      "variants": 1,
+      "profiles": [],
+      "muffled": false,
+      "stream": false,
+      "event_ticks": {
+        "silence.transition": 60
+      }
+    },
+    "music.lobby_1": {
+      "category": "music",
+      "duration_ticks": 1610,
+      "loop": false,
+      "positional": true,
+      "variants": 1,
+      "profiles": [],
+      "muffled": true,
+      "stream": true,
+      "event_ticks": {
+        "music.lobby_1": 1610,
+        "music.lobby_1.muffled": 1609
+      }
+    },
+    "music.lobby_2": {
+      "category": "music",
+      "duration_ticks": 1704,
+      "loop": false,
+      "positional": true,
+      "variants": 1,
+      "profiles": [],
+      "muffled": true,
+      "stream": true,
+      "event_ticks": {
+        "music.lobby_2": 1704,
+        "music.lobby_2.muffled": 1702
+      }
+    },
+    "music.pool_1": {
+      "category": "music",
+      "duration_ticks": 1835,
+      "loop": false,
+      "positional": true,
+      "variants": 1,
+      "profiles": [
+        "pool"
+      ],
+      "muffled": false,
+      "stream": true,
+      "event_ticks": {
+        "music.pool_1": 1835,
+        "music.pool_1.pool": 1854
+      }
+    },
+    "music.pool_2": {
+      "category": "music",
+      "duration_ticks": 1740,
+      "loop": false,
+      "positional": true,
+      "variants": 1,
+      "profiles": [
+        "pool"
+      ],
+      "muffled": false,
+      "stream": true,
+      "event_ticks": {
+        "music.pool_2": 1740,
+        "music.pool_2.pool": 1766
+      }
+    },
+    "music.office_radio_1": {
+      "category": "music",
+      "duration_ticks": 1402,
+      "loop": false,
+      "positional": true,
+      "variants": 1,
+      "profiles": [],
+      "muffled": true,
+      "stream": true,
+      "event_ticks": {
+        "music.office_radio_1": 1402,
+        "music.office_radio_1.muffled": 1403
+      }
+    },
+    "music.office_radio_2": {
+      "category": "music",
+      "duration_ticks": 1460,
+      "loop": false,
+      "positional": true,
+      "variants": 1,
+      "profiles": [],
+      "muffled": true,
+      "stream": true,
+      "event_ticks": {
+        "music.office_radio_2": 1460,
+        "music.office_radio_2.muffled": 1461
+      }
+    },
+    "music.plains_1": {
+      "category": "music",
+      "duration_ticks": 1766,
+      "loop": false,
+      "positional": true,
+      "variants": 1,
+      "profiles": [],
+      "muffled": false,
+      "stream": true,
+      "event_ticks": {
+        "music.plains_1": 1766
+      }
+    },
+    "music.plains_1.ambient": {
+      "category": "music",
+      "duration_ticks": 1766,
+      "loop": false,
+      "positional": false,
+      "variants": 1,
+      "profiles": [],
+      "muffled": false,
+      "stream": true,
+      "event_ticks": {
+        "music.plains_1.ambient": 1766
+      }
+    },
+    "music.plains_2": {
+      "category": "music",
+      "duration_ticks": 1683,
+      "loop": false,
+      "positional": true,
+      "variants": 1,
+      "profiles": [],
+      "muffled": false,
+      "stream": true,
+      "event_ticks": {
+        "music.plains_2": 1683
+      }
+    },
+    "music.plains_2.ambient": {
+      "category": "music",
+      "duration_ticks": 1683,
+      "loop": false,
+      "positional": false,
+      "variants": 1,
+      "profiles": [],
+      "muffled": false,
+      "stream": true,
+      "event_ticks": {
+        "music.plains_2.ambient": 1683
+      }
+    },
+    "music.garage_1": {
+      "category": "music",
+      "duration_ticks": 1640,
+      "loop": false,
+      "positional": true,
+      "variants": 1,
+      "profiles": [
+        "concrete"
+      ],
+      "muffled": false,
+      "stream": true,
+      "event_ticks": {
+        "music.garage_1": 1640,
+        "music.garage_1.concrete": 1646
+      }
+    }
+  }
+}

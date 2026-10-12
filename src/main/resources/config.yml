@@ -12,6 +12,9 @@ seed: 0
 world-prefix: "backrooms_"
 
 levels:
+  # The levels form a chain: Level 0 -> Poolrooms -> Habitable Zone -> Office -> Plains -> (exit).
+  # Each level's way onward appears in every district; a rarer way back leads to the previous level.
+  # The only exit is the giant doorframe in the Plains.
   level0:              # The Lobby: the only maze
     enabled: true
     biome: "minecraft:swamp"
@@ -20,37 +23,34 @@ levels:
       dark-zone-chance: 0.20   # sectors where the fixtures have died
       thick-wall-chance: 0.12  # abnormal wall thickness
       repeat-chance: 0.06      # regions that exactly repeat their neighbour
-      plains-door-chance: 0.6  # per district: a door with grass under it
-      exit-chance: 0.30        # per district (~190 blocks square): an EXIT door
+      poolrooms-chance: 0.35   # per district (~190 blocks square): the cold seam onward. Rare on purpose
       landmark-chance: 0.6
       decor-density: 1.0
       loop-chance: 0.16        # extra connections beyond the spanning maze
-  level1:              # Habitable Zone: a grid of endless concrete corridors
-    enabled: true
-    biome: "minecraft:plains"
-    generation:
-      grand-hall-chance: 0.15  # corridor lines that are 9 wide and 12 tall
-      room-chance: 0.7         # rooms carved beside each corridor stretch
-      cache-chance: 0.08
-      dark-zone-chance: 0.25
-      plains-chance: 0.7
-      decor-density: 1.0
   poolrooms:           # one continuous tiled hall of bays
     enabled: true
     biome: "minecraft:warm_ocean"
     generation:
       water-ratio: 0.55
       screen-chance: 0.2       # free-standing tile screens (always with an opening)
-      plains-chance: 0.7
+      back-chance: 0.4         # per district: the drain back down to Level 0
       landmark-chance: 0.5
+      decor-density: 1.0
+  level1:              # Habitable Zone: an endless underground parking garage
+    enabled: true
+    biome: "minecraft:plains"
+    generation:
+      supply-room-chance: 0.06 # per 32x32 bay: a rare supply room (or safe room)
+      dark-zone-chance: 0.25
+      back-chance: 0.4         # per district: the flooded stairwell back to the Poolrooms
+      landmark-chance: 0.3
       decor-density: 1.0
   level4:              # Abandoned Office: city blocks split into rooms
     enabled: true
     biome: "minecraft:the_void"
     generation:
       room-light-chance: 0.7
-      exit-chance: 0.45
-      plains-chance: 0.6
+      back-chance: 0.4         # per district: the stairwell back down to the garage
       landmark-chance: 0.5
       decor-density: 1.0
   plains:              # open sky, stuck at sunset
@@ -61,7 +61,8 @@ levels:
       roadside-house-chance: 0.5
       house-chance: 0.06
       colossus-chance: 0.6     # per 128x128 area: one colossal object
-      exit-chance: 0.5
+      back-chance: 0.4         # per district: the bunker hatch back to the Office
+      landmark-chance: 0.6
       decor-density: 1.0
 
 entry:
@@ -115,12 +116,73 @@ displays:
   enabled: true
   activation-radius-chunks: 3   # display props exist only near players
   outdoor-activation-radius-chunks: 8   # the plains: colossi must be visible from far away
-  max-entities-per-chunk: 60
+  max-entities-per-chunk: 80
   max-entities-per-world: 2500
   chunks-per-tick: 3            # activation work spread over ticks
   animation-interval-ticks: 4
   view-range: 0.7               # 1.0 = 64 blocks
   hazards: true                 # steam vents / transformers can hurt
+  # Thin display overlays on top of the real blocks: trims, seams, frames, pipes, coping (architecture),
+  # stains, cracks, peeling (aging) and small extras such as grass clumps (environment). They exist only
+  # near players, are never saved, and are capped per chunk separately from the props above.
+  details:
+    enabled: true
+    performance-mode: false       # keep only the most important architectural details
+    density: 1.0                  # 0..2, scales every detail tier
+    aging: 1.0                    # 0..2, surface deterioration intensity
+    environment: 1.0              # 0..2, frequency of small environmental extras
+    max-per-chunk: 28
+    view-range: 0.45              # 1.0 = 64 blocks; details only matter up close
+    levels:
+      level0: {enabled: true, density: 1.0}
+      poolrooms: {enabled: true, density: 1.0}
+      level1: {enabled: true, density: 1.0}
+      level4: {enabled: true, density: 1.0}
+      plains: {enabled: true, density: 1.0}
+
+audio:
+  # The positional soundscape. Needs the resource pack below to be loaded by the client; players without it
+  # keep the vanilla ambience. All audio is original and synthesised offline (see pack/MANIFEST.md).
+  enabled: true
+  ambient: true                  # looping physical sources: fixture hum, vents, water, machinery
+  music: true                    # rare, distant, discoverable music (radios, speakers)
+  voices: true                   # whispers, distant conversations, announcements
+  event-density: 1.0             # 0..4, how often one-shot events happen (silence is part of the design)
+  rare-frequency: 1.0            # 0..4, scales the rare events
+  music-frequency: 1.0           # 0.05..4
+  max-sources: 6                 # simultaneous looping sources per player
+  distance-scale: 1.0            # 0.25..3, scales hearing radii and event distances
+  acoustic-quality: medium       # low (no obstruction tests or reflections) | medium | high (recalculated more often)
+  levels: {level0: 1.0, poolrooms: 1.0, level1: 1.0, level4: 1.0, plains: 1.0}   # per-level loudness 0..2
+
+resource-pack:
+  # The pack is embedded in the plugin JAR and extracted to plugins/Backrooms/resourcepack/Backrooms-pack.zip.
+  # Clients must download it from a public URL. The default points at mc-packs.net, whose links are derived
+  # from the file's SHA-1 ({sha1} is filled in): upload the extracted zip there once per plugin version.
+  # The pack is only offered once the URL is confirmed reachable; the console explains what to do otherwise.
+  enabled: true
+  url: "https://download.mc-packs.net/pack/{sha1}.zip"
+  required: false                # true kicks players who decline it
+  prompt: "<gray>The Backrooms uses custom ambient sound. Accept to hear it."
+  host:
+    # Optional: serve the pack from this server. Only if your host exposes this port publicly.
+    enabled: false
+    bind: "0.0.0.0"
+    port: 8163
+    public-address: ""           # the address players reach, e.g. play.example.com
+
+bedrock:
+  # Bedrock players (Geyser/Floodgate) never receive the Java pack. Copy
+  # plugins/Backrooms/resourcepack/Backrooms-bedrock.mcpack into Geyser's packs folder, restart Geyser,
+  # and set this to true. Untested: if they hear nothing, set it back to false.
+  custom-sounds: false
+
+fog:
+  # Fog is made by lowering each player's server view distance inside a level: the client draws its fog at
+  # the edge of what it can see. 0 = leave the view distance alone. Restored when they leave the Backrooms.
+  enabled: true
+  bank-view-distance: 3          # during a rolling fog bank (the "fog" event)
+  levels: {level0: 0, poolrooms: 7, level1: 5, level4: 0, plains: 6}
 
 creatures:
   enabled: true

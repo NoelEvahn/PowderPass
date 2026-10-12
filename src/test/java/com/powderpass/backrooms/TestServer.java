@@ -57,6 +57,16 @@ final class TestServer extends ServerMock {
         }
 
         @Override
+        public int getSendViewDistance() {
+            return 10;
+        }
+
+        @Override
+        public int getViewDistance() {
+            return 10;
+        }
+
+        @Override
         public CompletableFuture<Chunk> getChunkAtAsync(int x, int z, boolean gen) {
             return CompletableFuture.completedFuture(getChunkAt(x, z));
         }

@@ -18,18 +18,23 @@ import org.bukkit.Material;
 import java.util.List;
 
 /**
- * Level 0 — The Lobby. The only maze. Four materials: wallpaper, carpet, a darker stain, ceiling tile.
- * Every light is a display fluorescent panel; whole sectors have simply stopped working.
+ * Level 0 — The Lobby. The only maze. End-stone wallpaper with birch seams every four blocks over a stripped-birch
+ * wainscot, yellow carpet, bone-tile ceiling. Every light is a display fluorescent panel over an invisible light
+ * block; whole sectors have simply stopped working. Deterioration (stains, faded and peeling paper) clusters in
+ * localised patches. The only way on is a rare cold seam into the Poolrooms; there is no exit here.
  */
 public final class Level0Generator extends RoomLevel {
     private static final int FLOOR = 64;
     static final int K_PLAIN = 0, K_THICK = 1, K_STUB = 2, K_PILLAR = 3, K_HALL = 4;
     private static final String[] KINDS = {"room", "thick-wall", "stub-wall", "pillar", "hall"};
 
-    private static final B WALL = B.of(Material.SMOOTH_SANDSTONE);
+    private static final B WALL = B.of(Material.END_STONE);
+    private static final B WALL_WARM = B.of(Material.SMOOTH_SANDSTONE);
+    private static final B SEAM = B.of(Material.BIRCH_PLANKS);
+    private static final B BASE = B.of(Material.STRIPPED_BIRCH_WOOD, "[axis=x]");
     private static final B CARPET = B.of(Material.YELLOW_TERRACOTTA);
     private static final B STAIN = B.of(Material.BROWN_TERRACOTTA);
-    private static final B CEILING = B.of(Material.WHITE_TERRACOTTA);
+    private static final B CEILING = B.of(Material.BONE_BLOCK, "[axis=y]");
     private static final B UNDER = B.of(Material.STONE);
 
     public Level0Generator(long seed, GenSettings gs) {
@@ -39,10 +44,8 @@ public final class Level0Generator extends RoomLevel {
     @Override
     protected List<FeatureDef> featureDefs() {
         return List.of(
-                FeatureDef.transition("stairwell", Dest.to(Level.LEVEL_1), 1.0),
-                FeatureDef.transition("seam", Dest.to(Level.POOLROOMS), 1.0).withEffect("intent"),
-                FeatureDef.transition("outside_door", Dest.to(Level.PLAINS), gs.get("plains-door-chance", 0.6)),
-                FeatureDef.transition("exit_door", Dest.EXIT, gs.get("exit-chance", 0.3)),
+                // rare on purpose: roughly one cold seam per 550 blocks of maze, and nothing else leads out
+                FeatureDef.transition("seam", Dest.to(Level.POOLROOMS), gs.get("poolrooms-chance", 0.35)).withEffect("intent"),
                 FeatureDef.landmark("phone_desk", gs.get("landmark-chance", 0.6)),
                 FeatureDef.landmark("chair_circle", gs.get("landmark-chance", 0.6) * 0.6));
     }
@@ -93,10 +96,14 @@ public final class Level0Generator extends RoomLevel {
         st.name = dark(cx, cz) ? "dead-sector" : damp(cx, cz) ? "damp" : "lobby";
         st.under = UNDER;
         st.above = UNDER;
-        st.wall = WALL;
+        // whole wall sections are a shade warmer: never cell by cell, always in broad patches
+        st.wall = zone(cx, cz, 0x7E11L, 48) > 0.68 ? WALL_WARM : WALL;
+        st.wallAlt = SEAM;
+        st.stripe = 4;
+        st.base = BASE;
         st.floor = CARPET;
         st.floorAlt = STAIN;
-        st.floorAltChance = damp(cx, cz) ? 0.12 : 0.03;
+        st.floorAltChance = damp(cx, cz) ? 0.08 : 0.012;
         st.ceil = CEILING;
         st.ceilY = ceilY(floor, cx, cz);
         st.doorH = low(cx, cz) ? 2 : 3;
@@ -173,21 +180,10 @@ public final class Level0Generator extends RoomLevel {
     @Override
     protected void feature(CellCtx c, Style st, Feature f) {
         switch (f.id()) {
-            case "stairwell" -> stairPit(c, st, B.of(Material.GRAY_CONCRETE), B.of(Material.GRAY_CONCRETE), Material.ANDESITE_STAIRS, B.light(9));
             case "seam" -> {
                 B tile = B.of(Material.WHITE_CONCRETE);
                 for (int u = 2; u <= 6; u++) for (int v = 2; v <= 6; v++) c.set(u, c.fy, v, tile);
                 for (int u = 3; u <= 5; u++) for (int v = 3; v <= 5; v++) for (int y = c.fy + 1; y < st.ceilY; y++) c.set(u, y, v, tile);
-            }
-            case "exit_door", "outside_door" -> {
-                for (int u = 3; u <= 5; u++) for (int y = c.fy + 1; y <= c.fy + 3; y++) c.set(u, y, 4, WALL);
-                Material door = f.id().equals("exit_door") ? Material.DARK_OAK_DOOR : Material.SPRUCE_DOOR;
-                c.set(4, c.fy + 1, 4, B.of(door, "[facing=south,half=lower,hinge=left,open=false]"));
-                c.set(4, c.fy + 2, 4, B.of(door, "[facing=south,half=upper,hinge=left,open=false]"));
-                if (f.id().equals("outside_door")) {
-                    c.set(4, c.fy, 3, B.of(Material.GRASS_BLOCK));
-                    c.set(4, c.fy, 5, B.of(Material.GRASS_BLOCK));
-                }
             }
             default -> {
             }
@@ -197,9 +193,7 @@ public final class Level0Generator extends RoomLevel {
     @Override
     protected int[] triggerBox(Feature f) {
         return switch (f.id()) {
-            case "stairwell" -> stairPitTrigger();
             case "seam" -> new int[]{2, 0, 2, 6, 1, 6};
-            case "exit_door", "outside_door" -> new int[]{4, 0, 4, 4, 1, 4};
             default -> null;
         };
     }
@@ -225,19 +219,10 @@ public final class Level0Generator extends RoomLevel {
         }
         if (f != null) {
             switch (f.id()) {
-                case "stairwell" -> {
-                    out.add(spec("sign_text", cx, cz, 4.5, fy + 1.2, 1.2, 0f, f.seed()));
-                    out.add(spec("wall_lamp", cx, cz, 4.5, fy - 1.5, 6.98, 180f, f.seed()));
-                }
                 case "seam" -> {
                     out.add(spec("drip_emitter", cx, cz, 4.5, ceil - 0.05, 4.5, 0f, f.seed()));
                     out.add(spec("graffiti", cx, cz, 2.95, fy + 1.2, 4.5, 90f, f.seed()));
                 }
-                case "exit_door" -> {
-                    out.add(spec("exit_sign", cx, cz, 4.5, fy + 2.75, 4.0, 180f, f.seed()));
-                    out.add(spec("exit_sign", cx, cz, 4.5, fy + 2.75, 5.0, 0f, f.seed()));
-                }
-                case "outside_door" -> out.add(spec("daylight_door", cx, cz, 4.5, fy, 4.5, 0f, f.seed()));
                 case "phone_desk" -> out.add(spec("phone_desk", cx, cz, 4.5, fy, 4.5, (float) (Rng.pick(f.seed(), 4) * 90), f.seed())
                         .barrier(cx * S + 4, fy, cz * S + 4));
                 case "chair_circle" -> {
@@ -280,6 +265,51 @@ public final class Level0Generator extends RoomLevel {
             double[] p = wallFace(cx, cz, side, 4.5, fy + 2.3);
             out.add(new DecorSpec("wall_clock", p[0], p[1], p[2], yawAwayFrom(side), 0f, 0f, h));
         }
+    }
+
+    @Override
+    protected void cellDetails(int floor, int cx, int cz, List<DecorSpec> out) {
+        int k = kind(floor, cx, cz);
+        int ceil = ceilY(floor, cx, cz);
+        int fy = floorY[floor] + 1;
+        long h = ch(floor, cx, cz, 0xD7A1);
+        double ox = cx * S, oz = cz * S;
+        // ceiling panel seams: one line each way through the cell, between the two fixtures
+        if (k == K_PLAIN) {
+            out.add(detail(DecorSpec.TIER_ARCH, Rng.hash(h, 1), "d:strip:light_gray_concrete:" + (S - 1) + ":0.008:0.04",
+                    ox + 1, ceil - 0.009, oz + 2.48, 0f, 0f));
+            out.add(detail(DecorSpec.TIER_ARCH, Rng.hash(h, 2), "d:strip:light_gray_concrete:" + (S - 1) + ":0.008:0.04",
+                    ox + 4.02, ceil - 0.009, oz + 1, 90f, 0f));
+        }
+        if (k == K_THICK || featureAt(floor, cx, cz) != null) return;
+        // deterioration: rare, and clustered where the building is "worse"
+        double w = wear(cx, cz, 0x3EA1L) + (damp(cx, cz) ? 0.5 : 0);
+        int side = closedSide(floor, cx, cz, h);
+        if (side >= 0 && Rng.chance(Rng.hash(h, 3), 0.05 + 0.45 * w)) {
+            // a brown water stain creeping down from the ceiling near a corner, with a run below it
+            double along = 1.15 + Rng.unit(Rng.hash(h, 4)) * 0.4, sw = 0.8 + Rng.unit(Rng.hash(h, 5)) * 0.6;
+            out.add(wallDetail(DecorSpec.TIER_AGING, Rng.hash(h, 6), "d:wpatch:brown_terracotta:" + f2(sw) + ":1.1", cx, cz, side, along, sw, ceil - 1.12));
+            if (Rng.chance(Rng.hash(h, 7), 0.5)) {
+                out.add(wallDetail(DecorSpec.TIER_AGING, Rng.hash(h, 8), "d:streak:brown_terracotta:1.4", cx, cz, side, along + sw * 0.5, 0, ceil - 1.1));
+            }
+        }
+        int side2 = (side + 2) % 4;
+        if (closed(floor, cx, cz, side2) && k != K_STUB) {
+            if (Rng.chance(Rng.hash(h, 9), 0.03 + 0.2 * w)) {
+                // a faded rectangle where something hung for years
+                out.add(wallDetail(DecorSpec.TIER_AGING, Rng.hash(h, 10), "d:wpatch:smooth_sandstone:1.3:0.9", cx, cz, side2, 3.3, 1.3, fy + 1.3));
+            } else if (Rng.chance(Rng.hash(h, 11), 0.015 + 0.12 * w)) {
+                out.add(wallDetail(DecorSpec.TIER_AGING, Rng.hash(h, 12), "d:peel:end_stone:white_terracotta:0.7:1.2", cx, cz, side2, 4.6, 0.7, ceil - 0.3));
+            }
+        }
+        if (Rng.chance(Rng.hash(h, 13), 0.02 + 0.25 * w)) {
+            double sx = 1.5 + Rng.unit(Rng.hash(h, 14)) * 3, sz = 1.5 + Rng.unit(Rng.hash(h, 15)) * 3;
+            out.add(detail(DecorSpec.TIER_AGING, Rng.hash(h, 16), "d:cpatch:terracotta:1.6:1.2", ox + sx, ceil, oz + sz, (float) Rng.pick(h, 4) * 90f, 0f));
+        }
+    }
+
+    static String f2(double d) {
+        return String.format(java.util.Locale.ROOT, "%.2f", d);
     }
 
     private int closedSide(int floor, int cx, int cz, long h) {

@@ -50,6 +50,9 @@ public class BackroomsPlugin extends JavaPlugin {
     private LootService loot;
     private FlashlightService flashlights;
     private com.powderpass.backrooms.world.FallEntry falls;
+    private com.powderpass.backrooms.event.FogService fog;
+    private com.powderpass.backrooms.audio.PackManager pack;
+    private com.powderpass.backrooms.audio.AudioEngine audio;
     private BukkitTask debugTask;
     private boolean consoleDebug;
 
@@ -79,6 +82,9 @@ public class BackroomsPlugin extends JavaPlugin {
         environment = new EnvironmentManager(this);
         flashlights = new FlashlightService(this);
         falls = new com.powderpass.backrooms.world.FallEntry(this);
+        fog = new com.powderpass.backrooms.event.FogService(this);
+        pack = new com.powderpass.backrooms.audio.PackManager(this);
+        audio = new com.powderpass.backrooms.audio.AudioEngine(this, pack);
 
         var pm = getServer().getPluginManager();
         pm.registerEvents(new PlayerListener(this), this);
@@ -86,6 +92,9 @@ public class BackroomsPlugin extends JavaPlugin {
         pm.registerEvents(new CombatListener(this), this);
         pm.registerEvents(decorations, this);
         pm.registerEvents(falls, this);
+        pm.registerEvents(fog, this);
+        pm.registerEvents(pack, this);
+        pm.registerEvents(audio, this);
 
         startServices();
 
@@ -106,6 +115,9 @@ public class BackroomsPlugin extends JavaPlugin {
         environment.start();
         flashlights.start();
         falls.start();
+        fog.start();
+        pack.start();
+        audio.start();
         if (debugTask != null) debugTask.cancel();
         debugTask = getServer().getScheduler().runTaskTimer(this, this::debugOverlay, 20L, 10L);
     }
@@ -113,6 +125,9 @@ public class BackroomsPlugin extends JavaPlugin {
     private void stopServices() {
         if (debugTask != null) debugTask.cancel();
         debugTask = null;
+        if (audio != null) audio.stop();
+        if (pack != null) pack.stop();
+        if (fog != null) fog.stop();
         if (falls != null) falls.stop();
         if (flashlights != null) flashlights.stop();
         if (environment != null) environment.stop();
@@ -212,6 +227,18 @@ public class BackroomsPlugin extends JavaPlugin {
 
     public TeleportService teleports() {
         return teleports;
+    }
+
+    public com.powderpass.backrooms.audio.PackManager pack() {
+        return pack;
+    }
+
+    public com.powderpass.backrooms.audio.AudioEngine audio() {
+        return audio;
+    }
+
+    public com.powderpass.backrooms.event.FogService fog() {
+        return fog;
     }
 
     public com.powderpass.backrooms.world.FallEntry falls() {

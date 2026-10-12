@@ -10,6 +10,7 @@ import com.powderpass.backrooms.gen.FeatureDef;
 import com.powderpass.backrooms.gen.GenSettings;
 import com.powderpass.backrooms.gen.LevelGenerator;
 import com.powderpass.backrooms.util.Rng;
+import com.powderpass.backrooms.util.ValueNoise;
 import org.bukkit.Material;
 
 import java.util.List;
@@ -35,6 +36,8 @@ public final class PlainsGenerator extends LevelGenerator {
     private static final B DIRT = B.of(Material.DIRT);
     private static final B STONE = B.of(Material.STONE);
     private static final B PATH = B.of(Material.DIRT_PATH);
+    private static final B MOSS = B.of(Material.MOSS_BLOCK);
+    private static final B COARSE = B.of(Material.COARSE_DIRT);
     private static final B HOUSE_WALL = B.of(Material.WHITE_CONCRETE);
     private static final B HOUSE_FLOOR = B.of(Material.SPRUCE_PLANKS);
     private static final B WINDOW = B.of(Material.TINTED_GLASS);
@@ -49,10 +52,12 @@ public final class PlainsGenerator extends LevelGenerator {
     @Override
     protected List<FeatureDef> featureDefs() {
         return List.of(
-                FeatureDef.transition("yellow_house", Dest.to(Level.LEVEL_0), 1.0),
-                FeatureDef.transition("backyard_pool", Dest.to(Level.POOLROOMS), 1.0),
-                FeatureDef.transition("bunker_hatch", Dest.to(Level.LEVEL_1), 1.0),
-                FeatureDef.transition("giant_doorframe", Dest.EXIT, gs.get("exit-chance", 0.5)));
+                // the end of the chain: the only exit there is, in every district; a hatch back down to the Office
+                FeatureDef.transition("giant_doorframe", Dest.EXIT, 1.0),
+                FeatureDef.transition("bunker_hatch", Dest.to(Level.LEVEL_4), gs.get("back-chance", 0.4)),
+                // still there, still wrong, but they lead nowhere now
+                FeatureDef.landmark("yellow_house", gs.get("landmark-chance", 0.6)),
+                FeatureDef.landmark("backyard_pool", gs.get("landmark-chance", 0.6)));
     }
 
     @Override
@@ -135,10 +140,12 @@ public final class PlainsGenerator extends LevelGenerator {
                 for (int y = bottomY + 1; y < c.fy - 3; y++) c.set(u, y, v, STONE);
                 for (int y = c.fy - 3; y < c.fy; y++) c.set(u, y, v, DIRT);
                 boolean onRoad = (roadN && v <= 2) || (roadW && u <= 2);
-                c.set(u, c.fy, v, onRoad ? PATH : GRASS);
+                c.set(u, c.fy, v, onRoad ? PATH : ground(c.wx(u), c.wz(v)));
+                if (!onRoad) vegetation(c, u, v);
             }
         }
         int k = kind(c.cx, c.cz);
+        if (k == K_FIELD && !roadN && !roadW) hollow(c);
         if (k == K_HOUSE) {
             house(c, orientation(c.cx, c.cz), variant(c.cx, c.cz), false);
         } else if (k == K_FEATURE) {
@@ -149,6 +156,47 @@ public final class PlainsGenerator extends LevelGenerator {
                 case "bunker_hatch" -> bunker(c);
                 default -> {
                 }
+            }
+        }
+    }
+
+    /**
+     * Ground cover: about 90% grass, 7% moss, 3% coarse dirt, always in smooth correlated patches (the thresholds
+     * are the noise's 93rd and 97th percentiles), never salt-and-pepper.
+     */
+    B ground(int wx, int wz) {
+        if (ValueNoise.sample(seed ^ 0x3055L, wx / 14.0, wz / 14.0) > 0.822) return MOSS;
+        if (ValueNoise.sample(seed ^ 0xC0A5L, wx / 11.0, wz / 11.0) > 0.8825) return COARSE;
+        return GRASS;
+    }
+
+    /** Sparse short grass in loose drifts, a rare tall clump; most of the field is bare. */
+    private void vegetation(CellCtx c, int u, int v) {
+        int wx = c.wx(u), wz = c.wz(v);
+        if (ValueNoise.sample(seed ^ 0x6A55L, wx / 5.0, wz / 5.0) < 0.86) return;
+        long h = c.h(u, 0, v, 0x6A5);
+        if (Rng.chance(h, 0.06)) {
+            c.set(u, c.fy + 1, v, B.of(Material.TALL_GRASS, "[half=lower]"));
+            c.set(u, c.fy + 2, v, B.of(Material.TALL_GRASS, "[half=upper]"));
+        } else if (Rng.chance(Rng.hash(h, 1), 0.5)) {
+            c.set(u, c.fy + 1, v, B.of(Material.SHORT_GRASS));
+        }
+    }
+
+    /** A rare, very shallow hollow in an open field: one block down, soft-edged. */
+    private void hollow(CellCtx c) {
+        if (zone(c.cx, c.cz, 0x401L, 96) < 0.86) return;
+        for (int u = Math.max(c.u0, 5); u <= Math.min(c.u1, S - 6); u++) {
+            for (int v = Math.max(c.v0, 5); v <= Math.min(c.v1, S - 6); v++) {
+                double d = Math.hypot(u - S / 2.0, v - S / 2.0) / 11.0;
+                double n = ValueNoise.sample(seed ^ 0x4011L, c.wx(u) / 6.0, c.wz(v) / 6.0) * 0.5;
+                if (d + n * 0.6 > 0.95) continue;
+                Material top = c.type(u, c.fy, v);
+                B g = top == Material.MOSS_BLOCK ? MOSS : top == Material.COARSE_DIRT ? COARSE : GRASS;
+                c.set(u, c.fy - 1, v, g);
+                c.set(u, c.fy, v, B.AIR);
+                c.set(u, c.fy + 1, v, B.AIR);
+                c.set(u, c.fy + 2, v, B.AIR);
             }
         }
     }
@@ -288,7 +336,7 @@ public final class PlainsGenerator extends LevelGenerator {
 
     @Override
     public boolean isSafeCell(int floor, int cx, int cz) {
-        return kind(cx, cz) == K_FIELD;
+        return kind(cx, cz) == K_FIELD && zone(cx, cz, 0x401L, 96) < 0.86; // never inside a hollow
     }
 
     @Override
@@ -361,6 +409,21 @@ public final class PlainsGenerator extends LevelGenerator {
                 else if (r < 0.11) out.add(spec("lone_doorframe", cx, cz, 20.5, fy, 12.5, (float) Rng.pick(h, 4) * 90f, h));
                 else if (r < 0.12) out.add(spec("exit_sign_post", cx, cz, 8.5, fy, 8.5, (float) Rng.pick(h, 360), h));
             }
+        }
+    }
+
+    @Override
+    protected void cellDetails(int floor, int cx, int cz, List<DecorSpec> out) {
+        if (kind(cx, cz) != K_FIELD || zone(cx, cz, 0x401L, 96) >= 0.86) return;
+        long h = ch(floor, cx, cz, 0xD7A5);
+        int fy = FLOOR + 1;
+        // a few thin grass-blade clumps per field, now and then a pale dry one; nothing else
+        for (int i = 0; i < 3; i++) {
+            long hi = Rng.hash(h, i);
+            double u = 5 + Rng.unit(hi) * (S - 10), v = 5 + Rng.unit(Rng.hash(hi, 1)) * (S - 10);
+            boolean dry = Rng.chance(Rng.hash(hi, 2), 0.2);
+            out.add(detail(DecorSpec.TIER_ENV, Rng.hash(hi, 3), "d:grass:" + (3 + Rng.pick(Rng.hash(hi, 4), 3)) + (dry ? ":dry" : ""),
+                    cx * S + u, fy, cz * S + v, (float) Rng.pick(Rng.hash(hi, 5), 360), 0f));
         }
     }
 }

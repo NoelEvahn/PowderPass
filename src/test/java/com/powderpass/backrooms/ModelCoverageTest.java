@@ -105,24 +105,33 @@ class ModelCoverageTest {
 
     @Test
     void decorationDensityStaysWithinBudget() {
+        // runtime caps (config defaults): functional props per chunk, and surface details per chunk on top
+        int funcCap = 80, detailCap = 28;
         for (Level level : Level.values()) {
             LevelGenerator g = Generators.create(level, 7, GenSettings.defaults());
-            int total = 0, chunks = 0, worst = 0;
+            int funcTotal = 0, detailTotal = 0, spawned = 0, chunks = 0, worstFunc = 0;
             for (int cx = -12; cx < 12; cx++) {
                 for (int cz = -12; cz < 12; cz++) {
-                    int n = 0;
+                    int func = 0, det = 0;
                     for (DecorSpec d : g.decorations(cx, cz)) {
                         Model m = ModelLibrary.build(d.model, d.seed);
-                        if (m != null) n += m.entityCount();
+                        if (m == null) continue;
+                        if (d.tier == 0) func += m.entityCount();
+                        else det += m.entityCount();
                     }
-                    total += n;
+                    funcTotal += func;
+                    detailTotal += det;
+                    spawned += Math.min(func, funcCap) + Math.min(det, detailCap);
                     chunks++;
-                    worst = Math.max(worst, n);
+                    worstFunc = Math.max(worstFunc, func);
                 }
             }
-            double avg = total / (double) chunks;
-            System.out.printf("%s: avg %.1f display entities/chunk, worst %d%n", level, avg, worst);
-            assertTrue(avg < 25, level + " average density too high: " + avg);
+            double avgFunc = funcTotal / (double) chunks, avgDetail = detailTotal / (double) chunks, avgSpawned = spawned / (double) chunks;
+            System.out.printf("%s: functional %.1f/chunk (worst %d), details %.1f/chunk, spawned after caps %.1f/chunk%n",
+                    level, avgFunc, worstFunc, avgDetail, avgSpawned);
+            assertTrue(avgFunc < 28, level + " functional density too high: " + avgFunc);
+            assertTrue(avgDetail < detailCap, level + " detail density above its cap on average: " + avgDetail);
+            assertTrue(avgSpawned < 50, level + " spawned density too high: " + avgSpawned);
         }
     }
 }

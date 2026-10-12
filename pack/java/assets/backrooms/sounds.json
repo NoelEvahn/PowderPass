@@ -1,0 +1,1633 @@
+{
+  "breath.heavy": {
+    "sounds": [
+      "backrooms:breath/heavy/dry_1",
+      "backrooms:breath/heavy/dry_2",
+      "backrooms:breath/heavy/dry_3"
+    ]
+  },
+  "grass.rustle": {
+    "sounds": [
+      "backrooms:grass/rustle/dry_1",
+      "backrooms:grass/rustle/dry_2",
+      "backrooms:grass/rustle/dry_3"
+    ]
+  },
+  "hum.fluorescent": {
+    "sounds": [
+      "backrooms:hum/fluorescent/dry_1",
+      "backrooms:hum/fluorescent/dry_2",
+      "backrooms:hum/fluorescent/dry_3"
+    ]
+  },
+  "hum.fluorescent_dense": {
+    "sounds": [
+      "backrooms:hum/fluorescent_dense/dry_1"
+    ]
+  },
+  "hum.mains": {
+    "sounds": [
+      {
+        "name": "backrooms:hum/mains/dry_1",
+        "stream": true
+      }
+    ]
+  },
+  "impact.distant": {
+    "sounds": [
+      "backrooms:impact/distant/dry_1",
+      "backrooms:impact/distant/dry_2",
+      "backrooms:impact/distant/dry_3"
+    ]
+  },
+  "impact.distant.carpet": {
+    "sounds": [
+      "backrooms:impact/distant/carpet_1",
+      "backrooms:impact/distant/carpet_2",
+      "backrooms:impact/distant/carpet_3"
+    ]
+  },
+  "impact.distant.carpet.muffled": {
+    "sounds": [
+      "backrooms:impact/distant/carpet_muffled_1",
+      "backrooms:impact/distant/carpet_muffled_2",
+      "backrooms:impact/distant/carpet_muffled_3"
+    ]
+  },
+  "impact.distant.concrete": {
+    "sounds": [
+      "backrooms:impact/distant/concrete_1",
+      "backrooms:impact/distant/concrete_2",
+      "backrooms:impact/distant/concrete_3"
+    ]
+  },
+  "impact.distant.concrete.muffled": {
+    "sounds": [
+      "backrooms:impact/distant/concrete_muffled_1",
+      "backrooms:impact/distant/concrete_muffled_2",
+      "backrooms:impact/distant/concrete_muffled_3"
+    ]
+  },
+  "impact.distant.corridor": {
+    "sounds": [
+      "backrooms:impact/distant/corridor_1",
+      "backrooms:impact/distant/corridor_2",
+      "backrooms:impact/distant/corridor_3"
+    ]
+  },
+  "impact.distant.corridor.muffled": {
+    "sounds": [
+      "backrooms:impact/distant/corridor_muffled_1",
+      "backrooms:impact/distant/corridor_muffled_2",
+      "backrooms:impact/distant/corridor_muffled_3"
+    ]
+  },
+  "impact.distant.office": {
+    "sounds": [
+      "backrooms:impact/distant/office_1",
+      "backrooms:impact/distant/office_2",
+      "backrooms:impact/distant/office_3"
+    ]
+  },
+  "impact.distant.office.muffled": {
+    "sounds": [
+      "backrooms:impact/distant/office_muffled_1",
+      "backrooms:impact/distant/office_muffled_2",
+      "backrooms:impact/distant/office_muffled_3"
+    ]
+  },
+  "impact.distant.open": {
+    "sounds": [
+      "backrooms:impact/distant/open_1",
+      "backrooms:impact/distant/open_2",
+      "backrooms:impact/distant/open_3"
+    ]
+  },
+  "impact.distant.open.muffled": {
+    "sounds": [
+      "backrooms:impact/distant/open_muffled_1",
+      "backrooms:impact/distant/open_muffled_2",
+      "backrooms:impact/distant/open_muffled_3"
+    ]
+  },
+  "impact.distant.pool": {
+    "sounds": [
+      "backrooms:impact/distant/pool_1",
+      "backrooms:impact/distant/pool_2",
+      "backrooms:impact/distant/pool_3"
+    ]
+  },
+  "impact.distant.pool.muffled": {
+    "sounds": [
+      "backrooms:impact/distant/pool_muffled_1",
+      "backrooms:impact/distant/pool_muffled_2",
+      "backrooms:impact/distant/pool_muffled_3"
+    ]
+  },
+  "knock.distant": {
+    "sounds": [
+      "backrooms:knock/distant/dry_1",
+      "backrooms:knock/distant/dry_2",
+      "backrooms:knock/distant/dry_3",
+      "backrooms:knock/distant/dry_4"
+    ]
+  },
+  "knock.distant.carpet": {
+    "sounds": [
+      "backrooms:knock/distant/carpet_1",
+      "backrooms:knock/distant/carpet_2",
+      "backrooms:knock/distant/carpet_3",
+      "backrooms:knock/distant/carpet_4"
+    ]
+  },
+  "knock.distant.carpet.muffled": {
+    "sounds": [
+      "backrooms:knock/distant/carpet_muffled_1",
+      "backrooms:knock/distant/carpet_muffled_2",
+      "backrooms:knock/distant/carpet_muffled_3",
+      "backrooms:knock/distant/carpet_muffled_4"
+    ]
+  },
+  "knock.distant.concrete": {
+    "sounds": [
+      "backrooms:knock/distant/concrete_1",
+      "backrooms:knock/distant/concrete_2",
+      "backrooms:knock/distant/concrete_3",
+      "backrooms:knock/distant/concrete_4"
+    ]
+  },
+  "knock.distant.concrete.muffled": {
+    "sounds": [
+      "backrooms:knock/distant/concrete_muffled_1",
+      "backrooms:knock/distant/concrete_muffled_2",
+      "backrooms:knock/distant/concrete_muffled_3",
+      "backrooms:knock/distant/concrete_muffled_4"
+    ]
+  },
+  "knock.distant.corridor": {
+    "sounds": [
+      "backrooms:knock/distant/corridor_1",
+      "backrooms:knock/distant/corridor_2",
+      "backrooms:knock/distant/corridor_3",
+      "backrooms:knock/distant/corridor_4"
+    ]
+  },
+  "knock.distant.corridor.muffled": {
+    "sounds": [
+      "backrooms:knock/distant/corridor_muffled_1",
+      "backrooms:knock/distant/corridor_muffled_2",
+      "backrooms:knock/distant/corridor_muffled_3",
+      "backrooms:knock/distant/corridor_muffled_4"
+    ]
+  },
+  "knock.distant.office": {
+    "sounds": [
+      "backrooms:knock/distant/office_1",
+      "backrooms:knock/distant/office_2",
+      "backrooms:knock/distant/office_3",
+      "backrooms:knock/distant/office_4"
+    ]
+  },
+  "knock.distant.office.muffled": {
+    "sounds": [
+      "backrooms:knock/distant/office_muffled_1",
+      "backrooms:knock/distant/office_muffled_2",
+      "backrooms:knock/distant/office_muffled_3",
+      "backrooms:knock/distant/office_muffled_4"
+    ]
+  },
+  "knock.distant.open": {
+    "sounds": [
+      "backrooms:knock/distant/open_1",
+      "backrooms:knock/distant/open_2",
+      "backrooms:knock/distant/open_3",
+      "backrooms:knock/distant/open_4"
+    ]
+  },
+  "knock.distant.open.muffled": {
+    "sounds": [
+      "backrooms:knock/distant/open_muffled_1",
+      "backrooms:knock/distant/open_muffled_2",
+      "backrooms:knock/distant/open_muffled_3",
+      "backrooms:knock/distant/open_muffled_4"
+    ]
+  },
+  "knock.distant.pool": {
+    "sounds": [
+      "backrooms:knock/distant/pool_1",
+      "backrooms:knock/distant/pool_2",
+      "backrooms:knock/distant/pool_3",
+      "backrooms:knock/distant/pool_4"
+    ]
+  },
+  "knock.distant.pool.muffled": {
+    "sounds": [
+      "backrooms:knock/distant/pool_muffled_1",
+      "backrooms:knock/distant/pool_muffled_2",
+      "backrooms:knock/distant/pool_muffled_3",
+      "backrooms:knock/distant/pool_muffled_4"
+    ]
+  },
+  "light.arc": {
+    "sounds": [
+      "backrooms:light/arc/dry_1",
+      "backrooms:light/arc/dry_2",
+      "backrooms:light/arc/dry_3"
+    ]
+  },
+  "light.flicker": {
+    "sounds": [
+      "backrooms:light/flicker/dry_1",
+      "backrooms:light/flicker/dry_2",
+      "backrooms:light/flicker/dry_3",
+      "backrooms:light/flicker/dry_4"
+    ]
+  },
+  "light.pop": {
+    "sounds": [
+      "backrooms:light/pop/dry_1",
+      "backrooms:light/pop/dry_2",
+      "backrooms:light/pop/dry_3"
+    ]
+  },
+  "machine.distant": {
+    "sounds": [
+      {
+        "name": "backrooms:machine/distant/dry_1",
+        "stream": true
+      }
+    ]
+  },
+  "machine.start": {
+    "sounds": [
+      "backrooms:machine/start/dry_1"
+    ]
+  },
+  "machine.start.carpet": {
+    "sounds": [
+      "backrooms:machine/start/carpet_1"
+    ]
+  },
+  "machine.start.concrete": {
+    "sounds": [
+      "backrooms:machine/start/concrete_1"
+    ]
+  },
+  "machine.start.corridor": {
+    "sounds": [
+      "backrooms:machine/start/corridor_1"
+    ]
+  },
+  "machine.start.office": {
+    "sounds": [
+      "backrooms:machine/start/office_1"
+    ]
+  },
+  "machine.start.open": {
+    "sounds": [
+      "backrooms:machine/start/open_1"
+    ]
+  },
+  "machine.start.pool": {
+    "sounds": [
+      "backrooms:machine/start/pool_1"
+    ]
+  },
+  "metal.creak": {
+    "sounds": [
+      "backrooms:metal/creak/dry_1",
+      "backrooms:metal/creak/dry_2",
+      "backrooms:metal/creak/dry_3",
+      "backrooms:metal/creak/dry_4"
+    ]
+  },
+  "metal.creak.carpet": {
+    "sounds": [
+      "backrooms:metal/creak/carpet_1",
+      "backrooms:metal/creak/carpet_2",
+      "backrooms:metal/creak/carpet_3",
+      "backrooms:metal/creak/carpet_4"
+    ]
+  },
+  "metal.creak.concrete": {
+    "sounds": [
+      "backrooms:metal/creak/concrete_1",
+      "backrooms:metal/creak/concrete_2",
+      "backrooms:metal/creak/concrete_3",
+      "backrooms:metal/creak/concrete_4"
+    ]
+  },
+  "metal.creak.corridor": {
+    "sounds": [
+      "backrooms:metal/creak/corridor_1",
+      "backrooms:metal/creak/corridor_2",
+      "backrooms:metal/creak/corridor_3",
+      "backrooms:metal/creak/corridor_4"
+    ]
+  },
+  "metal.creak.office": {
+    "sounds": [
+      "backrooms:metal/creak/office_1",
+      "backrooms:metal/creak/office_2",
+      "backrooms:metal/creak/office_3",
+      "backrooms:metal/creak/office_4"
+    ]
+  },
+  "metal.creak.open": {
+    "sounds": [
+      "backrooms:metal/creak/open_1",
+      "backrooms:metal/creak/open_2",
+      "backrooms:metal/creak/open_3",
+      "backrooms:metal/creak/open_4"
+    ]
+  },
+  "metal.creak.pool": {
+    "sounds": [
+      "backrooms:metal/creak/pool_1",
+      "backrooms:metal/creak/pool_2",
+      "backrooms:metal/creak/pool_3",
+      "backrooms:metal/creak/pool_4"
+    ]
+  },
+  "movement.distant": {
+    "sounds": [
+      "backrooms:movement/distant/dry_1",
+      "backrooms:movement/distant/dry_2",
+      "backrooms:movement/distant/dry_3"
+    ]
+  },
+  "movement.distant.carpet": {
+    "sounds": [
+      "backrooms:movement/distant/carpet_1",
+      "backrooms:movement/distant/carpet_2",
+      "backrooms:movement/distant/carpet_3"
+    ]
+  },
+  "movement.distant.carpet.muffled": {
+    "sounds": [
+      "backrooms:movement/distant/carpet_muffled_1",
+      "backrooms:movement/distant/carpet_muffled_2",
+      "backrooms:movement/distant/carpet_muffled_3"
+    ]
+  },
+  "movement.distant.concrete": {
+    "sounds": [
+      "backrooms:movement/distant/concrete_1",
+      "backrooms:movement/distant/concrete_2",
+      "backrooms:movement/distant/concrete_3"
+    ]
+  },
+  "movement.distant.concrete.muffled": {
+    "sounds": [
+      "backrooms:movement/distant/concrete_muffled_1",
+      "backrooms:movement/distant/concrete_muffled_2",
+      "backrooms:movement/distant/concrete_muffled_3"
+    ]
+  },
+  "movement.distant.corridor": {
+    "sounds": [
+      "backrooms:movement/distant/corridor_1",
+      "backrooms:movement/distant/corridor_2",
+      "backrooms:movement/distant/corridor_3"
+    ]
+  },
+  "movement.distant.corridor.muffled": {
+    "sounds": [
+      "backrooms:movement/distant/corridor_muffled_1",
+      "backrooms:movement/distant/corridor_muffled_2",
+      "backrooms:movement/distant/corridor_muffled_3"
+    ]
+  },
+  "movement.distant.office": {
+    "sounds": [
+      "backrooms:movement/distant/office_1",
+      "backrooms:movement/distant/office_2",
+      "backrooms:movement/distant/office_3"
+    ]
+  },
+  "movement.distant.office.muffled": {
+    "sounds": [
+      "backrooms:movement/distant/office_muffled_1",
+      "backrooms:movement/distant/office_muffled_2",
+      "backrooms:movement/distant/office_muffled_3"
+    ]
+  },
+  "movement.distant.open": {
+    "sounds": [
+      "backrooms:movement/distant/open_1",
+      "backrooms:movement/distant/open_2",
+      "backrooms:movement/distant/open_3"
+    ]
+  },
+  "movement.distant.open.muffled": {
+    "sounds": [
+      "backrooms:movement/distant/open_muffled_1",
+      "backrooms:movement/distant/open_muffled_2",
+      "backrooms:movement/distant/open_muffled_3"
+    ]
+  },
+  "movement.distant.pool": {
+    "sounds": [
+      "backrooms:movement/distant/pool_1",
+      "backrooms:movement/distant/pool_2",
+      "backrooms:movement/distant/pool_3"
+    ]
+  },
+  "movement.distant.pool.muffled": {
+    "sounds": [
+      "backrooms:movement/distant/pool_muffled_1",
+      "backrooms:movement/distant/pool_muffled_2",
+      "backrooms:movement/distant/pool_muffled_3"
+    ]
+  },
+  "music.garage_1": {
+    "sounds": [
+      {
+        "name": "backrooms:music/garage_1/dry_1",
+        "stream": true
+      }
+    ]
+  },
+  "music.garage_1.concrete": {
+    "sounds": [
+      {
+        "name": "backrooms:music/garage_1/concrete_1",
+        "stream": true
+      }
+    ]
+  },
+  "music.lobby_1": {
+    "sounds": [
+      {
+        "name": "backrooms:music/lobby_1/dry_1",
+        "stream": true
+      }
+    ]
+  },
+  "music.lobby_1.muffled": {
+    "sounds": [
+      {
+        "name": "backrooms:music/lobby_1/muffled_1",
+        "stream": true
+      }
+    ]
+  },
+  "music.lobby_2": {
+    "sounds": [
+      {
+        "name": "backrooms:music/lobby_2/dry_1",
+        "stream": true
+      }
+    ]
+  },
+  "music.lobby_2.muffled": {
+    "sounds": [
+      {
+        "name": "backrooms:music/lobby_2/muffled_1",
+        "stream": true
+      }
+    ]
+  },
+  "music.office_radio_1": {
+    "sounds": [
+      {
+        "name": "backrooms:music/office_radio_1/dry_1",
+        "stream": true
+      }
+    ]
+  },
+  "music.office_radio_1.muffled": {
+    "sounds": [
+      {
+        "name": "backrooms:music/office_radio_1/muffled_1",
+        "stream": true
+      }
+    ]
+  },
+  "music.office_radio_2": {
+    "sounds": [
+      {
+        "name": "backrooms:music/office_radio_2/dry_1",
+        "stream": true
+      }
+    ]
+  },
+  "music.office_radio_2.muffled": {
+    "sounds": [
+      {
+        "name": "backrooms:music/office_radio_2/muffled_1",
+        "stream": true
+      }
+    ]
+  },
+  "music.plains_1": {
+    "sounds": [
+      {
+        "name": "backrooms:music/plains_1/dry_1",
+        "stream": true
+      }
+    ]
+  },
+  "music.plains_1.ambient": {
+    "sounds": [
+      {
+        "name": "backrooms:music/plains_1/ambient/dry_1",
+        "stream": true
+      }
+    ]
+  },
+  "music.plains_2": {
+    "sounds": [
+      {
+        "name": "backrooms:music/plains_2/dry_1",
+        "stream": true
+      }
+    ]
+  },
+  "music.plains_2.ambient": {
+    "sounds": [
+      {
+        "name": "backrooms:music/plains_2/ambient/dry_1",
+        "stream": true
+      }
+    ]
+  },
+  "music.pool_1": {
+    "sounds": [
+      {
+        "name": "backrooms:music/pool_1/dry_1",
+        "stream": true
+      }
+    ]
+  },
+  "music.pool_1.pool": {
+    "sounds": [
+      {
+        "name": "backrooms:music/pool_1/pool_1",
+        "stream": true
+      }
+    ]
+  },
+  "music.pool_2": {
+    "sounds": [
+      {
+        "name": "backrooms:music/pool_2/dry_1",
+        "stream": true
+      }
+    ]
+  },
+  "music.pool_2.pool": {
+    "sounds": [
+      {
+        "name": "backrooms:music/pool_2/pool_1",
+        "stream": true
+      }
+    ]
+  },
+  "office.ac": {
+    "sounds": [
+      {
+        "name": "backrooms:office/ac/dry_1",
+        "stream": true
+      }
+    ]
+  },
+  "office.click": {
+    "sounds": [
+      "backrooms:office/click/dry_1",
+      "backrooms:office/click/dry_2",
+      "backrooms:office/click/dry_3",
+      "backrooms:office/click/dry_4"
+    ]
+  },
+  "office.phone": {
+    "sounds": [
+      "backrooms:office/phone/dry_1"
+    ]
+  },
+  "office.phone.carpet": {
+    "sounds": [
+      "backrooms:office/phone/carpet_1"
+    ]
+  },
+  "office.phone.carpet.muffled": {
+    "sounds": [
+      "backrooms:office/phone/carpet_muffled_1"
+    ]
+  },
+  "office.phone.concrete": {
+    "sounds": [
+      "backrooms:office/phone/concrete_1"
+    ]
+  },
+  "office.phone.concrete.muffled": {
+    "sounds": [
+      "backrooms:office/phone/concrete_muffled_1"
+    ]
+  },
+  "office.phone.corridor": {
+    "sounds": [
+      "backrooms:office/phone/corridor_1"
+    ]
+  },
+  "office.phone.corridor.muffled": {
+    "sounds": [
+      "backrooms:office/phone/corridor_muffled_1"
+    ]
+  },
+  "office.phone.office": {
+    "sounds": [
+      "backrooms:office/phone/office_1"
+    ]
+  },
+  "office.phone.office.muffled": {
+    "sounds": [
+      "backrooms:office/phone/office_muffled_1"
+    ]
+  },
+  "office.phone.open": {
+    "sounds": [
+      "backrooms:office/phone/open_1"
+    ]
+  },
+  "office.phone.open.muffled": {
+    "sounds": [
+      "backrooms:office/phone/open_muffled_1"
+    ]
+  },
+  "office.phone.pool": {
+    "sounds": [
+      "backrooms:office/phone/pool_1"
+    ]
+  },
+  "office.phone.pool.muffled": {
+    "sounds": [
+      "backrooms:office/phone/pool_muffled_1"
+    ]
+  },
+  "office.printer": {
+    "sounds": [
+      "backrooms:office/printer/dry_1",
+      "backrooms:office/printer/dry_2"
+    ]
+  },
+  "office.printer.carpet": {
+    "sounds": [
+      "backrooms:office/printer/carpet_1",
+      "backrooms:office/printer/carpet_2"
+    ]
+  },
+  "office.printer.concrete": {
+    "sounds": [
+      "backrooms:office/printer/concrete_1",
+      "backrooms:office/printer/concrete_2"
+    ]
+  },
+  "office.printer.corridor": {
+    "sounds": [
+      "backrooms:office/printer/corridor_1",
+      "backrooms:office/printer/corridor_2"
+    ]
+  },
+  "office.printer.office": {
+    "sounds": [
+      "backrooms:office/printer/office_1",
+      "backrooms:office/printer/office_2"
+    ]
+  },
+  "office.printer.open": {
+    "sounds": [
+      "backrooms:office/printer/open_1",
+      "backrooms:office/printer/open_2"
+    ]
+  },
+  "office.printer.pool": {
+    "sounds": [
+      "backrooms:office/printer/pool_1",
+      "backrooms:office/printer/pool_2"
+    ]
+  },
+  "pipe.knock": {
+    "sounds": [
+      "backrooms:pipe/knock/dry_1",
+      "backrooms:pipe/knock/dry_2",
+      "backrooms:pipe/knock/dry_3"
+    ]
+  },
+  "pipe.knock.carpet": {
+    "sounds": [
+      "backrooms:pipe/knock/carpet_1",
+      "backrooms:pipe/knock/carpet_2",
+      "backrooms:pipe/knock/carpet_3"
+    ]
+  },
+  "pipe.knock.concrete": {
+    "sounds": [
+      "backrooms:pipe/knock/concrete_1",
+      "backrooms:pipe/knock/concrete_2",
+      "backrooms:pipe/knock/concrete_3"
+    ]
+  },
+  "pipe.knock.corridor": {
+    "sounds": [
+      "backrooms:pipe/knock/corridor_1",
+      "backrooms:pipe/knock/corridor_2",
+      "backrooms:pipe/knock/corridor_3"
+    ]
+  },
+  "pipe.knock.office": {
+    "sounds": [
+      "backrooms:pipe/knock/office_1",
+      "backrooms:pipe/knock/office_2",
+      "backrooms:pipe/knock/office_3"
+    ]
+  },
+  "pipe.knock.open": {
+    "sounds": [
+      "backrooms:pipe/knock/open_1",
+      "backrooms:pipe/knock/open_2",
+      "backrooms:pipe/knock/open_3"
+    ]
+  },
+  "pipe.knock.pool": {
+    "sounds": [
+      "backrooms:pipe/knock/pool_1",
+      "backrooms:pipe/knock/pool_2",
+      "backrooms:pipe/knock/pool_3"
+    ]
+  },
+  "plains.distant": {
+    "sounds": [
+      "backrooms:plains/distant/dry_1",
+      "backrooms:plains/distant/dry_2",
+      "backrooms:plains/distant/dry_3"
+    ]
+  },
+  "power.down": {
+    "sounds": [
+      "backrooms:power/down/dry_1"
+    ]
+  },
+  "power.up": {
+    "sounds": [
+      "backrooms:power/up/dry_1"
+    ]
+  },
+  "radio.static": {
+    "sounds": [
+      "backrooms:radio/static/dry_1"
+    ]
+  },
+  "room.damp": {
+    "sounds": [
+      {
+        "name": "backrooms:room/damp/dry_1",
+        "stream": true
+      }
+    ]
+  },
+  "silence.transition": {
+    "sounds": [
+      "backrooms:silence/transition/dry_1"
+    ]
+  },
+  "speaker.broken": {
+    "sounds": [
+      "backrooms:speaker/broken/dry_1",
+      "backrooms:speaker/broken/dry_2",
+      "backrooms:speaker/broken/dry_3"
+    ]
+  },
+  "step.carpet": {
+    "sounds": [
+      "backrooms:step/carpet/dry_1",
+      "backrooms:step/carpet/dry_2",
+      "backrooms:step/carpet/dry_3",
+      "backrooms:step/carpet/dry_4",
+      "backrooms:step/carpet/dry_5",
+      "backrooms:step/carpet/dry_6"
+    ]
+  },
+  "step.carpet.carpet": {
+    "sounds": [
+      "backrooms:step/carpet/carpet_1",
+      "backrooms:step/carpet/carpet_2",
+      "backrooms:step/carpet/carpet_3",
+      "backrooms:step/carpet/carpet_4",
+      "backrooms:step/carpet/carpet_5",
+      "backrooms:step/carpet/carpet_6"
+    ]
+  },
+  "step.carpet.concrete": {
+    "sounds": [
+      "backrooms:step/carpet/concrete_1",
+      "backrooms:step/carpet/concrete_2",
+      "backrooms:step/carpet/concrete_3",
+      "backrooms:step/carpet/concrete_4",
+      "backrooms:step/carpet/concrete_5",
+      "backrooms:step/carpet/concrete_6"
+    ]
+  },
+  "step.carpet.corridor": {
+    "sounds": [
+      "backrooms:step/carpet/corridor_1",
+      "backrooms:step/carpet/corridor_2",
+      "backrooms:step/carpet/corridor_3",
+      "backrooms:step/carpet/corridor_4",
+      "backrooms:step/carpet/corridor_5",
+      "backrooms:step/carpet/corridor_6"
+    ]
+  },
+  "step.carpet.office": {
+    "sounds": [
+      "backrooms:step/carpet/office_1",
+      "backrooms:step/carpet/office_2",
+      "backrooms:step/carpet/office_3",
+      "backrooms:step/carpet/office_4",
+      "backrooms:step/carpet/office_5",
+      "backrooms:step/carpet/office_6"
+    ]
+  },
+  "step.carpet.open": {
+    "sounds": [
+      "backrooms:step/carpet/open_1",
+      "backrooms:step/carpet/open_2",
+      "backrooms:step/carpet/open_3",
+      "backrooms:step/carpet/open_4",
+      "backrooms:step/carpet/open_5",
+      "backrooms:step/carpet/open_6"
+    ]
+  },
+  "step.carpet.pool": {
+    "sounds": [
+      "backrooms:step/carpet/pool_1",
+      "backrooms:step/carpet/pool_2",
+      "backrooms:step/carpet/pool_3",
+      "backrooms:step/carpet/pool_4",
+      "backrooms:step/carpet/pool_5",
+      "backrooms:step/carpet/pool_6"
+    ]
+  },
+  "step.concrete": {
+    "sounds": [
+      "backrooms:step/concrete/dry_1",
+      "backrooms:step/concrete/dry_2",
+      "backrooms:step/concrete/dry_3",
+      "backrooms:step/concrete/dry_4",
+      "backrooms:step/concrete/dry_5",
+      "backrooms:step/concrete/dry_6"
+    ]
+  },
+  "step.concrete.carpet": {
+    "sounds": [
+      "backrooms:step/concrete/carpet_1",
+      "backrooms:step/concrete/carpet_2",
+      "backrooms:step/concrete/carpet_3",
+      "backrooms:step/concrete/carpet_4",
+      "backrooms:step/concrete/carpet_5",
+      "backrooms:step/concrete/carpet_6"
+    ]
+  },
+  "step.concrete.concrete": {
+    "sounds": [
+      "backrooms:step/concrete/concrete_1",
+      "backrooms:step/concrete/concrete_2",
+      "backrooms:step/concrete/concrete_3",
+      "backrooms:step/concrete/concrete_4",
+      "backrooms:step/concrete/concrete_5",
+      "backrooms:step/concrete/concrete_6"
+    ]
+  },
+  "step.concrete.corridor": {
+    "sounds": [
+      "backrooms:step/concrete/corridor_1",
+      "backrooms:step/concrete/corridor_2",
+      "backrooms:step/concrete/corridor_3",
+      "backrooms:step/concrete/corridor_4",
+      "backrooms:step/concrete/corridor_5",
+      "backrooms:step/concrete/corridor_6"
+    ]
+  },
+  "step.concrete.office": {
+    "sounds": [
+      "backrooms:step/concrete/office_1",
+      "backrooms:step/concrete/office_2",
+      "backrooms:step/concrete/office_3",
+      "backrooms:step/concrete/office_4",
+      "backrooms:step/concrete/office_5",
+      "backrooms:step/concrete/office_6"
+    ]
+  },
+  "step.concrete.open": {
+    "sounds": [
+      "backrooms:step/concrete/open_1",
+      "backrooms:step/concrete/open_2",
+      "backrooms:step/concrete/open_3",
+      "backrooms:step/concrete/open_4",
+      "backrooms:step/concrete/open_5",
+      "backrooms:step/concrete/open_6"
+    ]
+  },
+  "step.concrete.pool": {
+    "sounds": [
+      "backrooms:step/concrete/pool_1",
+      "backrooms:step/concrete/pool_2",
+      "backrooms:step/concrete/pool_3",
+      "backrooms:step/concrete/pool_4",
+      "backrooms:step/concrete/pool_5",
+      "backrooms:step/concrete/pool_6"
+    ]
+  },
+  "step.tile": {
+    "sounds": [
+      "backrooms:step/tile/dry_1",
+      "backrooms:step/tile/dry_2",
+      "backrooms:step/tile/dry_3",
+      "backrooms:step/tile/dry_4",
+      "backrooms:step/tile/dry_5",
+      "backrooms:step/tile/dry_6"
+    ]
+  },
+  "step.tile.carpet": {
+    "sounds": [
+      "backrooms:step/tile/carpet_1",
+      "backrooms:step/tile/carpet_2",
+      "backrooms:step/tile/carpet_3",
+      "backrooms:step/tile/carpet_4",
+      "backrooms:step/tile/carpet_5",
+      "backrooms:step/tile/carpet_6"
+    ]
+  },
+  "step.tile.concrete": {
+    "sounds": [
+      "backrooms:step/tile/concrete_1",
+      "backrooms:step/tile/concrete_2",
+      "backrooms:step/tile/concrete_3",
+      "backrooms:step/tile/concrete_4",
+      "backrooms:step/tile/concrete_5",
+      "backrooms:step/tile/concrete_6"
+    ]
+  },
+  "step.tile.corridor": {
+    "sounds": [
+      "backrooms:step/tile/corridor_1",
+      "backrooms:step/tile/corridor_2",
+      "backrooms:step/tile/corridor_3",
+      "backrooms:step/tile/corridor_4",
+      "backrooms:step/tile/corridor_5",
+      "backrooms:step/tile/corridor_6"
+    ]
+  },
+  "step.tile.office": {
+    "sounds": [
+      "backrooms:step/tile/office_1",
+      "backrooms:step/tile/office_2",
+      "backrooms:step/tile/office_3",
+      "backrooms:step/tile/office_4",
+      "backrooms:step/tile/office_5",
+      "backrooms:step/tile/office_6"
+    ]
+  },
+  "step.tile.open": {
+    "sounds": [
+      "backrooms:step/tile/open_1",
+      "backrooms:step/tile/open_2",
+      "backrooms:step/tile/open_3",
+      "backrooms:step/tile/open_4",
+      "backrooms:step/tile/open_5",
+      "backrooms:step/tile/open_6"
+    ]
+  },
+  "step.tile.pool": {
+    "sounds": [
+      "backrooms:step/tile/pool_1",
+      "backrooms:step/tile/pool_2",
+      "backrooms:step/tile/pool_3",
+      "backrooms:step/tile/pool_4",
+      "backrooms:step/tile/pool_5",
+      "backrooms:step/tile/pool_6"
+    ]
+  },
+  "step.water": {
+    "sounds": [
+      "backrooms:step/water/dry_1",
+      "backrooms:step/water/dry_2",
+      "backrooms:step/water/dry_3",
+      "backrooms:step/water/dry_4"
+    ]
+  },
+  "step.water.carpet": {
+    "sounds": [
+      "backrooms:step/water/carpet_1",
+      "backrooms:step/water/carpet_2",
+      "backrooms:step/water/carpet_3",
+      "backrooms:step/water/carpet_4"
+    ]
+  },
+  "step.water.concrete": {
+    "sounds": [
+      "backrooms:step/water/concrete_1",
+      "backrooms:step/water/concrete_2",
+      "backrooms:step/water/concrete_3",
+      "backrooms:step/water/concrete_4"
+    ]
+  },
+  "step.water.corridor": {
+    "sounds": [
+      "backrooms:step/water/corridor_1",
+      "backrooms:step/water/corridor_2",
+      "backrooms:step/water/corridor_3",
+      "backrooms:step/water/corridor_4"
+    ]
+  },
+  "step.water.office": {
+    "sounds": [
+      "backrooms:step/water/office_1",
+      "backrooms:step/water/office_2",
+      "backrooms:step/water/office_3",
+      "backrooms:step/water/office_4"
+    ]
+  },
+  "step.water.open": {
+    "sounds": [
+      "backrooms:step/water/open_1",
+      "backrooms:step/water/open_2",
+      "backrooms:step/water/open_3",
+      "backrooms:step/water/open_4"
+    ]
+  },
+  "step.water.pool": {
+    "sounds": [
+      "backrooms:step/water/pool_1",
+      "backrooms:step/water/pool_2",
+      "backrooms:step/water/pool_3",
+      "backrooms:step/water/pool_4"
+    ]
+  },
+  "transformer.hum": {
+    "sounds": [
+      "backrooms:transformer/hum/dry_1"
+    ]
+  },
+  "vent.hvac": {
+    "sounds": [
+      {
+        "name": "backrooms:vent/hvac/dry_1",
+        "stream": true
+      }
+    ]
+  },
+  "vent.small": {
+    "sounds": [
+      "backrooms:vent/small/dry_1"
+    ]
+  },
+  "voice.announce": {
+    "sounds": [
+      "backrooms:voice/announce/dry_1",
+      "backrooms:voice/announce/dry_2",
+      "backrooms:voice/announce/dry_3"
+    ]
+  },
+  "voice.announce.carpet": {
+    "sounds": [
+      "backrooms:voice/announce/carpet_1",
+      "backrooms:voice/announce/carpet_2",
+      "backrooms:voice/announce/carpet_3"
+    ]
+  },
+  "voice.announce.concrete": {
+    "sounds": [
+      "backrooms:voice/announce/concrete_1",
+      "backrooms:voice/announce/concrete_2",
+      "backrooms:voice/announce/concrete_3"
+    ]
+  },
+  "voice.announce.corridor": {
+    "sounds": [
+      "backrooms:voice/announce/corridor_1",
+      "backrooms:voice/announce/corridor_2",
+      "backrooms:voice/announce/corridor_3"
+    ]
+  },
+  "voice.announce.office": {
+    "sounds": [
+      "backrooms:voice/announce/office_1",
+      "backrooms:voice/announce/office_2",
+      "backrooms:voice/announce/office_3"
+    ]
+  },
+  "voice.announce.open": {
+    "sounds": [
+      "backrooms:voice/announce/open_1",
+      "backrooms:voice/announce/open_2",
+      "backrooms:voice/announce/open_3"
+    ]
+  },
+  "voice.announce.pool": {
+    "sounds": [
+      "backrooms:voice/announce/pool_1",
+      "backrooms:voice/announce/pool_2",
+      "backrooms:voice/announce/pool_3"
+    ]
+  },
+  "voice.conversation": {
+    "sounds": [
+      "backrooms:voice/conversation/dry_1",
+      "backrooms:voice/conversation/dry_2",
+      "backrooms:voice/conversation/dry_3",
+      "backrooms:voice/conversation/dry_4"
+    ]
+  },
+  "voice.conversation.muffled": {
+    "sounds": [
+      "backrooms:voice/conversation/muffled_1",
+      "backrooms:voice/conversation/muffled_2",
+      "backrooms:voice/conversation/muffled_3",
+      "backrooms:voice/conversation/muffled_4"
+    ]
+  },
+  "voice.cry": {
+    "sounds": [
+      "backrooms:voice/cry/dry_1",
+      "backrooms:voice/cry/dry_2"
+    ]
+  },
+  "voice.cry.carpet": {
+    "sounds": [
+      "backrooms:voice/cry/carpet_1",
+      "backrooms:voice/cry/carpet_2"
+    ]
+  },
+  "voice.cry.concrete": {
+    "sounds": [
+      "backrooms:voice/cry/concrete_1",
+      "backrooms:voice/cry/concrete_2"
+    ]
+  },
+  "voice.cry.corridor": {
+    "sounds": [
+      "backrooms:voice/cry/corridor_1",
+      "backrooms:voice/cry/corridor_2"
+    ]
+  },
+  "voice.cry.office": {
+    "sounds": [
+      "backrooms:voice/cry/office_1",
+      "backrooms:voice/cry/office_2"
+    ]
+  },
+  "voice.cry.open": {
+    "sounds": [
+      "backrooms:voice/cry/open_1",
+      "backrooms:voice/cry/open_2"
+    ]
+  },
+  "voice.cry.pool": {
+    "sounds": [
+      "backrooms:voice/cry/pool_1",
+      "backrooms:voice/cry/pool_2"
+    ]
+  },
+  "voice.murmur": {
+    "sounds": [
+      "backrooms:voice/murmur/dry_1",
+      "backrooms:voice/murmur/dry_2",
+      "backrooms:voice/murmur/dry_3",
+      "backrooms:voice/murmur/dry_4"
+    ]
+  },
+  "voice.murmur.carpet": {
+    "sounds": [
+      "backrooms:voice/murmur/carpet_1",
+      "backrooms:voice/murmur/carpet_2",
+      "backrooms:voice/murmur/carpet_3",
+      "backrooms:voice/murmur/carpet_4"
+    ]
+  },
+  "voice.murmur.carpet.muffled": {
+    "sounds": [
+      "backrooms:voice/murmur/carpet_muffled_1",
+      "backrooms:voice/murmur/carpet_muffled_2",
+      "backrooms:voice/murmur/carpet_muffled_3",
+      "backrooms:voice/murmur/carpet_muffled_4"
+    ]
+  },
+  "voice.murmur.concrete": {
+    "sounds": [
+      "backrooms:voice/murmur/concrete_1",
+      "backrooms:voice/murmur/concrete_2",
+      "backrooms:voice/murmur/concrete_3",
+      "backrooms:voice/murmur/concrete_4"
+    ]
+  },
+  "voice.murmur.concrete.muffled": {
+    "sounds": [
+      "backrooms:voice/murmur/concrete_muffled_1",
+      "backrooms:voice/murmur/concrete_muffled_2",
+      "backrooms:voice/murmur/concrete_muffled_3",
+      "backrooms:voice/murmur/concrete_muffled_4"
+    ]
+  },
+  "voice.murmur.corridor": {
+    "sounds": [
+      "backrooms:voice/murmur/corridor_1",
+      "backrooms:voice/murmur/corridor_2",
+      "backrooms:voice/murmur/corridor_3",
+      "backrooms:voice/murmur/corridor_4"
+    ]
+  },
+  "voice.murmur.corridor.muffled": {
+    "sounds": [
+      "backrooms:voice/murmur/corridor_muffled_1",
+      "backrooms:voice/murmur/corridor_muffled_2",
+      "backrooms:voice/murmur/corridor_muffled_3",
+      "backrooms:voice/murmur/corridor_muffled_4"
+    ]
+  },
+  "voice.murmur.office": {
+    "sounds": [
+      "backrooms:voice/murmur/office_1",
+      "backrooms:voice/murmur/office_2",
+      "backrooms:voice/murmur/office_3",
+      "backrooms:voice/murmur/office_4"
+    ]
+  },
+  "voice.murmur.office.muffled": {
+    "sounds": [
+      "backrooms:voice/murmur/office_muffled_1",
+      "backrooms:voice/murmur/office_muffled_2",
+      "backrooms:voice/murmur/office_muffled_3",
+      "backrooms:voice/murmur/office_muffled_4"
+    ]
+  },
+  "voice.murmur.open": {
+    "sounds": [
+      "backrooms:voice/murmur/open_1",
+      "backrooms:voice/murmur/open_2",
+      "backrooms:voice/murmur/open_3",
+      "backrooms:voice/murmur/open_4"
+    ]
+  },
+  "voice.murmur.open.muffled": {
+    "sounds": [
+      "backrooms:voice/murmur/open_muffled_1",
+      "backrooms:voice/murmur/open_muffled_2",
+      "backrooms:voice/murmur/open_muffled_3",
+      "backrooms:voice/murmur/open_muffled_4"
+    ]
+  },
+  "voice.murmur.pool": {
+    "sounds": [
+      "backrooms:voice/murmur/pool_1",
+      "backrooms:voice/murmur/pool_2",
+      "backrooms:voice/murmur/pool_3",
+      "backrooms:voice/murmur/pool_4"
+    ]
+  },
+  "voice.murmur.pool.muffled": {
+    "sounds": [
+      "backrooms:voice/murmur/pool_muffled_1",
+      "backrooms:voice/murmur/pool_muffled_2",
+      "backrooms:voice/murmur/pool_muffled_3",
+      "backrooms:voice/murmur/pool_muffled_4"
+    ]
+  },
+  "voice.phrase": {
+    "sounds": [
+      "backrooms:voice/phrase/dry_1",
+      "backrooms:voice/phrase/dry_2",
+      "backrooms:voice/phrase/dry_3",
+      "backrooms:voice/phrase/dry_4"
+    ]
+  },
+  "voice.phrase.carpet": {
+    "sounds": [
+      "backrooms:voice/phrase/carpet_1",
+      "backrooms:voice/phrase/carpet_2",
+      "backrooms:voice/phrase/carpet_3",
+      "backrooms:voice/phrase/carpet_4"
+    ]
+  },
+  "voice.phrase.carpet.muffled": {
+    "sounds": [
+      "backrooms:voice/phrase/carpet_muffled_1",
+      "backrooms:voice/phrase/carpet_muffled_2",
+      "backrooms:voice/phrase/carpet_muffled_3",
+      "backrooms:voice/phrase/carpet_muffled_4"
+    ]
+  },
+  "voice.phrase.concrete": {
+    "sounds": [
+      "backrooms:voice/phrase/concrete_1",
+      "backrooms:voice/phrase/concrete_2",
+      "backrooms:voice/phrase/concrete_3",
+      "backrooms:voice/phrase/concrete_4"
+    ]
+  },
+  "voice.phrase.concrete.muffled": {
+    "sounds": [
+      "backrooms:voice/phrase/concrete_muffled_1",
+      "backrooms:voice/phrase/concrete_muffled_2",
+      "backrooms:voice/phrase/concrete_muffled_3",
+      "backrooms:voice/phrase/concrete_muffled_4"
+    ]
+  },
+  "voice.phrase.corridor": {
+    "sounds": [
+      "backrooms:voice/phrase/corridor_1",
+      "backrooms:voice/phrase/corridor_2",
+      "backrooms:voice/phrase/corridor_3",
+      "backrooms:voice/phrase/corridor_4"
+    ]
+  },
+  "voice.phrase.corridor.muffled": {
+    "sounds": [
+      "backrooms:voice/phrase/corridor_muffled_1",
+      "backrooms:voice/phrase/corridor_muffled_2",
+      "backrooms:voice/phrase/corridor_muffled_3",
+      "backrooms:voice/phrase/corridor_muffled_4"
+    ]
+  },
+  "voice.phrase.office": {
+    "sounds": [
+      "backrooms:voice/phrase/office_1",
+      "backrooms:voice/phrase/office_2",
+      "backrooms:voice/phrase/office_3",
+      "backrooms:voice/phrase/office_4"
+    ]
+  },
+  "voice.phrase.office.muffled": {
+    "sounds": [
+      "backrooms:voice/phrase/office_muffled_1",
+      "backrooms:voice/phrase/office_muffled_2",
+      "backrooms:voice/phrase/office_muffled_3",
+      "backrooms:voice/phrase/office_muffled_4"
+    ]
+  },
+  "voice.phrase.open": {
+    "sounds": [
+      "backrooms:voice/phrase/open_1",
+      "backrooms:voice/phrase/open_2",
+      "backrooms:voice/phrase/open_3",
+      "backrooms:voice/phrase/open_4"
+    ]
+  },
+  "voice.phrase.open.muffled": {
+    "sounds": [
+      "backrooms:voice/phrase/open_muffled_1",
+      "backrooms:voice/phrase/open_muffled_2",
+      "backrooms:voice/phrase/open_muffled_3",
+      "backrooms:voice/phrase/open_muffled_4"
+    ]
+  },
+  "voice.phrase.pool": {
+    "sounds": [
+      "backrooms:voice/phrase/pool_1",
+      "backrooms:voice/phrase/pool_2",
+      "backrooms:voice/phrase/pool_3",
+      "backrooms:voice/phrase/pool_4"
+    ]
+  },
+  "voice.phrase.pool.muffled": {
+    "sounds": [
+      "backrooms:voice/phrase/pool_muffled_1",
+      "backrooms:voice/phrase/pool_muffled_2",
+      "backrooms:voice/phrase/pool_muffled_3",
+      "backrooms:voice/phrase/pool_muffled_4"
+    ]
+  },
+  "voice.radio": {
+    "sounds": [
+      "backrooms:voice/radio/dry_1",
+      "backrooms:voice/radio/dry_2",
+      "backrooms:voice/radio/dry_3"
+    ]
+  },
+  "voice.whisper": {
+    "sounds": [
+      "backrooms:voice/whisper/dry_1",
+      "backrooms:voice/whisper/dry_2",
+      "backrooms:voice/whisper/dry_3",
+      "backrooms:voice/whisper/dry_4",
+      "backrooms:voice/whisper/dry_5",
+      "backrooms:voice/whisper/dry_6"
+    ]
+  },
+  "voice.whisper.carpet": {
+    "sounds": [
+      "backrooms:voice/whisper/carpet_1",
+      "backrooms:voice/whisper/carpet_2",
+      "backrooms:voice/whisper/carpet_3",
+      "backrooms:voice/whisper/carpet_4",
+      "backrooms:voice/whisper/carpet_5",
+      "backrooms:voice/whisper/carpet_6"
+    ]
+  },
+  "voice.whisper.concrete": {
+    "sounds": [
+      "backrooms:voice/whisper/concrete_1",
+      "backrooms:voice/whisper/concrete_2",
+      "backrooms:voice/whisper/concrete_3",
+      "backrooms:voice/whisper/concrete_4",
+      "backrooms:voice/whisper/concrete_5",
+      "backrooms:voice/whisper/concrete_6"
+    ]
+  },
+  "voice.whisper.corridor": {
+    "sounds": [
+      "backrooms:voice/whisper/corridor_1",
+      "backrooms:voice/whisper/corridor_2",
+      "backrooms:voice/whisper/corridor_3",
+      "backrooms:voice/whisper/corridor_4",
+      "backrooms:voice/whisper/corridor_5",
+      "backrooms:voice/whisper/corridor_6"
+    ]
+  },
+  "voice.whisper.office": {
+    "sounds": [
+      "backrooms:voice/whisper/office_1",
+      "backrooms:voice/whisper/office_2",
+      "backrooms:voice/whisper/office_3",
+      "backrooms:voice/whisper/office_4",
+      "backrooms:voice/whisper/office_5",
+      "backrooms:voice/whisper/office_6"
+    ]
+  },
+  "voice.whisper.open": {
+    "sounds": [
+      "backrooms:voice/whisper/open_1",
+      "backrooms:voice/whisper/open_2",
+      "backrooms:voice/whisper/open_3",
+      "backrooms:voice/whisper/open_4",
+      "backrooms:voice/whisper/open_5",
+      "backrooms:voice/whisper/open_6"
+    ]
+  },
+  "voice.whisper.pool": {
+    "sounds": [
+      "backrooms:voice/whisper/pool_1",
+      "backrooms:voice/whisper/pool_2",
+      "backrooms:voice/whisper/pool_3",
+      "backrooms:voice/whisper/pool_4",
+      "backrooms:voice/whisper/pool_5",
+      "backrooms:voice/whisper/pool_6"
+    ]
+  },
+  "water.bubbles": {
+    "sounds": [
+      "backrooms:water/bubbles/dry_1",
+      "backrooms:water/bubbles/dry_2",
+      "backrooms:water/bubbles/dry_3"
+    ]
+  },
+  "water.circulation": {
+    "sounds": [
+      {
+        "name": "backrooms:water/circulation/dry_1",
+        "stream": true
+      }
+    ]
+  },
+  "water.drip": {
+    "sounds": [
+      "backrooms:water/drip/dry_1",
+      "backrooms:water/drip/dry_2",
+      "backrooms:water/drip/dry_3",
+      "backrooms:water/drip/dry_4",
+      "backrooms:water/drip/dry_5"
+    ]
+  },
+  "water.drip.carpet": {
+    "sounds": [
+      "backrooms:water/drip/carpet_1",
+      "backrooms:water/drip/carpet_2",
+      "backrooms:water/drip/carpet_3",
+      "backrooms:water/drip/carpet_4",
+      "backrooms:water/drip/carpet_5"
+    ]
+  },
+  "water.drip.concrete": {
+    "sounds": [
+      "backrooms:water/drip/concrete_1",
+      "backrooms:water/drip/concrete_2",
+      "backrooms:water/drip/concrete_3",
+      "backrooms:water/drip/concrete_4",
+      "backrooms:water/drip/concrete_5"
+    ]
+  },
+  "water.drip.corridor": {
+    "sounds": [
+      "backrooms:water/drip/corridor_1",
+      "backrooms:water/drip/corridor_2",
+      "backrooms:water/drip/corridor_3",
+      "backrooms:water/drip/corridor_4",
+      "backrooms:water/drip/corridor_5"
+    ]
+  },
+  "water.drip.office": {
+    "sounds": [
+      "backrooms:water/drip/office_1",
+      "backrooms:water/drip/office_2",
+      "backrooms:water/drip/office_3",
+      "backrooms:water/drip/office_4",
+      "backrooms:water/drip/office_5"
+    ]
+  },
+  "water.drip.open": {
+    "sounds": [
+      "backrooms:water/drip/open_1",
+      "backrooms:water/drip/open_2",
+      "backrooms:water/drip/open_3",
+      "backrooms:water/drip/open_4",
+      "backrooms:water/drip/open_5"
+    ]
+  },
+  "water.drip.pool": {
+    "sounds": [
+      "backrooms:water/drip/pool_1",
+      "backrooms:water/drip/pool_2",
+      "backrooms:water/drip/pool_3",
+      "backrooms:water/drip/pool_4",
+      "backrooms:water/drip/pool_5"
+    ]
+  },
+  "water.lap": {
+    "sounds": [
+      {
+        "name": "backrooms:water/lap/dry_1",
+        "stream": true
+      },
+      {
+        "name": "backrooms:water/lap/dry_2",
+        "stream": true
+      }
+    ]
+  },
+  "water.splash": {
+    "sounds": [
+      "backrooms:water/splash/dry_1",
+      "backrooms:water/splash/dry_2",
+      "backrooms:water/splash/dry_3"
+    ]
+  },
+  "water.splash.carpet": {
+    "sounds": [
+      "backrooms:water/splash/carpet_1",
+      "backrooms:water/splash/carpet_2",
+      "backrooms:water/splash/carpet_3"
+    ]
+  },
+  "water.splash.concrete": {
+    "sounds": [
+      "backrooms:water/splash/concrete_1",
+      "backrooms:water/splash/concrete_2",
+      "backrooms:water/splash/concrete_3"
+    ]
+  },
+  "water.splash.corridor": {
+    "sounds": [
+      "backrooms:water/splash/corridor_1",
+      "backrooms:water/splash/corridor_2",
+      "backrooms:water/splash/corridor_3"
+    ]
+  },
+  "water.splash.office": {
+    "sounds": [
+      "backrooms:water/splash/office_1",
+      "backrooms:water/splash/office_2",
+      "backrooms:water/splash/office_3"
+    ]
+  },
+  "water.splash.open": {
+    "sounds": [
+      "backrooms:water/splash/open_1",
+      "backrooms:water/splash/open_2",
+      "backrooms:water/splash/open_3"
+    ]
+  },
+  "water.splash.pool": {
+    "sounds": [
+      "backrooms:water/splash/pool_1",
+      "backrooms:water/splash/pool_2",
+      "backrooms:water/splash/pool_3"
+    ]
+  },
+  "water.underwater": {
+    "sounds": [
+      "backrooms:water/underwater/dry_1"
+    ]
+  },
+  "wind.plains": {
+    "sounds": [
+      {
+        "name": "backrooms:wind/plains/dry_1",
+        "stream": true
+      },
+      {
+        "name": "backrooms:wind/plains/dry_2",
+        "stream": true
+      }
+    ]
+  }
+}
