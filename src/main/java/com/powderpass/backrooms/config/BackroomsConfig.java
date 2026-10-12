@@ -1,0 +1,182 @@
+package com.powderpass.backrooms.config;
+
+import com.powderpass.backrooms.Level;
+import com.powderpass.backrooms.gen.GenSettings;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.minimessage.MiniMessage;
+import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
+import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
+import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.configuration.file.FileConfiguration;
+
+import java.util.ArrayList;
+import java.util.EnumMap;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+
+/** Immutable snapshot of config.yml, rebuilt on reload. */
+public final class BackroomsConfig {
+    private static final MiniMessage MM = MiniMessage.miniMessage();
+
+    public final long seed;
+    public final String worldPrefix;
+    public final Map<Level, Boolean> enabled = new EnumMap<>(Level.class);
+    public final Map<Level, String> biome = new EnumMap<>(Level.class);
+    public final Map<Level, GenSettings> generation = new EnumMap<>(Level.class);
+
+    public final boolean allowSelfEnter, allowSelfLeave, entryTitle;
+    public final List<String> allowedWorlds;
+    public final int spreadRadius;
+    public final String fallbackWorld;
+    public final String deathMode;
+    public final boolean keepInventory;
+
+    public final boolean protectBlocks, blockPearls, blockChorus, disablePortals, disableBeds, suppressMusic;
+    public final List<String> blockedCommands;
+
+    public final int transitionCooldownTicks, dwellTicks, intentTicks, arrivalProtectionTicks;
+
+    public final boolean displaysEnabled, hazards;
+    public final int activationRadius, maxPerChunk, maxPerWorld, chunksPerTick, animationInterval;
+    public final float viewRange;
+
+    public final boolean creaturesEnabled;
+    public final int creatureTickInterval, spawnAttemptSeconds, maxPerPlayer, maxPerLevel, despawnDistance;
+    public final Map<Level, Double> levelChance = new EnumMap<>(Level.class);
+    public final Map<String, CreatureSettings> creatures = new HashMap<>();
+
+    public final boolean eventsEnabled, ambient;
+    public final int eventCheckSeconds, ambientSeconds, flickerRadius;
+    public final double eventChance;
+
+    public final boolean sanityEnabled, sanityActionbar;
+    public final int flashlightSeconds, batterySeconds;
+    public final boolean debug;
+
+    private final Map<String, String> messages = new HashMap<>();
+
+    public record CreatureSettings(boolean enabled, double damage, double health, Map<Level, Double> weights) {
+    }
+
+    public BackroomsConfig(FileConfiguration c) {
+        seed = c.getLong("seed", 0);
+        worldPrefix = c.getString("world-prefix", "backrooms_");
+        for (Level l : Level.values()) {
+            String base = "levels." + l.key();
+            enabled.put(l, c.getBoolean(base + ".enabled", true));
+            biome.put(l, c.getString(base + ".biome", ""));
+            Map<String, Double> g = new HashMap<>();
+            ConfigurationSection gs = c.getConfigurationSection(base + ".generation");
+            if (gs != null) {
+                for (String k : gs.getKeys(false)) {
+                    if (gs.isDouble(k) || gs.isInt(k)) g.put(k, gs.getDouble(k));
+                }
+            }
+            generation.put(l, new GenSettings(g));
+        }
+        allowSelfEnter = c.getBoolean("entry.allow-self-enter", true);
+        allowSelfLeave = c.getBoolean("entry.allow-self-leave", false);
+        allowedWorlds = c.getStringList("entry.allowed-worlds");
+        spreadRadius = Math.max(0, c.getInt("entry.spread-radius", 2500));
+        entryTitle = c.getBoolean("entry.title", true);
+        fallbackWorld = c.getString("return.fallback-world", "");
+        deathMode = c.getString("death.mode", "RETURN").toUpperCase(Locale.ROOT);
+        keepInventory = c.getBoolean("death.keep-inventory", true);
+
+        protectBlocks = c.getBoolean("restrictions.protect-blocks", true);
+        blockPearls = c.getBoolean("restrictions.block-ender-pearls", true);
+        blockChorus = c.getBoolean("restrictions.block-chorus-fruit", true);
+        disablePortals = c.getBoolean("restrictions.disable-portals", true);
+        disableBeds = c.getBoolean("restrictions.disable-beds", true);
+        suppressMusic = c.getBoolean("restrictions.suppress-music", true);
+        List<String> bc = new ArrayList<>();
+        for (String s : c.getStringList("restrictions.blocked-commands")) bc.add(s.toLowerCase(Locale.ROOT));
+        blockedCommands = List.copyOf(bc);
+
+        transitionCooldownTicks = (int) (c.getDouble("transitions.cooldown-seconds", 6) * 20);
+        dwellTicks = (int) (c.getDouble("transitions.dwell-seconds", 2) * 20);
+        intentTicks = (int) (c.getDouble("transitions.intent-seconds", 3) * 20);
+        arrivalProtectionTicks = (int) (c.getDouble("transitions.arrival-protection-seconds", 3) * 20);
+
+        displaysEnabled = c.getBoolean("displays.enabled", true);
+        activationRadius = clamp(c.getInt("displays.activation-radius-chunks", 3), 1, 8);
+        maxPerChunk = clamp(c.getInt("displays.max-entities-per-chunk", 60), 4, 400);
+        maxPerWorld = clamp(c.getInt("displays.max-entities-per-world", 2500), 50, 20000);
+        chunksPerTick = clamp(c.getInt("displays.chunks-per-tick", 3), 1, 32);
+        animationInterval = clamp(c.getInt("displays.animation-interval-ticks", 4), 1, 40);
+        viewRange = (float) c.getDouble("displays.view-range", 0.7);
+        hazards = c.getBoolean("displays.hazards", true);
+
+        creaturesEnabled = c.getBoolean("creatures.enabled", true);
+        creatureTickInterval = clamp(c.getInt("creatures.tick-interval", 2), 1, 10);
+        spawnAttemptSeconds = clamp(c.getInt("creatures.spawn-attempt-seconds", 20), 2, 3600);
+        maxPerPlayer = clamp(c.getInt("creatures.max-per-player", 2), 0, 20);
+        maxPerLevel = clamp(c.getInt("creatures.max-per-level", 8), 0, 200);
+        despawnDistance = clamp(c.getInt("creatures.despawn-distance", 64), 24, 256);
+        for (Level l : Level.values()) levelChance.put(l, c.getDouble("creatures.level-chance." + l.key(), 0.2));
+        ConfigurationSection types = c.getConfigurationSection("creatures.types");
+        if (types != null) {
+            for (String t : types.getKeys(false)) {
+                ConfigurationSection s = types.getConfigurationSection(t);
+                if (s == null) continue;
+                Map<Level, Double> w = new EnumMap<>(Level.class);
+                ConfigurationSection ws = s.getConfigurationSection("weight");
+                if (ws != null) {
+                    for (String lk : ws.getKeys(false)) {
+                        Level l = Level.parse(lk);
+                        if (l != null) w.put(l, ws.getDouble(lk));
+                    }
+                }
+                creatures.put(t.toLowerCase(Locale.ROOT), new CreatureSettings(s.getBoolean("enabled", true), s.getDouble("damage", 4), s.getDouble("health", 20), w));
+            }
+        }
+
+        eventsEnabled = c.getBoolean("events.enabled", true);
+        eventCheckSeconds = clamp(c.getInt("events.check-seconds", 30), 5, 3600);
+        eventChance = c.getDouble("events.chance", 0.3);
+        ambient = c.getBoolean("events.ambient", true);
+        ambientSeconds = clamp(c.getInt("events.ambient-seconds", 9), 2, 600);
+        flickerRadius = clamp(c.getInt("events.flicker-radius", 14), 4, 32);
+
+        sanityEnabled = c.getBoolean("sanity.enabled", true);
+        sanityActionbar = c.getBoolean("sanity.show-actionbar", false);
+        flashlightSeconds = clamp(c.getInt("items.flashlight-battery-seconds", 300), 10, 100000);
+        batterySeconds = clamp(c.getInt("items.battery-seconds", 240), 10, 100000);
+        debug = c.getBoolean("debug", false);
+
+        ConfigurationSection m = c.getConfigurationSection("messages");
+        if (m != null) {
+            for (String k : m.getKeys(false)) messages.put(k, m.getString(k, ""));
+        }
+    }
+
+    private static int clamp(int v, int lo, int hi) {
+        return Math.max(lo, Math.min(hi, v));
+    }
+
+    public CreatureSettings creature(String id) {
+        return creatures.getOrDefault(id, new CreatureSettings(true, 4, 20, Map.of()));
+    }
+
+    /** Message with prefix; placeholders as alternating key/value pairs. */
+    public Component msg(String key, String... kv) {
+        return MM.deserialize(messages.getOrDefault("prefix", "") + messages.getOrDefault(key, key), resolver(kv));
+    }
+
+    /** Message without prefix. */
+    public Component raw(String key, String... kv) {
+        return MM.deserialize(messages.getOrDefault(key, key), resolver(kv));
+    }
+
+    public static Component mm(String s, String... kv) {
+        return MM.deserialize(s, resolver(kv));
+    }
+
+    private static TagResolver resolver(String... kv) {
+        TagResolver.Builder b = TagResolver.builder();
+        for (int i = 0; i + 1 < kv.length; i += 2) b.resolver(Placeholder.unparsed(kv[i], kv[i + 1]));
+        return b.build();
+    }
+}

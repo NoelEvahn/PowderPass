@@ -1,0 +1,48 @@
+name: Backrooms
+version: '${version}'
+main: com.powderpass.backrooms.BackroomsPlugin
+api-version: '1.21.11'
+load: POSTWORLD
+author: PowderPass
+description: A seven-level Backrooms dimension built from custom worlds and display-entity architecture.
+commands:
+  backrooms:
+    description: Enter, explore and administrate the Backrooms.
+    usage: /backrooms help
+    aliases: [br]
+permissions:
+  backrooms.use:
+    description: Basic access (help, and /backrooms enter for yourself when enabled in config).
+    default: true
+  backrooms.admin:
+    description: All administrative Backrooms permissions.
+    default: op
+    children:
+      backrooms.use: true
+      backrooms.admin.teleport: true
+      backrooms.admin.entities: true
+      backrooms.admin.events: true
+      backrooms.admin.debug: true
+      backrooms.admin.reload: true
+      backrooms.bypass.commands: true
+  backrooms.admin.teleport:
+    description: enter/leave other players, /backrooms level, /backrooms setspawn.
+    default: op
+  backrooms.admin.entities:
+    description: /backrooms entity list|spawn|clear.
+    default: op
+  backrooms.admin.events:
+    description: /backrooms event list|trigger.
+    default: op
+  backrooms.admin.debug:
+    description: /backrooms status and /backrooms debug.
+    default: op
+  backrooms.admin.reload:
+    description: /backrooms reload.
+    default: op
+  backrooms.bypass.commands:
+    description: Use commands listed in restrictions.blocked-commands while inside the Backrooms.
+    default: op
+  backrooms.bypass.protection:
+    description: Break and place blocks inside the Backrooms when block protection is on.
+    default: false

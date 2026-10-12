@@ -1,0 +1,191 @@
+package com.powderpass.backrooms.world;
+
+import com.powderpass.backrooms.BackroomsPlugin;
+import com.powderpass.backrooms.Level;
+import com.powderpass.backrooms.config.BackroomsConfig;
+import com.powderpass.backrooms.config.DataStore;
+import com.powderpass.backrooms.gen.GenSettings;
+import com.powderpass.backrooms.gen.Generators;
+import com.powderpass.backrooms.gen.LevelGenerator;
+import org.bukkit.Bukkit;
+import org.bukkit.Difficulty;
+import org.bukkit.GameRules;
+import org.bukkit.Location;
+import org.bukkit.World;
+import org.bukkit.WorldCreator;
+import org.bukkit.WorldType;
+
+import java.io.File;
+import java.security.SecureRandom;
+import java.util.Collections;
+import java.util.EnumMap;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+import java.util.logging.Logger;
+
+/**
+ * Owns the seven level worlds. Worlds are created on first start and simply re-loaded afterwards; nothing is
+ * ever deleted or regenerated. The generation snapshot stored in data/worlds.yml always wins over config.yml
+ * so that existing worlds continue seamlessly.
+ */
+public final class WorldManager {
+    private final BackroomsPlugin plugin;
+    private final DataStore data;
+    private final Logger log;
+    private final Map<Level, World> worlds = new EnumMap<>(Level.class);
+    private final Map<Level, LevelGenerator> generators = new EnumMap<>(Level.class);
+    private final Map<UUID, Level> byWorld = new HashMap<>();
+
+    public WorldManager(BackroomsPlugin plugin, DataStore data) {
+        this.plugin = plugin;
+        this.data = data;
+        this.log = plugin.getLogger();
+    }
+
+    public String worldName(Level l) {
+        return plugin.cfg().worldPrefix + l.key();
+    }
+
+    /** Generator for a level using the locked snapshot (creating the snapshot if this is the first time). */
+    public synchronized LevelGenerator generator(Level l) {
+        LevelGenerator g = generators.get(l);
+        if (g != null) return g;
+        BackroomsConfig cfg = plugin.cfg();
+        if (!data.hasBaseSeed()) {
+            long seed = cfg.seed != 0 ? cfg.seed : new SecureRandom().nextLong();
+            data.setBaseSeed(seed);
+            data.save();
+        }
+        long base;
+        GenSettings gs;
+        if (data.hasLevel(l)) {
+            base = data.levelBaseSeed(l);
+            gs = data.levelGen(l);
+            if (!gs.asMap().equals(cfg.generation.get(l).asMap())) {
+                log.info(l.displayName() + ": generation settings in config.yml differ from the locked snapshot; using the snapshot (existing world).");
+            }
+        } else {
+            base = data.baseSeed();
+            gs = cfg.generation.get(l);
+            File folder = worldFolder(l);
+            if (folder != null && folder.exists()) {
+                log.warning(l.displayName() + ": world folder exists but no metadata was found; assuming base seed " + base
+                        + " and current config. If terrain seams appear, restore plugins/Backrooms/data/worlds.yml.");
+            }
+            data.putLevel(l, base, gs, worldName(l));
+            data.save();
+        }
+        g = Generators.create(l, base, gs);
+        generators.put(l, g);
+        return g;
+    }
+
+    private File worldFolder(Level l) {
+        try {
+            return new File(Bukkit.getWorldContainer(), worldName(l));
+        } catch (RuntimeException e) {
+            return null; // only used for a diagnostic warning
+        }
+    }
+
+    public void loadAll() {
+        for (Level l : Level.values()) {
+            if (!plugin.cfg().enabled.getOrDefault(l, true)) {
+                log.info(l.displayName() + " disabled in config; its world is not loaded.");
+                continue;
+            }
+            try {
+                load(l);
+            } catch (RuntimeException e) {
+                log.log(java.util.logging.Level.SEVERE, "Failed to load " + l.displayName() + ": " + e, e);
+            }
+        }
+    }
+
+    private void load(Level l) {
+        String name = worldName(l);
+        LevelGenerator gen = generator(l);
+        World w = Bukkit.getWorld(name);
+        if (w == null) {
+            long t = System.nanoTime();
+            WorldCreator wc = new WorldCreator(name)
+                    .environment(World.Environment.NORMAL)
+                    .type(WorldType.NORMAL)
+                    .seed(gen.seed)
+                    .generateStructures(false)
+                    .generator(new BackroomsChunkGenerator(gen, plugin.cfg().biome.get(l)));
+            w = wc.createWorld();
+            if (w == null) {
+                throw new IllegalStateException("createWorld returned null for " + name);
+            }
+            log.info("Loaded " + l.displayName() + " as world '" + name + "' in " + (System.nanoTime() - t) / 1_000_000 + " ms");
+        } else if (!(w.getGenerator() instanceof BackroomsChunkGenerator)) {
+            log.warning("World '" + name + "' is already loaded by something else without the Backrooms generator. New chunks will not be Backrooms terrain.");
+        }
+        worlds.put(l, w);
+        byWorld.put(w.getUID(), l);
+        applyRules(w);
+    }
+
+    public void applyRules(World w) {
+        w.setGameRule(GameRules.ADVANCE_TIME, false);
+        w.setGameRule(GameRules.ADVANCE_WEATHER, false);
+        w.setGameRule(GameRules.SPAWN_MOBS, false);
+        w.setGameRule(GameRules.SPAWN_MONSTERS, false);
+        w.setGameRule(GameRules.SPAWN_PHANTOMS, false);
+        w.setGameRule(GameRules.SPAWN_PATROLS, false);
+        w.setGameRule(GameRules.SPAWN_WANDERING_TRADERS, false);
+        w.setGameRule(GameRules.SPAWN_WARDENS, false);
+        w.setGameRule(GameRules.MOB_GRIEFING, false);
+        w.setGameRule(GameRules.RANDOM_TICK_SPEED, 0);
+        w.setGameRule(GameRules.FIRE_SPREAD_RADIUS_AROUND_PLAYER, 0);
+        w.setGameRule(GameRules.KEEP_INVENTORY, plugin.cfg().keepInventory);
+        w.setTime(18000);
+        w.setStorm(false);
+        w.setThundering(false);
+        w.setClearWeatherDuration(Integer.MAX_VALUE / 2);
+        if (w.getDifficulty() == Difficulty.PEACEFUL) {
+            log.fine(w.getName() + " is peaceful; Backrooms creatures still work (they are not vanilla monsters).");
+        }
+        LevelGenerator g = generators.get(byWorld.getOrDefault(w.getUID(), null));
+        if (g != null) {
+            int[] s = g.safeSpot(0, 0, 0);
+            w.setSpawnLocation(s[0], s[1], s[2]);
+        }
+    }
+
+    public void reapplyRules() {
+        for (World w : worlds.values()) applyRules(w);
+    }
+
+    public Level levelOf(World w) {
+        return w == null ? null : byWorld.get(w.getUID());
+    }
+
+    public boolean isBackrooms(World w) {
+        return levelOf(w) != null;
+    }
+
+    public World world(Level l) {
+        return worlds.get(l);
+    }
+
+    public Map<Level, World> worlds() {
+        return Collections.unmodifiableMap(worlds);
+    }
+
+    public boolean available(Level l) {
+        return worlds.containsKey(l);
+    }
+
+    /** Admin spawn if set, otherwise the generator's safe spot nearest the origin. */
+    public Location levelSpawn(Level l) {
+        World w = worlds.get(l);
+        if (w == null) return null;
+        double[] s = data.spawn(l);
+        if (s != null) return new Location(w, s[0], s[1], s[2], (float) s[3], (float) s[4]);
+        int[] p = generator(l).safeSpot(0, 0, 0);
+        return new Location(w, p[0] + 0.5, p[1], p[2] + 0.5);
+    }
+}

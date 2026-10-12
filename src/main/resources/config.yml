@@ -1,0 +1,191 @@
+# ============================================================================
+#  Backrooms - configuration
+#  Values marked [locked] are copied into plugins/Backrooms/data/worlds.yml the
+#  first time a level's world is created. Later edits only affect levels whose
+#  worlds do not exist yet, so existing worlds never develop seams.
+# ============================================================================
+config-version: 1
+
+# [locked] Base seed of the whole Backrooms. 0 = pick a random seed once.
+seed: 0
+# World folder prefix. Level worlds are <prefix><level>, e.g. backrooms_level0.
+world-prefix: "backrooms_"
+
+levels:
+  level0:
+    enabled: true
+    # Biome gives ambient particles, ambient sounds and water colour. Not locked.
+    biome: "minecraft:swamp"
+    generation:            # [locked]
+      hall-chance: 0.10        # share of regions that become pillar halls
+      dark-zone-chance: 0.20   # how much of the level sits in failing-light sectors
+      thick-wall-chance: 0.12  # abnormal wall thickness
+      repeat-chance: 0.06      # regions that exactly repeat their neighbour
+      exit-chance: 0.35        # per district (~190 blocks square) chance of an EXIT door
+      landmark-chance: 0.7
+      decor-density: 1.0
+      loop-chance: 0.18        # extra connections beyond the spanning maze
+  poolrooms:
+    enabled: true
+    biome: "minecraft:warm_ocean"
+    generation:
+      chamber-chance: 0.16
+      water-ratio: 0.62
+      exit-chance: 0.30
+      landmark-chance: 0.6
+      decor-density: 1.0
+      loop-chance: 0.22
+  level1:
+    enabled: true
+    biome: "minecraft:plains"
+    generation:
+      warehouse-chance: 0.14
+      cache-chance: 0.05
+      dark-zone-chance: 0.25
+      elevator-chance: 0.7
+      landmark-chance: 0.8
+      decor-density: 1.0
+      loop-chance: 0.20
+  level2:
+    enabled: true
+    biome: "minecraft:basalt_deltas"
+    generation:
+      hazard-dead-end-chance: 0.35
+      junction-chance: 0.04
+      landmark-chance: 0.7
+      decor-density: 1.0
+      loop-chance: 0.12
+  level3:
+    enabled: true
+    biome: "minecraft:the_void"
+    generation:
+      atrium-chance: 0.06
+      transformer-chance: 0.07
+      landmark-chance: 0.7
+      decor-density: 1.0
+      loop-chance: 0.16
+  level4:
+    enabled: true
+    biome: "minecraft:the_void"
+    generation:
+      open-plan-chance: 0.30
+      window-chance: 0.12
+      exit-chance: 0.40
+      landmark-chance: 0.6
+      decor-density: 1.0
+      loop-chance: 0.20
+  level5:
+    enabled: true
+    biome: "minecraft:soul_sand_valley"
+    generation:
+      ballroom-chance: 0.08
+      dining-chance: 0.08
+      guest-room-chance: 0.8
+      exit-chance: 0.6
+      landmark-chance: 0.6
+      decor-density: 1.0
+      loop-chance: 0.12
+
+entry:
+  # Players may use "/backrooms enter" on themselves (needs backrooms.use).
+  allow-self-enter: true
+  # Players may use "/backrooms leave" on themselves. Off = they must find an exit.
+  allow-self-leave: false
+  # Worlds from which players may self-enter. Empty = any non-Backrooms world.
+  allowed-worlds: []
+  # Each entry lands in a different part of Level 0 within this radius, so players
+  # do not all share one spot. 0 = everyone arrives near the world origin.
+  spread-radius: 2500
+  title: true
+
+return:
+  # Used when a saved return location is missing or its world is gone. Empty = the first world.
+  fallback-world: ""
+
+death:
+  # RETURN = respawn at the saved return location (leaves the Backrooms)
+  # LEVEL0 = respawn somewhere in Level 0, STAY = respawn in the same level
+  mode: RETURN
+  keep-inventory: true
+
+restrictions:
+  protect-blocks: true          # no breaking/placing inside (bypass: backrooms.bypass.protection)
+  block-ender-pearls: true
+  block-chorus-fruit: true
+  disable-portals: true
+  disable-beds: true            # beds/anchors cannot set a spawn point inside
+  suppress-music: true          # stops vanilla background music for players inside
+  blocked-commands: [home, homes, sethome, spawn, tpa, tpahere, tpaccept, tpask, warp, warps, back, rtp, wild, tpr]
+
+transitions:
+  cooldown-seconds: 6           # after arriving, triggers are ignored for this long
+  dwell-seconds: 2.0            # elevators: stand inside this long
+  intent-seconds: 3.0           # noclip seams: crouch, or stand against them this long
+  arrival-protection-seconds: 3
+
+displays:
+  enabled: true
+  activation-radius-chunks: 3   # display props exist only near players
+  max-entities-per-chunk: 60
+  max-entities-per-world: 2500
+  chunks-per-tick: 3            # activation work spread over ticks
+  animation-interval-ticks: 4
+  view-range: 0.7               # 1.0 = 64 blocks
+  hazards: true                 # steam vents / transformers can hurt
+
+creatures:
+  enabled: true
+  tick-interval: 2
+  spawn-attempt-seconds: 20
+  max-per-player: 2
+  max-per-level: 8
+  despawn-distance: 64
+  # base spawn chance per attempt per player, by level
+  level-chance: {level0: 0.22, poolrooms: 0.15, level1: 0.30, level2: 0.35, level3: 0.30, level4: 0.12, level5: 0.30}
+  types:
+    smiler:    {enabled: true, damage: 6.0, weight: {level0: 5, level1: 3, level5: 2}}
+    faceling:  {enabled: true, weight: {level0: 5, poolrooms: 2, level1: 2, level4: 10, level5: 2}}
+    hound:     {enabled: true, damage: 5.0, health: 30.0, weight: {level1: 5, level2: 8, level3: 2}}
+    spark:     {enabled: true, damage: 4.0, weight: {level3: 8}}
+    concierge: {enabled: true, weight: {level5: 6}}
+    drifter:   {enabled: true, damage: 2.0, health: 20.0, weight: {poolrooms: 8}}
+
+events:
+  enabled: true
+  check-seconds: 30
+  chance: 0.3                   # chance per check per player
+  ambient: true
+  ambient-seconds: 9
+  flicker-radius: 14
+
+sanity:
+  enabled: true
+  show-actionbar: false         # off = only in-world cues (whispers, heartbeat, hallucinations)
+
+items:
+  flashlight-battery-seconds: 300
+  battery-seconds: 240
+
+debug: false
+
+messages:
+  prefix: "<dark_gray>[<#d8c46a>Backrooms</#d8c46a>]</dark_gray> "
+  no-permission: "<red>You don't have permission to do that."
+  player-only: "<red>Only players can do that."
+  player-not-found: "<red>Player <white><name></white> not found."
+  unknown-level: "<red>Unknown level <white><level></white>. Use 0, poolrooms, 1, 2, 3, 4 or 5."
+  level-disabled: "<red><level> is disabled or its world is not loaded."
+  entering: "<gray>The floor gives way beneath you..."
+  already-inside: "<gray><name> is already inside the Backrooms."
+  not-inside: "<gray><name> is not inside the Backrooms."
+  left: "<green>You find yourself back where you belong. Mostly."
+  enter-world-denied: "<red>You can't enter the Backrooms from here."
+  self-leave-denied: "<gray>There is no easy way out. Find an exit."
+  sealed: "<gray>The way is sealed."
+  blocked-command: "<dark_gray><italic>Nothing answers.</italic>"
+  protected: "<dark_gray><italic>The wall doesn't budge.</italic>"
+  spawn-set: "<green>Admin spawn for <level> saved at <x>, <y>, <z>."
+  reloaded: "<green>Configuration reloaded. Locked generation values were left untouched."
+  confirm: "<yellow>Type <white>/backrooms confirm</white> within 15 seconds to <action>."
+  nothing-to-confirm: "<gray>Nothing to confirm."
+  almond-water: "<#f3e9c6><italic>The water tastes faintly of almonds. Your thoughts settle.</italic>"
