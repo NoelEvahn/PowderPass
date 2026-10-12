@@ -33,7 +33,7 @@ public final class LootService {
             else if (x < 0.78 && tier >= 2) s = it.flashlight(plugin.cfg().flashlightSeconds);
             else if (x < 0.86) s = new ItemStack(Material.STRING, 1 + r.nextInt(3));
             else if (x < 0.92) s = new ItemStack(Material.PAPER, 1 + r.nextInt(4));
-            else s = new ItemStack(level == Level.LEVEL_5 ? Material.CANDLE : Material.TORCH, 1 + r.nextInt(2));
+            else s = new ItemStack(Material.STRING, 1 + r.nextInt(2));
             inv.setItem(r.nextInt(inv.getSize()), s);
         }
     }

@@ -56,31 +56,7 @@ final class Bodies {
         return m;
     }
 
-    static Model spark() {
-        Model m = new Model();
-        m.box(WHITE_CONCRETE, -0.08, 0.92, -0.08, 0.16, 0.16, 0.16).glow(15).named("core");
-        Material[] c = {LIGHT_BLUE_CONCRETE, YELLOW_CONCRETE, WHITE_CONCRETE, LIGHT_BLUE_CONCRETE, CYAN_CONCRETE, YELLOW_CONCRETE, LIGHT_BLUE_CONCRETE, WHITE_CONCRETE};
-        for (int i = 0; i < 8; i++) {
-            m.box(c[i], -0.015, 0, -0.015, 0.03, 0.55, 0.03).glow(15).named("arc" + i);
-        }
-        return m;
-    }
 
-    static Model concierge() {
-        Model m = new Model();
-        m.box(BLACK_CONCRETE, -0.17, 0, -0.08, 0.14, 0.88, 0.16).named("leg_l");
-        m.box(BLACK_CONCRETE, 0.03, 0, -0.08, 0.14, 0.88, 0.16).named("leg_r");
-        m.box(RED_CONCRETE, -0.22, 0.88, -0.11, 0.44, 0.62, 0.22).named("torso");
-        for (int i = 0; i < 3; i++) m.box(GOLD_BLOCK, -0.025, 1.0 + i * 0.15, 0.11, 0.05, 0.05, 0.02).named("torso");
-        m.box(RED_CONCRETE, -0.31, 0.92, -0.07, 0.09, 0.56, 0.14).named("arm_l");
-        m.box(RED_CONCRETE, 0.22, 0.92, -0.07, 0.09, 0.56, 0.14).named("arm_r");
-        m.box(WHITE_CONCRETE, -0.31, 0.84, -0.06, 0.09, 0.09, 0.12).named("arm_l");
-        m.box(WHITE_CONCRETE, 0.22, 0.84, -0.06, 0.09, 0.09, 0.12).named("arm_r");
-        m.boxC(RED_CONCRETE, 0, 1.78, 0, 0.26, 0.16, 0.26, 'y', 0).named("hat");
-        m.boxC(RED_CONCRETE, 0, 1.78, 0, 0.26, 0.16, 0.26, 'y', 45).named("hat");
-        m.boxC(GOLD_BLOCK, 0, 1.72, 0, 0.28, 0.04, 0.28, 'y', 22.5).named("hat");
-        return m;
-    }
 
     static Model drifter() {
         Model m = new Model();

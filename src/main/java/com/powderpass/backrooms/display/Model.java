@@ -26,6 +26,8 @@ public final class Model {
     public Hazard hazard;
     /** Scripted behaviour id handled by the decoration manager ("elevator", "dancers", "monitor", ...). */
     public String behavior;
+    /** View range multiplier override (0 = use config); colossal props need to be seen from far away. */
+    public float viewRange;
     /** Hide the whole model while a player is closer than this (0 = never). */
     public double hideRadius;
     private int group;

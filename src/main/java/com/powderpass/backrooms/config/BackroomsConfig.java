@@ -39,7 +39,7 @@ public final class BackroomsConfig {
     public final int transitionCooldownTicks, dwellTicks, intentTicks, arrivalProtectionTicks;
 
     public final boolean displaysEnabled, hazards;
-    public final int activationRadius, maxPerChunk, maxPerWorld, chunksPerTick, animationInterval;
+    public final int activationRadius, outdoorActivationRadius, maxPerChunk, maxPerWorld, chunksPerTick, animationInterval;
     public final float viewRange;
 
     public final boolean creaturesEnabled;
@@ -102,6 +102,7 @@ public final class BackroomsConfig {
 
         displaysEnabled = c.getBoolean("displays.enabled", true);
         activationRadius = clamp(c.getInt("displays.activation-radius-chunks", 3), 1, 8);
+        outdoorActivationRadius = clamp(c.getInt("displays.outdoor-activation-radius-chunks", 8), 1, 16);
         maxPerChunk = clamp(c.getInt("displays.max-entities-per-chunk", 60), 4, 400);
         maxPerWorld = clamp(c.getInt("displays.max-entities-per-world", 2500), 50, 20000);
         chunksPerTick = clamp(c.getInt("displays.chunks-per-tick", 3), 1, 32);

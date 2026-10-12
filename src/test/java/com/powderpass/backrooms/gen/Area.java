@@ -9,7 +9,7 @@ import java.util.Map;
 final class Area {
     final LevelGenerator gen;
     final int minX, minZ, maxX, maxZ; // block bounds (inclusive min, exclusive max)
-    final int minY = -64, maxY = 320;
+    final int minY, maxY;
     private final Map<Long, MemoryCanvas> chunks = new HashMap<>();
 
     Area(LevelGenerator gen, int minX, int minZ, int maxX, int maxZ) {
@@ -18,6 +18,8 @@ final class Area {
         this.minZ = minZ;
         this.maxX = maxX;
         this.maxZ = maxZ;
+        this.minY = gen.bottomY;
+        this.maxY = gen.roofY + 1;
         for (int cx = Math.floorDiv(minX, 16); cx <= Math.floorDiv(maxX - 1, 16); cx++) {
             for (int cz = Math.floorDiv(minZ, 16); cz <= Math.floorDiv(maxZ - 1, 16); cz++) {
                 MemoryCanvas c = new MemoryCanvas(minY, maxY);

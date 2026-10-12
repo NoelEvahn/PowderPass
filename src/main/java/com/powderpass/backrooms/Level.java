@@ -2,15 +2,13 @@ package com.powderpass.backrooms;
 
 import java.util.Locale;
 
-/** The seven Backrooms levels. Each is backed by its own custom world. */
+/** The Backrooms levels. Each is backed by its own custom world. */
 public enum Level {
     LEVEL_0("level0", "0", "Level 0", "The Lobby", "<#d8c46a>"),
-    POOLROOMS("poolrooms", "poolrooms", "The Poolrooms", "Still water, endless tile", "<#7fe3e6>"),
     LEVEL_1("level1", "1", "Level 1", "Habitable Zone", "<#9da3a8>"),
-    LEVEL_2("level2", "2", "Level 2", "Pipe Dreams", "<#c9773a>"),
-    LEVEL_3("level3", "3", "Level 3", "Electrical Station", "<#e8d34a>"),
+    POOLROOMS("poolrooms", "poolrooms", "The Poolrooms", "Still water, endless tile", "<#7fe3e6>"),
     LEVEL_4("level4", "4", "Level 4", "Abandoned Office", "<#b8c6cf>"),
-    LEVEL_5("level5", "5", "Level 5", "Terror Hotel", "<#b3263a>");
+    PLAINS("plains", "plains", "The Plains", "It is always this evening", "<#a7b39a>");
 
     private final String key;
     private final String arg;
@@ -47,19 +45,26 @@ public enum Level {
         return color;
     }
 
+    /** Levels open to the sky (no ceiling, daylight). */
+    public boolean outdoor() {
+        return this == PLAINS;
+    }
+
     public static Level parse(String s) {
         if (s == null) {
             return null;
         }
-        String t = s.toLowerCase(Locale.ROOT).replace("level_", "").replace("level", "").replace("-", "").trim();
+        String low = s.toLowerCase(Locale.ROOT);
+        String t = low.replace("level_", "").replace("level", "").replace("-", "").trim();
         for (Level l : values()) {
-            if (l.arg.equals(t) || l.key.equals(s.toLowerCase(Locale.ROOT)) || l.name().equalsIgnoreCase(s)) {
+            if (l.arg.equals(t) || l.key.equals(low) || l.name().equalsIgnoreCase(s)) {
                 return l;
             }
         }
-        if (t.startsWith("pool")) {
-            return POOLROOMS;
-        }
+        if (t.startsWith("pool")) return POOLROOMS;
+        if (t.startsWith("office")) return LEVEL_4;
+        if (t.startsWith("habit")) return LEVEL_1;
+        if (t.startsWith("plain") || t.startsWith("field")) return PLAINS;
         return null;
     }
 }

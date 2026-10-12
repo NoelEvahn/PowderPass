@@ -102,8 +102,12 @@ public final class DataStore {
         yaml.set(p + ".seed", baseSeed);
         yaml.set(p + ".world", worldName);
         yaml.set(p + ".created", System.currentTimeMillis());
-        yaml.set(p + ".generator-version", 1);
+        yaml.set(p + ".generator-version", com.powderpass.backrooms.gen.Generators.VERSION);
         for (Map.Entry<String, Double> e : gs.asMap().entrySet()) yaml.set(p + ".generation." + e.getKey(), e.getValue());
+    }
+
+    public int generatorVersion(Level l) {
+        return yaml.getInt("levels." + l.key() + ".generator-version", 1);
     }
 
     public double[] spawn(Level l) {

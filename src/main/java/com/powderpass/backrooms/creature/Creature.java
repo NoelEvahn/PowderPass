@@ -268,6 +268,11 @@ public abstract class Creature {
         return (body == null ? 0 : body.size()) + (hitbox == null ? 0 : 1);
     }
 
+    /** Minimum distance before this creature despawns (0 = use the configured distance). */
+    public double despawnRange() {
+        return 0;
+    }
+
     /** Harmless, private creatures do not count toward spawn caps. */
     public boolean hallucination() {
         return viewer != null;

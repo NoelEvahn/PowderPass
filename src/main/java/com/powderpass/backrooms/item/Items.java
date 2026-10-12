@@ -96,22 +96,27 @@ public final class Items {
     }
 
     private static final Map<Level, String[]> NOTES = Map.of(
-            Level.LEVEL_0, new String[]{"The walls aren't all the same. One of them is cold and smells like chlorine. Crouch into it.",
-                    "If you see a green EXIT sign on a door that stands alone in a room, go through. Don't think about it.",
-                    "Stairs down lead somewhere wetter and greyer. Level 1, they call it. Bring water."},
-            Level.POOLROOMS, new String[]{"There's a drain at the bottom of the deepest pool. It goes back to the yellow rooms.",
-                    "Sunlight. I SAW sunlight through an arch. Real light.", "Grey door, STAFF ONLY. It's dry on the other side."},
+            Level.LEVEL_0, new String[]{"One of the pillars is cold and smells like chlorine. Crouch into it.",
+                    "There's a door that stands on its own with grass under it. Don't open it. Or do. It's warm out there.",
+                    "Stairs down lead somewhere grey and wet. Level 1, they call it. Bring water.",
+                    "A green EXIT sign on a door in the middle of a room. Go through. Don't think about it."},
             Level.LEVEL_1, new String[]{"The dogs hear you run. Walk. If one growls, it's about to jump.",
-                    "MAINTENANCE stairs go down into the pipes. Hot down there.", "A freight elevator here goes UP. Offices, I think.",
-                    "Rooms with wooden floors and warm light are safe. They don't come in."},
-            Level.LEVEL_2, new String[]{"Dead ends hiss before they burn. Count to two and step back.",
-                    "There's a hatch with a ladder. It hums at the bottom. Electricity.", "Stairs up, toward the light, lead back to the concrete halls."},
-            Level.LEVEL_3, new String[]{"Don't touch the bright knots of light that wander the halls.",
-                    "The lift upstairs says OFFICES. The ladders connect the floors.", "During a surge, get out of the water."},
-            Level.LEVEL_4, new String[]{"The windows lie. Ignore them.", "The elevator goes to a hotel. Nobody should go to that hotel.",
-                    "FIRE EXIT. Copper door. It opens to somewhere with weather."},
-            Level.LEVEL_5, new String[]{"The concierge only moves when you aren't looking. Ring a bell and it goes away.",
-                    "The revolving door in the lobby turns out. OUT.", "Room 000 smells like wet carpet. It goes back to the start."});
+                    "There's a yellow doorway in a back room. It goes back to the start.",
+                    "A freight elevator in one of the side rooms goes up. Offices.",
+                    "Rooms with wooden floors are safe. They don't come in.",
+                    "There's grass behind a roll-up shutter. Who put grass here?"},
+            Level.POOLROOMS, new String[]{"There's a drain at the bottom of the deepest pool. It goes back to the yellow rooms.",
+                    "Sunlight. I SAW sunlight through an arch. It isn't sunlight.",
+                    "Grey door, STAFF ONLY. It's dry on the other side."},
+            Level.LEVEL_4, new String[]{"Every corridor here goes around a block. Every block is the same block.",
+                    "There's a window that's too bright. It isn't a window.",
+                    "FIRE EXIT. Copper door. It opens to somewhere with weather.",
+                    "Stairs in a meeting room go down to the concrete halls."},
+            Level.PLAINS, new String[]{"All the houses on a road are the same house. One of them is yellow inside.",
+                    "The pool in the backyard doesn't have a bottom. Well. It does. It's tiled.",
+                    "There's a bunker. Concrete. Stairs going down. I know where they go.",
+                    "If you see someone standing in the field, don't walk toward them. They don't like that.",
+                    "There's a door in the field as big as a house. It's open. It's open. It's open."});
 
     public ItemStack note(Level level) {
         String[] pool = NOTES.getOrDefault(level, NOTES.get(Level.LEVEL_0));

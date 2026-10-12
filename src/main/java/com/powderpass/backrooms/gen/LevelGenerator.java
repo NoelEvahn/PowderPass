@@ -11,7 +11,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Base class for the seven level generators. Everything here is a pure, thread-safe function of the
+ * Base class for the level generators. Everything here is a pure, thread-safe function of the
  * seed and coordinates so Paper may call {@link #paint} concurrently from worker threads.
  *
  * <p>Space is a grid of square cells ({@link #S} blocks, wall lines on each cell's west/north edge),
@@ -73,6 +73,30 @@ public abstract class LevelGenerator {
 
     /** Biome key that gives this level its ambient particles/water colour. */
     public abstract String biomeKey();
+
+    /** Cell-local {u, v} of the guaranteed-standable spot of a safe cell. */
+    public int[] safeLocal(int floor, int cx, int cz) {
+        return new int[]{S / 2, S / 2};
+    }
+
+    /**
+     * A light fixture: a display-model lamp (the only visible light source anywhere in the Backrooms) plus an
+     * invisible light block that does the actual lighting. {@code state}: 0 lit, 1 flickering, 2 dead.
+     */
+    protected static DecorSpec lamp(String model, double x, double y, double z, float yaw, long seed, int state,
+                                    int lx, int ly, int lz, int level) {
+        String id = state == 2 ? model + ":dead" : state == 1 ? model + ":flicker" : model;
+        DecorSpec d = new DecorSpec(id, x, y, z, yaw, 0, 0, seed);
+        if (state != 2) d.light(lx, ly, lz, level);
+        return d;
+    }
+
+    /** Lit / flickering / dead roll for a lamp. */
+    protected static int lampState(long h, double lit) {
+        double r = Rng.unit(h);
+        if (r >= lit) return 2;
+        return r < lit * 0.06 ? 1 : 0;
+    }
 
     /** Areas where creatures never spawn or path (safe rooms). */
     public boolean isSafeZone(int x, int y, int z) {
@@ -309,7 +333,8 @@ public abstract class LevelGenerator {
                     }
                     int cx = ccx + dx, cz = ccz + dz;
                     if (featureAt(floor, cx, cz) == null && isSafeCell(floor, cx, cz)) {
-                        return new int[]{cx * S + S / 2, floorY[floor] + 1, cz * S + S / 2};
+                        int[] l = safeLocal(floor, cx, cz);
+                        return new int[]{cx * S + l[0], floorY[floor] + 1, cz * S + l[1]};
                     }
                 }
             }

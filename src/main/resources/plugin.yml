@@ -4,7 +4,7 @@ main: com.powderpass.backrooms.BackroomsPlugin
 api-version: '1.21.11'
 load: POSTWORLD
 author: PowderPass
-description: A seven-level Backrooms dimension built from custom worlds and display-entity architecture.
+description: A five-level Backrooms dimension built from custom worlds and display-entity models.
 commands:
   backrooms:
     description: Enter, explore and administrate the Backrooms.

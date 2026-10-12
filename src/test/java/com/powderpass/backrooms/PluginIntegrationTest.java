@@ -68,7 +68,7 @@ class PluginIntegrationTest {
 
     @Test
     void createsSevenSeparateWorlds() {
-        assertEquals(7, plugin.worlds().worlds().size());
+        assertEquals(Level.values().length, plugin.worlds().worlds().size());
         for (Level l : Level.values()) {
             World w = plugin.worlds().world(l);
             assertNotNull(w, l + " world");
@@ -87,8 +87,8 @@ class PluginIntegrationTest {
         plugin.getConfig().set("levels.level0.generation.hall-chance", 0.9);
         plugin.reload();
         assertEquals(seed, plugin.data().baseSeed(), "base seed must not change once worlds exist");
-        assertEquals(0.10, plugin.data().levelGen(Level.LEVEL_0).get("hall-chance", -1), 1e-9);
-        assertEquals(7, plugin.worlds().worlds().size(), "reload must not unload or duplicate worlds");
+        assertEquals(0.08, plugin.data().levelGen(Level.LEVEL_0).get("hall-chance", -1), 1e-9);
+        assertEquals(Level.values().length, plugin.worlds().worlds().size(), "reload must not unload or duplicate worlds");
     }
 
     @Test
@@ -238,7 +238,7 @@ class PluginIntegrationTest {
         assertEquals(0, plugin.creatures().size());
         assertEquals(0, l1.getEntities().stream().filter(e -> e.getPersistentDataContainer().has(Keys.CREATURE, PersistentDataType.STRING)).count());
 
-        plugin.creatures().spawn(CreatureType.SPARK, new Location(l1, 2.5, 65, 2.5), null);
+        plugin.creatures().spawn(CreatureType.HOUND, new Location(l1, 2.5, 65, 2.5), null);
         plugin.creatures().spawn(CreatureType.SMILER, new Location(l1, -2.5, 65, 2.5), null);
         server.dispatchCommand(server.getConsoleSender(), "backrooms entity clear level level1");
         assertEquals(2, plugin.creatures().size(), "level-wide clear waits for confirmation");
@@ -248,34 +248,34 @@ class PluginIntegrationTest {
 
     @Test
     void decorationsSpawnNearPlayersAndAreCleanedUp() {
-        World l5 = plugin.worlds().world(Level.LEVEL_5);
+        World l4 = plugin.worlds().world(Level.LEVEL_4);
         PlayerMock p = playerAt(0, 70, 0);
-        floor(l5, 0, 64, 0, 3);
-        p.teleport(new Location(l5, 0.5, 65, 0.5));
+        floor(l4, 0, 64, 0, 3);
+        p.teleport(new Location(l4, 0.5, 65, 0.5));
         int radius = plugin.cfg().activationRadius;
-        for (int cx = -radius; cx <= radius; cx++) for (int cz = -radius; cz <= radius; cz++) l5.getChunkAt(cx, cz).load();
+        for (int cx = -radius; cx <= radius; cx++) for (int cz = -radius; cz <= radius; cz++) l4.getChunkAt(cx, cz).load();
         server.getScheduler().performTicks(200);
-        int managed = plugin.decorations().entityCount(l5);
+        int managed = plugin.decorations().entityCount(l4);
         assertTrue(managed > 0, "props should spawn around the player");
         assertTrue(managed <= plugin.cfg().maxPerWorld);
-        long tagged = l5.getEntities().stream().filter(e -> e.getPersistentDataContainer().has(Keys.DECOR, PersistentDataType.STRING)).count();
+        long tagged = l4.getEntities().stream().filter(e -> e.getPersistentDataContainer().has(Keys.DECOR, PersistentDataType.STRING)).count();
         assertEquals(managed, tagged);
-        assertTrue(l5.getEntities().stream().filter(e -> e.getPersistentDataContainer().has(Keys.DECOR, PersistentDataType.STRING)).noneMatch(Entity::isPersistent));
+        assertTrue(l4.getEntities().stream().filter(e -> e.getPersistentDataContainer().has(Keys.DECOR, PersistentDataType.STRING)).noneMatch(Entity::isPersistent));
         // leaving the area despawns everything
         p.teleport(new Location(overworld, 0.5, 70, 0.5));
         server.getScheduler().performTicks(40);
-        assertEquals(0, plugin.decorations().entityCount(l5));
-        assertEquals(0, l5.getEntities().stream().filter(e -> e.getPersistentDataContainer().has(Keys.DECOR, PersistentDataType.STRING)).count());
+        assertEquals(0, plugin.decorations().entityCount(l4));
+        assertEquals(0, l4.getEntities().stream().filter(e -> e.getPersistentDataContainer().has(Keys.DECOR, PersistentDataType.STRING)).count());
     }
 
     @Test
     void disableRemovesAllRuntimeEntities() {
-        World l3 = plugin.worlds().world(Level.LEVEL_3);
+        World l3 = plugin.worlds().world(Level.LEVEL_1);
         PlayerMock p = playerAt(0, 70, 0);
         floor(l3, 0, 64, 0, 4);
         p.teleport(new Location(l3, 0.5, 65, 0.5));
         for (int cx = -3; cx <= 3; cx++) for (int cz = -3; cz <= 3; cz++) l3.getChunkAt(cx, cz).load();
-        plugin.creatures().spawn(CreatureType.SPARK, new Location(l3, 2.5, 65, 2.5), null);
+        plugin.creatures().spawn(CreatureType.HOUND, new Location(l3, 2.5, 65, 2.5), null);
         server.getScheduler().performTicks(100);
         server.getPluginManager().disablePlugin(plugin);
         long leftovers = l3.getEntities().stream().filter(e -> e.getPersistentDataContainer().has(Keys.DECOR, PersistentDataType.STRING)
@@ -291,6 +291,6 @@ class PluginIntegrationTest {
         assertFalse(plain.contains("entity"));
         p.setOp(true);
         var op = server.getCommandTabComplete(p, "backrooms level ");
-        assertTrue(op.containsAll(java.util.List.of("0", "poolrooms", "1", "2", "3", "4", "5")));
+        assertTrue(op.containsAll(java.util.List.of("0", "1", "poolrooms", "4", "plains")));
     }
 }

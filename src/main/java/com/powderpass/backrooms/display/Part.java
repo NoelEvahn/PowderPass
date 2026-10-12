@@ -31,6 +31,8 @@ public final class Part {
     /** Name used by creature bodies to address parts. */
     public String name;
     Model owner;
+    /** Glowing part of a light fixture: dimmed by flicker / blackout events. */
+    public boolean lamp;
 
     Part(Kind kind, Matrix4f local) {
         this.kind = kind;
@@ -39,6 +41,13 @@ public final class Part {
 
     public Part glow(int light) {
         this.brightness = light;
+        return this;
+    }
+
+    /** Mark as the glowing element of a lamp (full brightness, dimmed by events). */
+    public Part lamp() {
+        this.lamp = true;
+        this.brightness = 15;
         return this;
     }
 

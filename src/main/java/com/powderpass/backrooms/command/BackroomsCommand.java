@@ -99,7 +99,7 @@ public final class BackroomsCommand implements TabExecutor {
     }
 
     private void help(CommandSender s) {
-        send(s, "<#d8c46a><bold>Backrooms</bold> <gray>— seven levels, no map.");
+        send(s, "<#d8c46a><bold>Backrooms</bold> <gray>— five places, no map.");
         send(s, "<white>/backrooms levels</white> <gray>list the levels");
         if (cfg().allowSelfEnter || s.hasPermission("backrooms.admin.teleport")) send(s, "<white>/backrooms enter</white> <gray>step out of reality into Level 0");
         if (cfg().allowSelfLeave || s.hasPermission("backrooms.admin.teleport")) send(s, "<white>/backrooms leave</white> <gray>return to where you came from");
@@ -171,7 +171,7 @@ public final class BackroomsCommand implements TabExecutor {
 
     private void levels(CommandSender s) {
         if (!need(s, "backrooms.use")) return;
-        send(s, "<#d8c46a><bold>The seven levels</bold>");
+        send(s, "<#d8c46a><bold>The levels</bold>");
         for (Level l : Level.values()) {
             World w = plugin.worlds().world(l);
             String state = w == null ? "<red>disabled" : "<green>open</green> <gray>(" + w.getPlayers().size() + " inside)";

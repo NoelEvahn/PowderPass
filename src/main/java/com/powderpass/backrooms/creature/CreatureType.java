@@ -1,14 +1,10 @@
 package com.powderpass.backrooms.creature;
 
-import java.util.Locale;
-
 /** The Backrooms ecosystem. Classes: sighting (harmless), stalker (unsettling), threat (can hurt), environmental. */
 public enum CreatureType {
     SMILER("smiler", "Smiler", "threat", "Hangs in the dark. Freezes while watched; avoids light; lunges if you look away."),
     FACELING("faceling", "Faceling", "sighting", "Tall, faceless and patient. Stalks at a distance and leaves when stared at."),
     HOUND("hound", "Hound", "threat", "Hunts by sound and sight. Sprinting draws it; sneaking and breaking line of sight lose it. Killable."),
-    SPARK("spark", "Live Current", "environmental", "A wandering knot of electricity. Cannot be killed; keep your distance."),
-    CONCIERGE("concierge", "Concierge", "stalker", "Moves only when unobserved. Its touch checks you into a different room. Ring a bell to dismiss it."),
     DRIFTER("drifter", "Drifter", "threat", "Glides under deep water and drags swimmers down. Leave the water or strike it.");
 
     public final String id;
@@ -25,6 +21,6 @@ public enum CreatureType {
 
     public static CreatureType parse(String s) {
         for (CreatureType t : values()) if (t.id.equalsIgnoreCase(s) || t.name().equalsIgnoreCase(s)) return t;
-        return s != null && s.toLowerCase(Locale.ROOT).startsWith("live") ? SPARK : null;
+        return null;
     }
 }

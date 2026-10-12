@@ -241,7 +241,7 @@ public abstract class RoomLevel extends LevelGenerator {
                 for (int y = y0 - 2; y <= y0; y++) c.set(u, y, v, B.AIR);
             }
         }
-        c.set(4, y0 - 1, 7, light);
+        c.set(4, y0 - 1, 6, light); // invisible light in the landing air; the visible fixture is a display
     }
 
     /** Trigger box for {@link #stairPit}: the landing. */
@@ -262,7 +262,7 @@ public abstract class RoomLevel extends LevelGenerator {
                 c.set(u, y0, v, floorB);
             }
         }
-        c.set(4, y0 + 4, 4, light);
+        c.set(4, y0 + 3, 4, light); // invisible light inside the booth; the visible fixture is a display
     }
 
     protected static int[] boothTrigger() {

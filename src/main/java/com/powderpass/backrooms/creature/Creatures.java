@@ -3,7 +3,6 @@ package com.powderpass.backrooms.creature;
 import com.powderpass.backrooms.BackroomsPlugin;
 import com.powderpass.backrooms.config.BackroomsConfig;
 import com.powderpass.backrooms.display.Model;
-import com.powderpass.backrooms.gen.levels.Level5Generator;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Particle;
@@ -14,9 +13,7 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.util.Vector;
 import org.joml.Matrix4f;
-import org.joml.Quaternionf;
 
-import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 /** Implementations of every creature type. */
@@ -30,8 +27,6 @@ final class Creatures {
             case SMILER -> new Smiler(plugin, mgr, s);
             case FACELING -> new Faceling(plugin, mgr);
             case HOUND -> new Hound(plugin, mgr, s);
-            case SPARK -> new Spark(plugin, mgr, s);
-            case CONCIERGE -> new Concierge(plugin, mgr);
             case DRIFTER -> new Drifter(plugin, mgr, s);
         };
     }
@@ -139,6 +134,7 @@ final class Creatures {
     /** Stalks at a distance, peeks, and leaves when stared at. Harmless (a sighting), but it wears you down. */
     static final class Faceling extends Creature {
         private int watchedTicks;
+        private int unseen;
         private boolean leaving;
         private Location leaveTo;
 
@@ -164,9 +160,15 @@ final class Creatures {
         @Override
         protected void think() {
             int dt = plugin.cfg().creatureTickInterval;
-            Player p = nearestPlayer(56);
-            if (p == null || age > 20 * 90) {
+            com.powderpass.backrooms.Level lvl = plugin.worlds().levelOf(world);
+            boolean outdoor = lvl != null && lvl.outdoor();
+            Player p = nearestPlayer(outdoor ? 140 : 56);
+            if (p == null || age > 20 * (outdoor ? 150 : 90)) {
                 remove();
+                return;
+            }
+            if (outdoor) {
+                fieldWatcher(p, dt);
                 return;
             }
             boolean watched = watchedBy(p, 25, 48);
@@ -201,6 +203,43 @@ final class Creatures {
                 animateWalk(1.25, 1.95, 0, false);
                 if (age % 40 < dt) body.pose("head", new Matrix4f().translate(0, 2.18f, 0).rotateZ((float) Math.toRadians(rnd().nextInt(-35, 35))).translate(0, -2.18f, 0), 10);
             }
+        }
+
+        @Override
+        public double despawnRange() {
+            com.powderpass.backrooms.Level lvl = plugin.worlds().levelOf(world);
+            return lvl != null && lvl.outdoor() ? 160 : 0;
+        }
+
+        /**
+         * In the open: a still figure far out in the field. It turns to face you, drifts closer only while
+         * unobserved, and is simply gone if you stare too long or walk toward it.
+         */
+        private void fieldWatcher(Player p, int dt) {
+            face(p.getLocation());
+            double d = dist(p);
+            if (watchedBy(p, 12, 140)) {
+                watchedTicks += dt;
+                unseen = 0;
+                if (watchedTicks % 20 < dt) mgr.sanityHit(p, 1.0);
+            } else {
+                unseen += dt;
+            }
+            if (watchedTicks > 100 || d < 18) {
+                world.playSound(loc(), Sound.ITEM_ELYTRA_FLYING, SoundCategory.AMBIENT, 0.3f, 0.5f);
+                remove();
+                return;
+            }
+            if (unseen > 140 && d > 26) {
+                unseen = 0;
+                Vector step = p.getLocation().toVector().subtract(loc().toVector()).setY(0).normalize().multiply(7);
+                Location to = loc().add(step);
+                to.setY(world.getHighestBlockYAt(to) + 1);
+                place(to.getX(), to.getY(), to.getZ(), yaw);
+            } else {
+                place(x, y, z, yaw);
+            }
+            animateWalk(1.25, 1.95, 0, false);
         }
 
         @Override
@@ -395,148 +434,6 @@ final class Creatures {
             world.playSound(loc(), Sound.ENTITY_WOLF_DEATH, SoundCategory.HOSTILE, 1f, 0.4f);
             world.spawnParticle(Particle.SQUID_INK, loc().add(0, 0.6, 0), 20, 0.3, 0.3, 0.3, 0.02);
             if (rnd().nextDouble() < 0.35) world.dropItemNaturally(loc().add(0, 0.5, 0), plugin.items().ration());
-        }
-    }
-
-    // ===================================================================== Spark (Live Current)
-    /** Wandering knot of electricity; environmental hazard, cannot be killed. */
-    static final class Spark extends Creature {
-        private final double damage;
-        private Location goal;
-        private int shockCooldown;
-
-        Spark(BackroomsPlugin p, CreatureManager m, BackroomsConfig.CreatureSettings s) {
-            super(p, m, CreatureType.SPARK, Double.MAX_VALUE);
-            this.damage = s.damage();
-        }
-
-        @Override
-        protected Model model() {
-            return Bodies.spark();
-        }
-
-        @Override
-        protected float[] hitboxSize() {
-            return new float[]{0.9f, 1.4f};
-        }
-
-        @Override
-        protected double headHeight() {
-            return 1.0;
-        }
-
-        @Override
-        protected void think() {
-            int dt = plugin.cfg().creatureTickInterval;
-            if (age > 20 * 180 || nearestPlayer(64) == null) {
-                remove();
-                return;
-            }
-            if (goal == null || moveToward(goal, 0.13, 1.0) || age % 200 < dt) {
-                goal = loc().add(rnd().nextInt(-14, 15), 0, rnd().nextInt(-14, 15));
-            }
-            ThreadLocalRandom r = rnd();
-            List<Integer> arcs = body.indices("arc");
-            for (int i : arcs) {
-                Quaternionf q = new Quaternionf().rotateXYZ(r.nextFloat() * 6.28f, r.nextFloat() * 6.28f, r.nextFloat() * 6.28f);
-                float len = 0.4f + r.nextFloat() * 0.6f;
-                body.raw(i, new Matrix4f().translate(0, 1.0f, 0).rotate(q).scale(1, len / 0.55f, 1).translate(-0.015f, 0, -0.015f).scale(0.03f, 0.55f, 0.03f), 1);
-            }
-            if (age % 10 < dt) {
-                world.spawnParticle(Particle.ELECTRIC_SPARK, head(), 12, 0.4, 0.4, 0.4, 0.2);
-                world.playSound(head(), Sound.BLOCK_BEACON_AMBIENT, SoundCategory.HOSTILE, 0.7f, 2.0f);
-            }
-            if (age % 30 < dt) mgr.flickerAround(head(), 8);
-            shockCooldown -= dt;
-            for (Player p : world.getPlayers()) {
-                if (!targetable(p) || shockCooldown > 0) continue;
-                if (p.getLocation().distanceSquared(loc()) < 1.8 * 1.8) {
-                    shock(p);
-                }
-            }
-        }
-
-        private void shock(Player p) {
-            shockCooldown = 15;
-            p.damage(damage);
-            mgr.noteAttack(p, type);
-            p.setVelocity(p.getLocation().toVector().subtract(loc().toVector()).setY(0).normalize().multiply(0.7).setY(0.35));
-            world.spawnParticle(Particle.ELECTRIC_SPARK, p.getLocation().add(0, 1, 0), 40, 0.4, 0.6, 0.4, 0.4);
-            world.playSound(p.getLocation(), Sound.ENTITY_LIGHTNING_BOLT_IMPACT, SoundCategory.HOSTILE, 0.4f, 1.9f);
-        }
-
-        @Override
-        public void hurt(Player by, double amount) {
-            // you cannot punch electricity
-            if (shockCooldown <= 0) shock(by);
-        }
-    }
-
-    // ===================================================================== Concierge
-    /** Moves only while unobserved, in short silent jumps. Its touch "checks you in" to a distant guest room. */
-    static final class Concierge extends Creature {
-        private int unseen;
-
-        Concierge(BackroomsPlugin p, CreatureManager m) {
-            super(p, m, CreatureType.CONCIERGE, 1);
-        }
-
-        @Override
-        protected Model model() {
-            return Bodies.concierge();
-        }
-
-        @Override
-        protected double headHeight() {
-            return 1.7;
-        }
-
-        @Override
-        protected void think() {
-            int dt = plugin.cfg().creatureTickInterval;
-            Player p = nearestPlayer(36);
-            if (p == null || age > 20 * 150) {
-                remove();
-                return;
-            }
-            if (anyoneWatching(30, 40)) {
-                unseen = 0;
-                return;
-            }
-            unseen += dt;
-            if (dist(p) < 1.6) {
-                checkIn(p);
-                return;
-            }
-            if (unseen >= 24) {
-                unseen = 0;
-                path = Nav.path(world, (int) Math.floor(x), (int) Math.floor(y), (int) Math.floor(z),
-                        p.getLocation().getBlockX(), p.getLocation().getBlockY(), p.getLocation().getBlockZ(), 2, Nav.Medium.GROUND, 900);
-                if (path.isEmpty()) return;
-                int[] wp = path.get(Math.min(path.size() - 1, 2 + rnd().nextInt(3)));
-                place(wp[0] + 0.5, wp[1], wp[2] + 0.5, yawTo(p.getLocation().getX(), p.getLocation().getZ()));
-                if (rnd().nextDouble() < 0.3) world.playSound(loc(), Sound.BLOCK_NOTE_BLOCK_BELL, SoundCategory.HOSTILE, 0.25f, 1.4f);
-            }
-        }
-
-        private void checkIn(Player p) {
-            mgr.noteAttack(p, type);
-            p.addPotionEffect(new PotionEffect(PotionEffectType.DARKNESS, 60, 0, false, false));
-            p.playSound(p.getLocation(), Sound.BLOCK_BELL_USE, SoundCategory.HOSTILE, 1f, 1.8f);
-            p.sendActionBar(BackroomsConfig.mm("<#b3263a><italic>Your room is ready."));
-            if (plugin.worlds().generator(com.powderpass.backrooms.Level.LEVEL_5) instanceof Level5Generator g) {
-                int[] room = g.guestRoomNear(p.getLocation().getBlockX(), p.getLocation().getBlockZ(), rnd().nextLong());
-                if (room != null) {
-                    plugin.teleports().teleportSafe(p, new Location(world, room[0] + 0.5, room[1], room[2] + 0.5), null);
-                }
-            }
-            remove();
-        }
-
-        @Override
-        protected void onHurt(Player by, double amount) {
-            world.playSound(loc(), Sound.BLOCK_BELL_RESONATE, SoundCategory.HOSTILE, 0.6f, 1.5f);
-            remove();
         }
     }
 

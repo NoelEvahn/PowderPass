@@ -69,7 +69,8 @@ class GenerationTest {
                 for (int cx = c0x; cx < c0x + cells; cx++) {
                     for (int cz = c0z; cz < c0z + cells; cz++) {
                         if (g.featureAt(f, cx, cz) == null && g.isSafeCell(f, cx, cz)) {
-                            int[] p = {cx * g.S + g.S / 2, g.floorY[f] + 1, cz * g.S + g.S / 2};
+                            int[] l = g.safeLocal(f, cx, cz);
+                            int[] p = {cx * g.S + l[0], g.floorY[f] + 1, cz * g.S + l[1]};
                             assertTrue(area.standable(p[0], p[1], p[2]), level + " safe cell centre not standable at " + p[0] + "," + p[1] + "," + p[2]
                                     + " feet=" + area.get(p[0], p[1], p[2]) + " below=" + area.get(p[0], p[1] - 1, p[2]) + " zone=" + g.zoneName(f, cx, cz));
                             assertNotEquals(Material.WATER, area.type(p[0], p[1] - 1, p[2]), "safe spot must be dry");
@@ -115,7 +116,7 @@ class GenerationTest {
                     }
                 }
             }
-            assertTrue(transitions > 0 || level == Level.LEVEL_5, level + " window has no transitions");
+            assertTrue(transitions > 0, level + " window has no transitions");
         }
     }
 
@@ -128,12 +129,15 @@ class GenerationTest {
         for (int x = area.minX + 1; x < area.maxX - 1; x++) {
             for (int z = area.minZ + 1; z < area.maxZ - 1; z++) {
                 for (int y = g.bottomY; y <= g.roofY; y++) {
-                    if (area.type(x, y, z) != Material.WATER) continue;
+                    B wb = area.get(x, y, z);
+                    if (wb.mat != Material.WATER && !wb.state.contains("waterlogged=true")) continue;
                     water++;
-                    Material below = area.type(x, y - 1, z);
+                    B bb = area.get(x, y - 1, z);
+                    Material below = bb.state.contains("waterlogged=true") ? Material.WATER : bb.mat;
                     assertTrue(below != Material.AIR && below != Material.LIGHT, level + " water over air at " + x + "," + y + "," + z);
                     for (int[] d : new int[][]{{1, 0}, {-1, 0}, {0, 1}, {0, -1}}) {
-                        Material n = area.type(x + d[0], y, z + d[1]);
+                        B nb = area.get(x + d[0], y, z + d[1]);
+                        Material n = nb.state.contains("waterlogged=true") ? Material.WATER : nb.mat;
                         assertTrue(n != Material.AIR && n != Material.LIGHT && !n.name().endsWith("_DOOR") && n != Material.LADDER,
                                 level + " water would flow at " + x + "," + y + "," + z + " into " + n);
                     }
@@ -151,7 +155,7 @@ class GenerationTest {
         for (int x = area.minX; x < area.maxX; x += 3) {
             for (int z = area.minZ; z < area.maxZ; z += 3) {
                 assertEquals(Material.BEDROCK, area.type(x, g.bottomY, z), level + " missing bedrock floor");
-                assertEquals(Material.BEDROCK, area.type(x, g.roofY, z), level + " missing bedrock roof at " + x + "," + z);
+                if (!level.outdoor()) assertEquals(Material.BEDROCK, area.type(x, g.roofY, z), level + " missing bedrock roof at " + x + "," + z);
             }
         }
     }
@@ -163,7 +167,7 @@ class GenerationTest {
         for (int dx = -3; dx <= 3; dx++) {
             for (int dz = -3; dz <= 3; dz++) {
                 long mandatory = g.districtFeatures(dx, dz).stream().filter(f -> f.isTransition() && f.def().chance() >= 1.0).count();
-                assertTrue(mandatory >= (level == Level.LEVEL_5 ? 2 : 1), level + " district " + dx + "," + dz);
+                assertTrue(mandatory >= 1, level + " district " + dx + "," + dz);
             }
         }
     }

@@ -12,79 +12,57 @@ seed: 0
 world-prefix: "backrooms_"
 
 levels:
-  level0:
+  level0:              # The Lobby: the only maze
     enabled: true
-    # Biome gives ambient particles, ambient sounds and water colour. Not locked.
     biome: "minecraft:swamp"
     generation:            # [locked]
-      hall-chance: 0.10        # share of regions that become pillar halls
-      dark-zone-chance: 0.20   # how much of the level sits in failing-light sectors
+      hall-chance: 0.08        # share of regions that become pillar halls
+      dark-zone-chance: 0.20   # sectors where the fixtures have died
       thick-wall-chance: 0.12  # abnormal wall thickness
       repeat-chance: 0.06      # regions that exactly repeat their neighbour
-      exit-chance: 0.35        # per district (~190 blocks square) chance of an EXIT door
-      landmark-chance: 0.7
-      decor-density: 1.0
-      loop-chance: 0.18        # extra connections beyond the spanning maze
-  poolrooms:
-    enabled: true
-    biome: "minecraft:warm_ocean"
-    generation:
-      chamber-chance: 0.16
-      water-ratio: 0.62
-      exit-chance: 0.30
+      plains-door-chance: 0.6  # per district: a door with grass under it
+      exit-chance: 0.30        # per district (~190 blocks square): an EXIT door
       landmark-chance: 0.6
       decor-density: 1.0
-      loop-chance: 0.22
-  level1:
+      loop-chance: 0.16        # extra connections beyond the spanning maze
+  level1:              # Habitable Zone: a grid of endless concrete corridors
     enabled: true
     biome: "minecraft:plains"
     generation:
-      warehouse-chance: 0.14
-      cache-chance: 0.05
+      grand-hall-chance: 0.15  # corridor lines that are 9 wide and 12 tall
+      room-chance: 0.7         # rooms carved beside each corridor stretch
+      cache-chance: 0.08
       dark-zone-chance: 0.25
-      elevator-chance: 0.7
-      landmark-chance: 0.8
+      plains-chance: 0.7
       decor-density: 1.0
-      loop-chance: 0.20
-  level2:
+  poolrooms:           # one continuous tiled hall of bays
     enabled: true
-    biome: "minecraft:basalt_deltas"
+    biome: "minecraft:warm_ocean"
     generation:
-      hazard-dead-end-chance: 0.35
-      junction-chance: 0.04
-      landmark-chance: 0.7
+      water-ratio: 0.55
+      screen-chance: 0.2       # free-standing tile screens (always with an opening)
+      plains-chance: 0.7
+      landmark-chance: 0.5
       decor-density: 1.0
-      loop-chance: 0.12
-  level3:
+  level4:              # Abandoned Office: city blocks split into rooms
     enabled: true
     biome: "minecraft:the_void"
     generation:
-      atrium-chance: 0.06
-      transformer-chance: 0.07
-      landmark-chance: 0.7
+      room-light-chance: 0.7
+      exit-chance: 0.45
+      plains-chance: 0.6
+      landmark-chance: 0.5
       decor-density: 1.0
-      loop-chance: 0.16
-  level4:
+  plains:              # open sky, stuck at sunset
     enabled: true
-    biome: "minecraft:the_void"
+    biome: "minecraft:pale_garden"
     generation:
-      open-plan-chance: 0.30
-      window-chance: 0.12
-      exit-chance: 0.40
-      landmark-chance: 0.6
+      road-chance: 0.22
+      roadside-house-chance: 0.5
+      house-chance: 0.06
+      colossus-chance: 0.6     # per 128x128 area: one colossal object
+      exit-chance: 0.5
       decor-density: 1.0
-      loop-chance: 0.20
-  level5:
-    enabled: true
-    biome: "minecraft:soul_sand_valley"
-    generation:
-      ballroom-chance: 0.08
-      dining-chance: 0.08
-      guest-room-chance: 0.8
-      exit-chance: 0.6
-      landmark-chance: 0.6
-      decor-density: 1.0
-      loop-chance: 0.12
 
 entry:
   # Players may use "/backrooms enter" on themselves (needs backrooms.use).
@@ -126,6 +104,7 @@ transitions:
 displays:
   enabled: true
   activation-radius-chunks: 3   # display props exist only near players
+  outdoor-activation-radius-chunks: 8   # the plains: colossi must be visible from far away
   max-entities-per-chunk: 60
   max-entities-per-world: 2500
   chunks-per-tick: 3            # activation work spread over ticks
@@ -141,13 +120,11 @@ creatures:
   max-per-level: 8
   despawn-distance: 64
   # base spawn chance per attempt per player, by level
-  level-chance: {level0: 0.22, poolrooms: 0.15, level1: 0.30, level2: 0.35, level3: 0.30, level4: 0.12, level5: 0.30}
+  level-chance: {level0: 0.22, level1: 0.30, poolrooms: 0.15, level4: 0.12, plains: 0.25}
   types:
-    smiler:    {enabled: true, damage: 6.0, weight: {level0: 5, level1: 3, level5: 2}}
-    faceling:  {enabled: true, weight: {level0: 5, poolrooms: 2, level1: 2, level4: 10, level5: 2}}
-    hound:     {enabled: true, damage: 5.0, health: 30.0, weight: {level1: 5, level2: 8, level3: 2}}
-    spark:     {enabled: true, damage: 4.0, weight: {level3: 8}}
-    concierge: {enabled: true, weight: {level5: 6}}
+    smiler:    {enabled: true, damage: 6.0, weight: {level0: 5, level1: 3}}
+    faceling:  {enabled: true, weight: {level0: 5, level1: 2, poolrooms: 2, level4: 10, plains: 10}}
+    hound:     {enabled: true, damage: 5.0, health: 30.0, weight: {level1: 6}}
     drifter:   {enabled: true, damage: 2.0, health: 20.0, weight: {poolrooms: 8}}
 
 events:

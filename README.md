@@ -1,19 +1,19 @@
-# Backrooms — a seven-level dimension for Paper 1.21.11
+# Backrooms — a five-level dimension for Paper 1.21.11
 
-Backrooms adds a separate, server-side-only alternate reality to a Paper 1.21.11 server. It is built from seven generated worlds, display-entity props and creatures, and sounds and light effects. Players need no mods or resource packs. The worlds never touch the Overworld, the Nether or the End.
+Backrooms adds a separate, server-side-only alternate reality to a Paper 1.21.11 server. It is built from five generated worlds, display-entity props and creatures, and sounds and light effects. Players need no mods or resource packs. The worlds never touch the Overworld, the Nether or the End.
 
 | | |
 |---|---|
 | Server | Paper **1.21.11**, Java 21 |
 | Plugin JAR | `build/libs/Backrooms-1.0.0.jar` |
 | Dependencies | none at runtime; no NMS, no packets, no resource pack |
-| Worlds | `backrooms_level0`, `backrooms_poolrooms`, `backrooms_level1` … `backrooms_level5` |
+| Worlds | `backrooms_level0`, `backrooms_level1`, `backrooms_poolrooms`, `backrooms_level4`, `backrooms_plains` |
 
 ---
 
 ## Installation
 
-1. Put `Backrooms-1.0.0.jar` in `plugins/` and start the server once. The seven worlds are created on first start; each takes a few hundred milliseconds.
+1. Put `Backrooms-1.0.0.jar` in `plugins/` and start the server once. The five worlds are created on first start; each takes a few hundred milliseconds.
 2. Edit `plugins/Backrooms/config.yml` if you want to, then restart the server or run `/backrooms reload`.
 3. Enter with `/backrooms enter` (this needs `backrooms.use`, which everyone has by default) or `/backrooms enter <player>`.
 
@@ -29,9 +29,8 @@ Backrooms adds a separate, server-side-only alternate reality to a Paper 1.21.11
 - **Moving between levels:** every level contains physical structures that lead elsewhere. Each district (about 180–220 blocks square) is guaranteed to hold one of each of its level's required transitions. Nearby transitions also give a recognisable cue: a low beacon hum, or wind for exits.
 - **Getting out:** players have to *find* an exit. `/backrooms leave` is admin-only by default. The exits are:
   - the EXIT door in Level 0
-  - the sunlit arch in the Poolrooms
   - the FIRE EXIT in Level 4
-  - the revolving door in the Level 5 lobby
+  - the giant doorframe in the Plains
 
   Dying also returns the player to their return point (`death.mode: RETURN`).
 - **Surviving:**
@@ -46,75 +45,58 @@ Backrooms adds a separate, server-side-only alternate reality to a Paper 1.21.11
 | From | Structure (trigger) | To |
 |---|---|---|
 | Level 0 | Concrete stairwell pit (walk down) | Level 1 |
-| Level 0 | Cold tiled pillar (crouch against it, or stand there for 3 s) | Poolrooms |
-| Level 0 | Free-standing door with green EXIT sign (walk through) | **Exit** (about 35% of districts) |
-| Poolrooms | Black drain at the bottom of a 7-deep pool | Level 0 |
-| Poolrooms | Grey STAFF ONLY booth | Level 1 |
-| Poolrooms | Sunlit arch | **Exit** (about 30% of districts) |
-| Level 1 | MAINTENANCE stairwell | Level 2 |
+| Level 0 | Cold tiled seam in a wall (crouch against it, or stand there for 3 s) | Poolrooms |
+| Level 0 | Door with grass under it and daylight around the frame (walk through) | Plains (about 60% of districts) |
+| Level 0 | Free-standing door with green EXIT sign | **Exit** (about 30% of districts) |
 | Level 1 | Yellow wallpaper doorway | Level 0 |
-| Level 1 | Freight elevator (stand inside for 2 s) | Level 4 (about 70% of districts) |
-| Level 2 | Hatch with ladder shaft | Level 3 |
-| Level 2 | Stairs up toward daylight | Level 1 |
-| Level 3 (upper floor) | Office lift (stand inside for 2 s) | Level 4 |
-| Level 3 (lower floor) | Copper vent booth | Level 2 |
-| Level 4 | Elevator lobby (stand inside for 2 s) | Level 5 |
-| Level 4 | Basement stairs | Level 3 |
-| Level 4 | Copper FIRE EXIT door | **Exit** (about 40% of districts) |
-| Level 5 | Grand lobby revolving door | **Exit** (about 60% of districts) |
-| Level 5 | Old brass elevator (stand inside for 2 s) | Level 4 |
-| Level 5 | Wardrobe in Room 000 | Level 0 |
+| Level 1 | Freight elevator (stand inside for 2 s) | Level 4 |
+| Level 1 | Half-open loading shutter with daylight under it | Plains (about 70%) |
+| Poolrooms | Black drain at the bottom of an 8-deep pool | Level 0 |
+| Poolrooms | Grey service-door booth | Level 1 |
+| Poolrooms | Sunlit arch | Plains |
+| Level 4 | Stairwell in the largest room | Level 1 |
+| Level 4 | Copper FIRE EXIT door | **Exit** (about 45%) |
+| Level 4 | Window that is far too bright | Plains (about 60%) |
+| Plains | The one yellow house (step inside) | Level 0 |
+| Plains | Backyard pool (dive to the bottom) | Poolrooms |
+| Plains | Bunker hatch in the grass | Level 1 |
+| Plains | Giant free-standing doorframe | **Exit** (about 50%) |
 
 ---
 
-## The seven levels
+## The five levels
 
-**Level 0 — The Lobby.** Mono-yellow wallpaper, stained mustard carpet and buzzing froglight panels.
-- Large noise patches drift between four wallpaper styles.
-- There are failing-light dark sectors and low-ceiling crawl sectors.
-- Pillar halls with ten-block ceilings break up the rooms.
-- Some walls are abnormally thick; stub walls make claustrophobic rooms; murky puddles mark the damp areas.
+Every level follows the same rules: **a small block palette**, and **no light-emitting blocks at all** (no lanterns, froglights, glowstone, sea lanterns, torches or bulbs). Every light source is an invisible `LIGHT` block behind a display-entity fixture model: ceiling panels, tube lights, cage lamps, skylights, pool lamps, floor lamps. Some fixtures are dead and some flicker; blackouts dim the fixture models along with the light.
+
+Each level uses a **different generation rule**:
+
+**Level 0 — The Lobby.** *The only maze.* 8-block cells joined by a spanning tree with extra loops.
+- Palette: smooth sandstone walls, yellow terracotta carpet with brown stains, white ceiling.
+- Thick walls, stub walls, pillar cells and open halls; dark sectors, low-ceiling sectors and damp sectors with puddles.
 - Whole regions sometimes repeat their neighbour exactly.
-- Landmarks: the red room, a desk with a ringing phone, and a circle of chairs.
+- Landmarks: a desk with a phone, a circle of chairs facing nothing.
 
-**The Poolrooms.** White and grid tile, turquoise water (warm-ocean water colour), and walkways flush with the pools.
-- Shallow wading rooms are joined by channels.
-- Deep pools always have a submerged stairway and underwater lights.
-- Towering tiled chambers rise 15 blocks.
-- Animated caustic reflections drift across the ceiling.
-- Also: a working water slide, an impossible staircase, and an "infinite" shaft.
+**Level 1 — Habitable Zone.** *A grid, not a maze.* Endless straight concrete corridors on a 40-block grid.
+- Corridor width varies per line; about 15% are grand halls 9 wide and 12 tall with pillar rows.
+- Rooms open off the corridors: empty, storage, flooded, supply caches with better loot, and **safe rooms** (wooden floor; creatures never enter, sanity recovers).
+- Tube lights and cage lamps every 10 blocks, with dark stretches.
 
-**Level 1 — Habitable Zone.** Large concrete halls in three sub-styles, with painted floor lines and sparse fluorescent light.
-- Warehouses with rack rows, loading docks and puddles.
-- **Supply caches** give better loot.
-- **Safe rooms** (warm light, wooden floor, chalked "SAFE") are never entered by creatures, and sanity recovers there.
+**The Poolrooms.** *One continuous hall of bays.* 12-block bays between 2×2 pillars; nothing is a corridor.
+- Each bay is dry, shallow or deep (3–8 blocks), and the ceiling rises with depth (7, 10 or 16 blocks).
+- White and light-blue tile and water only. Free-standing tile screens always leave a gap.
+- Deep pools have a submerged light at the bottom; skylight panels, pool lamps, caustic reflections, a lifebuoy, a lifeguard post and a working water slide.
 
-**Level 2 — Pipe Dreams.** Narrow 2–3 wide service tunnels carved from rock (a different topology from the room levels).
-- Basalt and hot copper pipes run in the walls and overhead.
-- Iron grates sit over glowing magma; hanging lanterns and red emergency torches light the way.
-- There are utility rooms and rare tall junction halls.
-- Hot zones cause hunger and ash.
-- **Steam-vented dead ends hiss before they scald.**
+**Level 4 — Abandoned Office.** *Partitioned, not carved.* 48-block city blocks are split into rooms by binary space partitioning, with a perimeter corridor.
+- Rooms by size: open-plan desk farms, glass meeting rooms, break rooms, offices, closets, storage.
+- Small rooms have doors; some rooms are completely unlit.
 
-**Level 3 — Electrical Station.** Two stacked floors, each with its own maze.
-- A guaranteed service ladder in every region links the floors.
-- Double-height atriums have railed catwalks around a vibrating generator.
-- Switch rooms have blinking switchboards; machine rooms are lined with equipment.
-- Fenced transformer yards are a **telegraphed shock hazard**.
-- Turbines, piston pumps, cable trays and hazard-striped walls fill the halls.
+**The Plains.** *Open sky, stuck at evening.* A superflat field under a sky with no sun movement.
+- Sparse dirt roads lined with utility poles and identical white houses with dark windows.
+- **Everything is slightly wrong:** houses on the same road share a defect (no door, a door too high, sunk into a trench, floating, a door into a wall, or replaced by a black monolith). Chairs face the back wall.
+- **Colossal display-entity structures** stand on the horizon: a giant chair, a doorframe, stairs to nowhere, a wall outlet, a TV, a floating panel, a lone wall and a tall figure.
+- A Faceling watches from the field (see below).
 
-**Level 4 — Abandoned Office.** Open-plan regions of 1.5-block cubicles with checkered carpet tiles.
-- Glass meeting rooms, break rooms with counters and a vending machine, private offices, and copier rooms with sliding scan bars.
-- **Windows that lie:** sealed pockets behind glass show a sunny skyline, a black void with one distant light, a flooded room, or a miniature office with a figure watching you.
-- CRT monitors flicker messages, sometimes your name.
-- It is calm here.
-
-**Level 5 — Terror Hotel.** Diagonal damask wallpaper in three colour wings over dark-oak wainscoting, with red runner carpet and gold trim.
-- **Maze dead ends become numbered guest rooms behind real doors**, each with a bed, wardrobe, nightstand and lamp.
-- Checkered ballrooms have swaying chandeliers and a piano that plays itself.
-- Dining halls are laid with tables and candelabras.
-- There is a grey service wing, a reception with a bell and a key board, and grandfather clocks with swinging pendulums.
-- Faceless dancers vanish when you approach. Soul-valley ambience fills the halls.
+> Distant colossi need clients to track entities far away. Raise `world-settings.default.entity-tracking-range.display` in `spigot.yml` if they pop in late; `displays.outdoor-activation-radius-chunks` controls how far they spawn.
 
 ---
 
@@ -124,12 +106,10 @@ None of these is a renamed vanilla mob. Each is a coordinated group of display e
 
 | Type | Levels | Class | Behaviour and counterplay |
 |---|---|---|---|
-| **Smiler** | 0, 1, 5 | threat | Floating grin and eyes, found only in the dark. Freezes while watched; stare for about 4 s and it dissolves. Creeps forward when you look away and are in darkness. Light at ≥11 keeps it at bay. A giggle warns you when it is close. |
-| **Faceling** | 0, Pool, 1, 4, 5 | sighting | Tall and faceless, with long-limbed walk animation. Stalks at 12–20 blocks and peeks around corners. Leaves when stared at. Harmless, but drains sanity. Also appears as **private hallucinations**: only the affected player can see them. |
-| **Hound** | 1, 2, 3 | threat (killable, 30 HP) | Quadruped with swinging legs and an opening jaw. **Hunts by sound** (sprinting is loud, sneaking almost silent) and by sight. Growls and lowers its head for about 1 s before a lunge. Flees when badly hurt. |
-| **Live Current** | 3 | environmental | Knot of crackling arcs that wanders the halls and makes nearby lights flicker. Shocks anyone within about 2 blocks. Cannot be killed (punching it shocks you). |
-| **Concierge** | 5 | stalker | Headless bellhop. Moves only while nobody is watching, in silent jumps. Its touch "checks you in" to a distant guest room. Ring a reception bell to dismiss it. |
-| **Drifter** | Poolrooms | threat (20 HP) | Pale undulating shape in deep water. Bubbles warn you. It drags swimmers down; leave the water or strike it. |
+| **Smiler** | 0, 1 | threat | Floating grin and eyes, found only in the dark. Freezes while watched; stare for about 4 s and it dissolves. Creeps forward when you look away. Light at ≥11 keeps it at bay. A giggle warns you when it is close. |
+| **Faceling** | all | sighting | Tall and faceless. Stalks at 12–20 blocks and leaves when stared at. Harmless, but drains sanity; also appears as **private hallucinations**. **In the Plains** it stands 40–70 blocks out in the field, comes 7 blocks closer every 7 s you don't look at it, and leaves when stared at for 5 s or approached within 18 blocks. |
+| **Hound** | 1 | threat (killable, 30 HP) | Quadruped. **Hunts by sound** (sprinting is loud, sneaking almost silent) and by sight. Growls and lowers its head before a lunge. Flees when badly hurt. |
+| **Drifter** | Poolrooms | threat (20 HP) | Pale shape in deep water. Bubbles warn you. It drags swimmers down; leave the water or strike it. |
 
 Spawning is deliberately rare:
 - Each player gets an attempt every 20 s, with chances per level.
@@ -139,9 +119,9 @@ Spawning is deliberately rare:
 
 ## Environmental events
 
-`flicker`, `blackout` (raises spawn chances), `lights_out` (lights die one by one toward you), `footsteps`, `knocking`, `machinery`, `steam_burst` (telegraphed, Level 2), `power_surge` (telegraphed; standing water becomes live, Level 3), `pool_echo`, `phone_ring`, `waltz` (a detuned harp waltz), `elevator_ding`, `deja_vu` (a hallucination), `hum_shift`.
+`flicker`, `blackout` (raises spawn chances), `lights_out` (lights die one by one toward you), `footsteps`, `knocking`, `door_behind` (a real door behind you opens, then closes), `machinery`, `pool_echo`, `phone_ring`, `wind` (Plains), `deja_vu` (a hallucination), `hum_shift`.
 
-All light effects are **client-side only** (`sendBlockChange`). The world is never modified, so a crash can never leave lights broken.
+All light effects are **client-side only** (`sendBlockChange` on the invisible `LIGHT` blocks, plus dimming the fixture models). The world is never modified, so a crash can never leave lights broken.
 
 ---
 
@@ -152,8 +132,8 @@ All light effects are **client-side only** (`sendBlockChange`). The world is nev
 | `/backrooms help` | `backrooms.use` | Player and admin help |
 | `/backrooms enter [player]` | `backrooms.use` (self, if `entry.allow-self-enter`) · `backrooms.admin.teleport` (others) | Safe entry into Level 0; saves the return point |
 | `/backrooms leave [player]` | `backrooms.admin.teleport` (or self, if `entry.allow-self-leave`) | Back to the saved return point or the fallback |
-| `/backrooms level <0\|poolrooms\|1\|2\|3\|4\|5> [player]` | `backrooms.admin.teleport` | Admin spawn if set, otherwise the safe cell nearest the origin |
-| `/backrooms levels` | `backrooms.use` | The seven levels and their status |
+| `/backrooms level <0\|1\|poolrooms\|4\|plains> [player]` | `backrooms.admin.teleport` | Admin spawn if set, otherwise the safe cell nearest the origin |
+| `/backrooms levels` | `backrooms.use` | The five levels and their status |
 | `/backrooms setspawn [level]` | `backrooms.admin.teleport` | Stand in the level; the spot is validated as safe |
 | `/backrooms status` | `backrooms.admin.debug` | Worlds, players, loaded chunks, threats per type, display counts, generator info, average tick cost |
 | `/backrooms entity list` | `backrooms.admin.entities` | Creature catalogue |
@@ -186,13 +166,13 @@ Commands work from the console wherever a target player or level is given. Alias
 | `world-prefix` | World folder prefix |
 | `levels.<level>.enabled` | Load this level's world. A disabled level's transitions show "the way is sealed". Players left in a disabled level are sent home when they join |
 | `levels.<level>.biome` | Biome key for ambient particles, sounds and water colour |
-| `levels.<level>.generation.*` | **Locked** per level when its world is created: hall/chamber/warehouse/open-plan/ballroom chances, dark zones, exit chances, landmark chances, decoration density, loop chance (extra maze connections), and more |
+| `levels.<level>.generation.*` | **Locked** per level when its world is created: each level has its own keys (Level 0: hall/thick-wall/repeat/loop chances; Level 1: grand-hall/room/cache chances; Poolrooms: water ratio, screens; Level 4: room-light chance; Plains: road/house/colossus chances), plus exit, Plains and landmark chances and decoration density |
 | `entry.allow-self-enter` / `allow-self-leave` / `allowed-worlds` / `spread-radius` / `title` | Entry rules |
 | `return.fallback-world` | Used when a return point is missing or its world is gone |
 | `death.mode` | `RETURN`, `LEVEL0` or `STAY`. `death.keep-inventory` keeps items and XP for deaths inside |
 | `restrictions.*` | Block protection, ender pearls, chorus fruit, portals, beds, music suppression, `blocked-commands` (e.g. `home`, `spawn`, `tpa`, `warp`, `back`) |
 | `transitions.*` | Arrival cooldown, dwell/intent times, arrival protection |
-| `displays.*` | Activation radius (chunks), `max-entities-per-chunk`, `max-entities-per-world`, chunks per tick, animation interval, view range, hazards on/off |
+| `displays.*` | Activation radius (chunks), `outdoor-activation-radius-chunks` (Plains, default 8), `max-entities-per-chunk`, `max-entities-per-world`, chunks per tick, animation interval, view range, hazards on/off |
 | `creatures.*` | Tick interval, spawn attempt period, caps, despawn distance, `level-chance`, per-type `enabled`/`damage`/`health`/`weight` per level |
 | `events.*` | Events on/off, check period, chance, ambience, flicker radius |
 | `sanity.*` | Sanity on/off; optional action-bar readout |
@@ -205,73 +185,50 @@ Commands work from the console wherever a target player or level is given. Alias
 
 ## Architecture notes
 
-- **Dimension:** seven server-created worlds with the NORMAL environment and custom `ChunkGenerator`s.
+- **Dimension:** five server-created worlds with the NORMAL environment and custom `ChunkGenerator`s.
   - All vanilla stages are disabled: noise, caves, decorations, structures and mob spawning.
-  - The worlds use fixed midnight, no weather, no mob spawning, a random tick speed of 0 and no fire spread.
-  - Levels are sealed with bedrock top and bottom, so there is no void or sky.
-  - Paper cannot add new client-side dimension types; players experience the seven worlds as one reality because the plugin moves them with controlled teleports.
+  - The worlds use fixed time (midnight indoors, evening in the Plains), no weather, no mob spawning, a random tick speed of 0 and no fire spread.
+  - Indoor levels are sealed with bedrock top and bottom; the Plains has a bedrock floor and open sky.
+  - Paper cannot add new client-side dimension types; players experience the five worlds as one reality because the plugin moves them with controlled teleports.
 - **Generation:** a pure function of (seed, coordinates), so it is thread-safe and seamless across chunks.
-  - **Cells** are organised into **regions**. Each region is a random spanning tree, and neighbouring regions always share 1–3 open edges. As a result, every cell is reachable and no exit can be sealed off.
-  - Regions are grouped into **districts**, each of which receives the level's guaranteed transitions.
-  - Zones come from smooth noise sampled per cell, so style borders fall on cell borders and never cut through a room.
-  - Merged regions form halls, chambers, warehouses, open-plan offices and ballrooms.
-  - All water is contained still source water whose surface is flush with the floor, and flowing is additionally cancelled.
+  - Every level has its own layout rule (maze, corridor grid, bay hall, BSP office blocks, open field), but all are organised into **regions** and **districts**; each district receives the level's guaranteed transitions, and each layout is checked for full reachability by the tests.
+  - Zones come from smooth noise sampled per cell, so style borders never cut through a room.
+  - All water is contained still source water, and flowing is additionally cancelled.
 - **Display subsystem:**
-  - About 100 authored models: BlockDisplay, ItemDisplay, TextDisplay and Interaction.
+  - About 80 authored models: BlockDisplay, ItemDisplay, TextDisplay and Interaction.
   - Animation: spin, sway, bob, jitter, slide, orbit, blink and flicker, sent with display interpolation.
-  - Scripted behaviours: elevator doors, CRT messages, a ringing phone, vanishing dancers, a gramophone, a piano.
+  - Scripted behaviours: elevator doors, a ringing phone, lamp dimming during events.
   - Emitters, telegraphed hazards, and interactions (bell, phone, radio, vending machine).
   - Props are derived from the layout, so they are **never saved**. They are spawned near players within per-chunk and per-world budgets, spread across ticks, and removed when out of range, when the chunk unloads, and on disable.
   - Every entity is non-persistent and tagged in its PDC; tagged leftovers are swept when chunks load.
   - Props that need collision get invisible barrier blocks from the generator. Lamps get invisible light blocks.
-- **Persistence:** the return point, the "inside" flag (used to detect stranded players) and sanity live in each player's PDC. World metadata and admin spawns live in `data/worlds.yml`. Worlds are never deleted or regenerated.
+- **Persistence:** the return point, the "inside" flag (used to detect stranded players) and sanity live in each player's PDC. World metadata and admin spawns live in `data/worlds.yml`. Worlds are never deleted or regenerated. A world created by an older generator version logs a warning; delete its folder (and its entry in `data/worlds.yml`) to regenerate it with the new layout.
 - **Threading:** Bukkit calls happen on the main thread. Chunk preparation for teleports uses `getChunkAtAsync`. Generator block states are pre-resolved at startup. Spawn writes are snapshotted on the main thread and written asynchronously.
 - **No NMS and no packets.** Client-side light effects use the stable `Player#sendBlockChange` API, and private hallucinations use `Entity#setVisibleByDefault` and `Player#showEntity`.
 
 ## Testing
 
-`gradle test` runs 58 automated tests. All of them pass on this build.
+`gradle test` runs 46 automated tests. All of them pass on this build.
 
-- **Generation (43 tests across all 7 levels):**
+- **Generation (31 tests across all 5 levels):**
   - Determinism across instances and chunk order, and seed sensitivity.
-  - **Flood-fill reachability** of every safe cell and every transition trigger. This paints real chunks into memory and walks them the way a player would (walking, stepping, dropping, swimming and climbing ladders) across three 3×3-region windows per level.
-  - Water is contained and still.
-  - Bedrock shell.
-  - Guaranteed transitions in every district.
+  - **Flood-fill reachability** of every safe spot and every transition trigger, walking real painted chunks the way a player would (walking, stepping, dropping, swimming, climbing).
+  - Water is contained and still; bedrock shell (no roof check in the Plains).
+  - At least one guaranteed transition in every district.
   - The safe-spot search lands on standable, trigger-free ground.
-- **Plugin integration on MockBukkit (12 tests):**
-  - The seven worlds are created, and locked snapshots survive config changes and reload.
-  - Permission gating and tab completion.
-  - Enter saves the return point, re-entering keeps it, the console can make a player leave, and the flag is cleared.
-  - Players arrive in different places.
-  - Protection and blocked commands apply only inside.
-  - A stairwell transition takes a player to Level 1, with an arrival cooldown.
-  - Creature hitbox damage and death, and confirmed level-wide clearing.
-  - Decorations spawn near players, are non-persistent, and despawn when the player leaves.
-  - Disabling the plugin removes every runtime entity.
-- **Models and states (3 tests):**
-  - Every decoration id the generators emit builds into a model (100 models).
-  - Display density per chunk stays within budget.
-  - 121 of the 128 generator block states are validated by a real block-data parser. The other 7 (iron-bar connections, ladder facing, lantern hanging, lightning-rod facing) are standard vanilla properties that the mock cannot parse.
+- **Plugin integration on MockBukkit (12 tests):** world creation and locked snapshots, permissions and tab completion, enter/leave and return points, protection, a stairwell transition with arrival cooldown, creature hitboxes and confirmed clearing, decoration spawn/despawn, clean disable.
+- **Models and states (3 tests):** every decoration id builds into a model (77 used), display density per chunk stays within budget (highest: Level 4 at about 25 per chunk), and all 62 generator block states are validated by a real block-data parser.
 
 ### Not verified in a real game: please check in-game
 
 No Paper server binary could be downloaded in the build environment, so nothing has been run on a live server yet. Checklist:
 
-1. **First start:** the seven worlds are created without errors, and `/backrooms status` shows them. Restart: the same terrain, return points kept, no duplicate props.
-2. **Visual pass, one `/backrooms level <x>` per level:**
-   - Palettes, lighting levels and the look of the props.
-   - That prop orientation (front = +Z, yaw), **text display facing** and the wall offsets line up with the walls.
-3. **Animations:** fan, turbine and clock spin direction and smoothness; elevator doors opening near you and closing when you step inside; chandelier and pendulum sway; dancers vanishing.
-4. **Each transition:** trigger feel, the noclip effect, the arrival spot, and no immediate bounce back. The Poolrooms slide push. Seam intent (crouch).
-5. **Creature behaviour and fairness:**
-   - Smiler freezes when looked at and is repelled by light.
-   - Hound sound tracking, telegraph timing, lunge and damage.
-   - Concierge jumps only while unobserved; the reception bell dismisses it.
-   - Drifter grab and release.
-   - Live Current shocks.
-   - That clicking `Interaction` hitboxes works with real clients.
+1. **Upgrading:** delete the old `backrooms_level2/3/5` folders and any world that logs an old generator version, then start the server. The five worlds should be created without errors, and `/backrooms status` should show them.
+2. **Visual pass, one `/backrooms level <x>` per level:** palettes, light levels, fixture models lining up with the ceiling `LIGHT` blocks, and prop orientation against walls.
+3. **The Plains:** colossi visible at distance (see the tracking-range note), house variants, the fixed evening sky.
+4. **Each transition:** trigger feel, arrival spot, no bounce back. The Poolrooms slide push. Seam intent (crouch). The drain and the backyard pool dive.
+5. **Creature behaviour and fairness:** Smiler freezes when looked at; Hound sound tracking and lunge; Drifter grab and release; the Plains Faceling approaching only while unwatched; clicking `Interaction` hitboxes with real clients.
 6. **Client-side effects:** that a `LIGHT` block sent by `sendBlockChange` relights on real clients (flashlight, flicker, blackout, lights out).
-7. **Hazards:** steam vents and transformers telegraph before hurting; boiler heat.
+7. **The `door_behind` event:** the door opens and closes back cleanly.
 8. **Death in each `death.mode`;** joining after a level was disabled (stranded recovery); ender pearl and chorus blocking; blocked commands.
 9. **Performance with several players:** watch `/backrooms status` tick costs, then tune `displays.activation-radius-chunks` and the entity caps if needed.

@@ -78,7 +78,6 @@ public final class DecorationManager implements Listener {
         final Entity[] ents;
         long hazardAt = -1;
         boolean telegraphed;
-        boolean hidden;
         boolean open;
         long nextBehavior;
 
@@ -141,8 +140,8 @@ public final class DecorationManager implements Listener {
     }
 
     private void activationPass() {
-        int r = cfg().activationRadius;
         for (WorldState ws : worlds.values()) {
+            int r = ws.level.outdoor() ? cfg().outdoorActivationRadius : cfg().activationRadius;
             Set<Long> desired = new HashSet<>();
             Set<Long> keep = new HashSet<>();
             for (Player p : ws.world.getPlayers()) {
@@ -210,6 +209,7 @@ public final class DecorationManager implements Listener {
             int n = model.entityCount();
             if (used + n > cfg().maxPerChunk || ws.entities + n > cfg().maxPerWorld) continue;
             Location anchor = new Location(ws.world, spec.x, spec.y, spec.z, 0, 0);
+            float range = model.viewRange > 0 ? model.viewRange : view;
             Matrix4f base = new Matrix4f()
                     .rotateY((float) Math.toRadians(-spec.yaw))
                     .rotateX((float) Math.toRadians(spec.pitch))
@@ -218,7 +218,7 @@ public final class DecorationManager implements Listener {
             for (int i = 0; i < model.parts.size(); i++) {
                 Part p = model.parts.get(i);
                 Matrix4f m = new Matrix4f(base).mul(p.local);
-                inst.ents[i] = DisplayFactory.spawn(ws.world, anchor, p, m, view, "decor", spec.key());
+                inst.ents[i] = DisplayFactory.spawn(ws.world, anchor, p, m, range, "decor", spec.key());
                 if (p.kind == Part.Kind.INTERACTION) interactions.put(inst.ents[i].getUniqueId(), inst);
             }
             used += n;
@@ -314,13 +314,7 @@ public final class DecorationManager implements Listener {
             Entity e = inst.ents[i];
             if (!(e instanceof Display d) || !e.isValid()) continue;
             Matrix4f pose = poses.get(p.group);
-            if (inst.hidden) {
-                d.setInterpolationDelay(0);
-                d.setInterpolationDuration(8);
-                d.setTransformationMatrix(new Matrix4f(inst.base).mul(p.local).scale(0.001f));
-                continue;
-            }
-            if (pose != null || "dancers".equals(m.behavior)) {
+            if (pose != null) {
                 Matrix4f full = new Matrix4f(inst.base);
                 if (pose != null) full.mul(pose);
                 full.mul(p.local);
@@ -454,33 +448,6 @@ public final class DecorationManager implements Listener {
                             ws.world.playSound(inst.anchor, Sound.BLOCK_NOTE_BLOCK_BELL, SoundCategory.BLOCKS, 1.0f, 1.9f), k * 12L);
                 }
             }
-            case "dancers" -> {
-                double r = m.hideRadius;
-                boolean hide = nearestSq < r * r;
-                boolean show = nearestSq > (r + 2) * (r + 2);
-                if (hide && !inst.hidden) {
-                    inst.hidden = true;
-                    ws.world.playSound(inst.anchor, Sound.ENTITY_ALLAY_ITEM_TAKEN, SoundCategory.AMBIENT, 0.5f, 0.4f);
-                } else if (show && inst.hidden) {
-                    inst.hidden = false;
-                }
-            }
-            case "gramophone" -> {
-                if (tick < inst.nextBehavior || nearestSq > 12 * 12) return;
-                inst.nextBehavior = tick + 600;
-                plugin.environment().playWaltz(inst.anchor);
-            }
-            case "piano" -> {
-                if (tick < inst.nextBehavior || nearestSq > 14 * 14) return;
-                inst.nextBehavior = tick + 200 + ThreadLocalRandom.current().nextInt(400);
-                if (ThreadLocalRandom.current().nextDouble() < 0.5) return;
-                int notes = 3 + ThreadLocalRandom.current().nextInt(4);
-                for (int k = 0; k < notes; k++) {
-                    float pitch = 0.5f + ThreadLocalRandom.current().nextInt(7) * 0.06f;
-                    plugin.getServer().getScheduler().runTaskLater(plugin, () ->
-                            ws.world.playSound(inst.anchor, Sound.BLOCK_NOTE_BLOCK_HARP, SoundCategory.RECORDS, 0.8f, pitch), k * 9L);
-                }
-            }
             default -> {
             }
         }
@@ -516,11 +483,6 @@ public final class DecorationManager implements Listener {
         actionCooldown.put(p.getUniqueId(), now + 800);
         World w = inst.anchor.getWorld();
         switch (action) {
-            case "bell" -> {
-                w.playSound(inst.anchor, Sound.BLOCK_BELL_USE, SoundCategory.BLOCKS, 0.8f, 1.8f);
-                int n = plugin.creatures().dismissNear(inst.anchor, 40, "concierge");
-                if (n > 0) p.sendActionBar(BackroomsConfig.mm("<gray><italic>Somewhere, a door closes politely."));
-            }
             case "phone" -> {
                 w.playSound(inst.anchor, Sound.BLOCK_WOODEN_TRAPDOOR_OPEN, SoundCategory.BLOCKS, 0.8f, 1.4f);
                 Component hint = plugin.transitions().whisperHint(p);
@@ -537,7 +499,7 @@ public final class DecorationManager implements Listener {
                         "<gray><italic>\"...this is Unit Seven... the stairs only go down once...\"",
                         "<gray><italic>\"...if it smiles, look at it. Don't stop looking...\"",
                         "<gray><italic>\"...the dogs hear you run. Walk. Walk.\"",
-                        "<gray><italic>\"...the hotel has a front door. It turns. It always turns...\"",
+                        "<gray><italic>\"...there's grass behind the shutters. don't go out there. it's always evening...\"",
                         "<gray><italic>\"...almond water. Find the water...\""};
                 p.sendMessage(BackroomsConfig.mm(lines[ThreadLocalRandom.current().nextInt(lines.length)]));
             }
@@ -552,6 +514,53 @@ public final class DecorationManager implements Listener {
             default -> {
             }
         }
+    }
+
+    // ------------------------------------------------------------------ lamp control (used by events)
+
+    /**
+     * Dim or flicker the glowing parts of light fixtures near a point for a while. The invisible light blocks are
+     * handled separately (client-side); this is what players actually see go dark.
+     */
+    public void dimLamps(Location c, double radius, int ticks, boolean flicker) {
+        WorldState ws = worlds.get(c.getWorld().getUID());
+        if (ws == null) return;
+        List<Display> lamps = new ArrayList<>();
+        List<Part> parts = new ArrayList<>();
+        for (List<Instance> list : ws.active.values()) {
+            for (Instance inst : list) {
+                if (inst.anchor.distanceSquared(c) > radius * radius) continue;
+                for (int i = 0; i < inst.model.parts.size(); i++) {
+                    Part p = inst.model.parts.get(i);
+                    if (p.lamp && inst.ents[i] instanceof Display d && d.isValid()) {
+                        lamps.add(d);
+                        parts.add(p);
+                    }
+                }
+            }
+        }
+        if (lamps.isEmpty()) return;
+        ThreadLocalRandom r = ThreadLocalRandom.current();
+        if (flicker) {
+            for (int t = 0; t < ticks; t += 3) {
+                plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+                    for (int i = 0; i < lamps.size(); i++) {
+                        if (r.nextDouble() < 0.35) setLamp(lamps.get(i), parts.get(i), r.nextBoolean());
+                    }
+                }, t);
+            }
+        } else {
+            for (int i = 0; i < lamps.size(); i++) setLamp(lamps.get(i), parts.get(i), false);
+        }
+        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+            for (int i = 0; i < lamps.size(); i++) setLamp(lamps.get(i), parts.get(i), true);
+        }, ticks + 2L);
+    }
+
+    private static void setLamp(Display d, Part p, boolean on) {
+        if (!d.isValid()) return;
+        d.setBrightness(new Display.Brightness(on ? 15 : 1, on ? 15 : 0));
+        if (p.alt != null && d instanceof BlockDisplay bd) bd.setBlock(on ? p.block : p.alt);
     }
 
     // ------------------------------------------------------------------ admin / status

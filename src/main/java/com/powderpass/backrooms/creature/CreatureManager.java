@@ -61,7 +61,8 @@ public final class CreatureManager {
         int despawn = cfg().despawnDistance;
         for (Creature c : new ArrayList<>(creatures)) {
             if (c.dead()) continue;
-            if (!c.hallucination() && nearestDistSq(c) > (double) despawn * despawn) {
+            double range = Math.max(despawn, c.despawnRange());
+            if (!c.hallucination() && nearestDistSq(c) > range * range) {
                 c.remove();
                 continue;
             }
@@ -135,10 +136,10 @@ public final class CreatureManager {
     public Creature spawnNatural(CreatureType type, Player p) {
         Location spot = switch (type) {
             case SMILER -> findSpot(p, 12, 26, 2, true, l -> l.getBlock().getLightFromBlocks() <= 5);
-            case FACELING -> findSpot(p, 22, 36, 3, false, l -> true);
+            case FACELING -> p.getWorld().getEnvironment() == org.bukkit.World.Environment.NORMAL && plugin.worlds().levelOf(p.getWorld()).outdoor()
+                    ? findSpot(p, 40, 70, 3, false, l -> true)
+                    : findSpot(p, 22, 36, 3, false, l -> true);
             case HOUND -> findSpot(p, 18, 32, 1, true, l -> true);
-            case SPARK -> findSpot(p, 14, 28, 2, false, l -> true);
-            case CONCIERGE -> findSpot(p, 12, 22, 2, true, l -> true);
             case DRIFTER -> findWaterSpot(p, 8, 22);
         };
         if (spot == null) return null;

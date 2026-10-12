@@ -30,7 +30,7 @@ import org.bukkit.scheduler.BukkitTask;
 import java.util.Locale;
 
 /**
- * Backrooms: seven custom worlds forming one alternate dimension.
+ * Backrooms: five custom worlds forming one alternate dimension.
  *
  * <p>Startup order: config → persistent metadata → worlds (created or re-loaded, never regenerated) → services →
  * listeners → command. Shutdown removes every runtime entity (all of which are non-persistent anyway) and saves
@@ -92,7 +92,7 @@ public class BackroomsPlugin extends JavaPlugin {
             cmd.setExecutor(bc);
             cmd.setTabCompleter(bc);
         }
-        getLogger().info("Backrooms ready: " + worlds.worlds().size() + "/7 levels loaded in " + (System.currentTimeMillis() - t) + " ms (seed " + data.baseSeed() + ").");
+        getLogger().info("Backrooms ready: " + worlds.worlds().size() + "/" + Level.values().length + " levels loaded in " + (System.currentTimeMillis() - t) + " ms (seed " + data.baseSeed() + ").");
     }
 
     private void startServices() {
