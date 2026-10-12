@@ -107,6 +107,16 @@ Each level uses a **different generation rule**:
 
 > Distant colossi need clients to track entities far away. Raise `world-settings.default.entity-tracking-range.display` in `spigot.yml` if they pop in late; `displays.outdoor-activation-radius-chunks` controls how far they spawn.
 
+### Maps
+
+Top-down maps rendered from the real generators (seed `5eedbacc`, centred on 0,0). Regenerate them with `RENDER_MAPS=docs/maps gradle test --tests '*MapRenderTest'`.
+
+| | |
+|---|---|
+| ![Level 0](docs/maps/map-level0.png) | ![Level 1](docs/maps/map-level1.png) |
+| ![Poolrooms](docs/maps/map-poolrooms.png) | ![Level 4](docs/maps/map-level4.png) |
+| ![Plains](docs/maps/map-plains.png) | |
+
 ---
 
 ## Creatures and anomalies
