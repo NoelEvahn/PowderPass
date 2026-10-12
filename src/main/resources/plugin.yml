@@ -1,0 +1,56 @@
+name: PowderPass
+version: '${version}'
+main: dev.powderpass.PowderPassPlugin
+api-version: '1.21.11'
+description: A physics-driven alpine resort engine - skiing, snowboarding, display-entity chairlifts and slalom racing with ghosts.
+authors: [noelevahn]
+website: https://github.com/noelevahn/powderpass
+
+permissions:
+  powderpass.ski:
+    description: Click into skis and snowboards.
+    default: true
+  powderpass.menu:
+    description: Open the /pp menu.
+    default: true
+  powderpass.lift.ride:
+    description: Ride chairlifts.
+    default: true
+  powderpass.race:
+    description: Take part in timed slalom races.
+    default: true
+  powderpass.pass.buy:
+    description: Buy lift passes at kiosks.
+    default: true
+  powderpass.bypass.pass:
+    description: Ride lifts without a pass.
+    default: op
+  powderpass.stats.others:
+    description: View other players' stats.
+    default: op
+  powderpass.admin:
+    description: All PowderPass administration.
+    default: op
+    children:
+      powderpass.admin.lift: true
+      powderpass.admin.course: true
+      powderpass.admin.kiosk: true
+      powderpass.admin.give: true
+      powderpass.admin.reload: true
+      powderpass.stats.others: true
+      powderpass.bypass.pass: true
+  powderpass.admin.lift:
+    description: Build and configure chairlifts.
+    default: op
+  powderpass.admin.course:
+    description: Build and manage race courses.
+    default: op
+  powderpass.admin.kiosk:
+    description: Place and remove ticket kiosks.
+    default: op
+  powderpass.admin.give:
+    description: Give gear and passes.
+    default: op
+  powderpass.admin.reload:
+    description: Reload the configuration.
+    default: op

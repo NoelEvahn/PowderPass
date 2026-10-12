@@ -1,0 +1,169 @@
+# ---------------------------------------------------------------------------------------------
+#   PowderPass - alpine resort engine
+#   Skiing & snowboarding physics, Block Display chairlifts, slalom racing with ghosts.
+#   All speeds are in blocks per tick (1 block/tick = 72 km/h). Angles are in degrees.
+# ---------------------------------------------------------------------------------------------
+
+general:
+  # Worlds where skiing, lifts and courses work. Empty list = every world.
+  enabled-worlds: []
+  # Hard cap on simultaneous skiers (each uses ~15 display entities).
+  max-active-skiers: 40
+  # How often modified player profiles are written to disk.
+  autosave-seconds: 300
+
+skiing:
+  # Default steering for new players. LOOK = skis follow your camera, A/D carve harder.
+  # KEYS = A/D turn the skis like a boat, camera is free. Players can change it in /pp > Locker.
+  default-steering: LOOK
+  # Blocks you must stand on (or in, for layers) to click into your gear.
+  click-in-blocks: [SNOW, SNOW_BLOCK, POWDER_SNOW, ICE, PACKED_ICE, BLUE_ICE]
+  # After this many seconds crawling slowly over non-snow ground you step out of your gear.
+  auto-unclip-rough-seconds: 4
+  # Seconds after a wipeout before you can click in again.
+  crash-cooldown-seconds: 2
+  # Hard landings hurt (damage per 0.1 block/tick of impact above the safe threshold).
+  landing-damage: true
+  impact-damage-per-unit: 10.0
+  # Extra damage dealt by a wipeout (0 = none).
+  crash-damage: 2.0
+  # Surface classes. Anything solid that is not listed is "rough" and grinds you to a halt.
+  surface-blocks:
+    snow: [SNOW, SNOW_BLOCK]
+    powder: [POWDER_SNOW]
+    ice: [ICE, PACKED_ICE, BLUE_ICE, FROSTED_ICE]
+  surfaces:
+    snow: { friction: 0.050, grip: 1.00 }
+    powder: { friction: 0.110, grip: 1.15 }
+    ice: { friction: 0.018, grip: 0.55 }
+    rough: { friction: 0.450, grip: 1.20 }
+
+  physics:
+    skis:
+      gravity: 0.060
+      air-drag: 0.012
+      tuck-drag-factor: 0.55
+      brake-friction: 0.16
+      turn-rate: 9.0
+      turn-speed-falloff: 0.9
+      hard-carve-yaw-offset: 35.0
+      hard-carve-turn-factor: 1.5
+      tuck-turn-factor: 0.55
+      edge-grip: 0.50
+      carve-efficiency: 0.85
+      push-accel: 0.012
+      push-max-speed: 0.30
+      jump-base: 0.30
+      jump-per-charge-tick: 0.025
+      max-jump-charge: 12
+      launch-gap: 0.25
+      max-speed: 2.2
+      wall-crash-speed: 0.55
+      landing-tolerance: 50.0
+      flip-tolerance: 70.0
+      safe-impact: 0.75
+      crash-impact: 1.35
+      air-spin-rate: 20.0
+      air-flip-rate: 18.0
+      smoothing-radius: 2.0
+      cliff-slope: 1.25
+    snowboard:
+      gravity: 0.060
+      air-drag: 0.013
+      tuck-drag-factor: 0.60
+      brake-friction: 0.18
+      turn-rate: 10.0
+      turn-speed-falloff: 0.9
+      hard-carve-yaw-offset: 40.0
+      hard-carve-turn-factor: 1.6
+      tuck-turn-factor: 0.60
+      edge-grip: 0.45
+      carve-efficiency: 0.85
+      push-accel: 0.006
+      push-max-speed: 0.20
+      jump-base: 0.36
+      jump-per-charge-tick: 0.024
+      max-jump-charge: 12
+      launch-gap: 0.25
+      max-speed: 2.2
+      wall-crash-speed: 0.55
+      landing-tolerance: 55.0
+      flip-tolerance: 70.0
+      safe-impact: 0.75
+      crash-impact: 1.35
+      air-spin-rate: 24.0
+      air-flip-rate: 18.0
+      smoothing-radius: 2.0
+      cliff-slope: 1.25
+
+# Gear tiers: speed scales top speed (less drag, slicker wax), grip scales edge hold.
+tiers:
+  timber: { speed: 0.92, grip: 0.90 }
+  alpine: { speed: 1.00, grip: 1.00 }
+  glacier: { speed: 1.08, grip: 1.10 }
+  avalanche: { speed: 1.15, grip: 1.20 }
+
+tricks:
+  combo-window-ticks: 60
+  combo-step: 0.25
+  combo-max: 4.0
+
+visuals:
+  # Hide the real (sitting) player model while skiing and show the animated skier instead.
+  hide-player-model: true
+  # Show a floating name + speed tag above other skiers.
+  nametags: true
+  # Ticks of client-side smoothing for movement and poses. 1-3 is a good range.
+  movement-smoothing: 2
+  pose-smoothing: 2
+  # How far away skiers are rendered (1.0 = 64 blocks).
+  view-range: 1.5
+  particles: true
+  sounds: true
+  # Height of the vehicle seat above the snow so the camera sits at eye level.
+  rider-offset: 0.6
+
+lifts:
+  # Rope speed in blocks per tick (0.2 = 4 m/s).
+  default-speed: 0.20
+  chair-spacing: 14.0
+  seats-per-chair: 2
+  default-style: CLASSIC
+  hanger-length: 2.4
+  seat-height: 0.55
+  platform-length: 5.0
+  max-tower-spacing: 28.0
+  min-seat-clearance: 3.0
+  sag-ratio: 0.012
+  # Speed factor while chairs are inside a station (detachable lifts slow down to load). 1.0 = fixed grip.
+  station-slow: 0.35
+  # Chair positions are sent to clients every N ticks (smoothed in between).
+  update-interval: 2
+  # Lifts only spawn their entities while a player is within this many blocks of the line.
+  activation-range: 160
+  allow-midride-dismount: false
+  allow-ride-down: true
+  # Require a valid PowderPass lift ticket to board (can be overridden per lift).
+  require-pass: false
+
+courses:
+  gate-width: 5.0
+  finish-width: 9.0
+  # PENALTY adds time per missed gate, DISQUALIFY ends the run.
+  miss-policy: PENALTY
+  miss-penalty-seconds: 3.0
+  max-run-seconds: 300
+  ghosts: true
+  leaderboard-size: 10
+  # Announce new course records to everyone in the world.
+  announce-records: true
+
+passes:
+  day:
+    cost-material: EMERALD
+    cost-amount: 2
+    duration-hours: 24
+  season:
+    cost-material: DIAMOND
+    cost-amount: 6
+    duration-hours: 720

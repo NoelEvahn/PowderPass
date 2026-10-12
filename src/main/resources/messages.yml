@@ -1,0 +1,117 @@
+# PowderPass messages - MiniMessage format (https://docs.advntr.dev/minimessage/format.html)
+prefix: "<gradient:#38bdf8:#e0f2fe><bold>PowderPass</bold></gradient> <dark_gray>»</dark_gray> "
+
+no-permission: "<red>You don't have permission to do that."
+player-only: "<red>Only players can do that."
+world-disabled: "<red>PowderPass is disabled in this world."
+unknown-player: "<red>Unknown player <white><player></white>."
+usage: "<gray>Usage: <white><usage>"
+invalid-name: "<red>Invalid or already used name. Use 1-32 letters, numbers, - or _."
+invalid-value: "<red>Invalid value: <white><value>"
+reloaded: "<#4ade80>Configuration reloaded and structures rebuilt."
+gave: "<gray>Gave <white><item></white> to <white><player></white>."
+
+help: |-
+  <gradient:#38bdf8:#e0f2fe><bold>⛷ PowderPass</bold></gradient> <dark_gray>— alpine resort engine
+  <#bae6fd>/pp <dark_gray>· <gray>open the resort menu (stats, badges, locker, lifts, courses)
+  <#bae6fd>/pp stats [player] <dark_gray>· <gray>show ski statistics
+  <#bae6fd>/pp unclip <dark_gray>· <gray>step out of your gear
+  <gray>Craft skis or a snowboard, stand on snow and <white>right-click</white> to click in.
+help-admin: |-
+  <#fbbf24>Admin:
+  <#fde68a>/pp give <player> <skis|snowboard|pass> [tier|day|season]
+  <#fde68a>/pp lift create <name> <dark_gray>· <gray>stand on the base platform
+  <#fde68a>/pp lift top <dark_gray>· <gray>stand on the summit platform to build it
+  <#fde68a>/pp lift <list|info|set|rebuild|remove|cancel>
+  <#fde68a>/pp course create <name> <dark_gray>· <gray>start gate where you stand, facing downhill
+  <#fde68a>/pp course <gate|finish|undo|reset|remove|list> <name>
+  <#fde68a>/pp kiosk <create|remove> <dark_gray>· <gray>ticket booth
+  <#fde68a>/pp reload
+
+ski:
+  clicked-in: "<gray>Clicked into your <white><gear></white>. <dark_gray>[<#bae6fd>F</#bae6fd>]</dark_gray> <gray>to step out."
+  controls: |-
+    <dark_gray>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    <gradient:#38bdf8:#e0f2fe><bold>  How to ride</bold></gradient>
+    <#bae6fd>  Mouse <gray>steer   <#bae6fd>A / D <gray>carve harder
+    <#bae6fd>  W <gray>pole & skate   <#bae6fd>S <gray>brake & skid
+    <#bae6fd>  Shift <gray>tuck for speed
+    <#bae6fd>  Space <gray>hold to load, release to jump
+    <white>  In the air: <#bae6fd>A/D <gray>spin  <#bae6fd>W/S <gray>flip  <#bae6fd>Shift <gray>grab
+    <gray>  Land with your skis pointing where you're going!
+    <#bae6fd>  F <gray>step out of your gear
+    <dark_gray>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  not-now: "<red>You can't click in right now."
+  cooldown: "<red>Shake the snow off first..."
+  too-many: "<red>The mountain is full! Too many skiers right now."
+  need-snow: "<#fca5a5>Stand on snow or ice to click in."
+  not-skiing: "<red>You're not wearing any gear."
+  unclipped: "<gray>You stepped out of your gear."
+  rough-unclip: "<gray>You stepped out of your gear - that's not snow."
+  crash-title: "<#f87171><bold>WIPEOUT!"
+  crash-subtitle: "<gray><reason>"
+
+trick:
+  combo-banked: "<gold>✦ Combo banked: <yellow><bold><points></bold> <gold>points"
+
+badge:
+  unlocked: "<#facc15>★ Badge unlocked: <white><bold><badge></bold> <dark_gray>— <gray><description>"
+  suit-unlocked: "<#f472b6>👕 New suit in your locker: <white><suit></white> <dark_gray>(/pp)"
+  title: "<#facc15><bold>★ BADGE ★"
+  subtitle: "<white><badge>"
+
+locker:
+  suit: "<gray>Now wearing the <white><suit></white> suit."
+
+lift:
+  survey-started: "<gray>Base station of <white><lift></white> set here. Walk or fly to the summit platform and run <#bae6fd>/pp lift top</#bae6fd>."
+  survey-cancelled: "<gray>Lift survey cancelled."
+  no-survey: "Start with /pp lift create <name> at the base station first."
+  other-world: "Both stations must be in the same world."
+  too-long: "Lifts can be at most 1200 blocks long."
+  too-steep: "That line is too steep for a chairlift."
+  line-unloaded: "Part of the line isn't loaded. Make sure the whole route is within view distance."
+  unloaded-short: "<red>Part of the line isn't loaded - stand closer to the lift."
+  built: "<#4ade80>Lift built! <gray>Riders stand on the <white>loading line</white> at the base station."
+  rebuilt: "<#4ade80>Terrain resampled and lift rebuilt."
+  removed: "<gray>Removed lift <white><lift></white>."
+  unknown: "<red>No lift with that name."
+  updated: "<gray>Set <white><key></white> of <white><lift></white> to <white><value></white>."
+  list-header: "<gray>Lifts (<white><count></white>):"
+  boarded: "<gray>Riding <white><lift></white>. Enjoy the view!"
+  unloaded: "<#4ade80>Off you go! <gray>Right-click your gear to click in."
+  hold-on: "<#fca5a5>Hold on! Wait for the station."
+  need-pass: "<#fca5a5>🎟 You need a valid PowderPass to ride this lift."
+
+course:
+  created: "<gray>Course <white><course></white> created with a start gate here. Add gates with <#bae6fd>/pp course gate <course></#bae6fd> and finish with <#bae6fd>/pp course finish <course></#bae6fd>."
+  gate-added: "<gray>Gate <white>#<number></white> added to <white><course></white>."
+  finish-set: "<gray>Finish line set for <white><course></white>. It's ready to race!"
+  undone: "<gray>Removed the last gate."
+  nothing-to-undo: "<red>Only the start gate is left."
+  reset: "<gray>Results of <white><course></white> cleared."
+  removed: "<gray>Removed course <white><course></white>."
+  unknown: "<red>No course with that name."
+  other-world: "<red>You must be in the course's world."
+  list-header: "<gray>Courses (<white><count></white>):"
+  started: "<#4ade80>⛳ GO! <white><course>"
+  missed: "<#f87171>✖ Missed gate <gate>!"
+  missed-penalty: "<#f87171>✖ Missed gate <gate>! <gray>+<penalty>s"
+  disqualified: "<#f87171>Disqualified - you missed gate <white><gate></white>."
+  timeout: "<#f87171>Run timed out."
+  dnf: "<gray>Run on <white><course></white> abandoned."
+  aborted: "<gray>The course was changed - your run was cancelled."
+  finished: "<gray>Finished <white><course></white> in <white><bold><time></bold></white> <dark_gray>· <gray>rank <white>#<rank></white> <dark_gray>· <gray>missed <white><missed></white>"
+  finish-record: "<#facc15><bold>★ NEW COURSE RECORD ★"
+  finish-pb: "<#4ade80>Personal best! <delta>"
+  finish-slower: "<gray><delta> off your best"
+  record-broadcast: "<#facc15>★ <white><player></white> set a new record on <white><course></white>: <bold><time></bold>!"
+
+pass:
+  bought: "<#4ade80>🎟 Enjoy your <white><pass></white>! Keep it in your inventory."
+  cannot-afford: "<red>You can't afford that. Price: <white><price>"
+
+kiosk:
+  created: "<gray>Ticket kiosk placed."
+  removed: "<gray>Ticket kiosk removed."
+  none-nearby: "<red>No kiosk within 6 blocks."
