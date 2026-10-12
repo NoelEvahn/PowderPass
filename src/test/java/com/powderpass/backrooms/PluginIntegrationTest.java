@@ -293,4 +293,112 @@ class PluginIntegrationTest {
         var op = server.getCommandTabComplete(p, "backrooms level ");
         assertTrue(op.containsAll(java.util.List.of("0", "1", "poolrooms", "4", "plains")));
     }
+
+    @Test
+    void enteringIsAFallThroughAnOpenedCeiling() {
+        PlayerMock p = playerAt(10, 70, -4);
+        Location target = plugin.sessions().entryTarget(p, false);
+        World w = target.getWorld();
+        LevelGenerator g = plugin.worlds().generator(Level.LEVEL_0);
+        int x = target.getBlockX(), y = target.getBlockY(), z = target.getBlockZ();
+        floor(w, x, y - 1, z, 3);
+        for (int dx = -2; dx <= 2; dx++) {
+            for (int dz = -2; dz <= 2; dz++) {
+                w.getBlockAt(x + dx, y + 4, z + dz).setType(Material.WHITE_TERRACOTTA);
+                w.getBlockAt(x + dx, g.roofY, z + dz).setType(Material.BEDROCK);
+            }
+        }
+        assertTrue(p.performCommand("backrooms enter"));
+        server.getScheduler().performTicks(5);
+        assertEquals(w, p.getWorld());
+        assertTrue(p.getLocation().getY() > g.roofY + 20, "starts high above the roof, was " + p.getLocation().getY());
+        assertTrue(plugin.falls().falling(p));
+
+        // falling: sideways movement is locked and the shaft opens before the roof
+        Location from = p.getLocation();
+        Location mid = new Location(w, x + 4.5, g.roofY + 10, z - 3.5);
+        org.bukkit.event.player.PlayerMoveEvent move = new org.bukkit.event.player.PlayerMoveEvent(p, from, mid);
+        server.getPluginManager().callEvent(move);
+        assertEquals(x + 0.5, move.getTo().getX(), 1e-6);
+        assertEquals(z + 0.5, move.getTo().getZ(), 1e-6);
+        assertEquals(Material.AIR, w.getBlockAt(x, g.roofY, z).getType(), "roof opened");
+        assertEquals(Material.AIR, w.getBlockAt(x + 1, y + 4, z - 1).getType(), "ceiling opened 3x3");
+        assertEquals(Material.WHITE_TERRACOTTA, w.getBlockAt(x + 2, y + 4, z).getType(), "only 3x3");
+
+        // fall damage is cancelled
+        org.bukkit.event.entity.EntityDamageEvent fall = new org.bukkit.event.entity.EntityDamageEvent(p,
+                org.bukkit.event.entity.EntityDamageEvent.DamageCause.FALL,
+                org.bukkit.damage.DamageSource.builder(org.bukkit.damage.DamageType.FALL).build(), 40);
+        server.getPluginManager().callEvent(fall);
+        assertTrue(fall.isCancelled());
+
+        // landing
+        p.teleport(move.getTo());
+        server.getPluginManager().callEvent(new org.bukkit.event.player.PlayerMoveEvent(p, move.getTo(), new Location(w, x + 0.5, y, z + 0.5)));
+        assertFalse(plugin.falls().falling(p), "landed");
+        assertTrue(plugin.sessions().insideFlag(p));
+        org.bukkit.event.entity.EntityDamageEvent late = new org.bukkit.event.entity.EntityDamageEvent(p,
+                org.bukkit.event.entity.EntityDamageEvent.DamageCause.FALL,
+                org.bukkit.damage.DamageSource.builder(org.bukkit.damage.DamageType.FALL).build(), 40);
+        server.getPluginManager().callEvent(late);
+        assertTrue(late.isCancelled(), "landing grace");
+
+        server.getScheduler().performTicks(60);
+        assertEquals(Material.BEDROCK, w.getBlockAt(x, g.roofY, z).getType(), "roof restored");
+        assertEquals(Material.WHITE_TERRACOTTA, w.getBlockAt(x + 1, y + 4, z - 1).getType(), "ceiling restored");
+        var shafts = org.bukkit.configuration.file.YamlConfiguration.loadConfiguration(
+                new java.io.File(plugin.getDataFolder(), "data/open-shafts.yml"));
+        assertTrue(shafts.getKeys(false).isEmpty(), "no pending shafts after restore");
+    }
+
+    @Test
+    void suffocatingInSandSwallowsYou() throws InterruptedException {
+        plugin.getConfig().set("entry.suffocation.seconds", 0.2);
+        plugin.saveConfig();
+        plugin.reload();
+        PlayerMock p = playerAt(0, 70, 0);
+        Location target = plugin.sessions().entryTarget(p, false);
+        floor(target.getWorld(), target.getBlockX(), target.getBlockY() - 1, target.getBlockZ(), 3);
+        p.getEyeLocation().getBlock().setType(Material.SAND);
+        boolean cancelled = true;
+        for (int i = 0; i < 12 && p.getWorld() == overworld; i++) {
+            org.bukkit.event.entity.EntityDamageEvent e = new org.bukkit.event.entity.EntityDamageEvent(p,
+                    org.bukkit.event.entity.EntityDamageEvent.DamageCause.SUFFOCATION,
+                    org.bukkit.damage.DamageSource.builder(org.bukkit.damage.DamageType.IN_WALL).build(), 1);
+            server.getPluginManager().callEvent(e);
+            cancelled &= e.isCancelled();
+            Thread.sleep(50);
+            server.getScheduler().performTicks(2);
+        }
+        server.getScheduler().performTicks(5);
+        assertTrue(cancelled, "no suffocation damage while it counts");
+        assertEquals(plugin.worlds().world(Level.LEVEL_0), p.getWorld(), "swallowed into Level 0");
+
+        // ordinary suffocation in stone is left alone
+        PlayerMock q = playerAt(20, 70, 20);
+        q.getEyeLocation().getBlock().setType(Material.STONE);
+        org.bukkit.event.entity.EntityDamageEvent e = new org.bukkit.event.entity.EntityDamageEvent(q,
+                org.bukkit.event.entity.EntityDamageEvent.DamageCause.SUFFOCATION,
+                org.bukkit.damage.DamageSource.builder(org.bukkit.damage.DamageType.IN_WALL).build(), 1);
+        server.getPluginManager().callEvent(e);
+        assertFalse(e.isCancelled());
+    }
+
+    @Test
+    void creaturesStayAroundCreativePlayersButNeverHurtThem() {
+        World l0 = plugin.worlds().world(Level.LEVEL_0);
+        floor(l0, 0, 64, 0, 12);
+        PlayerMock p = playerAt(0, 70, 0);
+        p.setGameMode(org.bukkit.GameMode.CREATIVE);
+        p.teleport(new Location(l0, 0.5, 65, 0.5));
+        Creature faceling = plugin.creatures().spawn(CreatureType.FACELING, new Location(l0, 9.5, 65, 9.5), null);
+        Creature watcher = plugin.creatures().spawn(CreatureType.WATCHER, new Location(l0, -8.5, 65, 6.5), null);
+        server.getScheduler().performTicks(30);
+        assertFalse(faceling.dead(), "a creative player nearby keeps creatures alive");
+        assertFalse(watcher.dead());
+        double hp = p.getHealth();
+        server.getScheduler().performTicks(200);
+        assertEquals(hp, p.getHealth(), 1e-9, "creative players are never hurt");
+        assertTrue(plugin.creatures().counts().size() <= 2);
+    }
 }

@@ -94,7 +94,7 @@ public final class CreatureManager {
             Level level = e.getKey();
             World w = e.getValue();
             for (Player p : w.getPlayers()) {
-                if (p.getGameMode() != GameMode.SURVIVAL && p.getGameMode() != GameMode.ADVENTURE) continue;
+                if (p.getGameMode() == GameMode.SPECTATOR || p.isDead()) continue;
                 double chance = cfg().levelChance.getOrDefault(level, 0.2);
                 double sanity = plugin.sessions().sanity(p);
                 if (sanity < 40) chance *= 1.5;
@@ -141,7 +141,12 @@ public final class CreatureManager {
                     : findSpot(p, 22, 36, 3, false, l -> true);
             case HOUND -> findSpot(p, 18, 32, 1, true, l -> true);
             case DRIFTER -> findWaterSpot(p, 8, 22);
+            case WATCHER -> findSpot(p, 16, 32, 2, true, l -> true);
         };
+        if (spot == null && type == CreatureType.SMILER) {
+            // no proper darkness nearby: settle for the dimmest hidden corner
+            spot = findSpot(p, 10, 24, 2, true, l -> l.getBlock().getLightFromBlocks() <= 9);
+        }
         if (spot == null) return null;
         return spawn(type, spot, null);
     }
@@ -226,6 +231,12 @@ public final class CreatureManager {
 
     void flickerAround(Location l, int radius) {
         plugin.environment().flicker(l, radius, 10);
+    }
+
+    /** Is this creature id (the PDC tag value on its entities) alive in this session? */
+    public boolean isLive(String id) {
+        for (Creature c : creatures) if (c.id.toString().equals(id)) return true;
+        return false;
     }
 
     public Creature byHitbox(Entity e) {

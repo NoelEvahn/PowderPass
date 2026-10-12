@@ -49,6 +49,7 @@ public class BackroomsPlugin extends JavaPlugin {
     private Items items;
     private LootService loot;
     private FlashlightService flashlights;
+    private com.powderpass.backrooms.world.FallEntry falls;
     private BukkitTask debugTask;
     private boolean consoleDebug;
 
@@ -77,12 +78,14 @@ public class BackroomsPlugin extends JavaPlugin {
         creatures = new CreatureManager(this);
         environment = new EnvironmentManager(this);
         flashlights = new FlashlightService(this);
+        falls = new com.powderpass.backrooms.world.FallEntry(this);
 
         var pm = getServer().getPluginManager();
         pm.registerEvents(new PlayerListener(this), this);
         pm.registerEvents(new ProtectionListener(this), this);
         pm.registerEvents(new CombatListener(this), this);
         pm.registerEvents(decorations, this);
+        pm.registerEvents(falls, this);
 
         startServices();
 
@@ -102,6 +105,7 @@ public class BackroomsPlugin extends JavaPlugin {
         creatures.start();
         environment.start();
         flashlights.start();
+        falls.start();
         if (debugTask != null) debugTask.cancel();
         debugTask = getServer().getScheduler().runTaskTimer(this, this::debugOverlay, 20L, 10L);
     }
@@ -109,6 +113,7 @@ public class BackroomsPlugin extends JavaPlugin {
     private void stopServices() {
         if (debugTask != null) debugTask.cancel();
         debugTask = null;
+        if (falls != null) falls.stop();
         if (flashlights != null) flashlights.stop();
         if (environment != null) environment.stop();
         if (creatures != null) creatures.stop();
@@ -207,6 +212,10 @@ public class BackroomsPlugin extends JavaPlugin {
 
     public TeleportService teleports() {
         return teleports;
+    }
+
+    public com.powderpass.backrooms.world.FallEntry falls() {
+        return falls;
     }
 
     public SessionManager sessions() {

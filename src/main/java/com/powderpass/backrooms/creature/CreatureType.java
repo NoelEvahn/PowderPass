@@ -5,7 +5,8 @@ public enum CreatureType {
     SMILER("smiler", "Smiler", "threat", "Hangs in the dark. Freezes while watched; avoids light; lunges if you look away."),
     FACELING("faceling", "Faceling", "sighting", "Tall, faceless and patient. Stalks at a distance and leaves when stared at."),
     HOUND("hound", "Hound", "threat", "Hunts by sound and sight. Sprinting draws it; sneaking and breaking line of sight lose it. Killable."),
-    DRIFTER("drifter", "Drifter", "threat", "Glides under deep water and drags swimmers down. Leave the water or strike it.");
+    DRIFTER("drifter", "Drifter", "threat", "Glides under deep water and drags swimmers down. Leave the water or strike it."),
+    WATCHER("watcher", "Watcher", "stalker", "A black silhouette at the end of the hall. It only moves while nobody is looking at it.");
 
     public final String id;
     public final String displayName;

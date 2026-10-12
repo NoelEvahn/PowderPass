@@ -262,7 +262,9 @@ public final class DecorationManager implements Listener {
         if (!worlds.containsKey(e.getWorld().getUID())) return;
         for (Entity en : e.getEntities()) {
             var pdc = en.getPersistentDataContainer();
-            if (pdc.has(Keys.DECOR, PersistentDataType.STRING) || pdc.has(Keys.CREATURE, PersistentDataType.STRING)) {
+            String creature = pdc.get(Keys.CREATURE, PersistentDataType.STRING);
+            if (creature != null && plugin.creatures().isLive(creature)) continue; // spawned this session, not a leftover
+            if (pdc.has(Keys.DECOR, PersistentDataType.STRING) || creature != null) {
                 en.remove();
             }
         }

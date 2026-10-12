@@ -25,7 +25,16 @@ Backrooms adds a separate, server-side-only alternate reality to a Paper 1.21.11
 
 ## How players experience it
 
-- **Getting in:** `/backrooms enter` (it can be turned off, and limited to certain worlds). Admins can also send players in. Each entry lands in a different part of Level 0, so players don't all share one spot. The place they left from is saved as their **return point**.
+- **Getting in:** there are two ways:
+  - **Suffocate in sand, gravel or concrete powder** (anything that falls) outside the Backrooms for about 2 seconds. Reality gives way, and you take no suffocation damage while it counts. Ordinary suffocation in a normal wall is never affected.
+  - Run `/backrooms enter`. It can be turned off and limited to certain worlds. Admins can also send players in.
+
+  Either way you **fall in**:
+  - You appear high in the dark above Level 0, looking down, and fall straight down with your sideways movement locked.
+  - Just before you reach the roof, a 3×3 shaft opens through the roof and ceiling.
+  - You land in the Lobby with no fall damage, and the shaft closes behind you about 2 seconds later.
+
+  Each entry lands in a different part of Level 0, so players don't all share one spot. The place they left from is saved as their **return point**.
 - **Moving between levels:** every level contains physical structures that lead elsewhere. Each district (about 180–220 blocks square) is guaranteed to hold one of each of its level's required transitions. Nearby transitions also give a recognisable cue: a low beacon hum, or wind for exits.
 - **Getting out:** players have to *find* an exit. `/backrooms leave` is admin-only by default. The exits are:
   - the EXIT door in Level 0
@@ -109,10 +118,13 @@ None of these is a renamed vanilla mob. Each is a coordinated group of display e
 | **Smiler** | 0, 1 | threat | Floating grin and eyes, found only in the dark. Freezes while watched; stare for about 4 s and it dissolves. Creeps forward when you look away. Light at ≥11 keeps it at bay. A giggle warns you when it is close. |
 | **Faceling** | all | sighting | Tall and faceless. Stalks at 12–20 blocks and leaves when stared at. Harmless, but drains sanity; also appears as **private hallucinations**. **In the Plains** it stands 40–70 blocks out in the field, comes 7 blocks closer every 7 s you don't look at it, and leaves when stared at for 5 s or approached within 18 blocks. |
 | **Hound** | 1 | threat (killable, 30 HP) | Quadruped. **Hunts by sound** (sprinting is loud, sneaking almost silent) and by sight. Growls and lowers its head before a lunge. Flees when badly hurt. |
+| **Watcher** | 0, 1, 4 | stalker (hit it and it is gone) | A flat black silhouette at the end of a hall. While anyone looks at it, it does not move at all; the moment nobody is, it closes the distance fast and silently. Stare it down for about 7 s and it disappears. If it reaches you: damage, darkness, and the lights flicker. |
 | **Drifter** | Poolrooms | threat (20 HP) | Pale shape in deep water. Bubbles warn you. It drags swimmers down; leave the water or strike it. |
 
+Creatures notice everyone except spectators, so they also appear and stalk around **creative-mode** players (useful for testing). They only ever **hurt** players in survival or adventure mode.
+
 Spawning is deliberately rare:
-- Each player gets an attempt every 20 s, with chances per level.
+- Each player gets an attempt every 15 s, with chances per level.
 - Caps apply per player (2) and per level (8).
 - Creatures never spawn in safe rooms or in plain sight (Facelings excepted).
 - Each type has its own placement rules (Smilers in the dark, Drifters in deep water).
@@ -168,6 +180,8 @@ Commands work from the console wherever a target player or level is given. Alias
 | `levels.<level>.biome` | Biome key for ambient particles, sounds and water colour |
 | `levels.<level>.generation.*` | **Locked** per level when its world is created: each level has its own keys (Level 0: hall/thick-wall/repeat/loop chances; Level 1: grand-hall/room/cache chances; Poolrooms: water ratio, screens; Level 4: room-light chance; Plains: road/house/colossus chances), plus exit, Plains and landmark chances and decoration density |
 | `entry.allow-self-enter` / `allow-self-leave` / `allowed-worlds` / `spread-radius` / `title` | Entry rules |
+| `entry.fall.enabled` / `entry.fall.height` | Enter by falling from this many blocks above the roof (default 90); off = instant teleport |
+| `entry.suffocation.enabled` / `entry.suffocation.seconds` | The sand/gravel suffocation trigger and how long it takes (default 2 s). It honours `allowed-worlds` and needs `backrooms.use` |
 | `return.fallback-world` | Used when a return point is missing or its world is gone |
 | `death.mode` | `RETURN`, `LEVEL0` or `STAY`. `death.keep-inventory` keeps items and XP for deaths inside |
 | `restrictions.*` | Block protection, ender pearls, chorus fruit, portals, beds, music suppression, `blocked-commands` (e.g. `home`, `spawn`, `tpa`, `warp`, `back`) |
@@ -202,13 +216,14 @@ Commands work from the console wherever a target player or level is given. Alias
   - Props are derived from the layout, so they are **never saved**. They are spawned near players within per-chunk and per-world budgets, spread across ticks, and removed when out of range, when the chunk unloads, and on disable.
   - Every entity is non-persistent and tagged in its PDC; tagged leftovers are swept when chunks load.
   - Props that need collision get invisible barrier blocks from the generator. Lamps get invisible light blocks.
+- **Entry shafts:** before any roof block is removed, the shaft is written to `data/open-shafts.yml`; it is erased once the blocks are put back. If the server crashes mid-fall, any shaft left open is closed on the next start. Block entities (barrels, chests) are never cut.
 - **Persistence:** the return point, the "inside" flag (used to detect stranded players) and sanity live in each player's PDC. World metadata and admin spawns live in `data/worlds.yml`. Worlds are never deleted or regenerated. A world created by an older generator version logs a warning; delete its folder (and its entry in `data/worlds.yml`) to regenerate it with the new layout.
 - **Threading:** Bukkit calls happen on the main thread. Chunk preparation for teleports uses `getChunkAtAsync`. Generator block states are pre-resolved at startup. Spawn writes are snapshotted on the main thread and written asynchronously.
 - **No NMS and no packets.** Client-side light effects use the stable `Player#sendBlockChange` API, and private hallucinations use `Entity#setVisibleByDefault` and `Player#showEntity`.
 
 ## Testing
 
-`gradle test` runs 46 automated tests. All of them pass on this build.
+`gradle test` runs 49 automated tests. All of them pass on this build.
 
 - **Generation (31 tests across all 5 levels):**
   - Determinism across instances and chunk order, and seed sensitivity.
@@ -216,7 +231,10 @@ Commands work from the console wherever a target player or level is given. Alias
   - Water is contained and still; bedrock shell (no roof check in the Plains).
   - At least one guaranteed transition in every district.
   - The safe-spot search lands on standable, trigger-free ground.
-- **Plugin integration on MockBukkit (12 tests):** world creation and locked snapshots, permissions and tab completion, enter/leave and return points, protection, a stairwell transition with arrival cooldown, creature hitboxes and confirmed clearing, decoration spawn/despawn, clean disable.
+- **Plugin integration on MockBukkit (15 tests):** world creation and locked snapshots, permissions and tab completion, enter/leave and return points, protection, a stairwell transition with arrival cooldown, creature hitboxes and confirmed clearing, decoration spawn/despawn, clean disable.
+  - **The fall entry:** the player starts above the roof, sideways movement is locked, a 3×3 shaft (and only 3×3) opens before the roof, fall damage is cancelled during the fall and just after landing, and the roof and ceiling are restored with no pending shaft left on disk.
+  - **The suffocation trigger:** suffocating in sand takes you into Level 0 with no damage; suffocating in stone is left alone.
+  - **Creative players:** creatures stay alive around them and never hurt them.
 - **Models and states (3 tests):** every decoration id builds into a model (77 used), display density per chunk stays within budget (highest: Level 4 at about 25 per chunk), and all 62 generator block states are validated by a real block-data parser.
 
 ### Not verified in a real game: please check in-game
@@ -226,9 +244,10 @@ No Paper server binary could be downloaded in the build environment, so nothing 
 1. **Upgrading:** delete the old `backrooms_level2/3/5` folders and any world that logs an old generator version, then start the server. The five worlds should be created without errors, and `/backrooms status` should show them.
 2. **Visual pass, one `/backrooms level <x>` per level:** palettes, light levels, fixture models lining up with the ceiling `LIGHT` blocks, and prop orientation against walls.
 3. **The Plains:** colossi visible at distance (see the tracking-range note), house variants, the fixed evening sky.
-4. **Each transition:** trigger feel, arrival spot, no bounce back. The Poolrooms slide push. Seam intent (crouch). The drain and the backyard pool dive.
-5. **Creature behaviour and fairness:** Smiler freezes when looked at; Hound sound tracking and lunge; Drifter grab and release; the Plains Faceling approaching only while unwatched; clicking `Interaction` hitboxes with real clients.
-6. **Client-side effects:** that a `LIGHT` block sent by `sendBlockChange` relights on real clients (flashlight, flicker, blackout, lights out).
-7. **The `door_behind` event:** the door opens and closes back cleanly.
-8. **Death in each `death.mode`;** joining after a level was disabled (stranded recovery); ender pearl and chorus blocking; blocked commands.
-9. **Performance with several players:** watch `/backrooms status` tick costs, then tune `displays.activation-radius-chunks` and the entity caps if needed.
+4. **The fall entry:** the sky start, the elytra wind sound, the shaft opening in time on a laggy connection, landing with no damage, and the ceiling closing. Bury yourself in sand in the Overworld to test the suffocation trigger.
+5. **Each transition:** trigger feel, arrival spot, no bounce back. The Poolrooms slide push. Seam intent (crouch). The drain and the backyard pool dive.
+6. **Creature behaviour and fairness:** creatures spawning naturally within a minute or two (watch `/backrooms debug on`); the Watcher freezing exactly while watched; Smiler freezes when looked at; Hound sound tracking and lunge; Drifter grab and release; the Plains Faceling approaching only while unwatched; clicking `Interaction` hitboxes with real clients.
+7. **Client-side effects:** that a `LIGHT` block sent by `sendBlockChange` relights on real clients (flashlight, flicker, blackout, lights out).
+8. **The `door_behind` event:** the door opens and closes back cleanly.
+9. **Death in each `death.mode`;** joining after a level was disabled (stranded recovery); ender pearl and chorus blocking; blocked commands.
+10. **Performance with several players:** watch `/backrooms status` tick costs, then tune `displays.activation-radius-chunks` and the entity caps if needed.

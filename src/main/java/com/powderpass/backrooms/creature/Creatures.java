@@ -28,6 +28,7 @@ final class Creatures {
             case FACELING -> new Faceling(plugin, mgr);
             case HOUND -> new Hound(plugin, mgr, s);
             case DRIFTER -> new Drifter(plugin, mgr, s);
+            case WATCHER -> new Watcher(plugin, mgr, s);
         };
     }
 
@@ -84,6 +85,8 @@ final class Creatures {
             if (watched) {
                 watchedTicks += dt;
                 place(x, y, z, yaw);
+                if (watchedTicks % 30 < dt) body.pose("eye", new Matrix4f().translate(0, 1.87f, 0).scale(1f, 0.2f, 1f).translate(0, -1.87f, 0), 3);
+                else if (watchedTicks % 30 < dt * 3) body.pose("eye", new Matrix4f(), 3);
                 if (watchedTicks > 90) {
                     vanish(true);
                 }
@@ -103,7 +106,15 @@ final class Creatures {
                 }
                 return;
             }
+            // close and unobserved: the grin widens
+            double wide = d < 8 ? 1.0 + (8 - d) * 0.03 : 1.0;
+            body.pose("grin", new Matrix4f().translate(0, (float) Bodies.SMILER_MOUTH, 0).scale((float) wide, 1f, 1f)
+                    .translate(0, (float) -Bodies.SMILER_MOUTH, 0), dt + 1);
             if (d <= 1.4) {
+                if (!targetable(p)) {
+                    vanish(true);
+                    return;
+                }
                 p.damage(damage);
                 mgr.noteAttack(p, type);
                 p.addPotionEffect(new PotionEffect(PotionEffectType.BLINDNESS, 60, 0, false, false));
@@ -149,12 +160,18 @@ final class Creatures {
 
         @Override
         protected double headHeight() {
-            return 2.15;
+            return 2.45;
+        }
+
+        @Override
+        protected float viewRange() {
+            com.powderpass.backrooms.Level lvl = plugin.worlds().levelOf(world);
+            return lvl != null && lvl.outdoor() ? 2.5f : 1.5f;
         }
 
         @Override
         protected float[] hitboxSize() {
-            return new float[]{0.6f, 2.4f};
+            return new float[]{0.6f, 2.7f};
         }
 
         @Override
@@ -185,23 +202,24 @@ final class Creatures {
             }
             if (leaving) {
                 boolean done = moveToward(leaveTo, 0.16, 1.0);
-                animateWalk(1.25, 1.95, 0.5, true);
+                animateWalk(Bodies.FACELING_HIP, Bodies.FACELING_SHOULDER, 0.5, true);
                 if (done || (!watchedBy(p, 40, 64) && age % 20 < dt) || age > 20 * 100) remove();
                 return;
             }
             double d = dist(p);
             if (d > 20) {
                 moveToward(p.getLocation(), 0.11, 16);
-                animateWalk(1.25, 1.95, 0.4, true);
+                animateWalk(Bodies.FACELING_HIP, Bodies.FACELING_SHOULDER, 0.4, true);
             } else if (d < 12) {
                 Vector away = loc().toVector().subtract(p.getLocation().toVector()).setY(0);
                 if (away.lengthSquared() > 0.01) moveToward(loc().add(away.normalize().multiply(4)), 0.1, 0.5);
-                animateWalk(1.25, 1.95, 0.35, true);
+                animateWalk(Bodies.FACELING_HIP, Bodies.FACELING_SHOULDER, 0.35, true);
             } else {
                 face(p.getLocation());
                 place(x, y, z, yaw);
-                animateWalk(1.25, 1.95, 0, false);
-                if (age % 40 < dt) body.pose("head", new Matrix4f().translate(0, 2.18f, 0).rotateZ((float) Math.toRadians(rnd().nextInt(-35, 35))).translate(0, -2.18f, 0), 10);
+                animateWalk(Bodies.FACELING_HIP, Bodies.FACELING_SHOULDER, 0, false);
+                if (age % 40 < dt) body.pose("head", new Matrix4f().translate(0, (float) Bodies.FACELING_NECK, 0)
+                        .rotateZ((float) Math.toRadians(rnd().nextInt(-40, 41))).translate(0, (float) -Bodies.FACELING_NECK, 0), 14);
             }
         }
 
@@ -239,7 +257,7 @@ final class Creatures {
             } else {
                 place(x, y, z, yaw);
             }
-            animateWalk(1.25, 1.95, 0, false);
+            animateWalk(Bodies.FACELING_HIP, Bodies.FACELING_SHOULDER, 0, false);
         }
 
         @Override
@@ -338,7 +356,7 @@ final class Creatures {
                     }
                 }
                 case HUNT -> {
-                    if (prey == null || !targetable(prey) || prey.getWorld() != world) {
+                    if (prey == null || !present(prey) || prey.getWorld() != world) {
                         set(State.WANDER);
                         break;
                     }
@@ -349,7 +367,7 @@ final class Creatures {
                         break;
                     }
                     double d = dist(prey);
-                    if (d < 4.2 && prey.hasLineOfSight(head())) {
+                    if (d < 4.2 && targetable(prey) && prey.hasLineOfSight(head())) {
                         face(prey.getLocation());
                         world.playSound(loc(), Sound.ENTITY_WOLF_GROWL, SoundCategory.HOSTILE, 1.2f, 0.4f);
                         set(State.TELEGRAPH);
@@ -513,7 +531,7 @@ final class Creatures {
                 } else {
                     nearTicks = 0;
                 }
-                if (d < 1.6 && nearTicks > 30) {
+                if (d < 1.6 && nearTicks > 30 && targetable(p)) {
                     held = p;
                     holdTicks = 0;
                     p.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 60, 1, false, false));
@@ -556,6 +574,91 @@ final class Creatures {
         public void remove() {
             release();
             super.remove();
+        }
+    }
+
+    // ===================================================================== Watcher
+    /**
+     * A black silhouette that stands at the far end of a hall. While anyone is looking at it, it does not move at
+     * all. The moment nobody is, it closes the distance fast and without a sound. Stare it down long enough and it is
+     * simply gone; let it reach you and the lights go with it.
+     */
+    static final class Watcher extends Creature {
+        private final double damage;
+        private int watchedTicks;
+        private int unseenTicks;
+        private int tilt;
+
+        Watcher(BackroomsPlugin p, CreatureManager m, BackroomsConfig.CreatureSettings s) {
+            super(p, m, CreatureType.WATCHER, s.health());
+            this.damage = s.damage();
+        }
+
+        @Override
+        protected Model model() {
+            return Bodies.watcher();
+        }
+
+        @Override
+        protected double headHeight() {
+            return 1.95;
+        }
+
+        @Override
+        protected float[] hitboxSize() {
+            return new float[]{0.6f, 2.1f};
+        }
+
+        @Override
+        protected void think() {
+            int dt = plugin.cfg().creatureTickInterval;
+            Player p = nearestPlayer(64);
+            if (p == null || age > 20 * 150) {
+                remove();
+                return;
+            }
+            if (anyoneWatching(42, 64)) {
+                // frozen solid; not even the head turns
+                unseenTicks = 0;
+                watchedTicks += dt;
+                if (watchedTicks % 20 < dt) mgr.sanityHit(p, 1.5);
+                if (watchedTicks > 20 * 7) {
+                    world.playSound(head(), Sound.BLOCK_SCULK_SHRIEKER_SHRIEK, SoundCategory.HOSTILE, 0.15f, 0.5f);
+                    remove();
+                }
+                return;
+            }
+            watchedTicks = Math.max(0, watchedTicks - dt);
+            unseenTicks += dt;
+            double d = dist(p);
+            if (d <= 1.3) {
+                if (targetable(p)) {
+                    p.damage(damage);
+                    mgr.noteAttack(p, type);
+                    p.addPotionEffect(new PotionEffect(PotionEffectType.DARKNESS, 100, 0, false, false));
+                    p.addPotionEffect(new PotionEffect(PotionEffectType.BLINDNESS, 30, 0, false, false));
+                    mgr.flickerAround(p.getLocation(), 10);
+                }
+                world.playSound(p.getLocation(), Sound.ENTITY_WARDEN_NEARBY_CLOSEST, SoundCategory.HOSTILE, 0.8f, 0.6f);
+                remove();
+                return;
+            }
+            if (d < 14 && unseenTicks % 30 < dt) {
+                world.playSound(head(), Sound.AMBIENT_CAVE, SoundCategory.HOSTILE, 0.25f, 0.6f);
+            }
+            moveToward(p.getLocation(), 0.42, 1.0);
+            animateWalk(Bodies.WATCHER_HIP, Bodies.WATCHER_SHOULDER, 0.25, true);
+            if (++tilt % 20 == 0) {
+                body.pose("head", new Matrix4f().translate(0, 1.75f, 0).rotateZ((float) Math.toRadians(rnd().nextInt(-25, 26)))
+                        .translate(0, -1.75f, 0), 1);
+            }
+        }
+
+        @Override
+        protected void onHurt(Player by, double amount) {
+            world.playSound(head(), Sound.ENTITY_ENDERMAN_TELEPORT, SoundCategory.HOSTILE, 0.5f, 0.3f);
+            world.spawnParticle(Particle.SQUID_INK, head(), 12, 0.2, 0.6, 0.2, 0.01);
+            remove();
         }
     }
 }

@@ -72,7 +72,7 @@ public abstract class Creature {
         this.viewer = onlyViewer;
         body = new Body(model());
         int interval = plugin.cfg().creatureTickInterval;
-        body.spawn(plugin, loc(), 1.0f, id.toString(), onlyViewer, interval + 1);
+        body.spawn(plugin, loc(), viewRange(), id.toString(), onlyViewer, interval + 1);
         float[] hb = hitboxSize();
         if (hb != null && onlyViewer == null) {
             hitbox = world.spawn(loc(), Interaction.class, e -> {
@@ -87,6 +87,11 @@ public abstract class Creature {
     }
 
     protected void onSpawn() {
+    }
+
+    /** Display view range (1.0 = 64 blocks). */
+    protected float viewRange() {
+        return 1.5f;
     }
 
     public Location loc() {
@@ -184,15 +189,24 @@ public abstract class Creature {
         return 1.7;
     }
 
+    /** Can be hurt by creatures (survival / adventure). */
     protected static boolean targetable(Player p) {
-        return p.isValid() && !p.isDead() && (p.getGameMode() == GameMode.SURVIVAL || p.getGameMode() == GameMode.ADVENTURE);
+        return present(p) && (p.getGameMode() == GameMode.SURVIVAL || p.getGameMode() == GameMode.ADVENTURE);
+    }
+
+    /**
+     * Counts as someone being there: creatures notice, stalk and react to anyone but spectators. Creative players
+     * are never hurt, but creatures no longer vanish the instant they spawn next to one.
+     */
+    protected static boolean present(Player p) {
+        return p.isValid() && !p.isDead() && p.getGameMode() != GameMode.SPECTATOR;
     }
 
     protected Player nearestPlayer(double max) {
         Player best = null;
         double bd = max * max;
         for (Player p : world.getPlayers()) {
-            if (!targetable(p)) continue;
+            if (!present(p)) continue;
             if (viewer != null && p != viewer) continue;
             double d = p.getLocation().distanceSquared(loc());
             if (d < bd) {
@@ -220,7 +234,7 @@ public abstract class Creature {
 
     protected boolean anyoneWatching(double coneDeg, double maxDist) {
         for (Player p : world.getPlayers()) {
-            if (targetable(p) && (viewer == null || p == viewer) && watchedBy(p, coneDeg, maxDist)) return true;
+            if (present(p) && (viewer == null || p == viewer) && watchedBy(p, coneDeg, maxDist)) return true;
         }
         return false;
     }

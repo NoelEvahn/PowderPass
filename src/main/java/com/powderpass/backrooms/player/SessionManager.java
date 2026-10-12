@@ -170,7 +170,8 @@ public final class SessionManager {
         p.sendMessage(cfg().msg("entering"));
         p.addPotionEffect(new PotionEffect(PotionEffectType.DARKNESS, 50, 0, false, false));
         p.playSound(p.getLocation(), Sound.BLOCK_SAND_FALL, SoundCategory.MASTER, 1f, 0.5f);
-        plugin.teleports().teleportSafe(p, target, l -> arrived(p, Level.LEVEL_0));
+        if (cfg().fallEnabled) plugin.falls().begin(p, target);
+        else plugin.teleports().teleportSafe(p, target, l -> arrived(p, Level.LEVEL_0));
         return true;
     }
 

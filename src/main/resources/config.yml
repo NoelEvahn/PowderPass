@@ -75,6 +75,16 @@ entry:
   # do not all share one spot. 0 = everyone arrives near the world origin.
   spread-radius: 2500
   title: true
+  # Entering means falling: you appear high in the dark above Level 0, plunge down, the ceiling opens
+  # under you for a moment, and you land in the Lobby. Off = an instant teleport instead.
+  fall:
+    enabled: true
+    height: 90                  # blocks above the level's roof the fall starts from
+  # The old way in: suffocate inside sand, gravel or concrete powder (anything that falls) outside the
+  # Backrooms for this long and reality gives way. You take no suffocation damage while it counts.
+  suffocation:
+    enabled: true
+    seconds: 2.0
 
 return:
   # Used when a saved return location is missing or its world is gone. Empty = the first world.
@@ -115,17 +125,18 @@ displays:
 creatures:
   enabled: true
   tick-interval: 2
-  spawn-attempt-seconds: 20
+  spawn-attempt-seconds: 15
   max-per-player: 2
   max-per-level: 8
   despawn-distance: 64
   # base spawn chance per attempt per player, by level
-  level-chance: {level0: 0.22, level1: 0.30, poolrooms: 0.15, level4: 0.12, plains: 0.25}
+  level-chance: {level0: 0.30, level1: 0.32, poolrooms: 0.2, level4: 0.25, plains: 0.3}
   types:
     smiler:    {enabled: true, damage: 6.0, weight: {level0: 5, level1: 3}}
-    faceling:  {enabled: true, weight: {level0: 5, level1: 2, poolrooms: 2, level4: 10, plains: 10}}
+    faceling:  {enabled: true, weight: {level0: 4, level1: 2, poolrooms: 2, level4: 6, plains: 10}}
     hound:     {enabled: true, damage: 5.0, health: 30.0, weight: {level1: 6}}
     drifter:   {enabled: true, damage: 2.0, health: 20.0, weight: {poolrooms: 8}}
+    watcher:   {enabled: true, damage: 4.0, weight: {level0: 4, level1: 1, level4: 6}}
 
 events:
   enabled: true

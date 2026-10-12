@@ -43,6 +43,9 @@ public final class BackroomsConfig {
     public final float viewRange;
 
     public final boolean creaturesEnabled;
+    public final boolean fallEnabled, suffocationEnter;
+    public final int fallHeight;
+    public final long suffocationMillis;
     public final int creatureTickInterval, spawnAttemptSeconds, maxPerPlayer, maxPerLevel, despawnDistance;
     public final Map<Level, Double> levelChance = new EnumMap<>(Level.class);
     public final Map<String, CreatureSettings> creatures = new HashMap<>();
@@ -56,6 +59,13 @@ public final class BackroomsConfig {
     public final boolean debug;
 
     private final Map<String, String> messages = new HashMap<>();
+
+    private static final Map<String, CreatureSettings> DEFAULT_CREATURES = Map.of(
+            "smiler", new CreatureSettings(true, 6, 20, Map.of(Level.LEVEL_0, 5.0, Level.LEVEL_1, 3.0)),
+            "faceling", new CreatureSettings(true, 0, 1, Map.of(Level.LEVEL_0, 4.0, Level.LEVEL_1, 2.0, Level.POOLROOMS, 2.0, Level.LEVEL_4, 6.0, Level.PLAINS, 10.0)),
+            "hound", new CreatureSettings(true, 5, 30, Map.of(Level.LEVEL_1, 6.0)),
+            "drifter", new CreatureSettings(true, 2, 20, Map.of(Level.POOLROOMS, 8.0)),
+            "watcher", new CreatureSettings(true, 4, 20, Map.of(Level.LEVEL_0, 4.0, Level.LEVEL_4, 6.0, Level.LEVEL_1, 1.0)));
 
     public record CreatureSettings(boolean enabled, double damage, double health, Map<Level, Double> weights) {
     }
@@ -80,6 +90,10 @@ public final class BackroomsConfig {
         allowSelfLeave = c.getBoolean("entry.allow-self-leave", false);
         allowedWorlds = c.getStringList("entry.allowed-worlds");
         spreadRadius = Math.max(0, c.getInt("entry.spread-radius", 2500));
+        fallEnabled = c.getBoolean("entry.fall.enabled", true);
+        fallHeight = clamp(c.getInt("entry.fall.height", 90), 20, 300);
+        suffocationEnter = c.getBoolean("entry.suffocation.enabled", true);
+        suffocationMillis = (long) (Math.max(0.2, Math.min(30, c.getDouble("entry.suffocation.seconds", 2.0))) * 1000);
         entryTitle = c.getBoolean("entry.title", true);
         fallbackWorld = c.getString("return.fallback-world", "");
         deathMode = c.getString("death.mode", "RETURN").toUpperCase(Locale.ROOT);
@@ -133,6 +147,8 @@ public final class BackroomsConfig {
                 creatures.put(t.toLowerCase(Locale.ROOT), new CreatureSettings(s.getBoolean("enabled", true), s.getDouble("damage", 4), s.getDouble("health", 20), w));
             }
         }
+        // types missing from an older config.yml still spawn with their built-in defaults
+        for (Map.Entry<String, CreatureSettings> d : DEFAULT_CREATURES.entrySet()) creatures.putIfAbsent(d.getKey(), d.getValue());
 
         eventsEnabled = c.getBoolean("events.enabled", true);
         eventCheckSeconds = clamp(c.getInt("events.check-seconds", 30), 5, 3600);
@@ -158,7 +174,7 @@ public final class BackroomsConfig {
     }
 
     public CreatureSettings creature(String id) {
-        return creatures.getOrDefault(id, new CreatureSettings(true, 4, 20, Map.of()));
+        return creatures.getOrDefault(id, DEFAULT_CREATURES.getOrDefault(id, new CreatureSettings(true, 4, 20, Map.of())));
     }
 
     /** Message with prefix; placeholders as alternating key/value pairs. */
