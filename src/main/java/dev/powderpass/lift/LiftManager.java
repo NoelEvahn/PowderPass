@@ -121,7 +121,7 @@ public final class LiftManager {
         }
         try {
             LiftLayout layout = LiftGeometry.build(d.spec(config()), d.groundFunction());
-            Lift lift = new Lift(d, world, layout, d.seats, config().hangerLength);
+            Lift lift = new Lift(d, world, layout, d.seats, config().hangerLength, config().allowRideDown);
             lifts.put(key, lift);
             return lift;
         } catch (IllegalArgumentException e) {

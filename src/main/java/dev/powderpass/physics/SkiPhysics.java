@@ -173,10 +173,22 @@ public final class SkiPhysics {
         s.pushing = false;
         s.skid = 0.0;
         s.turn = 0.0;
-        if (in.left() != in.right()) {
+        boolean spinKeys = in.left() || in.right();
+        boolean flipKeys = in.forward() || in.backward();
+        if (s.airTicks == 1) {
+            s.spinLocked = spinKeys;
+            s.flipLocked = flipKeys;
+        }
+        if (!spinKeys) {
+            s.spinLocked = false;
+        }
+        if (!flipKeys) {
+            s.flipLocked = false;
+        }
+        if (!s.spinLocked && in.left() != in.right()) {
             s.spin += in.right() ? p.airSpinRate() : -p.airSpinRate();
         }
-        if (in.forward() != in.backward()) {
+        if (!s.flipLocked && in.forward() != in.backward()) {
             s.flip += in.forward() ? p.airFlipRate() : -p.airFlipRate();
         }
         s.tucking = in.sneak();

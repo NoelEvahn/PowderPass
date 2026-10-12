@@ -137,6 +137,21 @@ public final class GeneralListener implements Listener {
     public void onPrepareCraft(PrepareItemCraftEvent event) {
         Recipe recipe = event.getRecipe();
         boolean ours = recipe instanceof Keyed keyed && plugin.gear().isOurRecipe(keyed.getKey());
+        if (ours) {
+            dev.powderpass.gear.Gear required = plugin.gear().requiredInput(((Keyed) recipe).getKey());
+            if (required != null) {
+                boolean found = false;
+                for (ItemStack item : event.getInventory().getMatrix()) {
+                    if (item != null && item.getType() == org.bukkit.Material.CARROT_ON_A_STICK) {
+                        found = required.equals(GearItems.identify(item));
+                    }
+                }
+                if (!found) {
+                    event.getInventory().setResult(null);
+                }
+            }
+            return;
+        }
         for (ItemStack item : event.getInventory().getMatrix()) {
             if (item == null) {
                 continue;
@@ -154,7 +169,12 @@ public final class GeneralListener implements Listener {
         ItemStack base = event.getInventory().getInputEquipment();
         Recipe recipe = event.getInventory().getRecipe();
         boolean ours = recipe instanceof Keyed keyed && plugin.gear().isOurRecipe(keyed.getKey());
-        if (!ours && (GearItems.identify(base) != null || PassService.isPass(base))) {
+        if (ours) {
+            dev.powderpass.gear.Gear required = plugin.gear().requiredInput(((Keyed) recipe).getKey());
+            if (required != null && !required.equals(GearItems.identify(base))) {
+                event.setResult(null);
+            }
+        } else if (GearItems.identify(base) != null || PassService.isPass(base)) {
             event.setResult(null);
         }
     }

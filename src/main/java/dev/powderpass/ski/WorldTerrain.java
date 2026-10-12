@@ -99,7 +99,11 @@ public final class WorldTerrain implements TerrainSampler {
         }
         int start = clampY((int) Math.floor(yHint + 1.6));
         Block b = world.getBlockAt(x, start, z);
-        if (isSurface(b)) {
+        // A solid block with air beneath it is an overhang (branches, cave ceiling): look below it instead.
+        boolean overhang = isSurface(b) && start - 1 >= minY && !isSurface(world.getBlockAt(x, start - 1, z));
+        if (overhang) {
+            start--;
+        } else if (isSurface(b)) {
             // Inside terrain: climb to the top of this wall / step.
             for (int up = 1; up <= SEARCH_UP; up++) {
                 int y = start + up;

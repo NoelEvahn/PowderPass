@@ -38,10 +38,12 @@ public final class Lift {
     private final int[] signParts = new int[2];
     private final double[] towerS;
     private double wheelAngle;
+    private final boolean rideDown;
     private boolean active;
 
-    Lift(LiftDefinition def, World world, LiftLayout layout, int seats, double hanger) {
+    Lift(LiftDefinition def, World world, LiftLayout layout, int seats, double hanger, boolean rideDown) {
         this.def = def;
+        this.rideDown = rideDown;
         this.world = world;
         this.layout = layout;
         this.structure = new StaticStructure(world);
@@ -179,7 +181,10 @@ public final class Lift {
         Matrix4f signM = new Matrix4f().translate(0f, wheelH + 1.5f, 0f).scale(1.4f);
         signParts[index] = structure.add(floor, l -> Displays.text(l, signText(bottom), signM, VIEW, null));
 
-        // Floating marker above the loading / unloading area of this station.
+        // Floating marker above the loading area of this station.
+        if (!bottom && !rideDown) {
+            return;
+        }
         double side = bottom ? 1 : -1;
         double along = bottom ? 2.5 : -2.5;
         Location mark = new Location(world,

@@ -22,7 +22,7 @@ skiing:
   auto-unclip-rough-seconds: 4
   # Seconds after a wipeout before you can click in again.
   crash-cooldown-seconds: 2
-  # Hard landings hurt (damage per 0.1 block/tick of impact above the safe threshold).
+  # Hard landings hurt: damage = (impact speed - safe-impact) x impact-damage-per-unit (half-hearts).
   landing-damage: true
   impact-damage-per-unit: 10.0
   # Extra damage dealt by a wipeout (0 = none).
@@ -122,6 +122,8 @@ visuals:
   sounds: true
   # Height of the vehicle seat above the snow so the camera sits at eye level.
   rider-offset: 0.6
+  # Extra rotation (degrees) of the skier's head item, in case a client renders heads facing backwards.
+  head-yaw-offset: 0
 
 lifts:
   # Rope speed in blocks per tick (0.2 = 4 m/s).

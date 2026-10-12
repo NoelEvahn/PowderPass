@@ -84,6 +84,9 @@ public final class GearItems {
                 }
             }
         }
+        if (!Bukkit.getOnlinePlayers().isEmpty()) {
+            Bukkit.updateRecipes();
+        }
     }
 
     public void unregisterRecipes() {
@@ -95,6 +98,25 @@ public final class GearItems {
 
     public List<NamespacedKey> recipeKeys() {
         return List.copyOf(recipeKeys);
+    }
+
+    /**
+     * The gear a PowderPass upgrade recipe expects as its input, or null for recipes without a gear input.
+     */
+    public Gear requiredInput(NamespacedKey key) {
+        if (!isOurRecipe(key)) {
+            return null;
+        }
+        int sep = key.getKey().indexOf('_');
+        if (sep < 0) {
+            return null;
+        }
+        GearType type = GearType.byId(key.getKey().substring(0, sep));
+        GearTier tier = GearTier.byId(key.getKey().substring(sep + 1));
+        if (type == null || tier == null || tier.previous() == null) {
+            return null;
+        }
+        return new Gear(type, tier.previous());
     }
 
     public boolean isOurRecipe(NamespacedKey key) {
@@ -119,13 +141,15 @@ public final class GearItems {
                 ShapedRecipe r = new ShapedRecipe(key, result);
                 r.shape(shape);
                 r.setIngredient('M', gear.tier() == GearTier.ALPINE ? Material.IRON_INGOT : Material.DIAMOND);
-                r.setIngredient('C', new RecipeChoice.ExactChoice(create(new Gear(gear.type(), gear.tier().previous()))));
+                // Any carrot-on-a-stick matches here; GeneralListener checks it really is the previous tier
+                // (by its PDC tag, so renamed gear or changed lore still upgrades).
+                r.setIngredient('C', Material.CARROT_ON_A_STICK);
                 return r;
             }
             case AVALANCHE -> {
                 return new SmithingTransformRecipe(key, result,
                         new RecipeChoice.MaterialChoice(Material.NETHERITE_UPGRADE_SMITHING_TEMPLATE),
-                        new RecipeChoice.ExactChoice(create(new Gear(gear.type(), GearTier.GLACIER))),
+                        new RecipeChoice.MaterialChoice(Material.CARROT_ON_A_STICK),
                         new RecipeChoice.MaterialChoice(Material.NETHERITE_INGOT));
             }
             default -> {

@@ -179,7 +179,7 @@ class SkiPhysicsTest {
         StepResult r = new StepResult();
         CrashReason crash = null;
         for (int tick = 0; tick < 100; tick++) {
-            boolean spinning = Math.abs(s.spin) < 90.0;
+            boolean spinning = tick > 0 && Math.abs(s.spin) < 90.0;
             SkiPhysics.step(s, new SkiInput(0.0, false, false, false, spinning, false, false), field, PARAMS, r);
             if (r.crash != null) {
                 crash = r.crash;
@@ -201,7 +201,7 @@ class SkiPhysicsTest {
         s.vel.set(0, 0.5, 0.8);
         StepResult r = new StepResult();
         for (int tick = 0; tick < 100; tick++) {
-            boolean spinning = Math.abs(s.spin) < 360.0;
+            boolean spinning = tick > 0 && Math.abs(s.spin) < 360.0;
             SkiPhysics.step(s, new SkiInput(0.0, false, false, false, spinning, false, false), field, PARAMS, r);
             assertNull(r.crash);
             if (r.landed) {
@@ -277,5 +277,41 @@ class SkiPhysicsTest {
             SkiPhysics.step(s, new SkiInput(0.0, false, false, true, false, false, false), field, keys, r);
         }
         assertTrue(s.heading < -20.0, "A should turn left, heading " + s.heading);
+    }
+
+    @Test
+    void keysHeldThroughTakeoffDoNotSpinOrFlip() {
+        FakeTerrain t = new FakeTerrain((x, z) -> z < 20 ? 100.0 : 94.0 - (z - 20) * Math.tan(Math.toRadians(30)), 0.125);
+        Heightfield field = field(t);
+        SkiState s = spawn(field, 0.5, 2.5, 0.0);
+        s.vel.set(0, 0, 0.9);
+        StepResult r = new StepResult();
+        // Hold W and D the whole time (poling + hard carve habit), straight off the cliff.
+        SkiInput held = new SkiInput(0.0, true, false, false, true, false, false);
+        boolean landed = false;
+        for (int tick = 0; tick < 200 && !landed; tick++) {
+            SkiPhysics.step(s, held, field, PARAMS, r);
+            assertNull(r.crash, "held keys must not cause a crash");
+            landed = r.landed;
+        }
+        assertTrue(landed);
+        assertEquals(0.0, r.landingSpin, 1e-9);
+        assertEquals(0.0, r.landingFlip, 1e-9);
+    }
+
+    @Test
+    void releasingAndPressingAgainInTheAirSpins() {
+        Heightfield field = field(FakeTerrain.flat(64));
+        SkiState s = spawn(field, 0.5, 0.5, 0.0);
+        s.grounded = false;
+        s.pos.y += 6.0;
+        s.vel.set(0, 0.5, 0.6);
+        StepResult r = new StepResult();
+        SkiPhysics.step(s, new SkiInput(0.0, false, false, false, true, false, false), field, PARAMS, r);
+        SkiPhysics.step(s, new SkiInput(0.0, false, false, false, true, false, false), field, PARAMS, r);
+        assertEquals(0.0, s.spin, 1e-9, "locked while still held from takeoff");
+        SkiPhysics.step(s, SkiInput.idle(0.0), field, PARAMS, r);
+        SkiPhysics.step(s, new SkiInput(0.0, false, false, false, true, false, false), field, PARAMS, r);
+        assertEquals(PARAMS.airSpinRate(), s.spin, 1e-9);
     }
 }

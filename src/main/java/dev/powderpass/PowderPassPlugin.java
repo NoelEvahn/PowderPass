@@ -182,7 +182,6 @@ public final class PowderPassPlugin extends JavaPlugin {
         gear.reload(config);
         gear.registerRecipes();
         skis.reload();
-        lifts.load();
         lifts.buildAll();
         courses.rebuildAll();
         kiosks.buildAll();

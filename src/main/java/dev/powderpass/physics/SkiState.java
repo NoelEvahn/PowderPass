@@ -21,6 +21,9 @@ public final class SkiState {
     /** Accumulated flip while airborne (degrees, positive = front flip). */
     public double flip;
     public int grabTicks;
+    /** Keys held through takeoff are ignored until released, so carving or poling never causes a spin/flip. */
+    public boolean spinLocked;
+    public boolean flipLocked;
     public double launchY;
     public double peakY;
 

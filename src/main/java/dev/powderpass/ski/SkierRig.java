@@ -46,6 +46,8 @@ public final class SkierRig {
     private final Map<RigPart, Display> parts = new EnumMap<>(RigPart.class);
     private final Map<RigPart, Matrix4f> sent = new EnumMap<>(RigPart.class);
     private final Map<RigPart, Matrix4f> scratch = new EnumMap<>(RigPart.class);
+    private final Player viewer;
+    private Player hiddenFrom;
     private boolean removed;
 
     /**
@@ -60,6 +62,7 @@ public final class SkierRig {
         this.riderOffset = riderOffset;
         this.poseSmoothing = poseSmoothing;
         this.headYawOffset = headYawOffset;
+        this.viewer = viewer;
         Location at = feet.clone().add(0, riderOffset, 0);
         at.setYaw(0f);
         at.setPitch(0f);
@@ -188,6 +191,7 @@ public final class SkierRig {
 
     /** Hides the parts that would block the rider's own camera. */
     public void hideFromRider(Player rider) {
+        hiddenFrom = rider;
         for (Map.Entry<RigPart, Display> e : parts.entrySet()) {
             if (e.getKey().hiddenFromRider()) {
                 rider.hideEntity(plugin, e.getValue());
@@ -265,10 +269,21 @@ public final class SkierRig {
             return;
         }
         removed = true;
-        for (Display d : parts.values()) {
+        // Drop the per-player visibility overrides so they don't pile up for removed entities.
+        for (Map.Entry<RigPart, Display> e : parts.entrySet()) {
+            Display d = e.getValue();
+            if (hiddenFrom != null && hiddenFrom.isOnline() && e.getKey().hiddenFromRider()) {
+                hiddenFrom.showEntity(plugin, d);
+            }
+            if (viewer != null && viewer.isOnline()) {
+                viewer.hideEntity(plugin, d);
+            }
             if (d.isValid()) {
                 d.remove();
             }
+        }
+        if (viewer != null && viewer.isOnline()) {
+            viewer.hideEntity(plugin, anchor);
         }
         parts.clear();
         if (anchor.isValid()) {

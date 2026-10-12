@@ -36,6 +36,8 @@ public final class SkiSession {
         UNCLIP, CRASH, ROUGH, QUIT, DEATH, TELEPORT, WORLD, DISABLE, INVALID
     }
 
+    private static final int MAX_AIR_TICKS = 400;
+
     private final SkiManager manager;
     private final Player player;
     private final Gear gear;
@@ -91,7 +93,7 @@ public final class SkiSession {
         if (ended) {
             return;
         }
-        if (!player.isOnline() || player.isDead() || !rig.valid() || player.getVehicle() != rig.anchor()) {
+        if (!player.isOnline() || player.isDead() || !rig.valid() || !rig.anchor().equals(player.getVehicle())) {
             manager.end(this, EndReason.INVALID, true);
             return;
         }
@@ -109,6 +111,12 @@ public final class SkiSession {
         SkiPhysics.step(state, in, field, params, result);
         if (result.crashed()) {
             manager.crash(this, result.crash);
+            return;
+        }
+
+        if (!state.grounded && (state.airTicks > MAX_AIR_TICKS || state.pos.y < terrain.world().getMinHeight() - 8)) {
+            // Fell off the world or into a bottomless drop: get out of the gear instead of falling forever.
+            manager.end(this, EndReason.INVALID, false);
             return;
         }
 
