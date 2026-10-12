@@ -52,6 +52,11 @@ final class TestServer extends ServerMock {
         }
 
         @Override
+        public org.bukkit.generator.ChunkGenerator getGenerator() {
+            return null;
+        }
+
+        @Override
         public CompletableFuture<Chunk> getChunkAtAsync(int x, int z, boolean gen) {
             return CompletableFuture.completedFuture(getChunkAt(x, z));
         }

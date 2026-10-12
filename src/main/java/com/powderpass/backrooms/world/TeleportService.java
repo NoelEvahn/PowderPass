@@ -70,6 +70,22 @@ public final class TeleportService {
         return null;
     }
 
+    private static String describe(Location l) {
+        return (l.getWorld() == null ? "?" : l.getWorld().getName()) + " " + l.getBlockX() + "," + l.getBlockY() + "," + l.getBlockZ();
+    }
+
+    /** Tell both the player and the console why a teleport did not happen. */
+    private void fail(Player p, String reason) {
+        plugin.getLogger().warning("Teleport of " + p.getName() + " aborted: " + reason);
+        if (p.isOnline()) {
+            plugin.sessions().get(p).inTransition = false;
+            p.sendMessage(com.powderpass.backrooms.config.BackroomsConfig.mm("<red>[Backrooms] Teleport failed: <gray>" + reason));
+            if (!plugin.worlds().isBackrooms(p.getWorld())) {
+                plugin.sessions().clearInside(p); // never leave a stale "inside" flag on someone who never left
+            }
+        }
+    }
+
     /**
      * Loads the target chunk(s) asynchronously, validates/adjusts the spot, then teleports. If no safe spot exists
      * near the target and the world is a Backrooms level, the generator's guaranteed safe cell is used instead.
@@ -90,7 +106,13 @@ public final class TeleportService {
         int i = 0;
         for (int dx = -1; dx <= 1; dx++) for (int dz = -1; dz <= 1; dz++) loads[i++] = w.getChunkAtAsync(cx + dx, cz + dz, true);
         CompletableFuture.allOf(loads).whenComplete((v, err) -> plugin.getServer().getScheduler().runTask(plugin, () -> {
-            if (err != null || !p.isOnline()) {
+            if (!p.isOnline()) {
+                result.complete(false);
+                return;
+            }
+            if (err != null) {
+                plugin.getLogger().log(java.util.logging.Level.WARNING, "Chunk loading failed for teleport of " + p.getName() + " to " + describe(target), err);
+                fail(p, "the destination chunks failed to load (" + err + ")");
                 result.complete(false);
                 return;
             }
@@ -111,7 +133,9 @@ public final class TeleportService {
                 }
             }
             if (safe == null) {
-                plugin.getLogger().warning("No safe landing spot near " + target + "; teleport aborted for " + p.getName());
+                Block b = target.getBlock();
+                fail(p, "no safe landing spot near " + describe(target) + " (feet=" + b.getType() + ", head=" + b.getRelative(0, 1, 0).getType()
+                        + ", floor=" + b.getRelative(0, -1, 0).getType() + ", generator=" + (w.getGenerator() == null ? "vanilla" : w.getGenerator().getClass().getSimpleName()) + ")");
                 result.complete(false);
                 return;
             }
@@ -122,6 +146,9 @@ public final class TeleportService {
                     p.setFallDistance(0);
                     p.setFireTicks(0);
                     if (after != null) after.accept(dest);
+                } else {
+                    fail(p, "the teleport to " + describe(dest) + " was cancelled, most likely by another plugin "
+                            + "(world access permissions, e.g. Multiverse enforce-access, or a region/teleport plugin)");
                 }
                 result.complete(ok);
             });

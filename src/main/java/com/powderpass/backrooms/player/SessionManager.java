@@ -161,6 +161,7 @@ public final class SessionManager {
     public boolean enter(Player p, CommandSender feedback) {
         World w0 = plugin.worlds().world(Level.LEVEL_0);
         if (w0 == null) {
+            plugin.getLogger().warning("Enter refused for " + p.getName() + ": Level 0 world is not loaded (check the startup log for 'Failed to load Level 0').");
             if (feedback != null) feedback.sendMessage(cfg().msg("level-disabled", "level", Level.LEVEL_0.displayName()));
             return false;
         }
