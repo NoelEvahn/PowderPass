@@ -170,7 +170,8 @@ public final class Level2Generator extends LevelGenerator {
         if (k == K_TUNNEL || k == K_HAZARD) {
             if (Rng.chance(h, 0.4)) {
                 c.set(C0 + 1, c.fy + 3, C0 + 1, B.of(Material.LANTERN, "[hanging=true]"));
-            } else if (Rng.chance(Rng.hash(h, 1), 0.25)) {
+            } else if (Rng.chance(Rng.hash(h, 1), 0.25) && !edgeOpen(c.floor, c.cx - 1, c.cz, true)) {
+                // wall torch faces east, so it needs the solid west wall that only exists without a west arm
                 c.set(C0, c.fy + 2, C0, B.of(Material.REDSTONE_WALL_TORCH, "[facing=east,lit=true]"));
             }
         }

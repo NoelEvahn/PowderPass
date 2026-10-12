@@ -78,6 +78,7 @@ public final class WorldManager {
         }
         g = Generators.create(l, base, gs);
         generators.put(l, g);
+        warm(g);
         return g;
     }
 
@@ -86,6 +87,18 @@ public final class WorldManager {
             return new File(Bukkit.getWorldContainer(), worldName(l));
         } catch (RuntimeException e) {
             return null; // only used for a diagnostic warning
+        }
+    }
+
+    /** Paint a spread of sample chunks into memory and pre-resolve their block states on the main thread. */
+    private void warm(LevelGenerator g) {
+        try {
+            for (int i = 0; i < 12; i++) {
+                g.paint(new com.powderpass.backrooms.gen.MemoryCanvas(-64, 320), i * 37 - 200, 150 - i * 29);
+            }
+            com.powderpass.backrooms.gen.B.warmAll();
+        } catch (RuntimeException e) {
+            log.warning("Block state warm-up failed for " + g.level.displayName() + ": " + e);
         }
     }
 

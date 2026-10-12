@@ -53,6 +53,19 @@ public final class B {
         return of(m, "[axis=" + axis + "]");
     }
 
+    /**
+     * Resolve every key created so far. Called on the main thread at startup (after painting sample chunks into
+     * memory) so that generator worker threads almost never parse block data themselves.
+     */
+    public static int warmAll() {
+        int n = 0;
+        for (B b : CACHE.values()) {
+            b.data();
+            n++;
+        }
+        return n;
+    }
+
     public BlockData data() {
         BlockData d = data;
         if (d == null) {

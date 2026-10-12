@@ -201,7 +201,7 @@ public final class BackroomsCommand implements TabExecutor {
         }
         Location loc = p.getLocation();
         plugin.data().setSpawn(l, loc.getX(), loc.getY(), loc.getZ(), loc.getYaw(), loc.getPitch());
-        plugin.data().save();
+        plugin.data().saveAsync(plugin);
         s.sendMessage(cfg().msg("spawn-set", "level", l.displayName(), "x", String.valueOf(loc.getBlockX()),
                 "y", String.valueOf(loc.getBlockY()), "z", String.valueOf(loc.getBlockZ())));
     }

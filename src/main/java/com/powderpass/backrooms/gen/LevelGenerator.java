@@ -108,10 +108,10 @@ public abstract class LevelGenerator {
         return floorY.length;
     }
 
-    /** Floor index containing the given feet y, or -1. */
+    /** Floor index for a feet y (anything below the lowest floor counts as floor 0, e.g. stair pits). */
     public int floorAt(int y) {
         for (int f = floorY.length - 1; f >= 0; f--) {
-            if (y > floorY[f] - 6) {
+            if (y > floorY[f] - 2) {
                 return f;
             }
         }

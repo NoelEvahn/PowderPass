@@ -45,11 +45,22 @@ public final class DataStore {
         }
     }
 
-    public synchronized void save() {
+    /** Synchronous save (startup/shutdown only). */
+    public void save() {
+        write(yaml.saveToString());
+    }
+
+    /** Snapshot on the calling (main) thread, write on an async thread. */
+    public void saveAsync(org.bukkit.plugin.Plugin plugin) {
+        String snapshot = yaml.saveToString();
+        org.bukkit.Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> write(snapshot));
+    }
+
+    private synchronized void write(String content) {
         try {
             Files.createDirectories(file.getParentFile().toPath());
             File tmp = new File(file.getPath() + ".tmp");
-            yaml.save(tmp);
+            Files.writeString(tmp.toPath(), content);
             if (file.exists()) {
                 Files.copy(file.toPath(), new File(file.getPath() + ".bak").toPath(), StandardCopyOption.REPLACE_EXISTING);
             }
