@@ -81,7 +81,7 @@
     },
     "power.down": {
       "category": "event",
-      "duration_ticks": 46,
+      "duration_ticks": 51,
       "loop": false,
       "positional": true,
       "variants": 1,
@@ -89,12 +89,12 @@
       "muffled": false,
       "stream": false,
       "event_ticks": {
-        "power.down": 46
+        "power.down": 51
       }
     },
     "power.up": {
       "category": "event",
-      "duration_ticks": 45,
+      "duration_ticks": 47,
       "loop": false,
       "positional": true,
       "variants": 1,
@@ -102,7 +102,7 @@
       "muffled": false,
       "stream": false,
       "event_ticks": {
-        "power.up": 45
+        "power.up": 47
       }
     },
     "vent.hvac": {
@@ -146,7 +146,7 @@
     },
     "machine.start": {
       "category": "event",
-      "duration_ticks": 83,
+      "duration_ticks": 85,
       "loop": false,
       "positional": true,
       "variants": 1,
@@ -161,13 +161,13 @@
       "muffled": false,
       "stream": false,
       "event_ticks": {
-        "machine.start": 83,
-        "machine.start.carpet": 81,
-        "machine.start.office": 83,
-        "machine.start.concrete": 93,
-        "machine.start.pool": 115,
-        "machine.start.corridor": 83,
-        "machine.start.open": 81
+        "machine.start": 85,
+        "machine.start.carpet": 83,
+        "machine.start.office": 85,
+        "machine.start.concrete": 99,
+        "machine.start.pool": 129,
+        "machine.start.corridor": 86,
+        "machine.start.open": 83
       }
     },
     "transformer.hum": {
@@ -403,17 +403,17 @@
       "event_ticks": {
         "impact.distant": 50,
         "impact.distant.carpet": 51,
-        "impact.distant.office": 53,
+        "impact.distant.office": 52,
         "impact.distant.concrete": 56,
         "impact.distant.pool": 80,
-        "impact.distant.corridor": 52,
+        "impact.distant.corridor": 51,
         "impact.distant.open": 51,
         "impact.distant.carpet.muffled": 54,
         "impact.distant.office.muffled": 54,
         "impact.distant.concrete.muffled": 56,
         "impact.distant.pool.muffled": 80,
-        "impact.distant.corridor.muffled": 54,
-        "impact.distant.open.muffled": 53
+        "impact.distant.corridor.muffled": 53,
+        "impact.distant.open.muffled": 52
       }
     },
     "step.carpet": {
@@ -538,18 +538,18 @@
       "stream": false,
       "event_ticks": {
         "movement.distant": 67,
-        "movement.distant.carpet": 65,
+        "movement.distant.carpet": 63,
         "movement.distant.office": 67,
-        "movement.distant.concrete": 78,
+        "movement.distant.concrete": 80,
         "movement.distant.pool": 109,
         "movement.distant.corridor": 69,
-        "movement.distant.open": 65,
-        "movement.distant.carpet.muffled": 65,
-        "movement.distant.office.muffled": 65,
-        "movement.distant.concrete.muffled": 78,
-        "movement.distant.pool.muffled": 108,
-        "movement.distant.corridor.muffled": 69,
-        "movement.distant.open.muffled": 65
+        "movement.distant.open": 64,
+        "movement.distant.carpet.muffled": 67,
+        "movement.distant.office.muffled": 67,
+        "movement.distant.concrete.muffled": 80,
+        "movement.distant.pool.muffled": 109,
+        "movement.distant.corridor.muffled": 70,
+        "movement.distant.open.muffled": 67
       }
     },
     "breath.heavy": {
@@ -775,7 +775,7 @@
     },
     "office.printer": {
       "category": "event",
-      "duration_ticks": 79,
+      "duration_ticks": 80,
       "loop": false,
       "positional": true,
       "variants": 2,
@@ -790,13 +790,13 @@
       "muffled": false,
       "stream": false,
       "event_ticks": {
-        "office.printer": 79,
-        "office.printer.carpet": 77,
-        "office.printer.office": 79,
-        "office.printer.concrete": 91,
+        "office.printer": 80,
+        "office.printer.carpet": 78,
+        "office.printer.office": 80,
+        "office.printer.concrete": 92,
         "office.printer.pool": 116,
         "office.printer.corridor": 83,
-        "office.printer.open": 77
+        "office.printer.open": 78
       }
     },
     "office.phone": {
@@ -885,7 +885,7 @@
     },
     "silence.transition": {
       "category": "event",
-      "duration_ticks": 60,
+      "duration_ticks": 59,
       "loop": false,
       "positional": false,
       "variants": 1,
@@ -893,7 +893,7 @@
       "muffled": false,
       "stream": false,
       "event_ticks": {
-        "silence.transition": 60
+        "silence.transition": 59
       }
     },
     "music.lobby_1": {
@@ -921,12 +921,12 @@
       "stream": true,
       "event_ticks": {
         "music.lobby_2": 1704,
-        "music.lobby_2.muffled": 1702
+        "music.lobby_2.muffled": 1703
       }
     },
     "music.pool_1": {
       "category": "music",
-      "duration_ticks": 1835,
+      "duration_ticks": 1552,
       "loop": false,
       "positional": true,
       "variants": 1,
@@ -936,13 +936,13 @@
       "muffled": false,
       "stream": true,
       "event_ticks": {
-        "music.pool_1": 1835,
-        "music.pool_1.pool": 1854
+        "music.pool_1": 1552,
+        "music.pool_1.pool": 1575
       }
     },
     "music.pool_2": {
       "category": "music",
-      "duration_ticks": 1740,
+      "duration_ticks": 1580,
       "loop": false,
       "positional": true,
       "variants": 1,
@@ -952,8 +952,8 @@
       "muffled": false,
       "stream": true,
       "event_ticks": {
-        "music.pool_2": 1740,
-        "music.pool_2.pool": 1766
+        "music.pool_2": 1580,
+        "music.pool_2.pool": 1611
       }
     },
     "music.office_radio_1": {
@@ -986,7 +986,7 @@
     },
     "music.plains_1": {
       "category": "music",
-      "duration_ticks": 1766,
+      "duration_ticks": 1457,
       "loop": false,
       "positional": true,
       "variants": 1,
@@ -994,12 +994,12 @@
       "muffled": false,
       "stream": true,
       "event_ticks": {
-        "music.plains_1": 1766
+        "music.plains_1": 1457
       }
     },
     "music.plains_1.ambient": {
       "category": "music",
-      "duration_ticks": 1766,
+      "duration_ticks": 1457,
       "loop": false,
       "positional": false,
       "variants": 1,
@@ -1007,7 +1007,7 @@
       "muffled": false,
       "stream": true,
       "event_ticks": {
-        "music.plains_1.ambient": 1766
+        "music.plains_1.ambient": 1457
       }
     },
     "music.plains_2": {

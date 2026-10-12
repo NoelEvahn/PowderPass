@@ -97,13 +97,13 @@ def loop_checks(x, sr, errs, name):
     ov = m[-F:] + m[:F]
     w = int(0.1 * sr)
     seg = [np.sqrt(np.mean(ov[i:i + w] ** 2)) for i in range(0, F - w + 1, w // 2)]
-    # compare with the material right before (end of instance A) and right after (start of instance B)
-    w2 = int(0.25 * sr)
-    before = np.sqrt(np.mean(m[-F - w2:-F] ** 2))
-    after = np.sqrt(np.mean(m[F:F + w2] ** 2))
-    lo, hi = min(before, after), max(before, after)
+    # compare with the range of the material in the second before (end of instance A) and the second
+    # after (start of instance B), measured with the same window
+    near = np.concatenate([m[-F - sr:-F], m[F:F + sr]])
+    nr = [np.sqrt(np.mean(near[i:i + w] ** 2)) for i in range(0, len(near) - w, w // 2)]
+    lo, hi = min(nr), max(nr)
     dev = max(max(0.0, dbfs(max(seg) / hi)), max(0.0, dbfs(lo / max(min(seg), 1e-12))))
-    if dev > 3.0:
+    if dev > 2.0:
         errs.append(f"{name}: overlap level deviates {dev:.1f} dB from the adjacent material")
     return dev
 

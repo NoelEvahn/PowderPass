@@ -27,6 +27,7 @@ public final class SoundIndex {
 
     private final Map<String, Def> defs = new HashMap<>();
     private final Set<String> events = new HashSet<>();
+    private final Map<String, Integer> eventTicks = new HashMap<>();
 
     public static SoundIndex load(InputStream index, InputStream packZip) throws IOException {
         SoundIndex s = new SoundIndex();
@@ -40,6 +41,11 @@ public final class SoundIndex {
                 s.defs.put(e.getKey(), new Def(e.getKey(), str(o, "category", "event"), num(o, "duration_ticks", 40),
                         bool(o, "loop"), !o.has("positional") || o.get("positional").getAsBoolean(), num(o, "variants", 1),
                         profiles, bool(o, "muffled")));
+                if (o.has("event_ticks")) {
+                    for (Map.Entry<String, JsonElement> t : o.getAsJsonObject("event_ticks").entrySet()) {
+                        s.eventTicks.put(t.getKey(), t.getValue().getAsInt());
+                    }
+                }
             }
         }
         if (packZip != null) {
@@ -74,6 +80,11 @@ public final class SoundIndex {
 
     public boolean has(String event) {
         return events.contains(event);
+    }
+
+    /** Length in ticks of a resolved event (profile versions carry reverb tails), or {@code fallback}. */
+    public int ticks(String event, int fallback) {
+        return eventTicks.getOrDefault(event, fallback);
     }
 
     public Set<String> ids() {

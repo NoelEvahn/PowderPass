@@ -142,6 +142,24 @@ Fog uses no packets or resource pack. The client draws fog at the edge of the ch
 
 The `fog` event rolls a fog bank in for 1–2 minutes: 3 chunks, with thick ash particles that only that player sees. The player's normal view distance is restored when they leave the Backrooms. Configure it under `fog:`.
 
+### Sound
+
+Every sound is original: synthesised offline with numpy/scipy, plus espeak-ng formant voices for speech. The pack is CC0. The pipeline in `tools/audio/` is deterministic, and two runs give byte-identical files. `pack/MANIFEST.md` lists every asset, how it was made, and how to add your own licensed tracks.
+
+The pack has 58 sound ids, 216 sound events and 683 Ogg Vorbis files. All of them are mono and positional, except two stereo ambient music mixes. Pack size: 22.5 MB.
+
+Where sounds are in the pack, they come in several versions: a dry take plus pre-reverberated versions for each room type (carpet, office, concrete, pool, corridor, open), and low-passed "muffled" versions for sources behind walls. The engine picks one by room and line of sight. Every loop is exactly 8, 10 or 12 s with faded ends.
+
+| Level | Loops (from real sources) | Events (rare ones marked *) | Music |
+|---|---|---|---|
+| Level 0 | ballast hum at every lit fixture; a denser hum under clusters | flicker crackle, pops, distant knocks and impacts, footsteps*, whispers behind you*, arcs* | `lobby_1/2`*, muffled, from somewhere just past the lights |
+| Poolrooms | water lapping, pool circulation, damp room tone | drips near and far, splashes*, bubbles, tile footsteps*, murmurs*; underwater, only a muffled water bed | `pool_1/2`*, positional, with pool reverb |
+| Habitable Zone | vents and ducts, transformer buzz at junction boxes, distant machinery | creaks, pipe knocks, drips, machines starting*, concrete footsteps*, conversations behind walls* | `garage_1`*, with concrete reverb |
+| Office | air conditioning at vents, fluorescent hum | clicks, printer, phone*, broken speaker*, conversations*, PA announcements*, spoken lines* | an old radio on a few desks playing `office_radio_1/2`, clearer as you approach |
+| Plains | none; long silences | grass rustle, distant unidentified sounds*, a far cry* | `plains_1/2`*, very rare, stereo, never constant |
+
+Flickers and blackouts are synchronised with the light effects.
+
 ### Maps
 
 Top-down maps rendered from the real generators (seed `5eedbacc`, centred on 0,0). Regenerate them with `RENDER_MAPS=docs/maps gradle test --tests '*MapRenderTest'`.
@@ -307,23 +325,54 @@ Commands work from the console wherever a target player or level is given. Alias
 
 ## Testing
 
-`gradle test` runs 49 automated tests. All of them pass on this build.
+`gradle test` runs 66 automated tests (plus one map renderer that is off by default). All of them pass on this build.
 
 - **Generation (31 tests across all 5 levels):**
   - Determinism across instances and chunk order, and seed sensitivity.
   - **Flood-fill reachability** of every safe spot and every transition trigger, walking real painted chunks the way a player would (walking, stepping, dropping, swimming, climbing).
   - Water is contained and still; bedrock shell (no roof check in the Plains).
-  - At least one guaranteed transition in every district.
+  - The chain: every transition leads to the next or previous level only; exits exist only in the Plains; past Level 0 every district has its way onward; Level 0's seam appears in 15–60% of districts.
   - The safe-spot search lands on standable, trigger-free ground.
 - **Plugin integration on MockBukkit (15 tests):** world creation and locked snapshots, permissions and tab completion, enter/leave and return points, protection, a stairwell transition with arrival cooldown, creature hitboxes and confirmed clearing, decoration spawn/despawn, clean disable.
   - **The fall entry:** the player starts above the roof, sideways movement is locked, a 3×3 shaft (and only 3×3) opens before the roof, fall damage is cancelled during the fall and just after landing, and the roof and ceiling are restored with no pending shaft left on disk.
   - **The suffocation trigger:** suffocating in sand takes you into Level 0 with no damage; suffocating in stone is left alone.
   - **Creative players:** creatures stay alive around them and never hurt them.
-- **Models and states (3 tests):** every decoration id builds into a model (77 used), display density per chunk stays within budget (highest: Level 4 at about 25 per chunk), and all 62 generator block states are validated by a real block-data parser.
+- **Surface details (11 tests):**
+  - Every wall overlay has a wall behind it and air in front, on every wall orientation.
+  - Ceiling overlays touch the ceiling, and floor overlays rest on something solid.
+  - No detail sits in a transition trigger.
+  - Repeated chunk generation is identical; nothing is anchored in another chunk or duplicated across chunks; props come before details for budgets.
+  - The Plains ground mix is 89.9% grass, 6.9% moss and 3.2% coarse dirt, in patches.
+- **Atmosphere (6 tests):**
+  - Fog follows the level and is restored on leaving.
+  - The embedded pack is extracted, byte-identical and SHA-1-hashed, and re-extracted after a version change or damage.
+  - The pack is never offered to an unreachable URL. The built-in host on a real local port serves exactly the pack (404 for anything else) and gets it offered.
+  - Status events gate custom audio.
+  - Every sound the engine can play exists in the pack.
+  - Custom sounds reach only players who loaded the pack, come from the fixtures (not the listener), are never unregistered ids, are not restarted early, and stop when the player leaves.
+  - Audio commands work.
+- **Models and states (3 tests):** every decoration id (including every parametric detail) builds into a model, and every generator block state is validated by a real block-data parser. Display density stays within budget per chunk:
+
+| Level | Props | Details | Spawned after caps |
+|---|---|---|---|
+| Level 0 | 25.3 | 9.7 | 35.0 |
+| Poolrooms | 9.3 | 10.3 | 19.6 |
+| Habitable Zone | 13.4 | 6.7 | 20.1 |
+| Office | 27.8 | 9.0 | 36.8 |
+| Plains | 4.0 | 1.9 | 5.9 |
 
 ### Not verified in a real game: please check in-game
 
-No Paper server binary could be downloaded in the build environment, so nothing has been run on a live server yet. Checklist:
+No Paper server binary could be downloaded in the build environment, so nothing has been run on a live server yet, and **no one has listened to the audio**: it was checked only with automated level, loudness, spectrum and loop measurements.
+
+**Known limitations:**
+- Vanilla clients cannot apply real-time reverb or filters from a server. Acoustics are approximations: pre-rendered room versions, muffled versions, and one delayed reflection for impacts.
+- Music is not sample-synchronised between players. Loops are re-triggered, so a very slight seam is possible on a laggy connection.
+- The espeak-ng voices are robotic formant voices.
+- **Bedrock:** a companion `.mcpack` with `sound_definitions.json` (both `backrooms:<id>` and `<id>` keys) is generated, but it is untested with Geyser. Whether Geyser forwards these custom sound ids is unverified, so `bedrock.custom-sounds` is off by default.
+- mc-packs.net could not be reached from the build environment, so the upload itself is your step.
+
+**Checklist:**
 
 1. **Upgrading:** delete the old `backrooms_level2/3/5` folders and any world that logs an old generator version, then start the server. The five worlds should be created without errors, and `/backrooms status` should show them.
 2. **Visual pass, one `/backrooms level <x>` per level:** palettes, light levels, fixture models lining up with the ceiling `LIGHT` blocks, and prop orientation against walls.
@@ -334,4 +383,11 @@ No Paper server binary could be downloaded in the build environment, so nothing 
 7. **Client-side effects:** that a `LIGHT` block sent by `sendBlockChange` relights on real clients (flashlight, flicker, blackout, lights out).
 8. **The `door_behind` event:** the door opens and closes back cleanly.
 9. **Death in each `death.mode`;** joining after a level was disabled (stranded recovery); ender pearl and chorus blocking; blocked commands.
-10. **Performance with several players:** watch `/backrooms status` tick costs, then tune `displays.activation-radius-chunks` and the entity caps if needed.
+10. **Audio:**
+    - Upload the pack and watch `/backrooms audio status` reach REACHABLE.
+    - Accept the pack; hums should be locatable under fixtures; `/backrooms audio debug`; `/backrooms audio test <id>`.
+    - Check that loops have no audible seam, and that muffled music clears up as you round a corner.
+    - Check the Office radio and how the Poolrooms sound underwater.
+11. **Fog:** the resting fog distances, a `fog` event (`/backrooms event trigger fog`), and the normal view distance coming back on leaving.
+12. **Surface details:** look for alignment, z-fighting and anything blocking a doorway, at `displays.details.density` 1 and 2.
+13. **Performance with several players:** watch `/backrooms status` tick costs, then tune `displays.activation-radius-chunks` and the entity caps if needed.

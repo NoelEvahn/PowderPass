@@ -78,6 +78,7 @@ def colored(n, rng, exponent=1.0):
     f = np.fft.rfftfreq(m, 1 / SR)
     f[0] = f[1]
     X /= f ** (exponent / 2.0)
+    X *= (f / (f + 20.0)) ** 2  # no infrasonic wander (would waste headroom and fool loudness)
     X[0] = 0
     x = np.fft.irfft(X, m)[:n]
     s = np.std(x)

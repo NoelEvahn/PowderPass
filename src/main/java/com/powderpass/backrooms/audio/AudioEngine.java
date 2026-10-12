@@ -418,7 +418,7 @@ public final class AudioEngine implements Listener {
     private void play(Player p, Location at, String event, SoundCategory cat, float volume, float pitch, int durationTicks) {
         p.playSound(at, "backrooms:" + event, cat, Math.max(0.01f, volume), pitch);
         State s = states.get(p.getUniqueId());
-        if (s != null) s.playing.put(event, now + durationTicks);
+        if (s != null) s.playing.put(event, now + index.ticks(event, durationTicks));
     }
 
     /** Stop every custom sound this listener may still be hearing. */

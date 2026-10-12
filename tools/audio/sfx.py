@@ -273,7 +273,7 @@ def power_down(rng, v):
     n = ns(dur)
     t = taxis(n)
     x = np.zeros(n)
-    mix_into(x, clunk(rng, 1.0) * 1.2, ns(0.02))
+    mix_into(x, clunk(rng, 1.0) * 0.6, ns(0.02))
     tt = np.clip(t - 0.06, 0, None)
     f = 22 + 98 * np.exp(-tt / 0.75)
     ph = phase_of(f, n)
@@ -282,7 +282,7 @@ def power_down(rng, v):
         a = k ** -1.2 * (1.6 if k % 2 and k > 2 else 1) * np.exp(-(k * f) / 2500)
         hum += a * np.sin(k * ph)
     amp = ((f - 22) / 98) ** 1.3 * (t > 0.05)
-    hum = unit(hum) * amp * 0.35
+    hum = unit(hum) * amp * 1.6
     rumble = lp(brown(n, rng), 150, 2) * env_points(n, [(0, 0), (0.06, 0.3), (2.4, 0)]) * 0.15
     x += hum + unit(rumble) * 0.04
     return room(fade_edges(x, 0.001, 0.2), 0.15)
@@ -293,7 +293,7 @@ def power_up(rng, v):
     n = ns(dur)
     t = taxis(n)
     x = np.zeros(n)
-    mix_into(x, clunk(rng, 1.0) * 1.2, ns(0.01))
+    mix_into(x, clunk(rng, 1.0) * 0.6, ns(0.01))
     tt = np.clip(t - 0.08, 0, None)
     f = 120 - 85 * np.exp(-tt / 0.18)
     ph = phase_of(f, n)
@@ -301,7 +301,7 @@ def power_up(rng, v):
     for k in range(1, 30):
         hum += k ** -1.2 * (1.7 if k % 2 and k > 2 else 1) * np.sin(k * ph)
     swell = np.clip(tt / 1.1, 0, 1) ** 1.6 * (t > 0.08)
-    x += unit(lp(hum, 6000, 2)) * swell * 0.3
+    x += unit(lp(hum, 6000, 2)) * swell * 0.8
     for e in (0.42, 0.57, 0.71):
         ex = burst(rng, 0.003, 0.0006, 1000, 12000)
         tk = signal.fftconvolve(ex, modal([2400 * rng.uniform(0.9, 1.1), 4200], [1, 0.5], [0.008, 0.005], ns(0.03)))
@@ -366,7 +366,7 @@ def machine_start(rng, v):
     n = ns(dur)
     t = taxis(n)
     x = np.zeros(n)
-    mix_into(x, clunk(rng, 1.3), ns(0.03))
+    mix_into(x, clunk(rng, 1.0) * 0.3, ns(0.03))
     tt = np.clip(t - 0.15, 0, None)
     fr = 24 * (1 - np.exp(-tt / 0.9))
     on = (t > 0.15).astype(float)
@@ -761,7 +761,7 @@ def office_printer(rng, v):
     dur = 4.0
     n = ns(dur)
     x = np.zeros(n)
-    mix_into(x, clunk(rng, 0.4) * 0.7, ns(0.01))
+    mix_into(x, clunk(rng, 0.4) * 0.25, ns(0.01))
     fm = [420, 520][v % 2]
     def whir(d, f, a):
         k = ns(d)
