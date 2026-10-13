@@ -5,3 +5,4 @@ out/
 *.iml
 run/
 .claude/worktrees/
+__pycache__/
