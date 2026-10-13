@@ -49,6 +49,9 @@ class FirstPersonRenderTest {
         c(Material.IRON_BLOCK, 0xD8D8D8); c(Material.RED_CONCRETE, 0x8E2020); c(Material.GREEN_CONCRETE, 0x495B24);
         c(Material.WATER, 0x3F76E4); c(Material.BEDROCK, 0x333333); c(Material.LIGHT_GRAY_WOOL, 0x8E8E86);
         c(Material.POLISHED_ANDESITE, 0x848685); c(Material.QUARTZ_BLOCK, 0xEBE5DE); c(Material.SMOOTH_QUARTZ, 0xEBE5DE);
+        c(Material.BLACK_STAINED_GLASS, 0x1C1E22); c(Material.BLUE_TERRACOTTA, 0x4A3B5B); c(Material.RED_TERRACOTTA, 0x8F3D2E);
+        c(Material.CYAN_TERRACOTTA, 0x565B5B); c(Material.GREEN_TERRACOTTA, 0x4C532A); c(Material.WAXED_EXPOSED_COPPER, 0xA17E68);
+        c(Material.YELLOW_CONCRETE, 0xF0AF15); c(Material.RED_WOOL, 0xA12722);
     }
 
     private static void c(Material m, int rgb) {
@@ -128,6 +131,56 @@ class FirstPersonRenderTest {
             File f = new File(out, level.key() + "-view.png");
             ImageIO.write(s.render(), "png", f);
             System.out.println("wrote " + f.getAbsolutePath() + " " + s.note);
+        }
+    }
+
+    /** Level 1, the parking garage: the default view plus close-ups of a parked car and of a steam pipe. */
+    @Test
+    void renderLevel1() throws Exception {
+        String out = System.getenv("RENDER_VIEWS");
+        Assumptions.assumeTrue(out != null && !out.isBlank(), "set RENDER_VIEWS=<dir>");
+        LevelGenerator g = Generators.create(Level.LEVEL_1, SEED, GenSettings.defaults());
+        Scene s = new Scene(g, 0, 0);
+        s.label = "Level 1";
+        ImageIO.write(s.render(), "png", new File(out, "level1-view.png"));
+        System.out.println("wrote level1-view " + s.note);
+        // the nearest few parked cars: from the aisle, three-quarter front and rear
+        int shots = 0;
+        search:
+        for (int r = 0; r < 12; r++) {
+            for (int cx = -r; cx <= r; cx++) for (int cz = -r; cz <= r; cz++) {
+                if (Math.max(Math.abs(cx), Math.abs(cz)) != r) continue;
+                for (DecorSpec d : g.decorations(cx, cz)) {
+                    if (!d.model.equals("garage_car")) continue;
+                    double fz = Math.cos(Math.toRadians(d.yaw)); // the car's front points along +-Z
+                    for (int k = 0; k < 2 && shots < 4; k++) {
+                        Scene c = new Scene(g, (int) d.x, (int) d.z);
+                        c.ex = d.x + (k == 0 ? 3.2 : 1.0);
+                        c.ez = d.z + fz * (k == 0 ? 6.0 : -4.6);
+                        c.ey = d.y + 1.62;
+                        double dx = d.x - c.ex, dz = d.z - c.ez;
+                        c.yaw = Math.atan2(-dx, dz);
+                        c.pitch = Math.toRadians(-12);
+                        c.label = "Level 1 car " + (k == 0 ? "front" : "rear") + (com.powderpass.backrooms.display.GarageProps.covered(d.seed) ? " (sheet)" : "");
+                        ImageIO.write(c.render(), "png", new File(out, "level1-car" + shots + ".png"));
+                        shots++;
+                    }
+                    if (shots >= 4) break search;
+                }
+            }
+        }
+        // under a pipe run, looking along it
+        for (DecorSpec d : g.decorations(0, 0)) {
+            if (!d.model.startsWith("garage_pipes")) continue;
+            Scene c = new Scene(g, (int) d.x + 2, (int) d.z + 3);
+            c.ex = d.x + 2.5;
+            c.ey = d.y - 1.1;
+            c.ez = d.z + 3.5;
+            c.yaw = Math.toRadians(-115);
+            c.pitch = Math.toRadians(25);
+            c.label = "Level 1 steam pipes";
+            ImageIO.write(c.render(), "png", new File(out, "level1-pipes.png"));
+            break;
         }
     }
 
