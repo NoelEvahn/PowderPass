@@ -5,7 +5,7 @@ Backrooms adds a separate alternate reality to a Paper 1.21.11 server. It is bui
 | | |
 |---|---|
 | Server | Paper **1.21.11**, Java 21 |
-| Plugin JAR | `build/libs/Backrooms.jar` (one file: plugin, Java resource pack, Bedrock companion pack) |
+| Plugin JAR | `build/libs/Backrooms.jar` (one file, about 20 MB: the plugin and the Java resource pack; the Bedrock companion pack is assembled from it on first start) |
 | Dependencies | none at runtime; no NMS, no ProtocolLib, no packets |
 | Audio | original, synthesised offline, CC0 (see `pack/MANIFEST.md`) |
 | Worlds | `backrooms_level0`, `backrooms_level1`, `backrooms_poolrooms`, `backrooms_level4`, `backrooms_plains` |
@@ -14,7 +14,7 @@ Backrooms adds a separate alternate reality to a Paper 1.21.11 server. It is bui
 
 ## Installation
 
-1. Put `Backrooms.jar` in `plugins/` and start the server once. The five worlds are created on first start; each takes a few hundred milliseconds. The resource pack is extracted to `plugins/Backrooms/resourcepack/Backrooms-pack.zip`.
+1. Put `Backrooms.jar` in `plugins/` and start the server once. The five worlds are created on first start; each takes a few hundred milliseconds. The resource pack is extracted to `plugins/Backrooms/resourcepack/Backrooms-pack.zip`, and the Bedrock pack is assembled next to it, reusing the same audio.
 2. **Custom audio (optional but recommended):** clients download resource packs from a public URL, which a plugin cannot provide on its own.
    - **Default, mc-packs.net:** upload `plugins/Backrooms/resourcepack/Backrooms-pack.zip` at <https://mc-packs.net> once per plugin version. Its download link is `https://download.mc-packs.net/pack/<sha1>.zip`, which is exactly what `resource-pack.url` resolves to (the console prints the SHA-1). Then run `/backrooms audio reload`.
    - **Any other HTTPS host:** set `resource-pack.url` (you can use `{sha1}` in it).

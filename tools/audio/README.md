@@ -20,7 +20,7 @@ Requirements: Python 3 with `numpy` and `scipy`, `ffmpeg`/`ffprobe` with `libvor
   * `--jobs N`: number of worker processes.
 * `build_pack.py` validates every file (ffprobe and a full decode) and writes `sounds.json`, `pack.mcmeta`,
   `pack.png`, the Bedrock pack (`manifest.json`, `sound_definitions.json`, the same OGG files), the
-  deterministic zips `src/main/resources/backrooms-pack.zip` and `backrooms-bedrock.mcpack`,
+  deterministic zips `src/main/resources/backrooms-pack.zip` and `bedrock-skeleton.zip`,
   `src/main/resources/pack-index.json`, and the asset table in `pack/MANIFEST.md`. It exits non-zero on any
   contract violation (missing or unreferenced file, non-Vorbis, wrong sample rate, positional non-mono,
   clipping) and on sanity failures (silent file, unexpected duration, loop not faded or not overlapping

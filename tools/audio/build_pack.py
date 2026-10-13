@@ -11,7 +11,7 @@ durations, loops that are not faded at both ends or that do not overlap smoothly
 Outputs:
   pack/java/assets/backrooms/sounds.json, pack/java/pack.mcmeta, pack/java/pack.png
   pack/bedrock/{manifest.json,pack_icon.png,sounds/sound_definitions.json,sounds/backrooms/...ogg}
-  src/main/resources/{backrooms-pack.zip,backrooms-bedrock.mcpack,pack-index.json}
+  src/main/resources/{backrooms-pack.zip,bedrock-skeleton.zip,pack-index.json}
   pack/MANIFEST.md (asset table between the BEGIN/END markers is regenerated)
 """
 from __future__ import annotations
@@ -302,11 +302,11 @@ def main():
     write_png(os.path.join(JAVA, "pack.png"), icon)
 
     # ---------------------------------------------------------------- bedrock
+    # The Bedrock pack reuses the Java pack's Ogg files. Only its skeleton (manifest, icon, sound definitions)
+    # is embedded in the plugin; the plugin assembles the full .mcpack from the Java pack on first start,
+    # mapping assets/backrooms/sounds/<p>.ogg -> sounds/backrooms/<p>.ogg. That keeps the JAR at one copy.
     shutil.rmtree(os.path.join(BEDROCK, "sounds"), ignore_errors=True)
-    for r in paths:
-        dst = os.path.join(BEDROCK, "sounds", "backrooms", r + ".ogg")
-        os.makedirs(os.path.dirname(dst), exist_ok=True)
-        shutil.copyfile(os.path.join(SOUNDS, r + ".ogg"), dst)
+    os.makedirs(os.path.join(BEDROCK, "sounds"), exist_ok=True)
     defs = {}
     for ev in sorted(events):
         s, rels = events[ev]
@@ -342,7 +342,10 @@ def main():
     write_json(os.path.join(RES, "pack-index.json"), idx)
 
     jsize, jsha, jn = zip_dir(JAVA, os.path.join(RES, "backrooms-pack.zip"))
-    bsize, bsha, bn = zip_dir(BEDROCK, os.path.join(RES, "backrooms-bedrock.mcpack"))
+    bsize, bsha, bn = zip_dir(BEDROCK, os.path.join(RES, "bedrock-skeleton.zip"))
+    old = os.path.join(RES, "backrooms-bedrock.mcpack")
+    if os.path.exists(old):
+        os.remove(old)
 
     # ---------------------------------------------------------------- manifest table
     rows = []
@@ -375,7 +378,7 @@ def main():
             i = infos[r]
             print(f"  loudness {s.id:26s} {lufs(i['x'], i['sr']):6.1f} LUFS (target {s.level})")
     print(f"backrooms-pack.zip       {jsize / 1e6:6.2f} MB  {jn} entries  sha1 {jsha}")
-    print(f"backrooms-bedrock.mcpack {bsize / 1e6:6.2f} MB  {bn} entries  sha1 {bsha}")
+    print(f"bedrock-skeleton.zip     {bsize / 1e6:6.2f} MB  {bn} entries  sha1 {bsha} (oggs added by the plugin)")
     if jsize > 25e6:
         print("WARNING: Java pack exceeds the 25 MB target")
     print("OK")

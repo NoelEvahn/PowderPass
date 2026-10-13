@@ -58,7 +58,8 @@ public final class PackManager implements Listener {
     public enum UrlState { UNCHECKED, CHECKING, REACHABLE, UNREACHABLE, DISABLED }
 
     public static final String EMBEDDED = "backrooms-pack.zip";
-    public static final String EMBEDDED_BEDROCK = "backrooms-bedrock.mcpack";
+    /** Bedrock manifest, icon and sound definitions; the audio itself is taken from the Java pack. */
+    public static final String EMBEDDED_BEDROCK = "bedrock-skeleton.zip";
 
     private final BackroomsPlugin plugin;
     private final File dir;
@@ -146,11 +147,39 @@ public final class PackManager implements Listener {
         }
     }
 
+    /**
+     * Assembles the Bedrock companion pack: the embedded skeleton plus every Ogg file from the Java pack, moved from
+     * {@code assets/backrooms/sounds/} to {@code sounds/backrooms/}. Done once per version, so the JAR carries the
+     * audio only once.
+     */
     private void extractBedrock() throws IOException {
-        try (InputStream in = plugin.getResource(EMBEDDED_BEDROCK)) {
-            if (in == null) return;
-            Files.copy(in, new File(dir, "Backrooms-bedrock.mcpack").toPath(), StandardCopyOption.REPLACE_EXISTING);
+        File out = new File(dir, "Backrooms-bedrock.mcpack");
+        File tmp = new File(dir, "Backrooms-bedrock.mcpack.tmp");
+        try (InputStream skel = plugin.getResource(EMBEDDED_BEDROCK)) {
+            if (skel == null) return;
+            try (var zos = new java.util.zip.ZipOutputStream(Files.newOutputStream(tmp.toPath()));
+                 var skin = new java.util.zip.ZipInputStream(skel);
+                 ZipFile java = new ZipFile(packFile)) {
+                ZipEntry e;
+                while ((e = skin.getNextEntry()) != null) {
+                    zos.putNextEntry(new ZipEntry(e.getName()));
+                    skin.transferTo(zos);
+                    zos.closeEntry();
+                }
+                String prefix = "assets/backrooms/sounds/";
+                var entries = java.entries();
+                while (entries.hasMoreElements()) {
+                    ZipEntry je = entries.nextElement();
+                    if (!je.getName().startsWith(prefix) || !je.getName().endsWith(".ogg")) continue;
+                    zos.putNextEntry(new ZipEntry("sounds/backrooms/" + je.getName().substring(prefix.length())));
+                    try (InputStream in = java.getInputStream(je)) {
+                        in.transferTo(zos);
+                    }
+                    zos.closeEntry();
+                }
+            }
         }
+        Files.move(tmp.toPath(), out.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
     }
 
     /** Structural validation: metadata present, every sounds.json reference exists as an .ogg in the zip. */

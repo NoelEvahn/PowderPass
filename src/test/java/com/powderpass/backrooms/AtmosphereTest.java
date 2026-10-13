@@ -81,7 +81,23 @@ class AtmosphereTest {
         assertEquals(sha, pm.sha1());
         assertArrayEquals(embedded, Files.readAllBytes(f.toPath()), "extracted file is the embedded pack");
         assertEquals("https://download.mc-packs.net/pack/" + sha + ".zip", pm.url());
-        assertTrue(new File(plugin.getDataFolder(), "resourcepack/Backrooms-bedrock.mcpack").exists(), "Bedrock pack extracted too");
+        File mc = new File(plugin.getDataFolder(), "resourcepack/Backrooms-bedrock.mcpack");
+        assertTrue(mc.exists(), "Bedrock pack assembled too");
+        try (var z = new java.util.zip.ZipFile(mc); var j = new java.util.zip.ZipFile(f)) {
+            assertNotNull(z.getEntry("manifest.json"));
+            assertNotNull(z.getEntry("sounds/sound_definitions.json"));
+            long javaOggs = j.stream().filter(e -> e.getName().endsWith(".ogg")).count();
+            long bedOggs = z.stream().filter(e -> e.getName().startsWith("sounds/backrooms/") && e.getName().endsWith(".ogg")).count();
+            assertEquals(javaOggs, bedOggs, "every sound is in the Bedrock pack");
+            String defs = new String(z.getInputStream(z.getEntry("sounds/sound_definitions.json")).readAllBytes(), StandardCharsets.UTF_8);
+            var m = java.util.regex.Pattern.compile("\"name\"\\s*:\\s*\"(sounds/backrooms/[^\"]+)\"").matcher(defs);
+            int refs = 0;
+            while (m.find()) {
+                refs++;
+                assertNotNull(z.getEntry(m.group(1) + ".ogg"), "Bedrock definition without a file: " + m.group(1));
+            }
+            assertTrue(refs > 400);
+        }
 
         // a version bump (or a damaged file) re-extracts it
         Files.writeString(new File(f.getParentFile(), "pack.version").toPath(), "0.0.1 old", StandardCharsets.UTF_8);

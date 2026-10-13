@@ -52,7 +52,7 @@ tasks.jar {
 
 tasks.register("verifyEmbeddedPack") {
     description = "Fails the build if the audio pack built by tools/audio/build_pack.py is missing from resources."
-    val required = listOf("backrooms-pack.zip", "pack-index.json")
+    val required = listOf("backrooms-pack.zip", "bedrock-skeleton.zip", "pack-index.json")
     doLast {
         val missing = required.filter { !file("src/main/resources/$it").exists() }
         if (missing.isNotEmpty()) throw GradleException("Missing $missing: run python3 tools/audio/generate.py && python3 tools/audio/build_pack.py")
