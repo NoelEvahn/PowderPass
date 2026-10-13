@@ -544,7 +544,7 @@ public final class PoolroomsGenerator extends LevelGenerator {
         if (Math.floorMod(x, 8) == 5 && Math.floorMod(z, 8) == 5) light(col, fy + 14, 15);
         if (p.statue[f]) {
             int[] fd = rotDir(0, 1, p.face[f]);
-            statue(col, HEAD, x - (p.rx * REG + 30), z - (p.rz * REG + 30), fy - 3, fd);
+            statue(col, HEAD, x - (p.rx * REG + 30), z - (p.rz * REG + 30), fy - 2, fd);
         }
     }
 
@@ -816,26 +816,27 @@ public final class PoolroomsGenerator extends LevelGenerator {
     static B headAt(double x, double y, double z) {
         double ax = Math.abs(x);
         if (y < 0.6) return y > -9 && sq(x / 3.9) + sq((z + 1.2) / 4.2) <= 1 ? SKIN : null; // the neck
-        if (ell(ax, y, z, 3.0, 9.8, 4.6, 1.25, 0.9, 1.0)) return SKIN;                     // blank eyeballs
-        if (ell(ax, y, z, 3.0, 9.9, 6.0, 1.9, 1.2, 1.9)) return null;                      // eye sockets
-        if (ell(ax, y, z, 0.95, 5.7, 6.7, 0.55, 0.45, 0.9)) return null;                   // nostrils
-        if (ell(x, y, z, 0, 3.65, 6.3, 2.8, 0.4, 1.4)) return null;                        // parted lips
-        if (y >= 11.0 && y <= 12.4 && ax <= 5.7 && z >= 3 && z <= 6.6 - 0.05 * ax * ax) return SKIN; // brow
-        if (y >= 5.2 && y <= 11.4) {                                                        // nose
-            double w = 0.7 + (11.4 - y) * 0.14, zm = 5.6 + (11.4 - y) * 0.33;
+        if (ell(ax, y, z, 3.0, 9.5, 4.0, 1.25, 0.95, 1.0)) return HAIR;                   // blank eyeballs, deep in shadow
+        if (ell(ax, y, z, 3.0, 9.6, 6.4, 2.0, 1.45, 2.5)) return null;                     // eye sockets
+        if (ell(ax, y, z, 1.0, 5.6, 7.2, 0.6, 0.5, 1.2)) return null;                      // nostrils
+        if (ell(x, y, z, 0, 3.65, 6.4, 2.9, 0.45, 2.4)) return null;                       // parted lips
+        if (y >= 10.9 && y <= 12.5 && ax <= 5.8 && z >= 3 && z <= 6.9 - 0.05 * ax * ax) return SKIN; // brow
+        if (y >= 5.0 && y <= 11.4) {                                                        // nose
+            double w = 0.8 + (11.4 - y) * 0.15, zm = 5.6 + (11.4 - y) * 0.42;
             if (ax <= w && z <= zm && z >= 3) return SKIN;
         }
-        if (ell(x, y, z, 0, 4.45, 5.7, 2.7, 0.65, 1.0)) return SKIN;                       // upper lip
-        if (ell(x, y, z, 0, 2.85, 5.55, 2.2, 0.75, 1.0)) return SKIN;                      // lower lip
-        if (ell(x, y, z, 0, 1.5, 4.7, 2.4, 1.7, 1.4)) return SKIN;                         // chin
-        if (ell(ax, y, z, 3.7, 6.8, 3.9, 1.9, 2.3, 1.7)) return SKIN;                      // cheeks
+        if (ell(x, y, z, 0, 4.5, 5.8, 2.8, 0.7, 1.1)) return SKIN;                       // upper lip
+        if (ell(x, y, z, 0, 2.85, 5.7, 2.3, 0.8, 1.1)) return SKIN;                      // lower lip
+        if (ell(x, y, z, 0, 1.5, 4.9, 2.5, 1.7, 1.5)) return SKIN;                         // chin
+        if (ell(ax, y, z, 3.8, 6.6, 4.2, 2.0, 2.3, 1.6)) return SKIN;                      // cheeks
         if (ell(ax, y, z, 6.7, 8.6, -0.6, 0.9, 2.3, 1.3)) return SKIN;                     // ears
         for (double xi = -4.6; xi <= 4.7; xi += 2.3) {
             if (ell(x, y, z, xi, 13.9, 5.0, 1.2, 1.2, 1.2)) return HAIR;                    // fringe curls
         }
         if (ell(ax, y, z, 6.1, 12.2, 2.8, 1.3, 1.6, 1.3)) return HAIR;                     // curls at the temples
         boolean cran = ell(x, y, z, 0, 11.6, -0.8, 6.6, 8.6, 7.6), jaw = ell(x, y, z, 0, 5.6, 0.3, 5.3, 5.9, 6.2);
-        if ((cran || jaw) && z <= 5.3) return hairZone(x, y, z) ? HAIR : SKIN;
+        boolean mask = ell(x, y, z, 0, 7.6, 2.4, 5.0, 6.6, 3.3);
+        if ((cran || jaw || mask) && z <= 5.3) return hairZone(x, y, z) ? HAIR : SKIN;
         if (ell(x, y, z, 0, 11.8, -1.0, 7.7, 9.7, 8.6) && hairZone(x, y, z) && y > 6
                 && Math.sin(x * 1.35) + Math.sin(y * 1.35 + 1.1) + Math.sin(z * 1.35 + 2.3) > 0.8) return HAIR; // curls
         return null;
