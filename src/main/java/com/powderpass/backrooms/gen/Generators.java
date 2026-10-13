@@ -11,7 +11,7 @@ import com.powderpass.backrooms.util.Rng;
 /** Factory for level generators. Each level gets an independent seed stream derived from the base seed. */
 public final class Generators {
     /** Bumped whenever generation changes in a way that would leave seams in previously generated worlds. */
-    public static final int VERSION = 3;
+    public static final int VERSION = 4;
 
     private Generators() {
     }

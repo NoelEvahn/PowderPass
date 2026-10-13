@@ -52,6 +52,12 @@ class FirstPersonRenderTest {
         c(Material.BLACK_STAINED_GLASS, 0x1C1E22); c(Material.BLUE_TERRACOTTA, 0x4A3B5B); c(Material.RED_TERRACOTTA, 0x8F3D2E);
         c(Material.CYAN_TERRACOTTA, 0x565B5B); c(Material.GREEN_TERRACOTTA, 0x4C532A); c(Material.WAXED_EXPOSED_COPPER, 0xA17E68);
         c(Material.YELLOW_CONCRETE, 0xF0AF15); c(Material.RED_WOOL, 0xA12722);
+        c(Material.POLISHED_ANDESITE, 0x848685); c(Material.POLISHED_ANDESITE_STAIRS, 0x848685); c(Material.WHITE_STAINED_GLASS, 0xFFFFFF);
+        c(Material.BIRCH_SLAB, 0xC5B57B); c(Material.DARK_OAK_SLAB, 0x42301A); c(Material.SMOOTH_STONE_SLAB, 0xA8A8A8); c(Material.BOOKSHELF, 0x6B5434);
+        c(Material.RED_TERRACOTTA, 0x8F3D2E); c(Material.CYAN_TERRACOTTA, 0x575B5B); c(Material.AZALEA, 0x5D7A2E); c(Material.FLOWERING_AZALEA, 0x7A7A48);
+        c(Material.GRASS_BLOCK, 0x6E8C4E); c(Material.STRIPPED_DARK_OAK_WOOD, 0x4A3A28); c(Material.SMOOTH_QUARTZ_SLAB, 0xEBE5DE); c(Material.BARREL, 0x8A6439);
+        c(Material.LIGHT_BLUE_CONCRETE, 0x3A9AD0); c(Material.BLUE_CONCRETE, 0x2C2E8F); c(Material.BROWN_CONCRETE, 0x603C20); c(Material.GOLD_BLOCK, 0xD8AF35);
+        c(Material.GREEN_TERRACOTTA, 0x4C532A); c(Material.BLUE_TERRACOTTA, 0x4A3B5B); c(Material.LIGHT_GRAY_STAINED_GLASS, 0x99999D); c(Material.GRAY_CONCRETE, 0x36393D); c(Material.QUARTZ_BLOCK, 0xEBE5DE); c(Material.SMOOTH_QUARTZ, 0xEBE5DE);
     }
 
     private static void c(Material m, int rgb) {
@@ -184,6 +190,67 @@ class FirstPersonRenderTest {
         }
     }
 
+    /** Level 4: named viewpoints in the towers at night (cubicles, a private office, stairs, a sky bridge, the lift, outside). */
+    @Test
+    void renderOfficeTowers() throws Exception {
+        String out = System.getenv("RENDER_VIEWS");
+        Assumptions.assumeTrue(out != null && !out.isBlank(), "set RENDER_VIEWS=<dir>");
+        var g = (com.powderpass.backrooms.gen.levels.OfficeGenerator) Generators.create(Level.LEVEL_4, SEED, GenSettings.defaults());
+        int B0 = com.powderpass.backrooms.gen.levels.OfficeGenerator.BASE, FH = com.powderpass.backrooms.gen.levels.OfficeGenerator.FH;
+        java.util.Map<String, double[]> views = new java.util.LinkedHashMap<>();
+        // {eyeX, eyeY, eyeZ, yaw, pitch, floor}
+        var t = g.tower(0, 0);
+        int f = Math.min(2, t.floors - 1), y = B0 + FH * f + 1;
+        views.put("cubicles", new double[]{t.x0 + 2.5, y + 1.62, t.z0 + t.l * 0.62, -125, -6, f});
+        views.put("window", new double[]{t.x0 + t.w * 0.3, y + 1.62, t.z0 + 2.2, 200, 4, f});
+        // a private office: search the towers near the origin for a red-carpet room
+        outer:
+        for (int r = 0; r < 4; r++) for (int cx = -r; cx <= r; cx++) for (int cz = -r; cz <= r; cz++) {
+            var tt = g.tower(cx, cz);
+            for (int ff = tt.floors - 1; ff >= 1; ff--) {
+                for (int i = 2; i < tt.w - 2; i++) for (int j = 2; j < tt.l - 2; j++) {
+                    if (g.code(tt, ff, i, j) != 8) continue; // an office door: step inside and look toward the window
+                    for (int[] d : new int[][]{{1, 0}, {-1, 0}, {0, 1}, {0, -1}}) {
+                        if (g.finish(tt, ff, i + d[0], j + d[1]) != 2 || g.code(tt, ff, i + d[0], j + d[1]) != 0) continue;
+                        double yy = B0 + FH * ff + 1;
+                        double yawIn = Math.toDegrees(Math.atan2(-d[0], d[1]));
+                        views.put("private-office", new double[]{tt.x0 + i + 0.5 + d[0] * 0.6, yy + 1.62, tt.z0 + j + 0.5 + d[1] * 0.6, yawIn + 25, -12, ff});
+                        break outer;
+                    }
+                }
+            }
+        }
+        // the stairwell: on floor 1's landing looking up the first flight
+        int sy = B0 + FH + 1;
+        views.put("stairwell", new double[]{t.x0 + t.ci0 + 1.6, sy + 1.62, t.z0 + t.cj0 + 1.3, -15, 22, 1});
+        // the lift: in the lift lobby, facing the doors; and inside the car facing the panel
+        views.put("lift-lobby", new double[]{t.x0 + t.ci0 + 5.5, y + 1.62, t.z0 + t.cj0 - 2.6, -35, 2, f});
+        views.put("lift-car", new double[]{t.x0 + t.ci0 + 6.6, y + 1.62, t.z0 + t.cj0 + 2.4, -100, 8, f});
+        // a sky bridge: stand at one end and look along it
+        var br = t.bridges().get(0);
+        double by = B0 + FH * br.floor() + 1 + 1.62;
+        double mid = (br.from() + br.to()) / 2.0;
+        if (br.ew()) views.put("sky-bridge", new double[]{br.from() + 1.5, by, br.lo() + 1.5, -90, 2, br.floor()});
+        else views.put("sky-bridge", new double[]{br.lo() + 1.5, by, br.from() + 1.5, 0, 2, br.floor()});
+        views.put("bridge-outside", new double[]{br.ew() ? mid : br.lo() + 1.5, by, br.ew() ? br.lo() + 1.5 : mid, br.ew() ? 15 : -75, -2, br.floor()});
+        // the roof, looking out over the other towers
+        var tr = g.tower(1, 0);
+        double ry = B0 + FH * tr.floors + 1 + 1.62;
+        views.put("roof", new double[]{tr.x0 + 3.5, ry, tr.z0 + tr.l - 3.5, 135, -6, tr.floors});
+        String only = System.getenv("RENDER_ONLY");
+        for (var e : views.entrySet()) {
+            if (only != null && !only.isBlank() && !e.getKey().matches(only)) continue;
+            double[] v = e.getValue();
+            int floorY = B0 + FH * (int) v[5];
+            Scene sc = new Scene(g, v[0], v[1], v[2], v[3], v[4], 84, Math.max(g.bottomY, floorY - 16), Math.min(g.roofY, floorY + 24), true);
+            sc.label = "Level 4 — " + e.getKey();
+            File file = new File(out, "level4-" + e.getKey() + ".png");
+            file.getParentFile().mkdirs();
+            ImageIO.write(sc.render(), "png", file);
+            System.out.println("wrote " + file.getAbsolutePath() + " " + sc.note);
+        }
+    }
+
     private static final class Scene {
         String label = "Level 0";
         final LevelGenerator g;
@@ -193,6 +260,98 @@ class FirstPersonRenderTest {
         final List<Box> boxes = new ArrayList<>();
         double ex, ey, ez, yaw, pitch;
         String note;
+        /** Open night sky: rays that leave the scene show stars, surfaces open to the sky get faint moonlight. */
+        boolean night;
+        double far = 60;
+        int[][] skyTop;
+
+        /** A scene with an explicit eye (feet + 1.62 is the player's eye), yaw/pitch in degrees, radius and y range. */
+        Scene(LevelGenerator g, double ex, double ey, double ez, double yawDeg, double pitchDeg, int r, int yLo, int yHi, boolean night) {
+            this.g = g;
+            x0 = (int) Math.floor(ex) - r;
+            z0 = (int) Math.floor(ez) - r;
+            x1 = (int) Math.floor(ex) + r;
+            z1 = (int) Math.floor(ez) + r;
+            a = new Area(g, x0, z0, x1, z1);
+            y0 = yLo;
+            y1 = yHi;
+            this.night = night;
+            far = night ? 160 : 60;
+            light = new float[x1 - x0][y1 - y0][z1 - z0];
+            propagateLight();
+            if (night) {
+                skyTop = new int[x1 - x0][z1 - z0];
+                for (int x = x0; x < x1; x++) for (int z = z0; z < z1; z++) {
+                    int top = Integer.MIN_VALUE;
+                    for (int y = g.roofY; y >= y0; y--) {
+                        Material m = type(x, y, z);
+                        if (!Mats.passable(m) && glassTint(m) == null) {
+                            top = y;
+                            break;
+                        }
+                    }
+                    skyTop[x - x0][z - z0] = top;
+                }
+            }
+            for (int cx = Math.floorDiv(x0, 16); cx <= Math.floorDiv(x1 - 1, 16); cx++) {
+                for (int cz = Math.floorDiv(z0, 16); cz <= Math.floorDiv(z1 - 1, 16); cz++) {
+                    for (DecorSpec d : g.decorations(cx, cz)) addModel(d);
+                }
+            }
+            this.ex = ex;
+            this.ey = ey;
+            this.ez = ez;
+            this.yaw = Math.toRadians(yawDeg);
+            this.pitch = Math.toRadians(pitchDeg);
+            note = "eye " + (int) ex + "," + (int) ey + "," + (int) ez;
+        }
+
+        /** Light-transmitting blocks: per-channel tint, or null for anything else. */
+        static double[] glassTint(Material m) {
+            return switch (m) {
+                case GLASS -> new double[]{0.9, 0.94, 0.95};
+                case LIGHT_BLUE_STAINED_GLASS -> new double[]{0.62, 0.8, 0.92};
+                case LIGHT_GRAY_STAINED_GLASS -> new double[]{0.72, 0.72, 0.74};
+                case BLACK_STAINED_GLASS -> new double[]{0.18, 0.18, 0.2};
+                case IRON_BARS -> new double[]{0.62, 0.62, 0.64};
+                default -> null;
+            };
+        }
+
+        boolean skyOpen(double x, double y, double z) {
+            if (skyTop == null) return false;
+            int X = (int) Math.floor(x), Z = (int) Math.floor(z);
+            if (X < x0 || X >= x1 || Z < z0 || Z >= z1) return true;
+            return y > skyTop[X - x0][Z - z0];
+        }
+
+        /** The night sky: a dark gradient with stars above the horizon, the black drop below it. */
+        static int sky(double dx, double dy, double dz) {
+            if (dy < 0) {
+                double t = Math.min(1, -dy * 4);
+                return pack(14 * (1 - t) + 3 * t, 16 * (1 - t) + 3 * t, 26 * (1 - t) + 5 * t);
+            }
+            double t = Math.min(1, dy * 2.2);
+            double r = 22 * (1 - t) + 4 * t, gg = 27 * (1 - t) + 6 * t, b = 46 * (1 - t) + 16 * t;
+            long q = Math.round(dx * 700) * 73856093L ^ Math.round(dy * 700) * 19349663L ^ Math.round(dz * 700) * 83492791L;
+            q ^= q >>> 13;
+            q *= 0x5bd1e995L;
+            q ^= q >>> 15;
+            double hsh = (q & 0xffff) / 65535.0;
+            if (dy > 0.03 && hsh > 0.9965) {
+                double s = 120 + (hsh - 0.9965) / 0.0035 * 135;
+                return pack(s, s, s * 1.05);
+            }
+            return pack(r, gg, b);
+        }
+
+        /** Faint blue moonlight on surfaces open to the sky. */
+        int moonlit(int col, double faceShade, int[] base, double x, double y, double z) {
+            if (!night || !skyOpen(x, y, z)) return col;
+            double k = 0.13 * faceShade;
+            int r = (col >> 16) & 255, gg = (col >> 8) & 255, b = col & 255;
+            return pack(r + base[0] * k * 0.75, gg + base[1] * k * 0.85, b + base[2] * k * 1.15);
+        }
 
         Scene(LevelGenerator g, int px, int pz) {
             this.g = g;
@@ -344,7 +503,7 @@ class FirstPersonRenderTest {
 
         int trace(double dx, double dy, double dz) {
             // nearest display box hit
-            double bestT = 60;
+            double bestT = far;
             Box hitBox = null;
             double[] bn = null;
             for (Box b : boxes) {
@@ -367,12 +526,35 @@ class FirstPersonRenderTest {
             while (t < bestT) {
                 if (X < x0 || X >= x1 || Z < z0 || Z >= z1 || Y < y0 || Y >= y1) break;
                 Material m = type(X, Y, Z);
+                double[] gt = night ? glassTint(m) : null;
                 if (m == Material.WATER) {
                     waterTint[0] *= 0.985; waterTint[1] *= 0.99; waterTint[2] *= 1.0;
+                } else if (gt != null && face >= 0) {
+                    waterTint[0] *= gt[0]; waterTint[1] *= gt[1]; waterTint[2] *= gt[2];
                 } else if (!(Mats.passable(m) || m == Material.BARRIER) && face >= 0) {
-                    double hx = ex + dx * t, hy = ey + dy * t, hz = ez + dz * t;
-                    int col = shadeBlock(m, a.get(X, Y, Z), face, hx, hy, hz, X, Y, Z, t);
-                    return applyTint(col, waterTint);
+                    B blk = a.get(X, Y, Z);
+                    boolean top = blk.state.contains("type=top"), bottom = blk.state.contains("type=bottom");
+                    double th = t;
+                    int fc = face;
+                    if (top || bottom) {
+                        // half slabs: find where the ray actually meets the occupied half of the voxel
+                        double tExit = Math.min(tmX, Math.min(tmY, tmZ));
+                        th = -1;
+                        for (int k = 0; k < 10; k++) {
+                            double tt = t + (tExit - t) * (k + 0.5) / 10;
+                            double fy = ey + dy * tt - Y;
+                            if (top ? fy >= 0.5 : fy <= 0.5) {
+                                th = tt;
+                                fc = k == 0 ? face : (dy < 0 ? 3 : 2);
+                                break;
+                            }
+                        }
+                    }
+                    if (th >= 0) {
+                        double hx = ex + dx * th, hy = ey + dy * th, hz = ez + dz * th;
+                        int col = shadeBlock(m, blk, fc, hx, hy, hz, X, Y, Z, th);
+                        return applyTint(col, waterTint);
+                    }
                 }
                 if (tmX < tmY && tmX < tmZ) {
                     t = tmX; tmX += tdX; X += stX; face = stX > 0 ? 0 : 1;
@@ -386,7 +568,7 @@ class FirstPersonRenderTest {
                 double hx = ex + dx * bestT, hy = ey + dy * bestT, hz = ez + dz * bestT;
                 return applyTint(shadeBox(hitBox, bn, hx, hy, hz, bestT), waterTint);
             }
-            return 0x050403;
+            return night ? applyTint(sky(dx, dy, dz), waterTint) : 0x050403;
         }
 
         static int applyTint(int c, double[] t) {
@@ -446,7 +628,7 @@ class FirstPersonRenderTest {
             double faceShade = Math.abs(n.y) > 0.7 ? (n.y > 0 ? 1.0 : 0.5) : Math.abs(n.x) > Math.abs(n.z) ? 0.6 : 0.8;
             double l = lightAt(hx + n.x * 0.3, hy + n.y * 0.3, hz + n.z * 0.3);
             double k = brightness(l) * faceShade;
-            return warm(c, k, l);
+            return moonlit(warm(c, k, l), faceShade, c, hx + n.x * 0.3, hy + n.y * 0.3, hz + n.z * 0.3);
         }
 
         int shadeBlock(Material m, B b, int face, double hx, double hy, double hz, int X, int Y, int Z, double dist) {
@@ -483,7 +665,7 @@ class FirstPersonRenderTest {
             }
             double l = lightAt(hx + nx * 0.5, hy + ny * 0.5, hz + nz * 0.5);
             double k = brightness(l) * faceShade * tex;
-            return warm(c, k, l);
+            return moonlit(warm(c, k, l), faceShade * tex, c, hx + nx * 0.5, hy + ny * 0.5, hz + nz * 0.5);
         }
 
         /**

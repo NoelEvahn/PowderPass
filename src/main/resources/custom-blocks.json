@@ -30,15 +30,15 @@
     "garage_column": {"instrument": "dragon", "note": 7, "textures": {"all": "garage_column"}, "fallback": "minecraft:polished_andesite", "color": "#9f9e99"},
     "garage_hazard": {"instrument": "dragon", "note": 8, "textures": {"all": "garage_hazard"}, "fallback": "minecraft:yellow_concrete", "color": "#7a6420"},
     "garage_mass": {"instrument": "dragon", "note": 9, "textures": {"all": "garage_mass"}, "fallback": "minecraft:gray_concrete", "color": "#686864"},
-    "tower_facade": {"instrument": "dragon", "note": 10, "textures": {"all": "tower_facade"}, "fallback": "minecraft:light_gray_concrete", "color": "#a7a9ad"},
-    "tower_facade_dark": {"instrument": "dragon", "note": 11, "textures": {"all": "tower_facade_dark"}, "fallback": "minecraft:gray_concrete", "color": "#55585e"},
-    "tower_floor_tile": {"instrument": "dragon", "note": 12, "textures": {"all": "tower_floor_tile"}, "fallback": "minecraft:light_gray_wool", "color": "#8a8c8e"},
-    "tower_lobby_tile": {"instrument": "dragon", "note": 13, "textures": {"all": "tower_lobby_tile"}, "fallback": "minecraft:smooth_quartz", "color": "#d8d4cc"},
-    "tower_partition": {"instrument": "dragon", "note": 14, "textures": {"all": "tower_partition"}, "fallback": "minecraft:light_gray_wool", "color": "#9c9a92"},
-    "tower_wall": {"instrument": "dragon", "note": 15, "textures": {"all": "tower_wall"}, "fallback": "minecraft:white_concrete", "color": "#d9d6cc"},
-    "tower_column": {"instrument": "dragon", "note": 16, "textures": {"all": "tower_column"}, "fallback": "minecraft:light_gray_concrete", "color": "#b9b8b2"},
-    "tower_elevator": {"instrument": "dragon", "note": 17, "textures": {"all": "tower_elevator"}, "fallback": "minecraft:iron_block", "color": "#b5b8bb"},
-    "tower_roof": {"instrument": "dragon", "note": 18, "textures": {"all": "tower_roof"}, "fallback": "minecraft:gray_concrete", "color": "#6a6b6c"},
-    "tower_ceiling": {"instrument": "dragon", "note": 19, "textures": {"all": "tower_ceiling"}, "fallback": "minecraft:smooth_quartz", "color": "#d6d6d0"}
+    "tower_facade": {"instrument": "dragon", "note": 10, "textures": {"all": "tower_facade"}, "fallback": "minecraft:light_gray_concrete", "color": "#aaaaa4"},
+    "tower_facade_dark": {"instrument": "dragon", "note": 11, "textures": {"all": "tower_facade_dark"}, "fallback": "minecraft:gray_concrete", "color": "#37393d"},
+    "tower_floor_tile": {"instrument": "dragon", "note": 12, "textures": {"all": "tower_floor_tile"}, "fallback": "minecraft:light_gray_wool", "color": "#5d6169"},
+    "tower_lobby_tile": {"instrument": "dragon", "note": 13, "textures": {"all": "tower_lobby_tile"}, "fallback": "minecraft:smooth_quartz", "color": "#c5beb0"},
+    "tower_partition": {"instrument": "dragon", "note": 14, "textures": {"all": "tower_partition"}, "fallback": "minecraft:light_gray_wool", "color": "#787d86"},
+    "tower_wall": {"instrument": "dragon", "note": 15, "textures": {"all": "tower_wall"}, "fallback": "minecraft:white_concrete", "color": "#d8d5cd"},
+    "tower_column": {"instrument": "dragon", "note": 16, "textures": {"all": "tower_column"}, "fallback": "minecraft:light_gray_concrete", "color": "#8e9094"},
+    "tower_elevator": {"instrument": "dragon", "note": 17, "textures": {"all": "tower_elevator"}, "fallback": "minecraft:iron_block", "color": "#b2b6ba"},
+    "tower_roof": {"instrument": "dragon", "note": 18, "textures": {"all": "tower_roof"}, "fallback": "minecraft:gray_concrete", "color": "#626261"},
+    "tower_ceiling": {"instrument": "dragon", "note": 19, "textures": {"all": "tower_ceiling"}, "fallback": "minecraft:smooth_quartz", "color": "#dcdedc"}
   }
 }
