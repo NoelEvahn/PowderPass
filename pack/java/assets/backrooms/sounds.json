@@ -1,4 +1,66 @@
 {
+  "bacteria.breath": {
+    "sounds": [
+      "backrooms:bacteria/breath/dry_1",
+      "backrooms:bacteria/breath/dry_2"
+    ]
+  },
+  "bacteria.screech": {
+    "sounds": [
+      "backrooms:bacteria/screech/dry_1",
+      "backrooms:bacteria/screech/dry_2"
+    ]
+  },
+  "bacteria.screech.carpet": {
+    "sounds": [
+      "backrooms:bacteria/screech/carpet_1",
+      "backrooms:bacteria/screech/carpet_2"
+    ]
+  },
+  "bacteria.screech.corridor": {
+    "sounds": [
+      "backrooms:bacteria/screech/corridor_1",
+      "backrooms:bacteria/screech/corridor_2"
+    ]
+  },
+  "bacteria.screech.office": {
+    "sounds": [
+      "backrooms:bacteria/screech/office_1",
+      "backrooms:bacteria/screech/office_2"
+    ]
+  },
+  "bacteria.skitter": {
+    "sounds": [
+      "backrooms:bacteria/skitter/dry_1",
+      "backrooms:bacteria/skitter/dry_2",
+      "backrooms:bacteria/skitter/dry_3",
+      "backrooms:bacteria/skitter/dry_4"
+    ]
+  },
+  "bacteria.skitter.carpet": {
+    "sounds": [
+      "backrooms:bacteria/skitter/carpet_1",
+      "backrooms:bacteria/skitter/carpet_2",
+      "backrooms:bacteria/skitter/carpet_3",
+      "backrooms:bacteria/skitter/carpet_4"
+    ]
+  },
+  "bacteria.skitter.corridor": {
+    "sounds": [
+      "backrooms:bacteria/skitter/corridor_1",
+      "backrooms:bacteria/skitter/corridor_2",
+      "backrooms:bacteria/skitter/corridor_3",
+      "backrooms:bacteria/skitter/corridor_4"
+    ]
+  },
+  "bacteria.skitter.office": {
+    "sounds": [
+      "backrooms:bacteria/skitter/office_1",
+      "backrooms:bacteria/skitter/office_2",
+      "backrooms:bacteria/skitter/office_3",
+      "backrooms:bacteria/skitter/office_4"
+    ]
+  },
   "bed.garage": {
     "sounds": [
       {
@@ -52,6 +114,62 @@
       "backrooms:breath/heavy/dry_1",
       "backrooms:breath/heavy/dry_2",
       "backrooms:breath/heavy/dry_3"
+    ]
+  },
+  "car.door": {
+    "sounds": [
+      "backrooms:car/door/dry_1",
+      "backrooms:car/door/dry_2"
+    ]
+  },
+  "car.door.concrete": {
+    "sounds": [
+      "backrooms:car/door/concrete_1",
+      "backrooms:car/door/concrete_2"
+    ]
+  },
+  "car.door.corridor": {
+    "sounds": [
+      "backrooms:car/door/corridor_1",
+      "backrooms:car/door/corridor_2"
+    ]
+  },
+  "car.engine": {
+    "sounds": [
+      "backrooms:car/engine/dry_1"
+    ]
+  },
+  "car.horn": {
+    "sounds": [
+      "backrooms:car/horn/dry_1",
+      "backrooms:car/horn/dry_2"
+    ]
+  },
+  "car.horn.concrete": {
+    "sounds": [
+      "backrooms:car/horn/concrete_1",
+      "backrooms:car/horn/concrete_2"
+    ]
+  },
+  "car.horn.corridor": {
+    "sounds": [
+      "backrooms:car/horn/corridor_1",
+      "backrooms:car/horn/corridor_2"
+    ]
+  },
+  "car.start": {
+    "sounds": [
+      "backrooms:car/start/dry_1"
+    ]
+  },
+  "car.start.concrete": {
+    "sounds": [
+      "backrooms:car/start/concrete_1"
+    ]
+  },
+  "car.start.corridor": {
+    "sounds": [
+      "backrooms:car/start/corridor_1"
     ]
   },
   "grass.rustle": {
@@ -144,34 +262,6 @@
       "backrooms:impact/distant/office_muffled_3"
     ]
   },
-  "impact.distant.open": {
-    "sounds": [
-      "backrooms:impact/distant/open_1",
-      "backrooms:impact/distant/open_2",
-      "backrooms:impact/distant/open_3"
-    ]
-  },
-  "impact.distant.open.muffled": {
-    "sounds": [
-      "backrooms:impact/distant/open_muffled_1",
-      "backrooms:impact/distant/open_muffled_2",
-      "backrooms:impact/distant/open_muffled_3"
-    ]
-  },
-  "impact.distant.pool": {
-    "sounds": [
-      "backrooms:impact/distant/pool_1",
-      "backrooms:impact/distant/pool_2",
-      "backrooms:impact/distant/pool_3"
-    ]
-  },
-  "impact.distant.pool.muffled": {
-    "sounds": [
-      "backrooms:impact/distant/pool_muffled_1",
-      "backrooms:impact/distant/pool_muffled_2",
-      "backrooms:impact/distant/pool_muffled_3"
-    ]
-  },
   "knock.distant": {
     "sounds": [
       "backrooms:knock/distant/dry_1",
@@ -244,36 +334,49 @@
       "backrooms:knock/distant/office_muffled_4"
     ]
   },
-  "knock.distant.open": {
+  "lift.ding": {
     "sounds": [
-      "backrooms:knock/distant/open_1",
-      "backrooms:knock/distant/open_2",
-      "backrooms:knock/distant/open_3",
-      "backrooms:knock/distant/open_4"
+      "backrooms:lift/ding/dry_1"
     ]
   },
-  "knock.distant.open.muffled": {
+  "lift.ding.carpet": {
     "sounds": [
-      "backrooms:knock/distant/open_muffled_1",
-      "backrooms:knock/distant/open_muffled_2",
-      "backrooms:knock/distant/open_muffled_3",
-      "backrooms:knock/distant/open_muffled_4"
+      "backrooms:lift/ding/carpet_1"
     ]
   },
-  "knock.distant.pool": {
+  "lift.ding.corridor": {
     "sounds": [
-      "backrooms:knock/distant/pool_1",
-      "backrooms:knock/distant/pool_2",
-      "backrooms:knock/distant/pool_3",
-      "backrooms:knock/distant/pool_4"
+      "backrooms:lift/ding/corridor_1"
     ]
   },
-  "knock.distant.pool.muffled": {
+  "lift.ding.office": {
     "sounds": [
-      "backrooms:knock/distant/pool_muffled_1",
-      "backrooms:knock/distant/pool_muffled_2",
-      "backrooms:knock/distant/pool_muffled_3",
-      "backrooms:knock/distant/pool_muffled_4"
+      "backrooms:lift/ding/office_1"
+    ]
+  },
+  "lift.door": {
+    "sounds": [
+      "backrooms:lift/door/dry_1"
+    ]
+  },
+  "lift.door.carpet": {
+    "sounds": [
+      "backrooms:lift/door/carpet_1"
+    ]
+  },
+  "lift.door.corridor": {
+    "sounds": [
+      "backrooms:lift/door/corridor_1"
+    ]
+  },
+  "lift.door.office": {
+    "sounds": [
+      "backrooms:lift/door/office_1"
+    ]
+  },
+  "lift.motor": {
+    "sounds": [
+      "backrooms:lift/motor/dry_1"
     ]
   },
   "light.arc": {
@@ -311,11 +414,6 @@
       "backrooms:machine/start/dry_1"
     ]
   },
-  "machine.start.carpet": {
-    "sounds": [
-      "backrooms:machine/start/carpet_1"
-    ]
-  },
   "machine.start.concrete": {
     "sounds": [
       "backrooms:machine/start/concrete_1"
@@ -324,21 +422,6 @@
   "machine.start.corridor": {
     "sounds": [
       "backrooms:machine/start/corridor_1"
-    ]
-  },
-  "machine.start.office": {
-    "sounds": [
-      "backrooms:machine/start/office_1"
-    ]
-  },
-  "machine.start.open": {
-    "sounds": [
-      "backrooms:machine/start/open_1"
-    ]
-  },
-  "machine.start.pool": {
-    "sounds": [
-      "backrooms:machine/start/pool_1"
     ]
   },
   "metal.clank": {
@@ -373,14 +456,6 @@
       "backrooms:metal/creak/dry_4"
     ]
   },
-  "metal.creak.carpet": {
-    "sounds": [
-      "backrooms:metal/creak/carpet_1",
-      "backrooms:metal/creak/carpet_2",
-      "backrooms:metal/creak/carpet_3",
-      "backrooms:metal/creak/carpet_4"
-    ]
-  },
   "metal.creak.concrete": {
     "sounds": [
       "backrooms:metal/creak/concrete_1",
@@ -395,30 +470,6 @@
       "backrooms:metal/creak/corridor_2",
       "backrooms:metal/creak/corridor_3",
       "backrooms:metal/creak/corridor_4"
-    ]
-  },
-  "metal.creak.office": {
-    "sounds": [
-      "backrooms:metal/creak/office_1",
-      "backrooms:metal/creak/office_2",
-      "backrooms:metal/creak/office_3",
-      "backrooms:metal/creak/office_4"
-    ]
-  },
-  "metal.creak.open": {
-    "sounds": [
-      "backrooms:metal/creak/open_1",
-      "backrooms:metal/creak/open_2",
-      "backrooms:metal/creak/open_3",
-      "backrooms:metal/creak/open_4"
-    ]
-  },
-  "metal.creak.pool": {
-    "sounds": [
-      "backrooms:metal/creak/pool_1",
-      "backrooms:metal/creak/pool_2",
-      "backrooms:metal/creak/pool_3",
-      "backrooms:metal/creak/pool_4"
     ]
   },
   "metal.groan": {
@@ -477,20 +528,6 @@
       "backrooms:movement/distant/carpet_muffled_3"
     ]
   },
-  "movement.distant.concrete": {
-    "sounds": [
-      "backrooms:movement/distant/concrete_1",
-      "backrooms:movement/distant/concrete_2",
-      "backrooms:movement/distant/concrete_3"
-    ]
-  },
-  "movement.distant.concrete.muffled": {
-    "sounds": [
-      "backrooms:movement/distant/concrete_muffled_1",
-      "backrooms:movement/distant/concrete_muffled_2",
-      "backrooms:movement/distant/concrete_muffled_3"
-    ]
-  },
   "movement.distant.corridor": {
     "sounds": [
       "backrooms:movement/distant/corridor_1",
@@ -517,34 +554,6 @@
       "backrooms:movement/distant/office_muffled_1",
       "backrooms:movement/distant/office_muffled_2",
       "backrooms:movement/distant/office_muffled_3"
-    ]
-  },
-  "movement.distant.open": {
-    "sounds": [
-      "backrooms:movement/distant/open_1",
-      "backrooms:movement/distant/open_2",
-      "backrooms:movement/distant/open_3"
-    ]
-  },
-  "movement.distant.open.muffled": {
-    "sounds": [
-      "backrooms:movement/distant/open_muffled_1",
-      "backrooms:movement/distant/open_muffled_2",
-      "backrooms:movement/distant/open_muffled_3"
-    ]
-  },
-  "movement.distant.pool": {
-    "sounds": [
-      "backrooms:movement/distant/pool_1",
-      "backrooms:movement/distant/pool_2",
-      "backrooms:movement/distant/pool_3"
-    ]
-  },
-  "movement.distant.pool.muffled": {
-    "sounds": [
-      "backrooms:movement/distant/pool_muffled_1",
-      "backrooms:movement/distant/pool_muffled_2",
-      "backrooms:movement/distant/pool_muffled_3"
     ]
   },
   "music.garage_1": {
@@ -722,16 +731,6 @@
       "backrooms:office/phone/carpet_muffled_1"
     ]
   },
-  "office.phone.concrete": {
-    "sounds": [
-      "backrooms:office/phone/concrete_1"
-    ]
-  },
-  "office.phone.concrete.muffled": {
-    "sounds": [
-      "backrooms:office/phone/concrete_muffled_1"
-    ]
-  },
   "office.phone.corridor": {
     "sounds": [
       "backrooms:office/phone/corridor_1"
@@ -752,26 +751,6 @@
       "backrooms:office/phone/office_muffled_1"
     ]
   },
-  "office.phone.open": {
-    "sounds": [
-      "backrooms:office/phone/open_1"
-    ]
-  },
-  "office.phone.open.muffled": {
-    "sounds": [
-      "backrooms:office/phone/open_muffled_1"
-    ]
-  },
-  "office.phone.pool": {
-    "sounds": [
-      "backrooms:office/phone/pool_1"
-    ]
-  },
-  "office.phone.pool.muffled": {
-    "sounds": [
-      "backrooms:office/phone/pool_muffled_1"
-    ]
-  },
   "office.printer": {
     "sounds": [
       "backrooms:office/printer/dry_1",
@@ -782,12 +761,6 @@
     "sounds": [
       "backrooms:office/printer/carpet_1",
       "backrooms:office/printer/carpet_2"
-    ]
-  },
-  "office.printer.concrete": {
-    "sounds": [
-      "backrooms:office/printer/concrete_1",
-      "backrooms:office/printer/concrete_2"
     ]
   },
   "office.printer.corridor": {
@@ -802,30 +775,11 @@
       "backrooms:office/printer/office_2"
     ]
   },
-  "office.printer.open": {
-    "sounds": [
-      "backrooms:office/printer/open_1",
-      "backrooms:office/printer/open_2"
-    ]
-  },
-  "office.printer.pool": {
-    "sounds": [
-      "backrooms:office/printer/pool_1",
-      "backrooms:office/printer/pool_2"
-    ]
-  },
   "pipe.knock": {
     "sounds": [
       "backrooms:pipe/knock/dry_1",
       "backrooms:pipe/knock/dry_2",
       "backrooms:pipe/knock/dry_3"
-    ]
-  },
-  "pipe.knock.carpet": {
-    "sounds": [
-      "backrooms:pipe/knock/carpet_1",
-      "backrooms:pipe/knock/carpet_2",
-      "backrooms:pipe/knock/carpet_3"
     ]
   },
   "pipe.knock.concrete": {
@@ -840,27 +794,6 @@
       "backrooms:pipe/knock/corridor_1",
       "backrooms:pipe/knock/corridor_2",
       "backrooms:pipe/knock/corridor_3"
-    ]
-  },
-  "pipe.knock.office": {
-    "sounds": [
-      "backrooms:pipe/knock/office_1",
-      "backrooms:pipe/knock/office_2",
-      "backrooms:pipe/knock/office_3"
-    ]
-  },
-  "pipe.knock.open": {
-    "sounds": [
-      "backrooms:pipe/knock/open_1",
-      "backrooms:pipe/knock/open_2",
-      "backrooms:pipe/knock/open_3"
-    ]
-  },
-  "pipe.knock.pool": {
-    "sounds": [
-      "backrooms:pipe/knock/pool_1",
-      "backrooms:pipe/knock/pool_2",
-      "backrooms:pipe/knock/pool_3"
     ]
   },
   "plains.distant": {
@@ -910,130 +843,17 @@
       "backrooms:skinwalker/crackle/dry_3"
     ]
   },
-  "skinwalker.crackle.carpet": {
+  "skinwalker.crackle.muffled": {
     "sounds": [
-      "backrooms:skinwalker/crackle/carpet_1",
-      "backrooms:skinwalker/crackle/carpet_2",
-      "backrooms:skinwalker/crackle/carpet_3"
-    ]
-  },
-  "skinwalker.crackle.carpet.muffled": {
-    "sounds": [
-      "backrooms:skinwalker/crackle/carpet_muffled_1",
-      "backrooms:skinwalker/crackle/carpet_muffled_2",
-      "backrooms:skinwalker/crackle/carpet_muffled_3"
-    ]
-  },
-  "skinwalker.crackle.concrete": {
-    "sounds": [
-      "backrooms:skinwalker/crackle/concrete_1",
-      "backrooms:skinwalker/crackle/concrete_2",
-      "backrooms:skinwalker/crackle/concrete_3"
-    ]
-  },
-  "skinwalker.crackle.concrete.muffled": {
-    "sounds": [
-      "backrooms:skinwalker/crackle/concrete_muffled_1",
-      "backrooms:skinwalker/crackle/concrete_muffled_2",
-      "backrooms:skinwalker/crackle/concrete_muffled_3"
-    ]
-  },
-  "skinwalker.crackle.corridor": {
-    "sounds": [
-      "backrooms:skinwalker/crackle/corridor_1",
-      "backrooms:skinwalker/crackle/corridor_2",
-      "backrooms:skinwalker/crackle/corridor_3"
-    ]
-  },
-  "skinwalker.crackle.corridor.muffled": {
-    "sounds": [
-      "backrooms:skinwalker/crackle/corridor_muffled_1",
-      "backrooms:skinwalker/crackle/corridor_muffled_2",
-      "backrooms:skinwalker/crackle/corridor_muffled_3"
-    ]
-  },
-  "skinwalker.crackle.office": {
-    "sounds": [
-      "backrooms:skinwalker/crackle/office_1",
-      "backrooms:skinwalker/crackle/office_2",
-      "backrooms:skinwalker/crackle/office_3"
-    ]
-  },
-  "skinwalker.crackle.office.muffled": {
-    "sounds": [
-      "backrooms:skinwalker/crackle/office_muffled_1",
-      "backrooms:skinwalker/crackle/office_muffled_2",
-      "backrooms:skinwalker/crackle/office_muffled_3"
-    ]
-  },
-  "skinwalker.crackle.open": {
-    "sounds": [
-      "backrooms:skinwalker/crackle/open_1",
-      "backrooms:skinwalker/crackle/open_2",
-      "backrooms:skinwalker/crackle/open_3"
-    ]
-  },
-  "skinwalker.crackle.open.muffled": {
-    "sounds": [
-      "backrooms:skinwalker/crackle/open_muffled_1",
-      "backrooms:skinwalker/crackle/open_muffled_2",
-      "backrooms:skinwalker/crackle/open_muffled_3"
-    ]
-  },
-  "skinwalker.crackle.pool": {
-    "sounds": [
-      "backrooms:skinwalker/crackle/pool_1",
-      "backrooms:skinwalker/crackle/pool_2",
-      "backrooms:skinwalker/crackle/pool_3"
-    ]
-  },
-  "skinwalker.crackle.pool.muffled": {
-    "sounds": [
-      "backrooms:skinwalker/crackle/pool_muffled_1",
-      "backrooms:skinwalker/crackle/pool_muffled_2",
-      "backrooms:skinwalker/crackle/pool_muffled_3"
+      "backrooms:skinwalker/crackle/muffled_1",
+      "backrooms:skinwalker/crackle/muffled_2",
+      "backrooms:skinwalker/crackle/muffled_3"
     ]
   },
   "skinwalker.screech": {
     "sounds": [
       "backrooms:skinwalker/screech/dry_1",
       "backrooms:skinwalker/screech/dry_2"
-    ]
-  },
-  "skinwalker.screech.carpet": {
-    "sounds": [
-      "backrooms:skinwalker/screech/carpet_1",
-      "backrooms:skinwalker/screech/carpet_2"
-    ]
-  },
-  "skinwalker.screech.concrete": {
-    "sounds": [
-      "backrooms:skinwalker/screech/concrete_1",
-      "backrooms:skinwalker/screech/concrete_2"
-    ]
-  },
-  "skinwalker.screech.corridor": {
-    "sounds": [
-      "backrooms:skinwalker/screech/corridor_1",
-      "backrooms:skinwalker/screech/corridor_2"
-    ]
-  },
-  "skinwalker.screech.office": {
-    "sounds": [
-      "backrooms:skinwalker/screech/office_1",
-      "backrooms:skinwalker/screech/office_2"
-    ]
-  },
-  "skinwalker.screech.open": {
-    "sounds": [
-      "backrooms:skinwalker/screech/open_1",
-      "backrooms:skinwalker/screech/open_2"
-    ]
-  },
-  "skinwalker.screech.pool": {
-    "sounds": [
-      "backrooms:skinwalker/screech/pool_1",
-      "backrooms:skinwalker/screech/pool_2"
     ]
   },
   "skinwalker.scuttle": {
@@ -1046,64 +866,14 @@
       "backrooms:skinwalker/scuttle/dry_6"
     ]
   },
-  "skinwalker.scuttle.carpet": {
+  "slide.rush": {
     "sounds": [
-      "backrooms:skinwalker/scuttle/carpet_1",
-      "backrooms:skinwalker/scuttle/carpet_2",
-      "backrooms:skinwalker/scuttle/carpet_3",
-      "backrooms:skinwalker/scuttle/carpet_4",
-      "backrooms:skinwalker/scuttle/carpet_5",
-      "backrooms:skinwalker/scuttle/carpet_6"
+      "backrooms:slide/rush/dry_1"
     ]
   },
-  "skinwalker.scuttle.concrete": {
+  "slide.rush.pool": {
     "sounds": [
-      "backrooms:skinwalker/scuttle/concrete_1",
-      "backrooms:skinwalker/scuttle/concrete_2",
-      "backrooms:skinwalker/scuttle/concrete_3",
-      "backrooms:skinwalker/scuttle/concrete_4",
-      "backrooms:skinwalker/scuttle/concrete_5",
-      "backrooms:skinwalker/scuttle/concrete_6"
-    ]
-  },
-  "skinwalker.scuttle.corridor": {
-    "sounds": [
-      "backrooms:skinwalker/scuttle/corridor_1",
-      "backrooms:skinwalker/scuttle/corridor_2",
-      "backrooms:skinwalker/scuttle/corridor_3",
-      "backrooms:skinwalker/scuttle/corridor_4",
-      "backrooms:skinwalker/scuttle/corridor_5",
-      "backrooms:skinwalker/scuttle/corridor_6"
-    ]
-  },
-  "skinwalker.scuttle.office": {
-    "sounds": [
-      "backrooms:skinwalker/scuttle/office_1",
-      "backrooms:skinwalker/scuttle/office_2",
-      "backrooms:skinwalker/scuttle/office_3",
-      "backrooms:skinwalker/scuttle/office_4",
-      "backrooms:skinwalker/scuttle/office_5",
-      "backrooms:skinwalker/scuttle/office_6"
-    ]
-  },
-  "skinwalker.scuttle.open": {
-    "sounds": [
-      "backrooms:skinwalker/scuttle/open_1",
-      "backrooms:skinwalker/scuttle/open_2",
-      "backrooms:skinwalker/scuttle/open_3",
-      "backrooms:skinwalker/scuttle/open_4",
-      "backrooms:skinwalker/scuttle/open_5",
-      "backrooms:skinwalker/scuttle/open_6"
-    ]
-  },
-  "skinwalker.scuttle.pool": {
-    "sounds": [
-      "backrooms:skinwalker/scuttle/pool_1",
-      "backrooms:skinwalker/scuttle/pool_2",
-      "backrooms:skinwalker/scuttle/pool_3",
-      "backrooms:skinwalker/scuttle/pool_4",
-      "backrooms:skinwalker/scuttle/pool_5",
-      "backrooms:skinwalker/scuttle/pool_6"
+      "backrooms:slide/rush/pool_1"
     ]
   },
   "speaker.broken": {
@@ -1134,6 +904,11 @@
       "backrooms:steam/burst/corridor_3"
     ]
   },
+  "steam.hiss": {
+    "sounds": [
+      "backrooms:steam/hiss/dry_1"
+    ]
+  },
   "step.carpet": {
     "sounds": [
       "backrooms:step/carpet/dry_1",
@@ -1152,16 +927,6 @@
       "backrooms:step/carpet/carpet_4",
       "backrooms:step/carpet/carpet_5",
       "backrooms:step/carpet/carpet_6"
-    ]
-  },
-  "step.carpet.concrete": {
-    "sounds": [
-      "backrooms:step/carpet/concrete_1",
-      "backrooms:step/carpet/concrete_2",
-      "backrooms:step/carpet/concrete_3",
-      "backrooms:step/carpet/concrete_4",
-      "backrooms:step/carpet/concrete_5",
-      "backrooms:step/carpet/concrete_6"
     ]
   },
   "step.carpet.corridor": {
@@ -1184,26 +949,6 @@
       "backrooms:step/carpet/office_6"
     ]
   },
-  "step.carpet.open": {
-    "sounds": [
-      "backrooms:step/carpet/open_1",
-      "backrooms:step/carpet/open_2",
-      "backrooms:step/carpet/open_3",
-      "backrooms:step/carpet/open_4",
-      "backrooms:step/carpet/open_5",
-      "backrooms:step/carpet/open_6"
-    ]
-  },
-  "step.carpet.pool": {
-    "sounds": [
-      "backrooms:step/carpet/pool_1",
-      "backrooms:step/carpet/pool_2",
-      "backrooms:step/carpet/pool_3",
-      "backrooms:step/carpet/pool_4",
-      "backrooms:step/carpet/pool_5",
-      "backrooms:step/carpet/pool_6"
-    ]
-  },
   "step.concrete": {
     "sounds": [
       "backrooms:step/concrete/dry_1",
@@ -1212,16 +957,6 @@
       "backrooms:step/concrete/dry_4",
       "backrooms:step/concrete/dry_5",
       "backrooms:step/concrete/dry_6"
-    ]
-  },
-  "step.concrete.carpet": {
-    "sounds": [
-      "backrooms:step/concrete/carpet_1",
-      "backrooms:step/concrete/carpet_2",
-      "backrooms:step/concrete/carpet_3",
-      "backrooms:step/concrete/carpet_4",
-      "backrooms:step/concrete/carpet_5",
-      "backrooms:step/concrete/carpet_6"
     ]
   },
   "step.concrete.concrete": {
@@ -1244,36 +979,6 @@
       "backrooms:step/concrete/corridor_6"
     ]
   },
-  "step.concrete.office": {
-    "sounds": [
-      "backrooms:step/concrete/office_1",
-      "backrooms:step/concrete/office_2",
-      "backrooms:step/concrete/office_3",
-      "backrooms:step/concrete/office_4",
-      "backrooms:step/concrete/office_5",
-      "backrooms:step/concrete/office_6"
-    ]
-  },
-  "step.concrete.open": {
-    "sounds": [
-      "backrooms:step/concrete/open_1",
-      "backrooms:step/concrete/open_2",
-      "backrooms:step/concrete/open_3",
-      "backrooms:step/concrete/open_4",
-      "backrooms:step/concrete/open_5",
-      "backrooms:step/concrete/open_6"
-    ]
-  },
-  "step.concrete.pool": {
-    "sounds": [
-      "backrooms:step/concrete/pool_1",
-      "backrooms:step/concrete/pool_2",
-      "backrooms:step/concrete/pool_3",
-      "backrooms:step/concrete/pool_4",
-      "backrooms:step/concrete/pool_5",
-      "backrooms:step/concrete/pool_6"
-    ]
-  },
   "step.tile": {
     "sounds": [
       "backrooms:step/tile/dry_1",
@@ -1282,56 +987,6 @@
       "backrooms:step/tile/dry_4",
       "backrooms:step/tile/dry_5",
       "backrooms:step/tile/dry_6"
-    ]
-  },
-  "step.tile.carpet": {
-    "sounds": [
-      "backrooms:step/tile/carpet_1",
-      "backrooms:step/tile/carpet_2",
-      "backrooms:step/tile/carpet_3",
-      "backrooms:step/tile/carpet_4",
-      "backrooms:step/tile/carpet_5",
-      "backrooms:step/tile/carpet_6"
-    ]
-  },
-  "step.tile.concrete": {
-    "sounds": [
-      "backrooms:step/tile/concrete_1",
-      "backrooms:step/tile/concrete_2",
-      "backrooms:step/tile/concrete_3",
-      "backrooms:step/tile/concrete_4",
-      "backrooms:step/tile/concrete_5",
-      "backrooms:step/tile/concrete_6"
-    ]
-  },
-  "step.tile.corridor": {
-    "sounds": [
-      "backrooms:step/tile/corridor_1",
-      "backrooms:step/tile/corridor_2",
-      "backrooms:step/tile/corridor_3",
-      "backrooms:step/tile/corridor_4",
-      "backrooms:step/tile/corridor_5",
-      "backrooms:step/tile/corridor_6"
-    ]
-  },
-  "step.tile.office": {
-    "sounds": [
-      "backrooms:step/tile/office_1",
-      "backrooms:step/tile/office_2",
-      "backrooms:step/tile/office_3",
-      "backrooms:step/tile/office_4",
-      "backrooms:step/tile/office_5",
-      "backrooms:step/tile/office_6"
-    ]
-  },
-  "step.tile.open": {
-    "sounds": [
-      "backrooms:step/tile/open_1",
-      "backrooms:step/tile/open_2",
-      "backrooms:step/tile/open_3",
-      "backrooms:step/tile/open_4",
-      "backrooms:step/tile/open_5",
-      "backrooms:step/tile/open_6"
     ]
   },
   "step.tile.pool": {
@@ -1384,14 +1039,6 @@
       "backrooms:step/water/office_4"
     ]
   },
-  "step.water.open": {
-    "sounds": [
-      "backrooms:step/water/open_1",
-      "backrooms:step/water/open_2",
-      "backrooms:step/water/open_3",
-      "backrooms:step/water/open_4"
-    ]
-  },
   "step.water.pool": {
     "sounds": [
       "backrooms:step/water/pool_1",
@@ -1422,49 +1069,84 @@
     "sounds": [
       "backrooms:voice/announce/dry_1",
       "backrooms:voice/announce/dry_2",
-      "backrooms:voice/announce/dry_3"
+      "backrooms:voice/announce/dry_3",
+      "backrooms:voice/announce/dry_4",
+      "backrooms:voice/announce/dry_5",
+      "backrooms:voice/announce/dry_6",
+      "backrooms:voice/announce/dry_7",
+      "backrooms:voice/announce/dry_8",
+      "backrooms:voice/announce/dry_9",
+      "backrooms:voice/announce/dry_10"
     ]
   },
   "voice.announce.carpet": {
     "sounds": [
       "backrooms:voice/announce/carpet_1",
       "backrooms:voice/announce/carpet_2",
-      "backrooms:voice/announce/carpet_3"
+      "backrooms:voice/announce/carpet_3",
+      "backrooms:voice/announce/carpet_4",
+      "backrooms:voice/announce/carpet_5",
+      "backrooms:voice/announce/carpet_6",
+      "backrooms:voice/announce/carpet_7",
+      "backrooms:voice/announce/carpet_8",
+      "backrooms:voice/announce/carpet_9",
+      "backrooms:voice/announce/carpet_10"
     ]
   },
   "voice.announce.concrete": {
     "sounds": [
       "backrooms:voice/announce/concrete_1",
       "backrooms:voice/announce/concrete_2",
-      "backrooms:voice/announce/concrete_3"
+      "backrooms:voice/announce/concrete_3",
+      "backrooms:voice/announce/concrete_4",
+      "backrooms:voice/announce/concrete_5",
+      "backrooms:voice/announce/concrete_6",
+      "backrooms:voice/announce/concrete_7",
+      "backrooms:voice/announce/concrete_8",
+      "backrooms:voice/announce/concrete_9",
+      "backrooms:voice/announce/concrete_10"
     ]
   },
   "voice.announce.corridor": {
     "sounds": [
       "backrooms:voice/announce/corridor_1",
       "backrooms:voice/announce/corridor_2",
-      "backrooms:voice/announce/corridor_3"
+      "backrooms:voice/announce/corridor_3",
+      "backrooms:voice/announce/corridor_4",
+      "backrooms:voice/announce/corridor_5",
+      "backrooms:voice/announce/corridor_6",
+      "backrooms:voice/announce/corridor_7",
+      "backrooms:voice/announce/corridor_8",
+      "backrooms:voice/announce/corridor_9",
+      "backrooms:voice/announce/corridor_10"
     ]
   },
   "voice.announce.office": {
     "sounds": [
       "backrooms:voice/announce/office_1",
       "backrooms:voice/announce/office_2",
-      "backrooms:voice/announce/office_3"
-    ]
-  },
-  "voice.announce.open": {
-    "sounds": [
-      "backrooms:voice/announce/open_1",
-      "backrooms:voice/announce/open_2",
-      "backrooms:voice/announce/open_3"
+      "backrooms:voice/announce/office_3",
+      "backrooms:voice/announce/office_4",
+      "backrooms:voice/announce/office_5",
+      "backrooms:voice/announce/office_6",
+      "backrooms:voice/announce/office_7",
+      "backrooms:voice/announce/office_8",
+      "backrooms:voice/announce/office_9",
+      "backrooms:voice/announce/office_10"
     ]
   },
   "voice.announce.pool": {
     "sounds": [
       "backrooms:voice/announce/pool_1",
       "backrooms:voice/announce/pool_2",
-      "backrooms:voice/announce/pool_3"
+      "backrooms:voice/announce/pool_3",
+      "backrooms:voice/announce/pool_4",
+      "backrooms:voice/announce/pool_5",
+      "backrooms:voice/announce/pool_6",
+      "backrooms:voice/announce/pool_7",
+      "backrooms:voice/announce/pool_8",
+      "backrooms:voice/announce/pool_9",
+      "backrooms:voice/announce/pool_10"
     ]
   },
   "voice.conversation": {
@@ -1489,40 +1171,10 @@
       "backrooms:voice/cry/dry_2"
     ]
   },
-  "voice.cry.carpet": {
-    "sounds": [
-      "backrooms:voice/cry/carpet_1",
-      "backrooms:voice/cry/carpet_2"
-    ]
-  },
-  "voice.cry.concrete": {
-    "sounds": [
-      "backrooms:voice/cry/concrete_1",
-      "backrooms:voice/cry/concrete_2"
-    ]
-  },
-  "voice.cry.corridor": {
-    "sounds": [
-      "backrooms:voice/cry/corridor_1",
-      "backrooms:voice/cry/corridor_2"
-    ]
-  },
-  "voice.cry.office": {
-    "sounds": [
-      "backrooms:voice/cry/office_1",
-      "backrooms:voice/cry/office_2"
-    ]
-  },
   "voice.cry.open": {
     "sounds": [
       "backrooms:voice/cry/open_1",
       "backrooms:voice/cry/open_2"
-    ]
-  },
-  "voice.cry.pool": {
-    "sounds": [
-      "backrooms:voice/cry/pool_1",
-      "backrooms:voice/cry/pool_2"
     ]
   },
   "voice.murmur": {
@@ -1531,86 +1183,6 @@
       "backrooms:voice/murmur/dry_2",
       "backrooms:voice/murmur/dry_3",
       "backrooms:voice/murmur/dry_4"
-    ]
-  },
-  "voice.murmur.carpet": {
-    "sounds": [
-      "backrooms:voice/murmur/carpet_1",
-      "backrooms:voice/murmur/carpet_2",
-      "backrooms:voice/murmur/carpet_3",
-      "backrooms:voice/murmur/carpet_4"
-    ]
-  },
-  "voice.murmur.carpet.muffled": {
-    "sounds": [
-      "backrooms:voice/murmur/carpet_muffled_1",
-      "backrooms:voice/murmur/carpet_muffled_2",
-      "backrooms:voice/murmur/carpet_muffled_3",
-      "backrooms:voice/murmur/carpet_muffled_4"
-    ]
-  },
-  "voice.murmur.concrete": {
-    "sounds": [
-      "backrooms:voice/murmur/concrete_1",
-      "backrooms:voice/murmur/concrete_2",
-      "backrooms:voice/murmur/concrete_3",
-      "backrooms:voice/murmur/concrete_4"
-    ]
-  },
-  "voice.murmur.concrete.muffled": {
-    "sounds": [
-      "backrooms:voice/murmur/concrete_muffled_1",
-      "backrooms:voice/murmur/concrete_muffled_2",
-      "backrooms:voice/murmur/concrete_muffled_3",
-      "backrooms:voice/murmur/concrete_muffled_4"
-    ]
-  },
-  "voice.murmur.corridor": {
-    "sounds": [
-      "backrooms:voice/murmur/corridor_1",
-      "backrooms:voice/murmur/corridor_2",
-      "backrooms:voice/murmur/corridor_3",
-      "backrooms:voice/murmur/corridor_4"
-    ]
-  },
-  "voice.murmur.corridor.muffled": {
-    "sounds": [
-      "backrooms:voice/murmur/corridor_muffled_1",
-      "backrooms:voice/murmur/corridor_muffled_2",
-      "backrooms:voice/murmur/corridor_muffled_3",
-      "backrooms:voice/murmur/corridor_muffled_4"
-    ]
-  },
-  "voice.murmur.office": {
-    "sounds": [
-      "backrooms:voice/murmur/office_1",
-      "backrooms:voice/murmur/office_2",
-      "backrooms:voice/murmur/office_3",
-      "backrooms:voice/murmur/office_4"
-    ]
-  },
-  "voice.murmur.office.muffled": {
-    "sounds": [
-      "backrooms:voice/murmur/office_muffled_1",
-      "backrooms:voice/murmur/office_muffled_2",
-      "backrooms:voice/murmur/office_muffled_3",
-      "backrooms:voice/murmur/office_muffled_4"
-    ]
-  },
-  "voice.murmur.open": {
-    "sounds": [
-      "backrooms:voice/murmur/open_1",
-      "backrooms:voice/murmur/open_2",
-      "backrooms:voice/murmur/open_3",
-      "backrooms:voice/murmur/open_4"
-    ]
-  },
-  "voice.murmur.open.muffled": {
-    "sounds": [
-      "backrooms:voice/murmur/open_muffled_1",
-      "backrooms:voice/murmur/open_muffled_2",
-      "backrooms:voice/murmur/open_muffled_3",
-      "backrooms:voice/murmur/open_muffled_4"
     ]
   },
   "voice.murmur.pool": {
@@ -1634,7 +1206,11 @@
       "backrooms:voice/phrase/dry_1",
       "backrooms:voice/phrase/dry_2",
       "backrooms:voice/phrase/dry_3",
-      "backrooms:voice/phrase/dry_4"
+      "backrooms:voice/phrase/dry_4",
+      "backrooms:voice/phrase/dry_5",
+      "backrooms:voice/phrase/dry_6",
+      "backrooms:voice/phrase/dry_7",
+      "backrooms:voice/phrase/dry_8"
     ]
   },
   "voice.phrase.carpet": {
@@ -1642,7 +1218,11 @@
       "backrooms:voice/phrase/carpet_1",
       "backrooms:voice/phrase/carpet_2",
       "backrooms:voice/phrase/carpet_3",
-      "backrooms:voice/phrase/carpet_4"
+      "backrooms:voice/phrase/carpet_4",
+      "backrooms:voice/phrase/carpet_5",
+      "backrooms:voice/phrase/carpet_6",
+      "backrooms:voice/phrase/carpet_7",
+      "backrooms:voice/phrase/carpet_8"
     ]
   },
   "voice.phrase.carpet.muffled": {
@@ -1650,7 +1230,11 @@
       "backrooms:voice/phrase/carpet_muffled_1",
       "backrooms:voice/phrase/carpet_muffled_2",
       "backrooms:voice/phrase/carpet_muffled_3",
-      "backrooms:voice/phrase/carpet_muffled_4"
+      "backrooms:voice/phrase/carpet_muffled_4",
+      "backrooms:voice/phrase/carpet_muffled_5",
+      "backrooms:voice/phrase/carpet_muffled_6",
+      "backrooms:voice/phrase/carpet_muffled_7",
+      "backrooms:voice/phrase/carpet_muffled_8"
     ]
   },
   "voice.phrase.concrete": {
@@ -1658,7 +1242,11 @@
       "backrooms:voice/phrase/concrete_1",
       "backrooms:voice/phrase/concrete_2",
       "backrooms:voice/phrase/concrete_3",
-      "backrooms:voice/phrase/concrete_4"
+      "backrooms:voice/phrase/concrete_4",
+      "backrooms:voice/phrase/concrete_5",
+      "backrooms:voice/phrase/concrete_6",
+      "backrooms:voice/phrase/concrete_7",
+      "backrooms:voice/phrase/concrete_8"
     ]
   },
   "voice.phrase.concrete.muffled": {
@@ -1666,7 +1254,11 @@
       "backrooms:voice/phrase/concrete_muffled_1",
       "backrooms:voice/phrase/concrete_muffled_2",
       "backrooms:voice/phrase/concrete_muffled_3",
-      "backrooms:voice/phrase/concrete_muffled_4"
+      "backrooms:voice/phrase/concrete_muffled_4",
+      "backrooms:voice/phrase/concrete_muffled_5",
+      "backrooms:voice/phrase/concrete_muffled_6",
+      "backrooms:voice/phrase/concrete_muffled_7",
+      "backrooms:voice/phrase/concrete_muffled_8"
     ]
   },
   "voice.phrase.corridor": {
@@ -1674,7 +1266,11 @@
       "backrooms:voice/phrase/corridor_1",
       "backrooms:voice/phrase/corridor_2",
       "backrooms:voice/phrase/corridor_3",
-      "backrooms:voice/phrase/corridor_4"
+      "backrooms:voice/phrase/corridor_4",
+      "backrooms:voice/phrase/corridor_5",
+      "backrooms:voice/phrase/corridor_6",
+      "backrooms:voice/phrase/corridor_7",
+      "backrooms:voice/phrase/corridor_8"
     ]
   },
   "voice.phrase.corridor.muffled": {
@@ -1682,7 +1278,11 @@
       "backrooms:voice/phrase/corridor_muffled_1",
       "backrooms:voice/phrase/corridor_muffled_2",
       "backrooms:voice/phrase/corridor_muffled_3",
-      "backrooms:voice/phrase/corridor_muffled_4"
+      "backrooms:voice/phrase/corridor_muffled_4",
+      "backrooms:voice/phrase/corridor_muffled_5",
+      "backrooms:voice/phrase/corridor_muffled_6",
+      "backrooms:voice/phrase/corridor_muffled_7",
+      "backrooms:voice/phrase/corridor_muffled_8"
     ]
   },
   "voice.phrase.office": {
@@ -1690,7 +1290,11 @@
       "backrooms:voice/phrase/office_1",
       "backrooms:voice/phrase/office_2",
       "backrooms:voice/phrase/office_3",
-      "backrooms:voice/phrase/office_4"
+      "backrooms:voice/phrase/office_4",
+      "backrooms:voice/phrase/office_5",
+      "backrooms:voice/phrase/office_6",
+      "backrooms:voice/phrase/office_7",
+      "backrooms:voice/phrase/office_8"
     ]
   },
   "voice.phrase.office.muffled": {
@@ -1698,23 +1302,11 @@
       "backrooms:voice/phrase/office_muffled_1",
       "backrooms:voice/phrase/office_muffled_2",
       "backrooms:voice/phrase/office_muffled_3",
-      "backrooms:voice/phrase/office_muffled_4"
-    ]
-  },
-  "voice.phrase.open": {
-    "sounds": [
-      "backrooms:voice/phrase/open_1",
-      "backrooms:voice/phrase/open_2",
-      "backrooms:voice/phrase/open_3",
-      "backrooms:voice/phrase/open_4"
-    ]
-  },
-  "voice.phrase.open.muffled": {
-    "sounds": [
-      "backrooms:voice/phrase/open_muffled_1",
-      "backrooms:voice/phrase/open_muffled_2",
-      "backrooms:voice/phrase/open_muffled_3",
-      "backrooms:voice/phrase/open_muffled_4"
+      "backrooms:voice/phrase/office_muffled_4",
+      "backrooms:voice/phrase/office_muffled_5",
+      "backrooms:voice/phrase/office_muffled_6",
+      "backrooms:voice/phrase/office_muffled_7",
+      "backrooms:voice/phrase/office_muffled_8"
     ]
   },
   "voice.phrase.pool": {
@@ -1722,7 +1314,11 @@
       "backrooms:voice/phrase/pool_1",
       "backrooms:voice/phrase/pool_2",
       "backrooms:voice/phrase/pool_3",
-      "backrooms:voice/phrase/pool_4"
+      "backrooms:voice/phrase/pool_4",
+      "backrooms:voice/phrase/pool_5",
+      "backrooms:voice/phrase/pool_6",
+      "backrooms:voice/phrase/pool_7",
+      "backrooms:voice/phrase/pool_8"
     ]
   },
   "voice.phrase.pool.muffled": {
@@ -1730,7 +1326,11 @@
       "backrooms:voice/phrase/pool_muffled_1",
       "backrooms:voice/phrase/pool_muffled_2",
       "backrooms:voice/phrase/pool_muffled_3",
-      "backrooms:voice/phrase/pool_muffled_4"
+      "backrooms:voice/phrase/pool_muffled_4",
+      "backrooms:voice/phrase/pool_muffled_5",
+      "backrooms:voice/phrase/pool_muffled_6",
+      "backrooms:voice/phrase/pool_muffled_7",
+      "backrooms:voice/phrase/pool_muffled_8"
     ]
   },
   "voice.radio": {
@@ -1760,16 +1360,6 @@
       "backrooms:voice/whisper/carpet_6"
     ]
   },
-  "voice.whisper.concrete": {
-    "sounds": [
-      "backrooms:voice/whisper/concrete_1",
-      "backrooms:voice/whisper/concrete_2",
-      "backrooms:voice/whisper/concrete_3",
-      "backrooms:voice/whisper/concrete_4",
-      "backrooms:voice/whisper/concrete_5",
-      "backrooms:voice/whisper/concrete_6"
-    ]
-  },
   "voice.whisper.corridor": {
     "sounds": [
       "backrooms:voice/whisper/corridor_1",
@@ -1788,26 +1378,6 @@
       "backrooms:voice/whisper/office_4",
       "backrooms:voice/whisper/office_5",
       "backrooms:voice/whisper/office_6"
-    ]
-  },
-  "voice.whisper.open": {
-    "sounds": [
-      "backrooms:voice/whisper/open_1",
-      "backrooms:voice/whisper/open_2",
-      "backrooms:voice/whisper/open_3",
-      "backrooms:voice/whisper/open_4",
-      "backrooms:voice/whisper/open_5",
-      "backrooms:voice/whisper/open_6"
-    ]
-  },
-  "voice.whisper.pool": {
-    "sounds": [
-      "backrooms:voice/whisper/pool_1",
-      "backrooms:voice/whisper/pool_2",
-      "backrooms:voice/whisper/pool_3",
-      "backrooms:voice/whisper/pool_4",
-      "backrooms:voice/whisper/pool_5",
-      "backrooms:voice/whisper/pool_6"
     ]
   },
   "water.bubbles": {
@@ -1834,15 +1404,6 @@
       "backrooms:water/drip/dry_5"
     ]
   },
-  "water.drip.carpet": {
-    "sounds": [
-      "backrooms:water/drip/carpet_1",
-      "backrooms:water/drip/carpet_2",
-      "backrooms:water/drip/carpet_3",
-      "backrooms:water/drip/carpet_4",
-      "backrooms:water/drip/carpet_5"
-    ]
-  },
   "water.drip.concrete": {
     "sounds": [
       "backrooms:water/drip/concrete_1",
@@ -1859,24 +1420,6 @@
       "backrooms:water/drip/corridor_3",
       "backrooms:water/drip/corridor_4",
       "backrooms:water/drip/corridor_5"
-    ]
-  },
-  "water.drip.office": {
-    "sounds": [
-      "backrooms:water/drip/office_1",
-      "backrooms:water/drip/office_2",
-      "backrooms:water/drip/office_3",
-      "backrooms:water/drip/office_4",
-      "backrooms:water/drip/office_5"
-    ]
-  },
-  "water.drip.open": {
-    "sounds": [
-      "backrooms:water/drip/open_1",
-      "backrooms:water/drip/open_2",
-      "backrooms:water/drip/open_3",
-      "backrooms:water/drip/open_4",
-      "backrooms:water/drip/open_5"
     ]
   },
   "water.drip.pool": {
@@ -1905,41 +1448,6 @@
       "backrooms:water/splash/dry_1",
       "backrooms:water/splash/dry_2",
       "backrooms:water/splash/dry_3"
-    ]
-  },
-  "water.splash.carpet": {
-    "sounds": [
-      "backrooms:water/splash/carpet_1",
-      "backrooms:water/splash/carpet_2",
-      "backrooms:water/splash/carpet_3"
-    ]
-  },
-  "water.splash.concrete": {
-    "sounds": [
-      "backrooms:water/splash/concrete_1",
-      "backrooms:water/splash/concrete_2",
-      "backrooms:water/splash/concrete_3"
-    ]
-  },
-  "water.splash.corridor": {
-    "sounds": [
-      "backrooms:water/splash/corridor_1",
-      "backrooms:water/splash/corridor_2",
-      "backrooms:water/splash/corridor_3"
-    ]
-  },
-  "water.splash.office": {
-    "sounds": [
-      "backrooms:water/splash/office_1",
-      "backrooms:water/splash/office_2",
-      "backrooms:water/splash/office_3"
-    ]
-  },
-  "water.splash.open": {
-    "sounds": [
-      "backrooms:water/splash/open_1",
-      "backrooms:water/splash/open_2",
-      "backrooms:water/splash/open_3"
     ]
   },
   "water.splash.pool": {

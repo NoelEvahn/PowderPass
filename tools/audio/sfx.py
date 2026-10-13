@@ -1342,3 +1342,323 @@ def metal_groan(rng, v):
     ir = make_ir(rng, [(0, 400, 1.3), (400, SR / 2, 0.9)], er=[(0.07, 0.3, 1200), (0.16, 0.15, 900)],
                  predelay=0.03, onset=0.05)
     return hp(apply_ir(y, ir, 0.7, 0.5), 35, 2)
+
+
+# ============================================================================ bacteria (Level 0 entity)
+def _carpet_fall(rng, weight=1.0):
+    """One long-limbed footfall on carpet: soft padded thud, low body weight, faint fabric scuff."""
+    n = ns(0.14)
+    y = lp(white(n, rng), rng.uniform(260, 420), 2) * env_exp(n, rng.uniform(0.014, 0.024), 0.0015) * 3
+    y += pad_to(thump(rng, rng.uniform(70, 100), 42, 0.03, 0.14, 0.25), n) * 0.9
+    y += bp(white(n, rng), 1500, 5000, 2) * env_ar(n, 0.01, 0.1) * 0.05
+    return y * weight
+
+
+def bacteria_skitter(rng, v):
+    """Fast, irregular, long-limbed footfalls on carpet, with dry joint clicks between them."""
+    n = ns(0.6)
+    x = np.zeros(n)
+    fast = [0.035, 0.05, 0.03, 0.045][v % 4]
+    tp = rng.uniform(0.004, 0.02)
+    while tp < 0.46:
+        mix_into(x, _carpet_fall(rng, rng.uniform(0.55, 1.0)), ns(tp))
+        if rng.random() < 0.45:  # a joint snapping as the limb unfolds
+            mix_into(x, _bone_crack(rng, rng.uniform(0.5, 0.8), 0.6) * rng.uniform(0.12, 0.3),
+                     ns(max(0.0, tp + rng.uniform(-0.02, 0.025))))
+        # gallop-like groups: short gaps inside a group, a longer stride between groups
+        tp += rng.uniform(fast * 0.5, fast * 1.2) if rng.random() < 0.75 else rng.uniform(0.06, 0.11)
+    k = ns(rng.uniform(0.08, 0.16))  # long fingers dragging over the carpet pile
+    drag = bp(white(k, rng), 1800, 6500, 2) * env_ar(k, 0.02, k / SR * 0.7) * 0.07
+    mix_into(x, drag, ns(rng.uniform(0.1, 0.4)))
+    return room(hp(x, 45, 2), 0.06, "carpet")
+
+
+def bacteria_breath(rng, v):
+    """Wet, ragged, rattling breath, very close and dry: breath cycles with a throat rattle and bubbles."""
+    dur = 3.0
+    n = ns(dur)
+    x = np.zeros(n)
+    tpos = rng.uniform(0.02, 0.08)
+    while tpos < dur - 0.7:
+        for phase in ("in", "out"):
+            d = rng.uniform(0.55, 0.8) if phase == "in" else rng.uniform(0.7, 0.95)
+            d = min(d, dur - tpos - 0.02)
+            if d < 0.25:
+                break
+            k = ns(d)
+            tk = taxis(k)
+            src = 0.6 * pink(k, rng) + 0.4 * white(k, rng)
+            if phase == "in":
+                air = _formants(bp(src, 700, 6500, 2), [(1900, 3, 1.0), (3400, 4, 0.6), (5600, 3, 0.3)])
+                rf = rng.uniform(26, 38)
+            else:
+                air = _formants(bp(src, 200, 4500, 2), [(620, 3, 1.0), (1200, 4, 0.7), (2600, 5, 0.4)])
+                rf = rng.uniform(18, 30)
+            # throat rattle: phlegm fluttering at ~20-40 Hz, irregular
+            rate = rf * (1 + 0.2 * smooth_random(k, 6, rng))
+            rat = (0.5 + 0.5 * np.sin(np.cumsum(2 * np.pi * rate / SR))) ** 6
+            rasp = _formants(_glottal(rng, k, rng.uniform(55, 80), 0.12),
+                             [(500, 5, 1.0), (1100, 6, 0.6), (2300, 7, 0.3)])
+            body = unit(air) * (0.55 + 0.45 * rat) + 0.35 * unit(rasp) * rat * (0.6 if phase == "in" else 1.0)
+            # ragged: catches and stutters in the airflow
+            catch = 1 - 0.7 * np.clip(smooth_random(k, 14, rng), 0, 1) ** 2
+            shape = ([(0, 0), (d * 0.15, 0.8), (d * 0.6, 1.0), (d, 0)] if phase == "in"
+                     else [(0, 0), (0.05, 1.0), (d * 0.5, 0.7), (d, 0)])
+            seg = body * catch * env_points(k, shape) * (0.75 if phase == "in" else 1.0)
+            # wet: small bubbles / clicks of saliva
+            lvl = rms(seg)
+            for _ in range(int(rng.poisson(14 * d if phase == "in" else 26 * d))):
+                b = drop(rng, rng.uniform(180, 750), 0.4, rng.uniform(0.006, 0.015), rng.uniform(0.1, 0.35), 0.05,
+                         0.05)
+                mix_into(seg, b * lvl * 4, ns(rng.uniform(0, d - 0.05)))
+            mix_into(x, seg * (1 + 0.1 * np.sin(2 * np.pi * rng.uniform(5, 8) * tk)), ns(tpos))
+            tpos += d + rng.uniform(0.04, 0.16)
+    return hp(x, 80, 2)
+
+
+# ============================================================================ cars (Level 1 parking garage)
+def _engine_pulse(rng, f=62.0, tau=0.016):
+    """One cylinder firing as heard from the exhaust: a low decaying pressure thump plus a little noise."""
+    n = ns(0.08)
+    t = taxis(n)
+    x = np.sin(2 * np.pi * f * t * (1 - 0.25 * t / 0.08)) * env_exp(n, tau, 0.0015)
+    x += 0.35 * lp(white(n, rng), 1200, 2) * env_exp(n, tau * 0.5, 0.0005)
+    return x
+
+
+def _exhaust(x, circular=False):
+    def f(y):
+        return (reson(y, 92, 3) + 0.55 * reson(y, 185, 4) + 0.3 * reson(y, 370, 5) + 0.12 * reson(y, 760, 6)
+                + 0.5 * lp(y, 600, 2))
+    return circ_filter(x, f) if circular else f(x)
+
+
+def car_engine(rng, v, n, P):
+    """Old 4-cylinder idling (~740 rpm): loop-periodic firing pulses (a weak cylinder, slight timing jitter),
+    exhaust resonances, tappet ticks, alternator whine; rumble and intake hiss as noise."""
+    pd = P / SR
+    nf = int(round(24.6 * pd))                     # firings per loop period (integer -> exactly periodic)
+    sp = P / nf
+    cyl = np.array([1.0, 0.86, 0.97, 0.7]) * rng.uniform(0.95, 1.05, 4)
+    per = np.zeros(P)
+    for i in range(nf):
+        pos = int(round(i * sp + rng.normal(0, 0.0025) * SR))
+        mix_wrap(per, _engine_pulse(rng, rng.uniform(56, 66)) * cyl[i % 4] * db(rng.normal(0, 1.0)), pos)
+    per = _exhaust(per, True)
+    tick = np.zeros(P)
+    for i in range(2 * nf):                        # tappets / valve train
+        tk = burst(rng, 0.002, 0.0004, 2500, 9000) * rng.uniform(0.3, 1.0)
+        mix_wrap(tick, tk, int(i * sp / 2 + rng.uniform(0, 0.004) * SR))
+    tick = circ_filter(tick, lambda y: reson(y, 3600, 5) + 0.5 * reson(y, 5200, 6))
+    t = taxis(P)
+    fire_f = nf / pd
+    whine = np.sin(2 * np.pi * qf(820, P) * t + 0.4 * np.sin(2 * np.pi * fire_f * t))
+    hunt = periodic_am(P, [(0.75, 0.06, 0.0), (1.5, 0.03, 1.0)])   # idle hunting
+    ton = (unit(per) + 0.02 * unit(circ_filter(tick, lambda y: lp(y, 6000, 2))) + 0.012 * whine) * hunt
+    tn = taxis(n)
+    chuff = (0.5 + 0.5 * np.cos(2 * np.pi * fire_f * tn)) ** 3
+    noi = 0.5 * unit(lp(brown(n, rng), 160, 2)) + 0.25 * unit(bp(pink(n, rng), 500, 3000, 2)) * (0.5 + chuff)
+    noi *= 1 + 0.1 * periodic_smooth(n, P, 0.8, rng)
+    return ton, 0.22 * unit(noi)
+
+
+def car_start(rng, v):
+    """Starter motor cranking against compression, the engine catching, a rev and settling towards idle."""
+    dur = 1.5
+    n = ns(dur)
+    t = taxis(n)
+    x = np.zeros(n)
+    tc = rng.uniform(0.62, 0.72)                           # the engine catches
+    crank = ((t > 0.03) & (t < tc + 0.08)).astype(float)
+    comp = 0.5 + 0.5 * np.cos(2 * np.pi * 6.4 * t)        # compression strokes slow the starter down
+    fm = 78 * (1 - 0.14 * comp) * np.clip((t - 0.03) / 0.08, 0, 1)
+    fm = fm * (1 + 0.6 * np.clip((t - tc) / 0.08, 0, 1))  # freewheels as the engine fires
+    ph = phase_of(fm + 1e-6, n)
+    starter = additive(ph, [0.4, 0.3, 0.25, 0.3, 0.2, 0.18, 0.15, 0.12, 0.1, 0.12, 0.08, 0.06, 0.05])
+    starter += 0.3 * np.sin(ph * 11)                      # pinion gear whine
+    starter = bp(starter, 150, 4000, 2) * (0.55 + 0.45 * (1 - comp)) * crank
+    starter *= env_points(n, [(0, 0), (0.05, 1), (tc, 1), (tc + 0.08, 0)])
+    chug = np.zeros(n)
+    tp = 0.08
+    while tp < tc:
+        mix_into(chug, fade_edges(thump(rng, 70, 45, 0.04, 0.15, 0.6), 0.002, 0.04) * rng.uniform(0.5, 0.8), ns(tp))
+        tp += 1 / 6.4
+    # firing: two sparse pops, then an accelerating run (rev to ~1600 rpm) settling towards idle
+    fire = np.zeros(n)
+    tp = tc
+    pops = 0
+    while tp < dur - 0.05:
+        u = tp - tc
+        rate = 8.0 if pops < 2 else float(np.interp(u, [0.0, 0.1, 0.3, 0.75], [12, 55, 48, 27]))
+        mix_into(fire, _engine_pulse(rng, rng.uniform(55, 70)) * rng.uniform(0.7, 1.1) * (1.4 if pops < 2 else 1.0),
+                 ns(tp))
+        tp += 1 / rate * rng.uniform(0.85, 1.15)
+        pops += 1
+    fire = _exhaust(fire)
+    revn = env_points(n, [(0, 0), (tc, 0), (tc + 0.25, 1), (dur, 0.7)])
+    roar = lp(brown(n, rng), 250, 2) * revn
+    x += 0.5 * unit(starter) + 0.35 * unit(chug) + unit(fire) + 0.25 * unit(roar)
+    cl = clunk(rng, 0.6)
+    mix_into(x, cl / peak(cl) * 0.45 * peak(x), 0)          # starter solenoid
+    x = x * env_points(n, [(0, 1), (dur - 0.3, 1), (dur, 0)])
+    return room(x, 0.06)
+
+
+def car_horn(rng, v):
+    """Old vibrating-diaphragm car horn: buzzy pulse source with a pitch sag at the onset, horn resonances.
+    v0: one long two-tone honk; v1: two short honks."""
+    if v % 2 == 0:
+        segs, tones = [(0.0, 0.7)], [356.0, 449.0]
+    else:
+        segs, tones = [(0.0, 0.22), (0.33, 0.42)], [412.0, 520.0]
+    dur = segs[-1][0] + segs[-1][1] + 0.08
+    n = ns(dur)
+    x = np.zeros(n)
+    for s0, d in segs:
+        k = ns(d)
+        tk = taxis(k)
+        seg = np.zeros(k)
+        for f in tones:
+            f0 = f * (1 - 0.05 * np.exp(-tk / 0.03)) * (1 + 0.004 * smooth_random(k, 8, rng))
+            src = additive(phase_of(f0, k, rng.uniform(0, 6.28)), [h ** -0.75 for h in range(1, 26)])
+            seg += saturate(src / max(peak(src), 1e-9) + 0.25, 3.0)
+        seg *= 1 + 0.08 * np.sin(2 * np.pi * rng.uniform(25, 35) * tk)   # rough old diaphragm
+        seg *= env_ar(k, 0.012, 0.035, 1.0)
+        mix_into(x, seg, ns(s0))
+    x = hp(x, 250, 2)
+    x = peq(peq(x, 1250, 6, 2.0), 2500, 4, 2.5)
+    x = lp(x, 4200, 4)
+    return room(x, 0.05)
+
+
+def car_door(rng, v):
+    """v0: door slammed shut (latch, heavy panel thunk, trim rattle); v1: door opened (handle, latch release,
+    short hinge creak, lighter stop thunk)."""
+    n = ns(0.65)
+    x = np.zeros(n)
+
+    def panel():
+        return modal(np.array([120, 205, 330, 520, 760]) * rng.uniform(0.93, 1.07, 5),
+                     [1.0, 0.7, 0.5, 0.3, 0.2], [0.11, 0.08, 0.05, 0.035, 0.02], ns(0.4), rng, True)
+
+    def latch():
+        return _ping(rng, list(np.array([2100, 3400, 5100]) * rng.uniform(0.9, 1.1)), [0.012, 0.008, 0.005], 0.06)
+
+    if v % 2 == 0:
+        ex = burst(rng, 0.012, 0.004, 60, 1800)
+        th = signal.fftconvolve(ex, panel())[: ns(0.4)]
+        mix_into(x, unit(th), ns(0.012))
+        mix_into(x, pad_to(thump(rng, 85, 42, 0.06, 0.3, 0.6), ns(0.3)) * 2.0, ns(0.012))
+        mix_into(x, unit(latch()) * 0.6, ns(0.01))
+        mix_into(x, unit(latch()) * 0.4, ns(0.03))
+        for _ in range(int(rng.integers(3, 7))):
+            mix_into(x, burst(rng, 0.003, 0.0008, 1500, 7000) * rng.uniform(0.05, 0.15), ns(rng.uniform(0.04, 0.16)))
+    else:
+        mix_into(x, unit(latch()) * 0.5, 0)
+        mix_into(x, unit(latch()) * 0.7, ns(rng.uniform(0.07, 0.1)))
+        k = ns(0.22)
+        cr = creak(rng, k, [(0, 30), (0.22, 60)], rng.uniform(600, 1800, 3), [0.02] * 3, env_ar(k, 0.03, 0.12), 0.3)
+        mix_into(x, unit(cr) * 0.15, ns(0.12))
+        ex = burst(rng, 0.008, 0.003, 60, 1500)
+        th = signal.fftconvolve(ex, panel())[: ns(0.3)]
+        mix_into(x, unit(th) * 0.6, ns(0.36))
+    return room(hp(x, 40, 2), 0.06)
+
+
+# ============================================================================ steam / lifts / slides
+def steam_hiss(rng, v, n, P):
+    """Continuous steam leak from a pipe valve: resonant hiss with a slowly wandering resonance, a slight
+    flutter, a faint whistle."""
+    pre = ns(0.5)
+    m = n + pre
+    src = white(m, rng)
+    c = 4300 * (1 + 0.08 * np.concatenate([np.zeros(pre), periodic_smooth(n, P, 0.4, rng)]))
+    mov = np.zeros(m)
+    for f in (2100, 2800, 3600, 4700, 6100, 7900):
+        mov += reson(src, f, 3.0) * np.exp(-0.5 * (np.log(f / c) / 0.3) ** 2)
+    broad = bp(src, 1300, 11000, 2)
+    tm = taxis(m)
+    flutter = (1 + 0.1 * np.sin(2 * np.pi * 11.3 * tm + 0.8 * np.sin(2 * np.pi * 0.7 * tm))
+               + 0.07 * np.clip(smooth_random(m, 9, rng), -1, 1))
+    hiss = (0.6 * unit(mov) + 0.4 * unit(broad)) * flutter + 0.06 * unit(lp(brown(m, rng), 220, 2))
+    ir, _, _ = get_profile_ir("concrete")
+    hiss = apply_ir(hp(hiss, 280, 2), ir, 1.0, 0.12)[pre:pre + n]
+    t = taxis(P)
+    whistle = np.sin(2 * np.pi * qf(5240, P) * t + 2.0 * np.sin(2 * np.pi * qf(0.5, P) * t))
+    return 0.012 * whistle, unit(hiss)
+
+
+def lift_ding(rng, v):
+    """2000s lift arrival chime: one soft electronic bell strike through a small ceiling speaker."""
+    n = ns(1.25)
+    t = taxis(n)
+    f = 987.77
+    x = (np.sin(2 * np.pi * f * t) * np.exp(-t / 0.5)
+         + 0.35 * np.sin(2 * np.pi * f * 2.0 * t) * np.exp(-t / 0.3)
+         + 0.18 * np.sin(2 * np.pi * f * 2.76 * t) * np.exp(-t / 0.18)
+         + 0.08 * np.sin(2 * np.pi * f * 5.4 * t) * np.exp(-t / 0.08)
+         + 0.1 * np.sin(2 * np.pi * f * 0.5 * t) * np.exp(-t / 0.4))
+    x *= np.clip(t / 0.004, 0, 1) * env_points(n, [(0, 1), (1.05, 1), (1.25, 0)])
+    x = bp(saturate(x / peak(x) * 0.9, 1.3), 280, 7500, 2)
+    return room(x, 0.15, "office")
+
+
+def lift_door(rng, v):
+    """Sliding lift doors: relay click, operator motor whir and roller rumble, panel rattle, rubber-edge bump."""
+    dur = 1.55
+    n = ns(dur)
+    x = np.zeros(n)
+    sp = env_points(n, [(0, 0), (0.1, 0), (0.25, 1), (0.95, 0.9), (1.2, 0.25), (1.27, 0), (dur, 0)])
+    fw = 300 + 180 * sp
+    whine = additive(phase_of(fw, n), [1, 0.4, 0.25, 0.1]) * sp ** 1.5
+    rum = lp(brown(n, rng), 260, 2) * sp
+    rollers = bp(white(n, rng), 120, 700, 2) * (0.5 + 0.5 * np.sin(np.cumsum(2 * np.pi * 15 * sp / SR))) ** 4 * sp
+    rattle = bp(white(n, rng), 1500, 5000, 2) * np.clip(smooth_random(n, 22, rng), 0, 1) ** 3 * sp
+    x += 0.1 * unit(whine) + 0.6 * unit(rum) + 0.5 * unit(rollers) + 0.18 * unit(rattle)
+    cl = clunk(rng, 0.3)
+    mix_into(x, cl / peak(cl) * 0.3 * peak(x), 0)
+    mix_into(x, pad_to(thump(rng, 75, 42, 0.05, 0.25, 0.6), ns(0.25)) * 1.6, ns(1.27))
+    mix_into(x, unit(_ping(rng, [310, 530, 870], [0.08, 0.05, 0.03], 0.25)) * 0.35, ns(1.275))
+    return room(hp(x, 40, 2), 0.12, "office")
+
+
+def lift_motor(rng, v, n, P):
+    """Inside a travelling lift car: traction-motor hum, inverter whine, rope/rail rush, faint guide-rail
+    bumps (loop-periodic), small carpeted-cabin reflections."""
+    t = taxis(P)
+    hum = harm_tone(P, qf(60, P), [0.25, 1.0, 0.2, 0.35, 0.08, 0.12, 0.05], rng)
+    whine = (np.sin(2 * np.pi * qf(1460, P) * t + 0.6 * np.sin(2 * np.pi * qf(0.5, P) * t))
+             + 0.3 * np.sin(2 * np.pi * qf(2920, P) * t))
+    bumps = np.zeros(P)
+    for k in range(3):
+        pos = int((k + rng.uniform(0.1, 0.9)) * P / 3)
+        b = pad_to(thump(rng, 60, 38, 0.04, 0.2, 0.7), ns(0.2)) + pad_to(burst(rng, 0.01, 0.003, 300, 2500), ns(0.2)) * 0.3
+        mix_wrap(bumps, b * rng.uniform(0.6, 1.0), pos)
+    ir, _, _ = get_profile_ir("carpet")
+    ton = unit(hum) + 0.07 * whine + 0.35 * unit(circ_filter(bumps, lambda y: lp(y, 1500, 2)))
+    ton = ton + 0.25 * circ_conv(ton, ir)
+    rush = lp(pink(n, rng), 450, 2) * (1 + 0.15 * periodic_smooth(n, P, 0.6, rng))
+    air = bp(white(n, rng), 400, 2500, 2)
+    noi = unit(rush) + 0.12 * unit(air)
+    return 0.6 * ton, 0.5 * unit(noi)
+
+
+def slide_rush(rng, v):
+    """Rushing water slide ride: turbulent water flow with moving bands, a whoosh that approaches and passes
+    (low-pass opening and closing), spray drops, a low gurgle."""
+    dur = 3.0
+    n = ns(dur + 0.2)
+    env = env_points(n, [(0, 0), (0.25, 0.55), (0.7, 1.0), (2.1, 0.95), (2.7, 0.35), (dur, 0), (dur + 0.2, 0)])
+    src = pink(n, rng)
+    bands = [bp(src, 250, 700, 2), bp(src, 700, 1800, 2), bp(src, 1800, 4500, 2), bp(src, 4500, 11000, 2)]
+    w = [np.clip(0.5 + 0.6 * smooth_random(n, 9, rng), 0.05, 1.2) for _ in bands]
+    flow = sum(unit(b) * wi * g for b, wi, g in zip(bands, w, (1.0, 0.8, 0.5, 0.25)))
+    pas = env_points(n, [(0, 0), (1.2, 1), (1.6, 1), (dur, 0.1), (dur + 0.2, 0.1)])
+    flow = multi_cutoff_lp(flow, [1200, 9000], np.stack([1 - pas, pas]))
+    gurgle = lp(brown(n, rng), 220, 2) * (0.6 + 0.4 * np.clip(smooth_random(n, 5, rng), 0, 1))
+    x = (unit(flow) + 0.4 * unit(gurgle)) * env
+    for _ in range(int(rng.integers(30, 55))):
+        tp = rng.uniform(0.2, dur - 0.2)
+        mix_into(x, drop(rng, rng.uniform(500, 1800), 0.7, 0.02, rng.uniform(0.1, 0.35), 0.1, 0.12)
+                 * float(np.interp(tp * SR, np.arange(n), env)), ns(tp))
+    return room(hp(x, 40, 2), 0.08, "office")

@@ -32,12 +32,13 @@ referenced, a non-Vorbis or unreadable OGG (check with ffprobe), a positional so
 - Mono for everything positional. Stereo ONLY for `music.*.ambient` (non-positional, played at the listener).
 - `"stream": true` in sounds.json for anything longer than ~10 s (music, long loops).
 - Loops: 6–12 s, 300 ms equal-power fade in/out at both ends so the plugin can re-trigger with a 300 ms overlap
-  without clicks. Hum loops must be pitch-stable so overlaps do not beat audibly. Exception: the per-level beds
-  (`bed.*`) are 40–60 s so their repetition is not obvious.
+  without clicks. Hum loops must be pitch-stable so overlaps do not beat audibly. Exceptions: the per-level beds
+  (`bed.*`) are 40–60 s so their repetition is not obvious; `skinwalker.chitter` and `car.engine` are 4 s.
 - Loudness: ambience around -24 LUFS-ish (quiet), one-shots peak -3 dBFS, music around -20 LUFS. Never clip.
 - Vorbis quality: `-q:a 3` for SFX, `-q:a 2` for long music and for the beds (`Sound.q` overrides it per id).
   Sample rate 44.1 kHz, except the beds at 48 kHz (`Sound.sr`; synthesis runs at 44.1 kHz and `generate.py`
-  resamples on encode). Target total Java pack size < 27 MB (`build_pack.py` warns above that).
+  resamples on encode). Budget: the audio part of the Java pack at most 26.5 MB, the whole Java pack (audio +
+  ~1.4 MB of textures) small enough that the plugin JAR stays under 30 MB (`build_pack.py` warns above 29 MB).
 
 ## pack-index.json schema
 ```json
@@ -65,6 +66,22 @@ referenced, a non-Vorbis or unreadable OGG (check with ffprobe), a positional so
 | corridor | flutter-ish early echoes, RT60 ~0.9 s |
 | open     | almost dry, faint distant slap |
 "muffled" = 4th-order low-pass ~600 Hz, -6 dB, a little extra reverb.
+
+Profile copies cost space (one full copy of every take per profile), so each sound only carries the profiles
+that the levels it plays in can request. The plugin (`Acoustics.profile()`) picks:
+
+| level | profiles it can request | catalog constant |
+|---|---|---|
+| Level 0 (Lobby) | carpet, office, corridor | `LOBBY` |
+| Level 1 (Habitable Zone garage) | concrete, corridor | `GARAGE` |
+| Poolrooms | pool | `POOL` |
+| Level 4 (Office) | carpet, office, corridor | `OFFICE` (= `LOBBY`) |
+| Plains | open | `PLAINS` |
+
+Combined sets in `catalog.py`: `L0_L1` (carpet, office, concrete, corridor), `WATER_L1` (concrete, pool,
+corridor), `INDOOR` (everything but open). A profile copy that does not exist falls back to the dry event (or the
+muffled one), so a sound heard somewhere new still plays, only without the matching room. When the plugin starts
+playing a sound in another level, add that level's profiles to its catalog entry and regenerate it.
 
 ## Sound list (ids WITHOUT namespace)
 Category in brackets. L = loop. Variants = distinct takes.
@@ -103,60 +120,94 @@ Per-level beds (the constant, player-attached layer)
 Machinery / air (Habitable Zone parking garage, Office)
 - `vent.hvac` [ambient, L 10s] air-handler rush with fan whine. `vent.small` [ambient, L 8s] grille hiss.
 - `machine.distant` [ambient, L 12s] distant rhythmic machinery with low thumps (has profile `concrete` baked in).
-- `machine.start` [event, ~4 s, profiles] equipment activation: clunk, motor spin-up.
+- `machine.start` [event, ~4 s, profiles GARAGE] equipment activation: clunk, motor spin-up.
 - `transformer.hum` [ambient, L 8s] 60/120 Hz heavy buzz.
-- `pipe.knock` [event, ~2 s, 3 variants, profiles] pipe vibration / water hammer.
-- `metal.creak` [event, ~2 s, 4 variants, profiles] thermal expansion creak.
-- `metal.clank` [event, ~2.5 s, 4 variants, profiles] something heavy hitting metal pipes/ducts far away: impact,
+- `pipe.knock` [event, ~2 s, 3 variants, profiles GARAGE] pipe vibration / water hammer.
+- `metal.creak` [event, ~2 s, 4 variants, profiles GARAGE] thermal expansion creak.
+- `metal.clank` [event, ~2.5 s, 4 variants, profiles GARAGE] something heavy hitting metal pipes/ducts far away: impact,
   inharmonic ringing, rattle.
-- `metal.groan` [event, ~4 s, 3 variants, profiles, muffled] long low structural groan (stick-slip, slowly
+- `metal.groan` [event, ~4 s, 3 variants, profiles GARAGE, muffled] long low structural groan (stick-slip, slowly
   gliding), distant.
-- `steam.burst` [event, ~2 s, 3 variants, profiles] pipe valve / leak letting out a burst of steam: sharp hiss
-  onset with moving resonance, sputter, tail, faint pipe ring.
+- `steam.burst` [event, ~2 s, 3 variants, profiles GARAGE] pipe valve / leak letting out a burst of steam: sharp
+  hiss onset with moving resonance, sputter, tail, faint pipe ring.
+- `steam.hiss` [ambient, L 6s, mono, positional, -25 LUFS] continuous steam leaking from a pipe valve: resonant
+  hiss around a slowly wandering ~4.3 kHz centre, slight ~11 Hz flutter, faint whistle.
+
+Cars (Level 1 parking garage)
+- `car.engine` [ambient, L 4s (exception to the 6-12 s rule), mono, positional, -21 LUFS] old 4-cylinder car
+  idling (~740 rpm), loop-periodic (the firing pulses fit the period exactly), so the plugin can raise its pitch
+  with the car's speed and re-trigger it seamlessly.
+- `car.start` [event, ~1.5 s, profiles GARAGE] solenoid, starter motor cranking against compression, the engine
+  catching, a short rev settling towards idle.
+- `car.horn` [event, ~0.8 s, 2 variants, profiles GARAGE] old two-tone diaphragm horn: one long honk / two short.
+- `car.door` [event, ~0.6 s, 2 variants, profiles GARAGE] door slammed shut (thunk) / door opened (latch, creak,
+  lighter thunk).
+
+Lifts (Level 4 towers)
+- `lift.ding` [event, ~1.2 s, profiles OFFICE] 2000s lift arrival chime (single soft electronic bell).
+- `lift.door` [event, ~1.5 s, profiles OFFICE] sliding doors: operator motor whir, roller rumble, rattle, bump.
+- `lift.motor` [ambient, L 6s, mono, positional, -24 LUFS] travel hum and inverter whine inside the car, rope/rail
+  rush, faint guide-rail bumps.
 
 Water (Poolrooms, damp)
-- `water.drip` [event, ~1 s, 5 variants, profiles] single drips.
-- `water.splash` [event, ~2 s, 3 variants, profiles] distant splash.
+- `water.drip` [event, ~1 s, 5 variants, profiles WATER_L1] single drips.
+- `water.splash` [event, ~2 s, 3 variants, profiles POOL] distant splash.
+- `slide.rush` [event, ~3 s, profiles POOL] riding a water slide: rushing water whoosh, gurgle, spray.
 - `water.lap` [ambient, L 10s, 2 variants] gentle water movement against tile.
 - `water.circulation` [ambient, L 10s] pool pump hum + flow.
 - `water.bubbles` [event, ~2 s, 3 variants]. `water.underwater` [ambient, L 8s] muffled underwater bed (non-positional).
 - `room.damp` [ambient, L 10s] very quiet room tone with occasional faint drip.
 
 Presence
-- `knock.distant` [event, ~1.5 s, 4 variants, profiles, muffled] knocks / thumps on a wall or door.
-- `impact.distant` [event, ~2.5 s, 3 variants, profiles, muffled] heavy unexplained impact.
-- `step.carpet`, `step.concrete`, `step.tile` [event, ~0.5 s each, 6 variants, profiles] single footsteps (plugin
-  sequences them). `step.water` [event, 4 variants, profiles] wading step.
-- `movement.distant` [event, ~3 s, 3 variants, profiles, muffled] something shifting / dragging far away.
+- `knock.distant` [event, ~1.5 s, 4 variants, profiles L0_L1, muffled] knocks / thumps on a wall or door.
+- `impact.distant` [event, ~2.5 s, 3 variants, profiles L0_L1, muffled] heavy unexplained impact.
+- `step.carpet` (profiles LOBBY), `step.concrete` (GARAGE), `step.tile` (POOL) [event, ~0.5 s each, 6 variants]
+  single footsteps (plugin sequences them). `step.water` [event, 4 variants, profiles INDOOR] wading step (used
+  in any level while the listener is under water).
+- `movement.distant` [event, ~3 s, 3 variants, profiles LOBBY, muffled] something shifting / dragging far away.
 - `breath.heavy` [event, ~4 s, 3 variants] close, unsettling breathing (mono, dry).
 
 Creature (skinwalker: imitates players, then cracks open into a spider-like true form)
-- `skinwalker.crackle` [event, ~2.5 s, 3 variants, profiles, muffled] accelerating bone cracks/snaps and wet joint
+The creature code plays these by their base event (`backrooms:<id>`, no profile), so they carry no profile copies.
+- `skinwalker.crackle` [event, ~2.5 s, 3 variants, muffled] accelerating bone cracks/snaps and wet joint
   pops ending in a heavy crunch. No voice.
-- `skinwalker.screech` [event, ~2 s, 2 variants, profiles] layered pitch-dropping shriek, almost-human vowel
+- `skinwalker.screech` [event, ~2 s, 2 variants] layered pitch-dropping shriek, almost-human vowel
   underneath (espeak-ng vowel only, never words), clicks.
 - `skinwalker.chitter` [ambient, L 4s (exception to the 6-12 s rule), ~-26 LUFS] rapid irregular chitin clicking
   over a low wet breath.
-- `skinwalker.scuttle` [event, ~0.3 s, 6 variants, profiles] fast multi-leg skitter: several hard taps.
+- `skinwalker.scuttle` [event, ~0.3 s, 6 variants] fast multi-leg skitter: several hard taps.
+
+Creature (bacteria: a tall, thin, black humanoid entity in Level 0)
+- `bacteria.screech` [event, ~2 s, 2 variants, profiles LOBBY] distorted, glitchy, high shrieking scream: thin
+  saturated shriek over an espeak-ng vowel (never words) sped up, wrecked by tape wow and digital artefacts
+  (buffer-repeat stutters, bit-crush, tape-speed jumps, dropouts, static bursts), hard clipped.
+- `bacteria.skitter` [event, ~0.6 s, 4 variants, profiles LOBBY] fast irregular long-limbed footfalls on carpet
+  with dry joint clicks.
+- `bacteria.breath` [event, ~3 s, 2 variants, no profiles] wet, ragged, rattling breath, close and dry.
 
 Radio / speakers
 - `radio.static` [ambient, L 8s] AM static/hiss loop. `speaker.broken` [event, ~2 s, 3 variants] crackle/distortion
   burst.
 
 Voices (original synthetic speech from espeak-ng, varied voices/pitches; never imitate a real person)
-- `voice.whisper` [voice, 6 variants, profiles] indistinct whispers (unintelligible).
-- `voice.murmur` [voice, 4 variants, profiles, muffled] reversed-sounding murmurs.
+- `voice.whisper` [voice, 6 variants, profiles LOBBY] indistinct whispers (unintelligible).
+- `voice.murmur` [voice, 4 variants, profiles POOL, muffled] reversed-sounding murmurs.
 - `voice.conversation` [voice, 4 variants, muffled] distant unintelligible conversation behind a wall (layered, LPF).
-- `voice.phrase` [voice, profiles, muffled] intelligible lines, one variant per phrase: "Is anybody there?",
-  "Can you hear me?", "Hello?", "I think someone is here.", processed as distant/room voices.
-- `voice.announce` [voice, profiles] PA/intercom lines: "Please remain where you are.", "This area is closed.",
-  "Do not enter." (band-limited 300–3400 Hz, slight distortion, PA reverb).
+- `voice.phrase` [voice, 8 variants, profiles INDOOR, muffled] intelligible lines, one variant per phrase:
+  "Is anybody there?", "Can you hear me?", "Hello?", "I think someone is here.", "Wait for me.", "Over here.",
+  "Did you hear that?", "Who's there?", processed as distant/room voices.
+- `voice.announce` [voice, 10 variants, profiles INDOOR] PA/intercom lines after a two-tone chime: "Please remain
+  where you are.", "This area is closed.", "Do not enter.", "Attention. The building will close shortly.",
+  "Please proceed to the nearest exit.", "There is no exit on this floor.", "Remain calm. Help is on the way.",
+  "Your patience is appreciated.", "Do not look behind you.", "Maintenance is in progress on all levels."
+  (band-limited 300–3400 Hz, slight distortion, PA reverb). The plugin plays an announcement or voice line about
+  every 40 s in Level 0, the Poolrooms, Level 1 and Level 4, hence the ten takes.
 - `voice.radio` [voice] radio-transmission versions of a few phrases with static and dropouts.
-- `voice.cry` [voice, 2 variants, profiles] very distant cry (heavily processed, not graphic).
+- `voice.cry` [voice, 2 variants, profiles PLAINS] very distant cry (heavily processed, not graphic).
 
 Office
-- `office.ac` [ambient, L 10s] office air conditioning. `office.printer` [event, ~4 s, 2 variants, profiles]
-  printer-like mechanism. `office.phone` [event, ~4 s, profiles, muffled] old desk phone ring (two rings).
+- `office.ac` [ambient, L 10s] office air conditioning. `office.printer` [event, ~4 s, 2 variants, profiles
+  OFFICE] printer-like mechanism. `office.phone` [event, ~4 s, profiles OFFICE, muffled] old desk phone ring.
   `office.click` [event, short, 4 variants] relay/keyboard/switch clicks.
 
 Plains

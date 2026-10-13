@@ -92,4 +92,22 @@ expected duration.
 The skinwalker creature sounds (`skinwalker.crackle`, `.screech`, `.chitter`, `.scuttle`) live at the end of
 `sfx.py` / `voices.py`; `skinwalker.chitter` is a deliberately short 4 s loop.
 
+After them come, in this order: the bacteria entity of Level 0 (`bacteria.skitter`, `bacteria.breath` in
+`sfx.py`, `bacteria.screech` in `voices.py`), the Level 1 cars (`car.engine`, a 4 s loop-periodic idle that the
+plugin pitches up with speed, `car.start`, `car.horn`, `car.door`), `steam.hiss` (6 s loop), the Level 4 lifts
+(`lift.ding`, `lift.door`, `lift.motor` as a 6 s loop) and the Poolrooms `slide.rush`. `voice.announce` (10 PA
+lines) and `voice.phrase` (8 lines) take their texts from the `ANNOUNCE` and `PHRASES` tables in `voices.py`.
+
+## Acoustic profiles and the size budget
+
+Every profile copy is a full copy of all takes, so a sound only lists the profiles its levels can request
+(`Acoustics.profile()` in the plugin): Level 0 and Level 4 use carpet/office/corridor, Level 1 concrete/corridor,
+the Poolrooms pool and the Plains open. `catalog.py` names these sets (`LOBBY`, `OFFICE`, `GARAGE`, `POOL`,
+`PLAINS`, plus `L0_L1`, `WATER_L1`, `INDOOR`). A missing copy falls back to the dry or muffled event. If the
+plugin starts playing a sound in another level, add that level's profiles and regenerate the id. Sounds the
+plugin plays only by their base event (the skinwalker's) carry no profile copies.
+
+The JAR embeds the Java pack and must stay under 30 MB; keep the audio part at or below 26.5 MB (it is about
+23.5 MB). `build_pack.py` prints the total OGG bytes and warns when the zip exceeds 29 MB.
+
 User-supplied, properly licensed tracks go in `pack/user_sounds.json`. See `pack/MANIFEST.md`.

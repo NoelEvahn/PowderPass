@@ -159,11 +159,15 @@ def voice_conversation(rng, v):
 PHRASES = [("Is anybody there?", "en-us+m3", 44, 135),
            ("Can you hear me?", "en+f3", 58, 130),
            ("Hello?", "en-gb+m7", 50, 115),
-           ("I think someone is here.", "en-us+f2", 52, 140)]
+           ("I think someone is here.", "en-us+f2", 52, 140),
+           ("Wait for me.", "en-gb+f4", 56, 128),
+           ("Over here.", "en-us+m5", 40, 120),
+           ("Did you hear that?", "en+m2", 48, 138),
+           ("Who's there?", "en-us+f5", 62, 122)]
 
 
 def voice_phrase(rng, v):
-    text, vo, p, s = PHRASES[v % 4]
+    text, vo, p, s = PHRASES[v % len(PHRASES)]
     x = speak(text, vo, p, s)
     x = np.concatenate([np.zeros(ns(0.03)), x])
     x = lp(hp(x, 160, 2), 4200, 2)
@@ -177,11 +181,18 @@ def voice_phrase(rng, v):
 
 ANNOUNCE = [("Please remain where you are.", "en-gb+m1", 38, 125),
             ("This area is closed.", "en-us+f1", 50, 125),
-            ("Do not enter.", "en-gb+m4", 34, 110)]
+            ("Do not enter.", "en-gb+m4", 34, 110),
+            ("Attention. The building will close shortly.", "en-us+f2", 46, 130),
+            ("Please proceed to the nearest exit.", "en-gb+m7", 40, 128),
+            ("There is no exit on this floor.", "en-us+f4", 52, 122),
+            ("Remain calm. Help is on the way.", "en-gb+m2", 36, 124),
+            ("Your patience is appreciated.", "en-us+f3", 54, 128),
+            ("Do not look behind you.", "en-gb+m6", 32, 112),
+            ("Maintenance is in progress on all levels.", "en-us+m1", 42, 132)]
 
 
 def voice_announce(rng, v):
-    text, vo, p, s = ANNOUNCE[v % 3]
+    text, vo, p, s = ANNOUNCE[v % len(ANNOUNCE)]
     x = speak(text, vo, p, s)
     ch = chime(rng)
     n = len(ch) + ns(0.1) + len(x)
@@ -314,3 +325,83 @@ def skinwalker_screech(rng, v):
 def rms_norm(x):
     r = rms(x)
     return x / r if r > 0 else x
+
+
+# ------------------------------------------------------------------------------------------ bacteria
+BACTERIA = [  # (espeak voice, pitch, phoneme vowel, shriek f0 contour, human-layer speed ratio contour)
+    ("en-us+f4", 99, "[[i:i:i:i:i:]]", [(0, 1500), (0.07, 2150), (0.4, 1900), (0.9, 2350), (1.5, 1750), (2.0, 1350)],
+     [(0, 1.9), (0.9, 2.2), (2.0, 1.4)]),
+    ("en+f2", 95, "[[a:a:a:a:a:]]", [(0, 1700), (0.1, 2450), (0.5, 2000), (1.0, 2250), (1.6, 1500), (2.0, 1150)],
+     [(0, 2.1), (1.0, 2.3), (2.0, 1.3)]),
+]
+
+
+def _crush(x, rng):
+    """Digital degradation: sample-and-hold decimation plus coarse quantisation."""
+    f = int(rng.integers(3, 10))
+    y = np.repeat(x[::f], f)[: len(x)]
+    q = 2 ** int(rng.integers(3, 6))
+    pk = max(peak(y), 1e-9)
+    return np.round(y / pk * q) / q * pk
+
+
+def _glitch(x, rng):
+    """Walk through x in 30-120 ms chunks and damage some of them like a failing tape / digital recorder:
+    buffer-repeat stutters, bit-crushing, tape-speed jumps, dropouts, hard cuts with static bursts."""
+    out = np.zeros(len(x))
+    i = 0
+    while i < len(x):
+        k = min(len(x) - i, ns(rng.uniform(0.03, 0.12)))
+        c = x[i:i + k].copy()
+        r = rng.random()
+        if r < 0.16 and k > ns(0.03):                      # stutter: repeat a short grain
+            g = ns(rng.uniform(0.012, 0.035))
+            c = np.tile(x[i:i + g], k // g + 1)[:k]
+        elif r < 0.34:                                     # bit-crush / sample-rate reduction
+            c = _crush(c, rng)
+        elif r < 0.44:                                     # tape speed jump (pitch shift of the chunk)
+            src = x[i:i + 3 * k]
+            c = pad_to(resample_ratio(src, rng.uniform(0.6, 1.6)), k)
+        elif r < 0.5:                                      # dropout
+            c *= 0.04
+        if rng.random() < 0.25:                            # static burst on the cut
+            m = min(k, ns(rng.uniform(0.004, 0.02)))
+            c[:m] += bp(white(m, rng), 1500, 9000, 2) * rng.uniform(0.4, 1.2) * max(peak(c), 0.2)
+        out[i:i + k] = fade_edges(c, 0.0008, 0.0008)
+        i += k
+    return out
+
+
+def bacteria_screech(rng, v):
+    """Tall thin entity's scream: a high, saturated, almost-human shriek (espeak-ng vowel glided up, never
+    words) wrecked by digital/tape artefacts (stutters, bit-crush, speed jumps, dropouts, static)."""
+    from dsp import tape
+    dur = 2.0
+    n = ns(dur)
+    t = taxis(n)
+    vo, p, vowel, f0pts, rpts = BACTERIA[v % 2]
+    amp = env_points(n, [(0, 0), (0.02, 1), (0.5, 0.85), (1.4, 0.95), (1.85, 0.3), (dur, 0)])
+    # 1) thin high shriek: bright harmonic source, fast jitter and vibrato, high formants, hard saturation
+    f0 = env_points(n, f0pts) * (1 + 0.05 * smooth_random(n, 30, rng) + 0.02 * np.sin(2 * np.pi * 9.5 * t))
+    ph = phase_of(f0, n)
+    H = int(SR / 2 * 0.9 / 2500)
+    src = additive(ph, [k ** -0.8 for k in range(1, H + 1)])
+    src *= 1 + 0.4 * np.sin(ph / 2 + 0.5)                       # sub-harmonic rasp
+    src = src + 0.3 * white(n, rng)
+    shriek = sum(a * reson(src, f, q) for f, q, a in [(2600, 5, 1.0), (4100, 6, 0.8), (6300, 7, 0.4)])
+    shriek = bp(saturate(shriek / max(peak(shriek), 1e-9), 6.0), 600, 12000, 2)
+    # 2) almost-human scream underneath: a pure vowel, sped up (pitch and formants up), ping-ponged to length
+    vow = speak(vowel, vo, p, 70)
+    vow = np.concatenate([fade_edges(vow, 0.01, 0.03), fade_edges(vow[::-1], 0.03, 0.03)])
+    ratio = env_points(n * 3, [(a, b) for a, b in rpts] + [(6.0, rpts[-1][1])])
+    hum = pad_to(_glide_resample(np.tile(vow, 6), ratio), n)
+    hum = bp(saturate(hum / max(peak(hum), 1e-9), 4.0), 400, 9000, 2)
+    breath = bp(white(n, rng), 3000, 10000, 2)
+    y = (rms_norm(shriek) + 0.6 * rms_norm(hum) + 0.12 * rms_norm(breath)) * amp
+    # 3) tape warble, then the digital damage, then a hard clip
+    y = tape(y, rng, wow_ms=1.5, wow_hz=rng.uniform(4, 7), flutter_ms=0.3, flutter_hz=13, drift_ms=2.5)
+    y = _glitch(y, rng)
+    y = np.clip(y / max(peak(y), 1e-9) * 1.6, -1, 1)
+    y = y * env_points(n, [(0, 1), (dur - 0.05, 1), (dur, 0)])
+    ir, _, _ = get_profile_ir("carpet")
+    return apply_ir(y, ir, 1.0, 0.06)
