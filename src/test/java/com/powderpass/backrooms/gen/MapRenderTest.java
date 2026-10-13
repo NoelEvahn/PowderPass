@@ -53,6 +53,7 @@ class MapRenderTest {
         c(Material.MOSS_BLOCK, 0x596E2D); c(Material.COARSE_DIRT, 0x77553B); c(Material.TUFF, 0x6C6D66); c(Material.ANDESITE, 0x888888);
         c(Material.SHORT_GRASS, 0x7FA35A); c(Material.TALL_GRASS, 0x7FA35A); c(Material.STONE_STAIRS, 0x7D7D7D); c(Material.BARRIER, 0xFF00FF); c(Material.LADDER, 0x9C7B45);
         c(Material.ROOTED_DIRT, 0x90684C); c(Material.DEEPSLATE, 0x505052);
+        c(Material.CALCITE, 0xDCDDD8); c(Material.SMOOTH_QUARTZ_STAIRS, 0xEBE5DE); c(Material.WHITE_STAINED_GLASS_PANE, 0xE6EEF0);
     }
 
     private static void c(Material m, int rgb) {
@@ -83,7 +84,27 @@ class MapRenderTest {
         DEST.put("EXIT", new Color(0xFF2040));
     }
 
-    private record Spec(Level level, int blocks, int px) {
+    private record Spec(Level level, int blocks, int px, int floor) {
+        Spec(Level level, int blocks, int px) {
+            this(level, blocks, px, 0);
+        }
+    }
+
+    /** The Poolrooms has three storeys: one plan per floor. */
+    @Test
+    void renderPoolroomsFloors() throws Exception {
+        String out = System.getenv("RENDER_MAPS");
+        Assumptions.assumeTrue(out != null && !out.isBlank(), "set RENDER_MAPS=<dir> to render maps");
+        File dir = new File(out);
+        dir.mkdirs();
+        String[] names = {"lower", "main", "upper"};
+        for (int f = 0; f < 3; f++) {
+            BufferedImage img = render(new Spec(Level.POOLROOMS, 360, 3, f));
+            File file = new File(dir, "map-poolrooms-" + names[f] + ".png");
+            ImageIO.write(img, "png", file);
+            System.out.println("wrote " + file.getAbsolutePath());
+        }
+        if (!UNKNOWN.isEmpty()) System.out.println("uncoloured materials: " + UNKNOWN);
     }
 
     @Test
@@ -111,7 +132,7 @@ class MapRenderTest {
         LevelGenerator g = Generators.create(s.level, SEED, GenSettings.defaults());
         int n = s.blocks, px = s.px, header = 64, legendH = 120;
         int x0 = -n / 2, z0 = -n / 2;
-        int fy = g.floorY[s.level == Level.LEVEL_4 ? 2 : 0]; // the towers: a typical office floor, not the lobby
+        int fy = g.floorY[s.level == Level.LEVEL_4 ? 2 : s.floor]; // Level 4: a typical office floor, not the lobby
         boolean outdoor = s.level.outdoor();
         int w = n * px, h = n * px + header + legendH;
         BufferedImage img = new BufferedImage(w, h, BufferedImage.TYPE_INT_RGB);
@@ -197,7 +218,7 @@ class MapRenderTest {
         gr.fillRect(0, 0, w, header);
         gr.setColor(Color.WHITE);
         gr.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 26));
-        gr.drawString(s.level.displayName() + " — " + s.level.subtitle(), 14, 34);
+        gr.drawString(s.level.displayName() + " — " + s.level.subtitle() + (g.floorCount() > 1 ? " (floor " + s.floor + ")" : ""), 14, 34);
         gr.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 14));
         gr.setColor(new Color(0xBBBBBB));
         gr.drawString("Top-down, " + n + "×" + n + " blocks around 0,0 · seed " + Long.toHexString(SEED)
@@ -243,7 +264,7 @@ class MapRenderTest {
         return switch (l) {
             case LEVEL_0 -> "Rooms with jutting wall sections, long parallel halls, pillar fields, tall halls; dots = lit panels; blue = puddles.";
             case LEVEL_1 -> "Parking garage: drive aisles, yellow stall lines, columns, rare supply/safe rooms; blue = puddles.";
-            case POOLROOMS -> "Tiled bays between pillars; lighter blue = shallow, darker = deep; raised platforms and terrace pools.";
+            case POOLROOMS -> "Three storeys: tiled bays, dry tile, bright open rooms, tall hallways, massive halls; dark squares = stair towers.";
             case LEVEL_4 -> "Floor 2 of the office towers: cores, cubicle pods, glass offices (red) and conference rooms (teal), sky bridges; black = the drop.";
             case PLAINS -> "Grass and moss fields, lone houses and small groups of them (no roads), sinkholes. Shading = height.";
         };

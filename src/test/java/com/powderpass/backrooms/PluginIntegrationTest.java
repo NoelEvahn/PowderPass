@@ -199,7 +199,7 @@ class PluginIntegrationTest {
         }
         assertNotNull(stair);
         World l0 = plugin.worlds().world(Level.POOLROOMS);
-        int x = stair.cx() * g0.S + 6, z = stair.cz() * g0.S + 6, y = g0.floorY[0] + 1;
+        int x = stair.cx() * g0.S + 6, z = stair.cz() * g0.S + 6, y = g0.floorY[stair.floor()] + 1;
         assertNotNull(g0.triggerAt(x, y, z), "standing in the booth is inside the trigger");
         PlayerMock p = playerAt(0, 70, 0);
         floor(l0, x, y - 1, z, 1);

@@ -58,6 +58,11 @@ class FirstPersonRenderTest {
         c(Material.GRASS_BLOCK, 0x6E8C4E); c(Material.STRIPPED_DARK_OAK_WOOD, 0x4A3A28); c(Material.SMOOTH_QUARTZ_SLAB, 0xEBE5DE); c(Material.BARREL, 0x8A6439);
         c(Material.LIGHT_BLUE_CONCRETE, 0x3A9AD0); c(Material.BLUE_CONCRETE, 0x2C2E8F); c(Material.BROWN_CONCRETE, 0x603C20); c(Material.GOLD_BLOCK, 0xD8AF35);
         c(Material.GREEN_TERRACOTTA, 0x4C532A); c(Material.BLUE_TERRACOTTA, 0x4A3B5B); c(Material.LIGHT_GRAY_STAINED_GLASS, 0x99999D); c(Material.GRAY_CONCRETE, 0x36393D); c(Material.QUARTZ_BLOCK, 0xEBE5DE); c(Material.SMOOTH_QUARTZ, 0xEBE5DE);
+        c(Material.CALCITE, 0xDCDDD8); c(Material.QUARTZ_STAIRS, 0xEBE5DE); c(Material.SMOOTH_QUARTZ_STAIRS, 0xEBE5DE);
+        c(Material.QUARTZ_PILLAR, 0xE8E3DA); c(Material.WHITE_STAINED_GLASS_PANE, 0xE6EEF0); c(Material.LIGHT_BLUE_STAINED_GLASS, 0x6FB8E0);
+        c(Material.WHITE_STAINED_GLASS, 0xF2F4F4); c(Material.PINK_CONCRETE, 0xD5658E); c(Material.YELLOW_CONCRETE, 0xF0AF15);
+        c(Material.ORANGE_CONCRETE, 0xE06100); c(Material.LIGHT_BLUE_CONCRETE, 0x3A9AD0); c(Material.BLUE_CONCRETE, 0x2C2E8F);
+        c(Material.MAGENTA_CONCRETE, 0xA9309F); c(Material.LIGHT_BLUE_WOOL, 0x3AAFD9); c(Material.LIGHT_GRAY_CONCRETE, 0x7D7D73);
     }
 
     private static void c(Material m, int rgb) {
@@ -251,6 +256,68 @@ class FirstPersonRenderTest {
         }
     }
 
+    /** Named viewpoints in the Poolrooms: the main floor, each kind of space, the slide and a stair tower. */
+    @Test
+    void renderPoolroomsViews() throws Exception {
+        String out = System.getenv("RENDER_VIEWS");
+        Assumptions.assumeTrue(out != null && !out.isBlank(), "set RENDER_VIEWS=<dir>");
+        var g = (com.powderpass.backrooms.gen.levels.PoolroomsGenerator) Generators.create(Level.POOLROOMS, SEED, GenSettings.defaults());
+        int mid = g.floorY[1] + 1;
+        java.util.Map<String, double[]> views = new java.util.LinkedHashMap<>();
+        int[] s = g.safeSpot(0, 0, 0);
+        views.put("main-floor", new double[]{s[0] + 0.5, s[1], s[2] + 0.5, Double.NaN, -4, 26});
+        int[] bright = null, hall = null, massive = null, brightLow = null;
+        for (int r = 0; r < 14; r++) for (int rx = -r; rx <= r; rx++) for (int rz = -r; rz <= r; rz++) {
+            if (Math.max(Math.abs(rx), Math.abs(rz)) != r) continue;
+            var p = g.plan(rx, rz);
+            if (bright == null && p.zone[1] == com.powderpass.backrooms.gen.levels.PoolroomsGenerator.Zone.BRIGHT && g.brightStatue(rx, rz, 1)) bright = new int[]{rx, rz};
+            if (brightLow == null && p.zone[2] == com.powderpass.backrooms.gen.levels.PoolroomsGenerator.Zone.BRIGHT) brightLow = new int[]{rx, rz};
+            if (hall == null && p.zone[1] == com.powderpass.backrooms.gen.levels.PoolroomsGenerator.Zone.HALLWAY) hall = new int[]{rx, rz};
+            if (massive == null && p.zone[1] == com.powderpass.backrooms.gen.levels.PoolroomsGenerator.Zone.MASSIVE) massive = new int[]{rx, rz};
+        }
+        if (bright != null) {
+            int x0 = bright[0] * 60, z0 = bright[1] * 60;
+            views.put("bright-room", new double[]{x0 + 6.5, mid, z0 + 6.5, Math.toDegrees(Math.atan2(-(30 - 6.5), 30 - 6.5)), 2, 40});
+            int[] fd = g.brightStatueFacing(bright[0], bright[1], 1);
+            double[] face = {x0 + 30.5 + fd[0] * 25, z0 + 30.5 + fd[1] * 25}, centre = {x0 + 30.5, z0 + 30.5};
+            views.put("greek-head", new double[]{face[0] + fd[1] * 3, mid, face[1] - fd[0] * 3, yawTo(face, centre) + 6, 14, 40});
+        }
+        if (brightLow != null) {
+            int x0 = brightLow[0] * 60, z0 = brightLow[1] * 60;
+            views.put("bright-room-upper", new double[]{x0 + 52.5, g.floorY[2] + 1, z0 + 8.5, Math.toDegrees(Math.atan2(-(30 - 52.5), 30 - 8.5)), 4, 44});
+        }
+        if (hall != null) {
+            int x0 = hall[0] * 60, z0 = hall[1] * 60;
+            boolean ax = g.hallwayAlongX(hall[0], hall[1], 1);
+            double ex = ax ? x0 + 1.5 : x0 + 28.5, ez = ax ? z0 + 28.5 : z0 + 1.5;
+            views.put("tall-hallway", new double[]{ex, mid, ez, ax ? -90 : 0, 6, 40});
+            views.put("hallway-hole", new double[]{ax ? x0 + 14.5 : x0 + 22.5, mid, ax ? z0 + 22.5 : z0 + 14.5, ax ? 180 : 90, -6, 26});
+        }
+        if (massive != null) {
+            double[] a = g.hallPoint(massive[0], massive[1], 12.5, 34.5), b = g.hallPoint(massive[0], massive[1], 44.5, 20.5);
+            views.put("massive-hall", new double[]{a[0], mid, a[1], yawTo(a, b), 14, 70});
+            double[] c = g.hallPoint(massive[0], massive[1], 20.5, 21.5);
+            views.put("statue", new double[]{c[0], mid, c[1], yawTo(c, b), 12, 60});
+            double[] st = g.hallPoint(massive[0], massive[1], 1.5, 14.5), st2 = g.hallPoint(massive[0], massive[1], 20.5, 14.5);
+            views.put("slide-top", new double[]{st[0], g.floorY[2] + 1, st[1], yawTo(st, st2), -22, 60});
+            double[] lo = g.hallPoint(massive[0], massive[1], 44.5, 52.5), lo2 = g.hallPoint(massive[0], massive[1], 32.5, 30.5);
+            views.put("slide-landing", new double[]{lo[0], mid, lo[1], yawTo(lo, lo2), 18, 70});
+        }
+        for (var e : views.entrySet()) {
+            double[] v = e.getValue();
+            Scene sc = new Scene(g, v[0], v[1], v[2], v[3], v[4], (int) v[5]);
+            sc.label = "The Poolrooms (" + e.getKey() + ")";
+            File f = new File(out, "poolrooms-" + e.getKey() + ".png");
+            f.getParentFile().mkdirs();
+            ImageIO.write(sc.render(), "png", f);
+            System.out.println("wrote " + f.getAbsolutePath() + " " + sc.note);
+        }
+    }
+
+    private static double yawTo(double[] from, double[] to) {
+        return Math.toDegrees(Math.atan2(-(to[0] - from[0]), to[1] - from[1]));
+    }
+
     private static final class Scene {
         String label = "Level 0";
         final LevelGenerator g;
@@ -258,7 +325,7 @@ class FirstPersonRenderTest {
         final int x0, z0, x1, z1, y0, y1;
         final float[][][] light;
         final List<Box> boxes = new ArrayList<>();
-        double ex, ey, ez, yaw, pitch;
+        double ex, ey, ez, yaw, pitch, maxT = 60;
         String note;
         /** Open night sky: rays that leave the scene show stars, surfaces open to the sky get faint moonlight. */
         boolean night;
@@ -353,6 +420,49 @@ class FirstPersonRenderTest {
             return pack(r + base[0] * k * 0.75, gg + base[1] * k * 0.85, b + base[2] * k * 1.15);
         }
 
+        /** A fixed viewpoint: feet at (fx,fy,fz), yaw/pitch in degrees (NaN yaw = longest open line), lit volume to fy+up. */
+        Scene(LevelGenerator g, double fx, double fy, double fz, double yawDeg, double pitchDeg, int up) {
+            this.g = g;
+            int r = 48;
+            x0 = (int) Math.floor(fx) - r;
+            z0 = (int) Math.floor(fz) - r;
+            x1 = (int) Math.floor(fx) + r;
+            z1 = (int) Math.floor(fz) + r;
+            a = new Area(g, x0, z0, x1, z1);
+            y0 = Math.max(g.bottomY, (int) fy - 12);
+            y1 = Math.min(g.roofY + 1, (int) fy + up);
+            light = new float[x1 - x0][y1 - y0][z1 - z0];
+            maxT = 90;
+            propagateLight();
+            addDecor();
+            ex = fx;
+            ey = fy + 1.62;
+            ez = fz;
+            if (Double.isNaN(yawDeg)) {
+                int best = -1;
+                for (int i = 0; i < 16; i++) {
+                    double yw = i * Math.PI / 8;
+                    int d = 0;
+                    while (d < 38 && passable((int) Math.floor(ex - Math.sin(yw) * d), (int) Math.floor(ey), (int) Math.floor(ez + Math.cos(yw) * d))) d++;
+                    if (d > best) {
+                        best = d;
+                        yawDeg = Math.toDegrees(yw);
+                    }
+                }
+            }
+            yaw = Math.toRadians(yawDeg);
+            pitch = Math.toRadians(pitchDeg);
+            note = "eye " + (int) ex + "," + (int) ey + "," + (int) ez + " zone " + g.zoneName(g.floorAt((int) fy), g.cellOf((int) ex), g.cellOf((int) ez));
+        }
+
+        private void addDecor() {
+            for (int cx = Math.floorDiv(x0, 16); cx <= Math.floorDiv(x1 - 1, 16); cx++) {
+                for (int cz = Math.floorDiv(z0, 16); cz <= Math.floorDiv(z1 - 1, 16); cz++) {
+                    for (DecorSpec d : g.decorations(cx, cz)) addModel(d);
+                }
+            }
+        }
+
         Scene(LevelGenerator g, int px, int pz) {
             this.g = g;
             int[] spot = g.safeSpot(px, pz, 0);
@@ -362,15 +472,11 @@ class FirstPersonRenderTest {
             x1 = spot[0] + r;
             z1 = spot[2] + r;
             a = new Area(g, x0, z0, x1, z1);
-            y0 = g.floorY[0] - 2;
-            y1 = g.floorY[0] + 26;
+            y0 = spot[1] - 3;
+            y1 = spot[1] + 25;
             light = new float[x1 - x0][y1 - y0][z1 - z0];
             propagateLight();
-            for (int cx = Math.floorDiv(x0, 16); cx <= Math.floorDiv(x1 - 1, 16); cx++) {
-                for (int cz = Math.floorDiv(z0, 16); cz <= Math.floorDiv(z1 - 1, 16); cz++) {
-                    for (DecorSpec d : g.decorations(cx, cz)) addModel(d);
-                }
-            }
+            addDecor();
             // eye at the safe spot, looking down the longest open line
             ex = spot[0] + 0.5;
             ey = spot[1] + 1.62;
@@ -503,7 +609,7 @@ class FirstPersonRenderTest {
 
         int trace(double dx, double dy, double dz) {
             // nearest display box hit
-            double bestT = far;
+            double bestT = Math.max(far, maxT);
             Box hitBox = null;
             double[] bn = null;
             for (Box b : boxes) {
