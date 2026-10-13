@@ -1504,79 +1504,79 @@
       "model": "minecraft:block/note_block"
     },
     "instrument=dragon,note=0,powered=true": {
-      "model": "minecraft:block/note_block"
+      "model": "backrooms:block/garage_wall"
     },
     "instrument=dragon,note=1,powered=false": {
       "model": "minecraft:block/note_block"
     },
     "instrument=dragon,note=1,powered=true": {
-      "model": "minecraft:block/note_block"
+      "model": "backrooms:block/garage_wall_stained"
     },
     "instrument=dragon,note=10,powered=false": {
       "model": "minecraft:block/note_block"
     },
     "instrument=dragon,note=10,powered=true": {
-      "model": "minecraft:block/note_block"
+      "model": "backrooms:block/tower_facade"
     },
     "instrument=dragon,note=11,powered=false": {
       "model": "minecraft:block/note_block"
     },
     "instrument=dragon,note=11,powered=true": {
-      "model": "minecraft:block/note_block"
+      "model": "backrooms:block/tower_facade_dark"
     },
     "instrument=dragon,note=12,powered=false": {
       "model": "minecraft:block/note_block"
     },
     "instrument=dragon,note=12,powered=true": {
-      "model": "minecraft:block/note_block"
+      "model": "backrooms:block/tower_floor_tile"
     },
     "instrument=dragon,note=13,powered=false": {
       "model": "minecraft:block/note_block"
     },
     "instrument=dragon,note=13,powered=true": {
-      "model": "minecraft:block/note_block"
+      "model": "backrooms:block/tower_lobby_tile"
     },
     "instrument=dragon,note=14,powered=false": {
       "model": "minecraft:block/note_block"
     },
     "instrument=dragon,note=14,powered=true": {
-      "model": "minecraft:block/note_block"
+      "model": "backrooms:block/tower_partition"
     },
     "instrument=dragon,note=15,powered=false": {
       "model": "minecraft:block/note_block"
     },
     "instrument=dragon,note=15,powered=true": {
-      "model": "minecraft:block/note_block"
+      "model": "backrooms:block/tower_wall"
     },
     "instrument=dragon,note=16,powered=false": {
       "model": "minecraft:block/note_block"
     },
     "instrument=dragon,note=16,powered=true": {
-      "model": "minecraft:block/note_block"
+      "model": "backrooms:block/tower_column"
     },
     "instrument=dragon,note=17,powered=false": {
       "model": "minecraft:block/note_block"
     },
     "instrument=dragon,note=17,powered=true": {
-      "model": "minecraft:block/note_block"
+      "model": "backrooms:block/tower_elevator"
     },
     "instrument=dragon,note=18,powered=false": {
       "model": "minecraft:block/note_block"
     },
     "instrument=dragon,note=18,powered=true": {
-      "model": "minecraft:block/note_block"
+      "model": "backrooms:block/tower_roof"
     },
     "instrument=dragon,note=19,powered=false": {
       "model": "minecraft:block/note_block"
     },
     "instrument=dragon,note=19,powered=true": {
-      "model": "minecraft:block/note_block"
+      "model": "backrooms:block/tower_ceiling"
     },
     "instrument=dragon,note=2,powered=false": {
       "model": "minecraft:block/note_block"
     },
     "instrument=dragon,note=2,powered=true": {
-      "model": "minecraft:block/note_block"
+      "model": "backrooms:block/garage_floor"
     },
     "instrument=dragon,note=20,powered=false": {
       "model": "minecraft:block/note_block"
@@ -1612,43 +1612,43 @@
       "model": "minecraft:block/note_block"
     },
     "instrument=dragon,note=3,powered=true": {
-      "model": "minecraft:block/note_block"
+      "model": "backrooms:block/garage_floor_oil"
     },
     "instrument=dragon,note=4,powered=false": {
       "model": "minecraft:block/note_block"
     },
     "instrument=dragon,note=4,powered=true": {
-      "model": "minecraft:block/note_block"
+      "model": "backrooms:block/garage_floor_cracked"
     },
     "instrument=dragon,note=5,powered=false": {
       "model": "minecraft:block/note_block"
     },
     "instrument=dragon,note=5,powered=true": {
-      "model": "minecraft:block/note_block"
+      "model": "backrooms:block/garage_line"
     },
     "instrument=dragon,note=6,powered=false": {
       "model": "minecraft:block/note_block"
     },
     "instrument=dragon,note=6,powered=true": {
-      "model": "minecraft:block/note_block"
+      "model": "backrooms:block/garage_ceiling"
     },
     "instrument=dragon,note=7,powered=false": {
       "model": "minecraft:block/note_block"
     },
     "instrument=dragon,note=7,powered=true": {
-      "model": "minecraft:block/note_block"
+      "model": "backrooms:block/garage_column"
     },
     "instrument=dragon,note=8,powered=false": {
       "model": "minecraft:block/note_block"
     },
     "instrument=dragon,note=8,powered=true": {
-      "model": "minecraft:block/note_block"
+      "model": "backrooms:block/garage_hazard"
     },
     "instrument=dragon,note=9,powered=false": {
       "model": "minecraft:block/note_block"
     },
     "instrument=dragon,note=9,powered=true": {
-      "model": "minecraft:block/note_block"
+      "model": "backrooms:block/garage_mass"
     },
     "instrument=flute,note=0,powered=false": {
       "model": "minecraft:block/note_block"

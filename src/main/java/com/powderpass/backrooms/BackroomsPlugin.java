@@ -54,6 +54,9 @@ public class BackroomsPlugin extends JavaPlugin {
     private com.powderpass.backrooms.creature.Possessions possessions;
     private com.powderpass.backrooms.audio.PackManager pack;
     private com.powderpass.backrooms.audio.AudioEngine audio;
+    private com.powderpass.backrooms.vehicle.VehicleManager vehicles;
+    private com.powderpass.backrooms.world.LiftService lifts;
+    private com.powderpass.backrooms.world.PoolSlides slides;
     private BukkitTask debugTask;
     private boolean consoleDebug;
 
@@ -89,6 +92,9 @@ public class BackroomsPlugin extends JavaPlugin {
         possessions = new com.powderpass.backrooms.creature.Possessions(this);
         pack = new com.powderpass.backrooms.audio.PackManager(this);
         audio = new com.powderpass.backrooms.audio.AudioEngine(this, pack);
+        vehicles = new com.powderpass.backrooms.vehicle.VehicleManager(this);
+        lifts = new com.powderpass.backrooms.world.LiftService(this);
+        slides = new com.powderpass.backrooms.world.PoolSlides(this);
 
         var pm = getServer().getPluginManager();
         pm.registerEvents(new PlayerListener(this), this);
@@ -101,6 +107,9 @@ public class BackroomsPlugin extends JavaPlugin {
         pm.registerEvents(pack, this);
         pm.registerEvents(audio, this);
         pm.registerEvents(new com.powderpass.backrooms.listener.CustomBlockGuard(this), this);
+        pm.registerEvents(vehicles, this);
+        pm.registerEvents(lifts, this);
+        pm.registerEvents(slides, this);
 
         startServices();
 
@@ -125,12 +134,18 @@ public class BackroomsPlugin extends JavaPlugin {
         possessions.start();
         pack.start();
         audio.start();
+        vehicles.start();
+        lifts.start();
+        slides.start();
         if (debugTask != null) debugTask.cancel();
         debugTask = getServer().getScheduler().runTaskTimer(this, this::debugOverlay, 20L, 10L);
     }
 
     private void stopServices() {
         if (debugTask != null) debugTask.cancel();
+        if (vehicles != null) vehicles.stop();
+        if (lifts != null) lifts.stop();
+        if (slides != null) slides.stop();
         debugTask = null;
         if (audio != null) audio.stop();
         if (pack != null) pack.stop();
@@ -239,6 +254,18 @@ public class BackroomsPlugin extends JavaPlugin {
 
     public com.powderpass.backrooms.audio.PackManager pack() {
         return pack;
+    }
+
+    public com.powderpass.backrooms.vehicle.VehicleManager vehicles() {
+        return vehicles;
+    }
+
+    public com.powderpass.backrooms.world.LiftService lifts() {
+        return lifts;
+    }
+
+    public com.powderpass.backrooms.world.PoolSlides slides() {
+        return slides;
     }
 
     public com.powderpass.backrooms.audio.AudioEngine audio() {

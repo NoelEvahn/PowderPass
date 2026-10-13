@@ -365,7 +365,11 @@ public final class ModelLibrary {
                 m.sound(Sound.BLOCK_PISTON_CONTRACT, 0, 0.5, 0, 60, 0.4, 0.15, 1.8);
             }
             default -> {
-                return Fixtures.build(base, suffix, seed, m) ? m : null;
+                // per-level prop catalogues, each owned by its level
+                boolean built = Fixtures.build(base, suffix, seed, m) || PoolProps.build(base, suffix, seed, m)
+                        || GarageProps.build(base, suffix, seed, m) || OfficeProps.build(base, suffix, seed, m)
+                        || PlainsProps.build(base, suffix, seed, m);
+                return built ? m : null;
             }
         }
         return m;

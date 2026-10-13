@@ -249,6 +249,11 @@ def build(src):
     out["office_wall_b"] = (arr(fit(load(src, "birch_planks"))) * 0.94, 0.8, spec_map(0.2))
     out["office_carpet"] = (arr(fit(load(src, "podzol_top"))) * 0.92, 3.0, spec_map(0.05))
     out["office_carpet_b"] = (arr(fit(load(src, "stone"))), 3.0, spec_map(0.05))
+    # per-level recipe modules (tools/textures/recipes_*.py) add their own textures
+    import recipes_level1
+    import recipes_level4
+    recipes_level1.add(out, src)
+    recipes_level4.add(out, src)
     return out
 
 
