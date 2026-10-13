@@ -215,12 +215,15 @@ None of these is a renamed vanilla mob. Each is a coordinated group of display e
 
 | Type | Levels | Class | Behaviour and counterplay |
 |---|---|---|---|
-| **Smiler** | 0, 1 | threat | A shapeless smoky dark mass: slanted reflective eyes and a grin of interlocking needle teeth. Up close, more eyes slide out of the dark, the mouth opens and two long black many-jointed arms reach for you. Found only in the dark. Freezes while watched; stare for about 4 s and it dissolves. Creeps forward when you look away. Light at ≥11 keeps it at bay. A giggle warns you when it is close. |
-| **Faceling** | all | sighting | Tall and thin in a dated suit, arms down to its knees, long twitching fingers, a smooth head with only smudges where a face should be. Stare at it too long and its head drops sideways while the seam of a mouth tears open down to the neck. Stalks at 12–20 blocks and leaves when stared at. Harmless, but drains sanity; also appears as **private hallucinations**. **In the Plains** it stands 40–70 blocks out in the field, comes 7 blocks closer every 7 s you don't look at it, and leaves when stared at for 5 s or approached within 18 blocks. |
-| **Hound** | 1 | threat (killable, 30 HP) | A starved naked human on all fours: every rib and vertebra showing, elbows bent the wrong way above its shoulders, clawed fingers, a curtain of black hair over white eyes and a mouth too wide for its face. Rears onto its hind legs, jaw gaping and eyes flaring, before it lunges. **Hunts by sound** (sprinting is loud, sneaking almost silent) and by sight. Growls and lowers its head before a lunge. Flees when badly hurt. |
-| **Watcher** | 0, 1, 4 | stalker (hit it and it is gone) | A flat black silhouette at the end of a hall, too tall and too thin, head cocked, with two pinprick eyes you only notice up close. Its edges smear while it moves. While anyone looks at it, it does not move at all; the moment nobody is, it closes the distance fast and silently. Stare it down for about 7 s and it disappears. If it reaches you: damage, darkness, and the lights flicker. |
+| **Smiler** | 1, Plains | threat | A shapeless smoky dark mass: slanted reflective eyes and a grin of interlocking needle teeth. Up close, more eyes slide out of the dark, the mouth opens and two long black many-jointed arms reach for you. Found only in the dark, and in Level 1 every blackout brings a few of them around you, gone when the lights return. Freezes while watched; stare for about 4 s and it dissolves. Creeps forward when you look away. Light at ≥11 keeps it at bay. A giggle warns you when it is close. |
+| **Faceling** | 4 | sighting | Tall and thin in a dated suit, arms down to its knees, long twitching fingers, a smooth head with only smudges where a face should be. Stare at it too long and its head drops sideways while the seam of a mouth tears open down to the neck. Stalks at 12–20 blocks and leaves when stared at. Harmless, but drains sanity; also appears as **private hallucinations** in Level 4. |
+| **Hound** | 1, 4 | threat (killable, 30 HP) | A starved naked human on all fours: every rib and vertebra showing, elbows bent the wrong way above its shoulders, clawed fingers, a curtain of black hair over white eyes and a mouth too wide for its face. Rears onto its hind legs, jaw gaping and eyes flaring, before it lunges. **Hunts by sound** (sprinting is loud, sneaking almost silent) and by sight. Growls and lowers its head before a lunge. Flees when badly hurt. |
+| **Watcher** | 0, Poolrooms, 1, Plains | stalker (hit it and it is gone) | A flat black silhouette at the end of a hall, too tall and too thin, head cocked, with two pinprick eyes you only notice up close. Its edges smear while it moves. While anyone looks at it, it does not move at all; the moment nobody is, it closes the distance fast and silently. Stare it down for about 7 s and it disappears. If it reaches you: damage, darkness, and the lights flicker. |
 | **Drifter** | Poolrooms | threat (20 HP) | A drowned eel-long body behind a human face frozen mid-scream, hollow eyes, trailing hair and two thin arms reaching ahead; it swims with its whole length. Bubbles warn you. It drags swimmers down; leave the water or strike it. |
-| **Skinwalker** | 0, 1, 4 (rarer in Poolrooms and Plains) | threat (true form 80 HP) | Wears other creatures, then people. See below. |
+| **Skinwalker** | every level | threat (true form 80 HP) | Wears other creatures (only ones that belong to the level), then people. See below. |
+| **Bacteria** | 0 | threat (120 HP, flees when badly hurt) | "The Lifeform" of the found-footage films: very tall, black and stick-thin, limbs wound in cable-like strands, long fingers, a small blank head, moving in glitching jerks. **It hunts by sound and movement, not sight.** It roams, freezes to listen when it hears you (sprinting is loud, sneaking barely audible), and goes to look; anyone moving near it is hunted with a distorted scream, faster than you can run. **Stand completely still and silent and it loses you**: if it is right next to you it leans over you, breathing, then wanders off, unless you move. Now and then it imitates a human voice. |
+
+**Who lives where:** Level 0 Bacteria and Watchers; Poolrooms Drifters and Watchers; Level 1 Hounds, Watchers and Smilers; Level 4 Hounds and Facelings; the Plains Watchers and Smilers; the Skinwalker in every level. An older `config.yml` without `creatures.table-version: 2` keeps its enable/damage/health settings but takes these level weights.
 
 ![Every creature, before and after the redesign](docs/creatures/before-after.png)
 
@@ -270,6 +273,17 @@ Spawning is deliberately rare:
 - Each type has its own placement rules (Smilers in the dark, Drifters in deep water).
 
 ## Environmental events
+
+**Lights misbehave in every level**, at any time:
+- **Per player:** flicker, blackout and lights-out can happen to anyone.
+- **Independent roll:** every 20 s, each occupied level has an `events.light-event-chance` (default 0.25) of one of them around a random player.
+- **Level 1 blackouts** bring `events.blackout-smilers` Smilers around each player, gone when the lights return.
+
+**Announcements:** about every 40 s (`audio.announce-seconds`) a PA announcement or a voice plays:
+- Level 0: announcements, distant phrases, whispers behind you;
+- Poolrooms: announcements, murmurs;
+- Level 1: announcements, radio chatter, voices behind walls;
+- Level 4: announcements, conversations.
 
 `flicker`, `blackout` (raises spawn chances), `lights_out` (lights die one by one toward you), `footsteps`, `knocking`, `door_behind` (a real door behind you opens, then closes), `machinery`, `pool_echo`, `phone_ring`, `wind` (Plains), `fog` (a fog bank rolls in: Plains, Poolrooms, Habitable Zone), `deja_vu` (a hallucination), `hum_shift`.
 
