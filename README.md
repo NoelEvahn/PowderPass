@@ -88,8 +88,10 @@ Some fixtures are dead and some flicker. Flicker and blackouts switch the troffe
 - **Without the pack:** players who have not loaded it cannot fall into the Backrooms; they are told to accept it. This gate is skipped while the pack URL is unreachable, so a hosting problem never locks anyone out.
 - **Bedrock** players cannot load the Java pack. With `bedrock.allow-entry` (default on) they are let in and see note blocks.
 - **Turning it off:** `resource-pack.custom-blocks: false` brings back the vanilla look-alike blocks (restart needed; chunks already generated keep their blocks).
-- **Sources:** `src/main/resources/custom-blocks.json` lists every block. The textures are built by `tools/textures/build_textures.py` from the Backrooms PBR pack the server owner supplied; that script also draws the pool tiles and light panels. Shader users get LabPBR `_s` maps: the panels glow and the tiles are glossy.
-- **Licensing:** the source textures come from a third-party pack (credited in `pack/MANIFEST.md`). Confirm you may redistribute them before you publish the pack.
+- **Sources:** `src/main/resources/custom-blocks.json` lists every block. The textures are built by `tools/textures/build_textures.py`:
+  - **Original pixel art** (redistributable, in `tools/textures/sources/pixel/`): Level 0 wallpaper and carpet, light panels, pool tiles.
+  - **Backrooms PBR pack the server owner supplied:** ceilings, the Level 0 alternate paper, office papers and carpets. Shader users get LabPBR `_s` maps: the panels glow and the tiles are glossy.
+- **Licensing:** the pixel-art textures may be redistributed. The PBR-pack textures come from a third-party pack (credited in `pack/MANIFEST.md`); confirm you may redistribute them before you publish the pack.
 
 **Surfaces:** each level has its own palette, and pattern comes from real blocks: wallpaper seams, wainscots, grout grids and carpet tiles. Thin **display overlays** add what a block cannot (see *Surface details* below):
 - architecture: ceiling seams, coping, trims, pipes, ducts, grilles, sills, outlets;

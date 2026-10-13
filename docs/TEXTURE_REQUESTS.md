@@ -1,5 +1,11 @@
 # Textures I would like you to find
 
+**Done (October 2026):** pool tiles (white, aqua, grimy), the yellow Level 0 paper, the Level 0 carpet and the light panel (on and off) arrived as redistributable pixel art and are in the pack.
+
+**Still open:**
+- the remaining PBR-pack textures, if you want the whole pack free to redistribute: ceiling tiles, the alternate dotted Level 0 paper, office papers and carpets;
+- the optional garage set (items 7-10).
+
 Your pack covered Level 0 and the Office well:
 - **Level 0:** chevron wallpaper, carpet and ceiling tiles.
 - **Office:** striped and floral papers, two carpets and the same tiles.
