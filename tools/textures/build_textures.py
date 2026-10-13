@@ -252,54 +252,6 @@ def build(src):
     return out
 
 
-# ------------------------------------------------------------------------------------- pixel-art replacements
-PIXEL = os.path.join(HERE, "sources", "pixel")
-
-
-def apply_pixel(out, pixdir):
-    """Original pixel-art textures (tools/textures/sources/pixel, free to redistribute, see SOURCES-AND-REUSE.txt)
-    replace the procedural / recoloured versions where they exist, used exactly as drawn (no resampling, no tint).
-    Variants are derived from them: the stained wall, the wet carpet and the cool office panel."""
-    def px(name):
-        p = os.path.join(pixdir, name + ".png")
-        if not os.path.exists(p):
-            return None
-        im = Image.open(p).convert("RGB")
-        if im.size != (RES, RES):
-            im = im.resize((RES, RES), Image.NEAREST)
-        return arr(im)
-
-    used = []
-    for name in ("pool_tile", "pool_tile_blue", "pool_tile_grime"):
-        a = px(name)
-        if a is not None:
-            out[name] = (a, out[name][1], out[name][2])
-            used.append(name)
-    wall = px("l0_wall")
-    if wall is not None:
-        out["l0_wall"] = (wall, out["l0_wall"][1], out["l0_wall"][2])
-        out["l0_wall_stain"] = (stain(wall, 13, (124, 98, 52), 0.42), out["l0_wall_stain"][1], out["l0_wall_stain"][2])
-        used += ["l0_wall", "l0_wall_stain (derived)"]
-    carpet = px("l0_carpet")
-    if carpet is not None:
-        out["l0_carpet"] = (carpet, out["l0_carpet"][1], out["l0_carpet"][2])
-        wet = stain(carpet * 0.62 + np.array((0.04, 0.03, 0.0)), 21, (70, 56, 30), 0.35, top=False)
-        out["l0_carpet_wet"] = (wet, out["l0_carpet_wet"][1], out["l0_carpet_wet"][2])
-        used += ["l0_carpet", "l0_carpet_wet (derived)"]
-    lit = px("light_panel")
-    if lit is not None:
-        glow = (lum(lit) > 0.8).astype(np.float32)        # the diffuser emits (for shaders); the frame does not
-        out["light_panel"] = (lit, None, spec_map(0.5, emissive=glow))
-        cool = np.clip(lit * np.array((0.95, 0.985, 1.04)), 0, 1)
-        out["light_panel_cool"] = (cool, None, spec_map(0.5, emissive=glow))
-        used += ["light_panel", "light_panel_cool (derived)"]
-    off = px("light_panel_off")
-    if off is not None:
-        out["light_panel_off"] = (off, None, spec_map(0.5))
-        used.append("light_panel_off")
-    return used
-
-
 # ------------------------------------------------------------------------------------- writers
 def write_json(path, obj):
     os.makedirs(os.path.dirname(path), exist_ok=True)
@@ -318,7 +270,6 @@ def main():
     ap.add_argument("--src", default=os.environ.get("BACKROOMS_TEXTURE_SRC"), help="extracted source texture pack")
     ap.add_argument("--no-pbr", action="store_true", help="skip the LabPBR _n/_s maps")
     ap.add_argument("--normals", action="store_true", help="also write _n normal maps (bigger pack)")
-    ap.add_argument("--pixel", default=PIXEL, help="folder of pixel-art replacements ('' to use none)")
     a = ap.parse_args()
     if not a.src:
         sys.exit("--src is required (the extracted Backrooms PBR texture pack)")
@@ -326,8 +277,6 @@ def main():
         defs = json.load(f)["blocks"]
 
     textures = build(a.src)
-    if a.pixel:
-        print("pixel-art textures:", ", ".join(apply_pixel(textures, a.pixel)))
     needed = {t for d in defs.values() for t in d["textures"].values()}
     missing = needed - set(textures)
     if missing:
