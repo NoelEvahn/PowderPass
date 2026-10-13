@@ -112,7 +112,7 @@ public final class Items {
                     "There's a window that's too bright. It isn't a window.",
                     "FIRE EXIT. Copper door. It opens to somewhere with weather.",
                     "Stairs in a meeting room go down to the concrete halls."},
-            Level.PLAINS, new String[]{"All the houses on a road are the same house. One of them is yellow inside.",
+            Level.PLAINS, new String[]{"The houses do not face anything. One of them is yellow inside.",
                     "The pool in the backyard doesn't have a bottom. Well. It does. It's tiled.",
                     "There's a bunker. Concrete. Stairs going down. I know where they go.",
                     "If you see someone standing in the field, don't walk toward them. They don't like that.",

@@ -57,10 +57,11 @@ levels:
     enabled: true
     biome: "minecraft:pale_garden"
     generation:
-      road-chance: 0.22
-      roadside-house-chance: 0.5
-      house-chance: 0.06
-      colossus-chance: 0.6     # per 128x128 area: one colossal object
+      lone-house-chance: 0.08  # per eligible cell: a house alone in the grass (no roads)
+      hamlet-chance: 0.15      # per 128x128 area: a handful of houses dropped together at odd angles
+      giant-chance: 0.8        # per 128x128 area: a 40-block-tall everyday object
+      giant-second-chance: 0.4
+      sinkhole-chance: 0.08    # per 128x128 area without features: a ~100-wide funnel into the void (lethal)
       back-chance: 0.4         # per district: the bunker hatch back to the Office
       landmark-chance: 0.6
       decor-density: 1.0
