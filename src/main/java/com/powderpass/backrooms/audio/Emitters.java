@@ -58,7 +58,7 @@ final class Emitters {
             boolean dead = m.endsWith(":dead");
             String k = d.key();
             switch (b) {
-                case "ceiling_panel", "tube_light", "cage_lamp", "wall_lamp" -> {
+                case "ceiling_panel", "panel_light", "panel_flicker", "tube_light", "cage_lamp", "wall_lamp" -> {
                     if (dead) break;
                     float v = level == Level.LEVEL_0 ? 0.35f : 0.22f;
                     out.add(new Emitter(k, d.x, d.y - 0.4, d.z, "hum.fluorescent", v, level == Level.LEVEL_0 ? 11 : 8, Kind.HUM));

@@ -235,6 +235,62 @@
         "metal.creak.open": 47
       }
     },
+    "metal.clank": {
+      "category": "event",
+      "duration_ticks": 81,
+      "loop": false,
+      "positional": true,
+      "variants": 4,
+      "profiles": [
+        "concrete",
+        "corridor"
+      ],
+      "muffled": false,
+      "stream": false,
+      "event_ticks": {
+        "metal.clank": 81,
+        "metal.clank.concrete": 78,
+        "metal.clank.corridor": 73
+      }
+    },
+    "metal.groan": {
+      "category": "event",
+      "duration_ticks": 98,
+      "loop": false,
+      "positional": true,
+      "variants": 3,
+      "profiles": [
+        "concrete",
+        "corridor"
+      ],
+      "muffled": true,
+      "stream": false,
+      "event_ticks": {
+        "metal.groan": 98,
+        "metal.groan.concrete": 105,
+        "metal.groan.corridor": 94,
+        "metal.groan.concrete.muffled": 106,
+        "metal.groan.corridor.muffled": 95
+      }
+    },
+    "steam.burst": {
+      "category": "event",
+      "duration_ticks": 48,
+      "loop": false,
+      "positional": true,
+      "variants": 3,
+      "profiles": [
+        "concrete",
+        "corridor"
+      ],
+      "muffled": false,
+      "stream": false,
+      "event_ticks": {
+        "steam.burst": 48,
+        "steam.burst.concrete": 56,
+        "steam.burst.corridor": 48
+      }
+    },
     "water.drip": {
       "category": "event",
       "duration_ticks": 12,
@@ -980,6 +1036,71 @@
         "plains.distant": 133
       }
     },
+    "bed.poolrooms": {
+      "category": "ambient",
+      "duration_ticks": 800,
+      "loop": true,
+      "positional": false,
+      "variants": 1,
+      "profiles": [],
+      "muffled": false,
+      "stream": true,
+      "event_ticks": {
+        "bed.poolrooms": 800
+      }
+    },
+    "bed.garage": {
+      "category": "ambient",
+      "duration_ticks": 960,
+      "loop": true,
+      "positional": false,
+      "variants": 1,
+      "profiles": [],
+      "muffled": false,
+      "stream": true,
+      "event_ticks": {
+        "bed.garage": 960
+      }
+    },
+    "bed.office": {
+      "category": "ambient",
+      "duration_ticks": 800,
+      "loop": true,
+      "positional": false,
+      "variants": 1,
+      "profiles": [],
+      "muffled": false,
+      "stream": true,
+      "event_ticks": {
+        "bed.office": 800
+      }
+    },
+    "bed.plains": {
+      "category": "ambient",
+      "duration_ticks": 960,
+      "loop": true,
+      "positional": false,
+      "variants": 1,
+      "profiles": [],
+      "muffled": false,
+      "stream": true,
+      "event_ticks": {
+        "bed.plains": 960
+      }
+    },
+    "bed.level0_synth": {
+      "category": "ambient",
+      "duration_ticks": 800,
+      "loop": true,
+      "positional": false,
+      "variants": 1,
+      "profiles": [],
+      "muffled": false,
+      "stream": true,
+      "event_ticks": {
+        "bed.level0_synth": 800
+      }
+    },
     "silence.transition": {
       "category": "event",
       "duration_ticks": 59,
@@ -1147,6 +1268,19 @@
       "event_ticks": {
         "music.garage_1": 1640,
         "music.garage_1.concrete": 1646
+      }
+    },
+    "bed.level0": {
+      "category": "ambient",
+      "duration_ticks": 1200,
+      "loop": true,
+      "positional": false,
+      "variants": 1,
+      "profiles": [],
+      "muffled": false,
+      "stream": true,
+      "event_ticks": {
+        "bed.level0": 1200
       }
     }
   }

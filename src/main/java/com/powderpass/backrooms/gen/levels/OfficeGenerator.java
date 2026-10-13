@@ -31,13 +31,13 @@ public final class OfficeGenerator extends LevelGenerator {
     static final int T_FARM = 0, T_MEETING = 1, T_BREAK = 2, T_OFFICE = 3, T_CLOSET = 4, T_STORAGE = 5;
     private static final String[] TYPES = {"cubicle-farm", "meeting-room", "break-room", "office", "closet", "storage"};
 
-    private static final B WALL_B = B.of(Material.WHITE_CONCRETE);
-    private static final B CARPET = B.of(Material.GRAY_WOOL);
-    private static final B CARPET_BLUE = B.of(Material.LIGHT_BLUE_WOOL);
+    private static final B WALL_B = com.powderpass.backrooms.gen.CustomBlocks.get("office_wall");
+    private static final B CARPET = com.powderpass.backrooms.gen.CustomBlocks.get("office_carpet");
+    private static final B CARPET_BLUE = com.powderpass.backrooms.gen.CustomBlocks.get("office_carpet_b");
     private static final B CARPET_TILE = B.of(Material.LIGHT_GRAY_WOOL);
-    private static final B HALL_CARPET = B.of(Material.GRAY_WOOL);
+    private static final B HALL_CARPET = com.powderpass.backrooms.gen.CustomBlocks.get("office_carpet");
     private static final B TRIM = B.of(Material.LIGHT_GRAY_CONCRETE);
-    private static final B CEIL = B.of(Material.SMOOTH_QUARTZ);
+    private static final B CEIL = com.powderpass.backrooms.gen.CustomBlocks.get("office_ceiling");
     private static final B GLASS_B = B.of(Material.LIGHT_GRAY_STAINED_GLASS);
     private static final B PART = B.of(Material.LIGHT_GRAY_WOOL);
     private static final B PART_TOP = B.slab(Material.SMOOTH_STONE_SLAB, false);

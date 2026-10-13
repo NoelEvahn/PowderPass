@@ -311,9 +311,22 @@ public final class EnvironmentManager {
         for (Player p : viewers) if (p.isOnline()) p.sendBlockChange(b.getLocation(), data);
     }
 
+    /**
+     * Switch one light (client-side only) off or back on. A lit ceiling panel block right above the invisible light
+     * goes dark with it, so block-built fixtures flicker exactly like display ones.
+     */
+    private static void lamp(List<Player> viewers, Block light, boolean on) {
+        send(viewers, light, on ? light.getBlockData() : off(light));
+        Block up = light.getRelative(org.bukkit.block.BlockFace.UP);
+        com.powderpass.backrooms.gen.CustomBlocks.Def d = com.powderpass.backrooms.gen.CustomBlocks.of(up.getBlockData());
+        if (d != null && d.id().startsWith("light_panel") && !d.id().equals("light_panel_off")) {
+            send(viewers, up, on ? up.getBlockData() : com.powderpass.backrooms.gen.CustomBlocks.custom("light_panel_off").data());
+        }
+    }
+
     private static void restore(List<Block> lights, Location c) {
         List<Player> v = viewers(c, 64);
-        for (Block b : lights) send(v, b, b.getBlockData());
+        for (Block b : lights) lamp(v, b, true);
     }
 
     /** Lights stutter randomly for {@code duration} ticks, then restore. */
@@ -328,7 +341,7 @@ public final class EnvironmentManager {
         for (int t = 0; t < duration; t += 3) {
             plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
                 for (Block b : lights) {
-                    if (r.nextDouble() < 0.35) send(v, b, r.nextBoolean() ? off(b) : b.getBlockData());
+                    if (r.nextDouble() < 0.35) lamp(v, b, r.nextBoolean());
                 }
             }, t);
         }
@@ -342,7 +355,7 @@ public final class EnvironmentManager {
         c.getWorld().playSound(c, Sound.BLOCK_BEACON_DEACTIVATE, SoundCategory.AMBIENT, 1f, 0.5f);
         plugin.audio().onBlackout(c, duration);
         plugin.decorations().dimLamps(c, radius + 4, duration, false);
-        for (Block b : lights) send(v, b, off(b));
+        for (Block b : lights) lamp(v, b, false);
         for (Player p : v) p.addPotionEffect(new PotionEffect(PotionEffectType.DARKNESS, Math.min(duration, 80), 0, false, false));
         blackouts.add(new Blackout(c.getWorld(), c.clone(), radius + 8, tick + duration));
         plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
@@ -361,7 +374,7 @@ public final class EnvironmentManager {
             Block b = lights.get(i);
             long at = 2L + (long) i * 50 / Math.max(1, n);
             plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
-                send(v, b, off(b));
+                lamp(v, b, false);
                 plugin.decorations().dimLamps(b.getLocation(), 2.6, (int) (140 - at), false);
                 if (p.isOnline()) p.playSound(b.getLocation(), Sound.BLOCK_LEVER_CLICK, SoundCategory.AMBIENT, 0.6f, 0.5f);
             }, at);

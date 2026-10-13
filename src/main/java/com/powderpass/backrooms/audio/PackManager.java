@@ -302,6 +302,18 @@ public final class PackManager implements Listener {
         }
     }
 
+    /**
+     * May this player enter the Backrooms? With custom blocks on and {@code required-for-entry}, Java players need
+     * the pack loaded. Never blocks anyone while the pack cannot be delivered (no reachable URL): then everybody
+     * would be locked out, so the console warns instead. Bedrock players cannot load the Java pack at all and are
+     * let in when {@code bedrock.allow-entry} is on.
+     */
+    public boolean mayEnter(Player p) {
+        if (!cfg().customBlocks || !cfg().packRequiredForEntry || !deliverable()) return true;
+        if (Bedrock.is(p)) return cfg().bedrockEntry;
+        return loaded(p);
+    }
+
     /** Is the custom pack loaded on this player's client? */
     public boolean loaded(Player p) {
         if (Bedrock.is(p)) return cfg().bedrockCustomSounds;

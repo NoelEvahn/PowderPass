@@ -1,4 +1,52 @@
 {
+  "bed.garage": {
+    "sounds": [
+      {
+        "name": "backrooms:bed/garage/dry_1",
+        "stream": true
+      }
+    ]
+  },
+  "bed.level0": {
+    "sounds": [
+      {
+        "name": "backrooms:user/bed_level0",
+        "stream": true
+      }
+    ]
+  },
+  "bed.level0_synth": {
+    "sounds": [
+      {
+        "name": "backrooms:bed/level0_synth/dry_1",
+        "stream": true
+      }
+    ]
+  },
+  "bed.office": {
+    "sounds": [
+      {
+        "name": "backrooms:bed/office/dry_1",
+        "stream": true
+      }
+    ]
+  },
+  "bed.plains": {
+    "sounds": [
+      {
+        "name": "backrooms:bed/plains/dry_1",
+        "stream": true
+      }
+    ]
+  },
+  "bed.poolrooms": {
+    "sounds": [
+      {
+        "name": "backrooms:bed/poolrooms/dry_1",
+        "stream": true
+      }
+    ]
+  },
   "breath.heavy": {
     "sounds": [
       "backrooms:breath/heavy/dry_1",
@@ -293,6 +341,30 @@
       "backrooms:machine/start/pool_1"
     ]
   },
+  "metal.clank": {
+    "sounds": [
+      "backrooms:metal/clank/dry_1",
+      "backrooms:metal/clank/dry_2",
+      "backrooms:metal/clank/dry_3",
+      "backrooms:metal/clank/dry_4"
+    ]
+  },
+  "metal.clank.concrete": {
+    "sounds": [
+      "backrooms:metal/clank/concrete_1",
+      "backrooms:metal/clank/concrete_2",
+      "backrooms:metal/clank/concrete_3",
+      "backrooms:metal/clank/concrete_4"
+    ]
+  },
+  "metal.clank.corridor": {
+    "sounds": [
+      "backrooms:metal/clank/corridor_1",
+      "backrooms:metal/clank/corridor_2",
+      "backrooms:metal/clank/corridor_3",
+      "backrooms:metal/clank/corridor_4"
+    ]
+  },
   "metal.creak": {
     "sounds": [
       "backrooms:metal/creak/dry_1",
@@ -347,6 +419,41 @@
       "backrooms:metal/creak/pool_2",
       "backrooms:metal/creak/pool_3",
       "backrooms:metal/creak/pool_4"
+    ]
+  },
+  "metal.groan": {
+    "sounds": [
+      "backrooms:metal/groan/dry_1",
+      "backrooms:metal/groan/dry_2",
+      "backrooms:metal/groan/dry_3"
+    ]
+  },
+  "metal.groan.concrete": {
+    "sounds": [
+      "backrooms:metal/groan/concrete_1",
+      "backrooms:metal/groan/concrete_2",
+      "backrooms:metal/groan/concrete_3"
+    ]
+  },
+  "metal.groan.concrete.muffled": {
+    "sounds": [
+      "backrooms:metal/groan/concrete_muffled_1",
+      "backrooms:metal/groan/concrete_muffled_2",
+      "backrooms:metal/groan/concrete_muffled_3"
+    ]
+  },
+  "metal.groan.corridor": {
+    "sounds": [
+      "backrooms:metal/groan/corridor_1",
+      "backrooms:metal/groan/corridor_2",
+      "backrooms:metal/groan/corridor_3"
+    ]
+  },
+  "metal.groan.corridor.muffled": {
+    "sounds": [
+      "backrooms:metal/groan/corridor_muffled_1",
+      "backrooms:metal/groan/corridor_muffled_2",
+      "backrooms:metal/groan/corridor_muffled_3"
     ]
   },
   "movement.distant": {
@@ -1004,6 +1111,27 @@
       "backrooms:speaker/broken/dry_1",
       "backrooms:speaker/broken/dry_2",
       "backrooms:speaker/broken/dry_3"
+    ]
+  },
+  "steam.burst": {
+    "sounds": [
+      "backrooms:steam/burst/dry_1",
+      "backrooms:steam/burst/dry_2",
+      "backrooms:steam/burst/dry_3"
+    ]
+  },
+  "steam.burst.concrete": {
+    "sounds": [
+      "backrooms:steam/burst/concrete_1",
+      "backrooms:steam/burst/concrete_2",
+      "backrooms:steam/burst/concrete_3"
+    ]
+  },
+  "steam.burst.corridor": {
+    "sounds": [
+      "backrooms:steam/burst/corridor_1",
+      "backrooms:steam/burst/corridor_2",
+      "backrooms:steam/burst/corridor_3"
     ]
   },
   "step.carpet": {

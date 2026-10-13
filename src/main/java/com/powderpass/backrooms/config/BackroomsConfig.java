@@ -49,12 +49,13 @@ public final class BackroomsConfig {
     public final boolean skinwalkerChatMimic, skinwalkerVoiceMimic, skinwalkerLockCommands;
     public final float skinwalkerVoiceDistance;
     // audio
-    public final boolean audioEnabled, audioMusic, audioAmbient, audioVoices;
+    public final boolean audioEnabled, audioMusic, audioAmbient, audioVoices, audioBed, audioBedRecording;
+    public final double audioBedVolume;
     public final double audioDensity, audioRare, audioMusicFrequency, audioDistanceScale;
     public final int audioMaxSources, audioQuality;
     public final Map<Level, Double> audioLevelIntensity = new EnumMap<>(Level.class);
     // resource pack delivery
-    public final boolean packEnabled, packRequired, packHostEnabled, bedrockCustomSounds;
+    public final boolean packEnabled, packRequired, packHostEnabled, bedrockCustomSounds, customBlocks, packRequiredForEntry, bedrockEntry;
     public final String packUrl, packPrompt, packHostBind, packHostPublicAddress;
     public final int packHostPort;
     public final int fogBankDistance;
@@ -147,6 +148,9 @@ public final class BackroomsConfig {
         audioEnabled = c.getBoolean("audio.enabled", true);
         audioMusic = c.getBoolean("audio.music", true);
         audioAmbient = c.getBoolean("audio.ambient", true);
+        audioBed = c.getBoolean("audio.bed", true);
+        audioBedVolume = Math.max(0, Math.min(2, c.getDouble("audio.bed-volume", 1.0)));
+        audioBedRecording = !"synth".equalsIgnoreCase(c.getString("audio.level0-bed", "recording"));
         audioVoices = c.getBoolean("audio.voices", true);
         audioDensity = Math.max(0, Math.min(4, c.getDouble("audio.event-density", 1.0)));
         audioRare = Math.max(0, Math.min(4, c.getDouble("audio.rare-frequency", 1.0)));
@@ -168,6 +172,9 @@ public final class BackroomsConfig {
         packHostPort = clamp(c.getInt("resource-pack.host.port", 8163), 1, 65535);
         packHostPublicAddress = c.getString("resource-pack.host.public-address", "");
         bedrockCustomSounds = c.getBoolean("bedrock.custom-sounds", false);
+        customBlocks = c.getBoolean("resource-pack.custom-blocks", true);
+        packRequiredForEntry = c.getBoolean("resource-pack.required-for-entry", true);
+        bedrockEntry = c.getBoolean("bedrock.allow-entry", true);
         skinwalkerDisguiseSeconds = clamp(c.getInt("skinwalker.disguise-seconds", 150), 10, 3600);
         skinwalkerTrueSeconds = clamp(c.getInt("skinwalker.true-form-seconds", 90), 10, 3600);
         skinwalkerPunchesToExpose = clamp(c.getInt("skinwalker.punches-to-expose", 6), 1, 100);
@@ -241,6 +248,8 @@ public final class BackroomsConfig {
         if (m != null) {
             for (String k : m.getKeys(false)) messages.put(k, m.getString(k, ""));
         }
+        // messages added after a server's config.yml was first written
+        messages.putIfAbsent("needs-pack", "<gray>The walls give a little... then hold. <dark_gray>(Accept the server resource pack to enter the Backrooms.)");
     }
 
     private static int clamp(int v, int lo, int hi) {

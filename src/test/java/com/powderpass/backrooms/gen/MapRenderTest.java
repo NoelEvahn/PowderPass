@@ -54,6 +54,12 @@ class MapRenderTest {
         COLORS.put(m, new Color(rgb));
     }
 
+    /** Colour of a painted block: a custom textured block's average colour, else the material's. */
+    private static Color colorAt(MemoryCanvas mc, int lx, int y, int lz) {
+        CustomBlocks.Def d = CustomBlocks.of(mc.get(lx, y, lz));
+        return d != null ? new Color(d.rgb()) : color(mc.type(lx, y, lz));
+    }
+
     private static Color color(Material m) {
         Color col = COLORS.get(m);
         if (col != null) return col;
@@ -230,7 +236,7 @@ class MapRenderTest {
 
     private static String legendFor(Level l) {
         return switch (l) {
-            case LEVEL_0 -> "End-stone walls with birch seams, yellow carpet, brown stains, blue = damp puddles. The only maze.";
+            case LEVEL_0 -> "Rooms with jutting wall sections, long parallel halls, pillar fields, tall halls; dots = lit panels; blue = puddles.";
             case LEVEL_1 -> "Parking garage: drive aisles, yellow stall lines, columns, rare supply/safe rooms; blue = puddles.";
             case POOLROOMS -> "Tiled bays between pillars; lighter blue = shallow, darker = deep; raised platforms and terrace pools.";
             case LEVEL_4 -> "Office blocks split into rooms; grey / light-blue carpet sections, corridors, glass meeting rooms.";
@@ -252,24 +258,24 @@ class MapRenderTest {
             float t = Math.min(1f, depth / 9f);
             return blend(new Color(0x7CC8F0), new Color(0x0B3F9A), t);
         }
-        if (!Mats.passable(feet) && Mats.passable(head) && feet != Material.BARREL) return blend(color(feet), Color.WHITE, 0.15f); // raised floor
+        Color cFeet = colorAt(mc, lx, fy + 1, lz), cHead = colorAt(mc, lx, fy + 2, lz), cFloor = colorAt(mc, lx, fy, lz);
+        if (!Mats.passable(feet) && Mats.passable(head) && feet != Material.BARREL) return blend(cFeet, Color.WHITE, 0.15f); // raised floor
         boolean open = Mats.passable(feet) && Mats.passable(head);
         if (!open) {
-            Material wall = Mats.passable(feet) ? head : feet;
-            return blend(color(wall), Color.BLACK, 0.45f);
+            return blend(Mats.passable(feet) ? cHead : cFeet, Color.BLACK, 0.45f);
         }
-        if (!Mats.passable(feet)) return color(feet);
+        if (!Mats.passable(feet)) return cFeet;
         if (floor == Material.AIR) return new Color(0x050505); // a shaft or stairwell going down
         // low furniture, doors, etc. at foot level
-        if (feet != Material.AIR && feet != Material.LIGHT && feet != Material.CAVE_AIR) return blend(color(feet), color(floor), 0.3f);
-        return color(floor);
+        if (feet != Material.AIR && feet != Material.LIGHT && feet != Material.CAVE_AIR) return blend(cFeet, cFloor, 0.3f);
+        return cFloor;
     }
 
     private static Color outdoorColumn(MemoryCanvas mc, int lx, int lz, int fy, int roof) {
         for (int y = Math.min(mc.maxY() - 1, roof); y > mc.minY(); y--) {
             Material m = mc.type(lx, y, lz);
             if (m == Material.AIR || m == Material.LIGHT || m == Material.BARRIER || m == Material.CAVE_AIR) continue;
-            Color c = color(m);
+            Color c = colorAt(mc, lx, y, lz);
             float shade = Math.max(-0.5f, Math.min(0.5f, (y - fy) / 16f));
             if (m == Material.WATER) {
                 int d = 0;

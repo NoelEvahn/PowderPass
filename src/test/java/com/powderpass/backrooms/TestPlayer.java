@@ -47,6 +47,12 @@ final class TestPlayer extends PlayerMock {
         customSounds.add(sound + "@" + location.getBlockX() + "," + location.getBlockY() + "," + location.getBlockZ());
     }
 
+    /** A sound attached to the player ("key@self"). */
+    @Override
+    public void playSound(net.kyori.adventure.sound.Sound sound, net.kyori.adventure.sound.Sound.Emitter emitter) {
+        customSounds.add(sound.name().asString() + "@self");
+    }
+
     @Override
     public void stopSound(SoundStop stop) {
         stopped.add(String.valueOf(stop.sound()));

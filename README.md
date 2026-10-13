@@ -76,7 +76,20 @@ The yellow house and the backyard pools are still in the Plains, but they lead n
 
 ## The five levels
 
-**Lighting rule:** there are no light-emitting blocks anywhere: no lanterns, froglights, sea lanterns, end rods, glowstone, torches or bulbs. Every light source is an invisible `LIGHT` block behind a display-entity fixture model, such as a recessed troffer, tube light, cage lamp, skylight or pool lamp. Some fixtures are dead and some flicker; blackouts dim the fixture models along with the light.
+**Lighting rule:** there are no vanilla light-emitting blocks anywhere: no lanterns, froglights, sea lanterns, end rods, glowstone, torches or bulbs. Every light is an invisible `LIGHT` block under a fixture:
+- in Level 0, a **flush ceiling troffer block** (a custom block whose model glows at full brightness);
+- elsewhere, a display-entity fixture model (tube light, cage lamp, skylight, pool lamp).
+
+Some fixtures are dead and some flicker. Flicker and blackouts switch the troffer blocks off together with their light, client-side.
+
+**Custom textured blocks.** Level 0, the Poolrooms and the Office are built from the Backrooms' own textured blocks, which exist only through the resource pack:
+- **How they work:** each one is a powered note block in a state that ordinary play almost never produces (it needs a mob head on top and redstone power), and the pack gives exactly those 18 states their textures. Every other note block keeps its vanilla look. The Habitable Zone and the Plains still use vanilla blocks.
+- **Inside the Backrooms:** note blocks are frozen. They ignore neighbour updates, cannot be retuned and never play.
+- **Without the pack:** players who have not loaded it cannot fall into the Backrooms; they are told to accept it. This gate is skipped while the pack URL is unreachable, so a hosting problem never locks anyone out.
+- **Bedrock** players cannot load the Java pack. With `bedrock.allow-entry` (default on) they are let in and see note blocks.
+- **Turning it off:** `resource-pack.custom-blocks: false` brings back the vanilla look-alike blocks (restart needed; chunks already generated keep their blocks).
+- **Sources:** `src/main/resources/custom-blocks.json` lists every block. The textures are built by `tools/textures/build_textures.py` from the Backrooms PBR pack the server owner supplied; that script also draws the pool tiles and light panels. Shader users get LabPBR `_s` maps: the panels glow and the tiles are glossy.
+- **Licensing:** the source textures come from a third-party pack (credited in `pack/MANIFEST.md`). Confirm you may redistribute them before you publish the pack.
 
 **Surfaces:** each level has its own palette, and pattern comes from real blocks: wallpaper seams, wainscots, grout grids and carpet tiles. Thin **display overlays** add what a block cannot (see *Surface details* below):
 - architecture: ceiling seams, coping, trims, pipes, ducts, grilles, sills, outlets;
@@ -86,17 +99,24 @@ Deterioration is clustered by smooth noise, so most surfaces are clean and damag
 
 Each level uses a **different generation rule**:
 
-**Level 0 — The Lobby.** *The only maze.* 8-block cells joined by a spanning tree with extra loops.
-- Blocks:
-  - Walls: end stone, with birch-plank wallpaper seams every 4 blocks over a stripped-birch wainscot. Some wall sections are a warmer smooth sandstone, in broad patches.
-  - Floor: yellow terracotta carpet with sparse brown stains.
-  - Ceiling: bone-block tiles.
-- Fixtures: long recessed fluorescent troffers.
-- Displays:
-  - ceiling panel seams;
-  - rare water stains with drip runs creeping from corners;
-  - faded rectangles where something hung, peeling wallpaper, ceiling stains.
-- Thick walls, stub walls, pillar cells and open halls; dark, low-ceilinged and damp sectors; regions that repeat their neighbour.
+**Level 0 — The Lobby.** *The only maze.* An 8-block grid of wall lines joined by a spanning tree with extra loops.
+- **Look:**
+  - mono-yellow chevron wallpaper, with a dotted paper in broad patches and water-stained paper at the top of damp walls;
+  - damp mustard carpet, soaked dark in places, with puddles;
+  - a drop ceiling of stained tiles;
+  - flush fluorescent troffers in a staggered grid.
+- **Each 64 x 64 region is one of four kinds of space:**
+  - **Rooms (about two thirds):** 4 blocks tall. Short wall sections come out of the main walls: fins two blocks deep, single pilasters, and thickened stretches. They stay at least a block clear of every doorway on their wall and out of the room's middle 3 x 3, so the walk through a room is the same with or without them. Some neighbourhoods give every wall a pilaster in its middle.
+  - **Long halls:** parallel 3-wide corridors running the whole region, joined by two cross passages. They carry straight on into the next hall region with the same direction.
+  - **Pillar fields:** one open floor with a 1 x 1 column every 4 blocks, floor to ceiling, 4 or 8 blocks high.
+  - **Tall halls:** 21 blocks high with 3 x 3 columns. The troffers are far overhead and invisible lights hang in the air below them.
+- **Displays:** rare water stains with drip runs; faded rectangles where something hung.
+- **Sectors:** dead sectors (most panels off), damp sectors, and regions that repeat their neighbour.
+
+![Level 0 rooms](docs/views/level0-rooms.png)
+![Level 0 halls](docs/views/level0-halls.png)
+![Level 0 pillar field](docs/views/level0-pillars.png)
+![Level 0 tall hall](docs/views/level0-tall.png)
 
 **The Poolrooms.** *One continuous hall of bays.* 12-block bays between 2×2 pillars; nothing is a corridor.
 - Bay types:
@@ -146,9 +166,26 @@ The `fog` event rolls a fog bank in for 1–2 minutes: 3 chunks, with thick ash 
 
 Every sound is original: synthesised offline with numpy/scipy, plus espeak-ng formant voices for speech. The pack is CC0. The pipeline in `tools/audio/` is deterministic, and two runs give byte-identical files. `pack/MANIFEST.md` lists every asset, how it was made, and how to add your own licensed tracks.
 
-The pack has 58 sound ids, 216 sound events and 683 Ogg Vorbis files. All of them are mono and positional, except two stereo ambient music mixes. Pack size: 22.5 MB.
+The pack has 71 sound ids and 873 Ogg Vorbis files: mono positional sounds, mono beds played on the listener, and two stereo ambient music mixes. The pack is 28.2 MB, textures included. The only third-party audio is the Level 0 bed recording, which you can swap for a synthesised one. Everything else is original CC0.
 
 Where sounds are in the pack, they come in several versions: a dry take plus pre-reverberated versions for each room type (carpet, office, concrete, pool, corridor, open), and low-passed "muffled" versions for sources behind walls. The engine picks one by room and line of sight. Every loop is exactly 8, 10 or 12 s with faded ends.
+
+**The constant bed.** Every level has a long seamless loop that plays on the player, so it follows them everywhere and never stops:
+
+| Level | Bed | Length |
+|---|---|---|
+| Level 0 | `bed.level0`: a real fluorescent-light recording supplied with the texture pack, made into a seamless loop (`audio.level0-bed: synth` switches to the original synthesised `bed.level0_synth`) | 60 s |
+| Poolrooms | `bed.poolrooms`: pump and circulation hum, water lapping | 40 s |
+| Habitable Zone | `bed.garage`: ventilation, distant machinery, hissing steam leaks, metal ticking | 48 s |
+| Office | `bed.office`: air conditioning, ballast buzz, server hum | 40 s |
+| Plains | `bed.plains`: faint wind | 48 s |
+
+- It is re-triggered every 2 ticks of server time, 300 ms before the end, so its faded ends cross.
+- In Level 0 and the Office a blackout cuts the buzz with the lights.
+- Settings: `audio.bed`, `audio.bed-volume`.
+- **Music** always plays on the player too, never at a place.
+- **Positional sounds:** the loops near real sources and the one-shot scares below are unchanged, so a knock or footsteps can still come from somewhere.
+- **Habitable Zone one-shots:** steam bursts, metal clanks and long metal groans.
 
 | Level | Loops (from real sources) | Events (rare ones marked *) | Music |
 |---|---|---|---|
@@ -299,8 +336,8 @@ Commands work from the console wherever a target player or level is given. Alias
 | `displays.*` | Activation radius (chunks), `outdoor-activation-radius-chunks` (Plains, default 8), `max-entities-per-chunk` (default 80), `max-entities-per-world`, chunks per tick, animation interval, view range, hazards on/off |
 | `displays.details.*` | Surface details. `enabled`, `performance-mode` (keeps only the most important architectural details), `density`, `aging` (deterioration intensity) and `environment` (small extras), each 0–2. Also `max-per-chunk` (default 28, on top of the props), `view-range` (default 0.45 = 29 blocks), and `levels.<level>.enabled` / `.density` |
 | `fog.*` | `enabled`, `bank-view-distance` (default 3), `levels.<level>` resting fog distance in chunks (0 = leave alone) |
-| `audio.*` | Toggles: `enabled`, `ambient`, `music`, `voices`. Tuning: `event-density`, `rare-frequency`, `music-frequency`, `max-sources` (simultaneous loops per player, default 6), `distance-scale`, `acoustic-quality` (`low`/`medium`/`high`), and `levels.<level>` loudness 0–2 |
-| `resource-pack.*` | `enabled`, `url` (default mc-packs.net with `{sha1}`), `required` (kick players who decline), `prompt`, and `host.enabled` / `bind` / `port` / `public-address` for the optional built-in server |
+| `audio.*` | Toggles: `enabled`, `bed` (the constant per-level bed on the player), `ambient`, `music`, `voices`. `bed-volume` 0–2, `level0-bed` `recording`/`synth`. Tuning: `event-density`, `rare-frequency`, `music-frequency`, `max-sources` (simultaneous loops per player, default 6), `distance-scale`, `acoustic-quality` (`low`/`medium`/`high`), and `levels.<level>` loudness 0–2 |
+| `resource-pack.*` | `enabled`, `url` (default mc-packs.net with `{sha1}`), `required` (kick players who decline), `custom-blocks` (textured blocks, or vanilla look-alikes), `required-for-entry` (no Backrooms without the pack), `prompt`, and `host.enabled` / `bind` / `port` / `public-address` for the optional built-in server |
 | `bedrock.custom-sounds` | Treat Bedrock players as having custom sounds (only after installing the `.mcpack` in Geyser) |
 | `creatures.*` | Tick interval, spawn attempt period, caps, despawn distance, `level-chance`, per-type `enabled`/`damage`/`health`/`weight` per level |
 | `skinwalker.*` | Timing: `disguise-seconds`, `true-form-seconds`, `punches-to-expose`, `group-radius`. Mimicry: `chat-mimic`, `voice-mimic`, `voice-distance`. Locks: `lock-commands` |
@@ -367,7 +404,19 @@ Commands work from the console wherever a target player or level is given. Alias
 
 ## Testing
 
-`gradle test` runs 77 automated tests (plus four renderers that are off by default). All of them pass on this build.
+`gradle test` runs 85 automated tests (plus five renderers that are off by default). All of them pass on this build.
+
+- **Custom blocks (4 tests):**
+  - Every textured block has its own rare powered note block state, and it parses.
+  - The pack's note block blockstate lists all 1150 states. Exactly the custom ones get our models, and every model and texture ships.
+  - Note blocks are frozen inside the Backrooms and nowhere else.
+  - The entry gate never locks anyone out while the pack cannot be delivered.
+- **Level 0 layout (4 tests):**
+  - All four kinds of space appear near the origin, and rooms stay the main fabric.
+  - Rooms are 4 blocks tall.
+  - Jutting wall sections never stand in the middle or in front of a doorway, and most rooms have some.
+  - Hall regions have straight corridors 60+ blocks long.
+  - Lit troffers sit over invisible light.
 
 - **Generation (31 tests across all 5 levels):**
   - Determinism across instances and chunk order, and seed sensitivity.
@@ -423,6 +472,7 @@ No Paper server binary could be downloaded in the build environment, so nothing 
 - Vanilla clients cannot apply real-time reverb or filters from a server. Acoustics are approximations: pre-rendered room versions, muffled versions, and one delayed reflection for impacts.
 - Music is not sample-synchronised between players. Loops are re-triggered, so a very slight seam is possible on a laggy connection.
 - The espeak-ng voices are robotic formant voices.
+- **Custom blocks have not been seen on a real client.** Check that the 18 textured note block states render, that light panels glow (block model `light_emission`), and that nothing else in your world uses those states. Optionally set Paper's `block-updates.disable-noteblock-updates: true` as an extra guard.
 - **Bedrock:** a companion `.mcpack` with `sound_definitions.json` (both `backrooms:<id>` and `<id>` keys) is generated, but it is untested with Geyser. Whether Geyser forwards these custom sound ids is unverified, so `bedrock.custom-sounds` is off by default.
 - mc-packs.net could not be reached from the build environment, so the upload itself is your step.
 

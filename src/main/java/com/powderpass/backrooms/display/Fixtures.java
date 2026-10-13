@@ -43,6 +43,21 @@ final class Fixtures {
                 diffuser(m, m.group(1).box(WHITE_CONCRETE, -0.82, -0.07, -0.13, 1.64, 0.025, 0.26), suffix, GRAY_CONCRETE);
                 if (!suffix.equals("dead")) m.sound(Sound.BLOCK_BEACON_AMBIENT, 0, -0.5, 0, 160, 0.15, 0.08, 1.8);
             }
+            case "panel_light" -> {
+                // a ceiling panel built from blocks (custom textured block + invisible light): nothing to spawn,
+                // the spec only carries its hum emitter
+            }
+            case "panel_flicker" -> {
+                // a failing block-built troffer: a glowing skin over the two panel blocks that stutters, and
+                // goes dark (off texture) on its own
+                org.bukkit.block.data.BlockData lit = com.powderpass.backrooms.gen.CustomBlocks.custom("light_panel").data();
+                org.bukkit.block.data.BlockData off = com.powderpass.backrooms.gen.CustomBlocks.custom("light_panel_off").data();
+                for (int i = 0; i < 2; i++) {
+                    Part p = m.group(1).box(lit, -1.0 + i, -0.004, -0.5, 1.0, 0.004, 1.0);
+                    p.lamp().alt(off);
+                }
+                m.anim(FLICKER, 1, O, O, 0.45, 1);
+            }
             case "tube_light" -> {
                 m.group(2);
                 m.rod(BLACK_CONCRETE, v(-0.5, 0, 0), v(-0.5, -1.1, 0), 0.025);

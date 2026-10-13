@@ -111,8 +111,10 @@ def loop_checks(x, sr, errs, name):
 def lufs(x, sr):
     sys.path.insert(0, HERE)
     import dsp
-    if sr != dsp.SR:
-        return float("nan")
+    if sr != dsp.SR:  # the K-weighting filters are designed for dsp.SR
+        from scipy import signal
+        g = math.gcd(sr, dsp.SR)
+        x = signal.resample_poly(x, dsp.SR // g, sr // g, axis=0)
     return dsp.lufs(x if x.shape[1] > 1 else x[:, 0])
 
 
@@ -247,6 +249,8 @@ def main():
             errs.append(f"{r}.ogg: not Ogg Vorbis ({i['format']}/{i['codec']})")
         if i["sr"] not in (44100, 48000):
             errs.append(f"{r}.ogg: sample rate {i['sr']}")
+        elif not s.external and i["sr"] != s.sr:
+            errs.append(f"{r}.ogg: sample rate {i['sr']} != catalog {s.sr}")
         if s.external:
             if s.positional and i["ch"] != 1:
                 errs.append(f"{r}.ogg: positional user sound must be mono, has {i['ch']} ch")
@@ -262,7 +266,10 @@ def main():
         dur = i["dur"]
         durations[r] = dur
         if s.external:
-            pass
+            if s.loop:
+                if s.length and abs(dur - s.length) > 0.05:
+                    errs.append(f"{r}.ogg: user loop length {dur:.3f}s != declared {s.length}s")
+                loop_dev[r] = loop_checks(i["x"], i["sr"], errs, r)
         elif s.loop:
             if abs(dur - s.length) > 0.02:
                 errs.append(f"{r}.ogg: loop length {dur:.3f}s != {s.length}s")
@@ -296,7 +303,7 @@ def main():
                              else f"{catalog.NAMESPACE}:{r}" for r in rels]}
     write_json(os.path.join(JAVA, "assets", "backrooms", "sounds.json"), sj)
     write_json(os.path.join(JAVA, "pack.mcmeta"), {"pack": {
-        "description": "PowderPass Backrooms ambience - original CC0 audio",
+        "description": "PowderPass Backrooms - ambience and textured blocks",
         "pack_format": 75, "min_format": 69, "max_format": 75}})
     icon = make_icon()
     write_png(os.path.join(JAVA, "pack.png"), icon)
@@ -373,14 +380,16 @@ def main():
         worst = max(loop_dev.items(), key=lambda kv: kv[1])
         print(f"loops: {len(loop_dev)} files, worst overlap level deviation {worst[1]:.2f} dB ({worst[0]})")
     for s in sounds:
-        if (s.loop or s.category == "music") and not s.external:
+        if (s.loop or s.category == "music") and (not s.external or s.loop):
             r = s.files("dry")[0]
             i = infos[r]
-            print(f"  loudness {s.id:26s} {lufs(i['x'], i['sr']):6.1f} LUFS (target {s.level})")
+            print(f"  loudness {s.id:26s} {lufs(i['x'], i['sr']):6.1f} LUFS (target {s.level}"
+                  f"{', user file' if s.external else ''})  {i['sr']} Hz  {durations[r]:.2f} s  "
+                  f"{os.path.getsize(os.path.join(SOUNDS, r + '.ogg')) / 1e3:.0f} kB")
     print(f"backrooms-pack.zip       {jsize / 1e6:6.2f} MB  {jn} entries  sha1 {jsha}")
     print(f"bedrock-skeleton.zip     {bsize / 1e6:6.2f} MB  {bn} entries  sha1 {bsha} (oggs added by the plugin)")
-    if jsize > 25e6:
-        print("WARNING: Java pack exceeds the 25 MB target")
+    if jsize > 29e6:
+        print("WARNING: Java pack exceeds the 29 MB target (the plugin JAR must stay under 30 MB)")
     print("OK")
 
 

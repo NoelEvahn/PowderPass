@@ -1,0 +1,15 @@
+{
+  "bed.level0": {
+    "files": [
+      "user/bed_level0.ogg"
+    ],
+    "category": "ambient",
+    "positional": false,
+    "stereo": false,
+    "loop": true,
+    "length": 60.0,
+    "level": -26.0,
+    "license": "Third-party, supplied by the server owner (Backrooms PBR pack by Pro_fessional, packsmc.com); redistribution permission must be confirmed by the owner",
+    "method": "Real recording of fluorescent lights buzzing (fluorescentlight.ogg from the 'Backrooms PBR Resource Pack' by Pro_fessional, packsmc.com, supplied by the server owner), turned into a seamless loop with tools/audio/import_user_loop.py: stereo 192 kHz Vorbis downmixed to mono, resampled to 48 kHz. Source stretch 77.5-141.2 s, 50 Hz high-pass, 59.70 s period with 4 s internal crossfade, 0.3 s loop fades, -26 LUFS, Vorbis q2."
+  }
+}

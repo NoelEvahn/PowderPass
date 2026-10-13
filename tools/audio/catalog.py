@@ -9,6 +9,8 @@ from dataclasses import dataclass, field
 from typing import List, Optional
 
 ALL = ["carpet", "office", "concrete", "pool", "corridor", "open"]
+# sounds heard only in the Level 1 parking garage need only its two acoustic profiles
+GARAGE = ["concrete", "corridor"]
 NAMESPACE = "backrooms"
 
 
@@ -29,6 +31,8 @@ class Sound:
     source: Optional[str] = None  # for derived ids (music .ambient): id of the job that renders it
     paths: Optional[List[str]] = None  # external (user-supplied) sounds: explicit file paths, no ext
     license: str = "CC0-1.0, original (this project)"
+    q: Optional[int] = None  # Vorbis -q:a override (default: 2 for music, 3 otherwise)
+    sr: int = 44100          # output sample rate; synthesis runs at dsp.SR and is resampled on encode
 
     @property
     def stream(self) -> bool:
@@ -36,6 +40,8 @@ class Sound:
 
     @property
     def quality(self) -> int:
+        if self.q is not None:
+            return self.q
         return 2 if self.category == "music" else 3
 
     def events(self):
@@ -104,6 +110,15 @@ SOUNDS: List[Sound] = [
       method="Modal pipe (free-bar ratios) excited by bouncing hammer hits + thud."),
     S("metal.creak", "event", "sfx.metal_creak", 2.0, 4, profiles=ALL,
       method="Stick-slip impulse train with gliding rate through random metal modes; optional expansion tick."),
+    S("metal.clank", "event", "sfx.metal_clank", 2.5, 4, profiles=GARAGE,
+      method="Far heavy hit on pipes/ducts: low thump + boomy duct noise, impact burst through long inharmonic "
+             "shell/pipe modes (two bodies), bouncing rattle of small loose parts, distance low-pass."),
+    S("metal.groan", "event", "sfx.metal_groan", 4.0, 3, profiles=GARAGE, muffled=True,
+      method="Long low structural groan: slow stick-slip impulse train (rate gliding 6-40 Hz) through low "
+             "metal modes, a gliding buzzy moan tone gated by the slips, sub rumble, distance low-pass + far IR."),
+    S("steam.burst", "event", "sfx.steam_burst", 2.0, 3, profiles=GARAGE,
+      method="Valve/leak steam burst: sharp-onset noise through a bank of resonators whose centre glides "
+             "(moving resonance), sputter gating, decaying darker tail, valve tick and faint modal pipe ring."),
     # ---------------------------------------------------------------- water
     S("water.drip", "event", "sfx.water_drip", 0.8, 5, profiles=ALL,
       method="Minnaert-bubble drop model (exponentially rising sine) + impact click, optional second plip."),
@@ -193,6 +208,27 @@ SOUNDS: List[Sound] = [
       method="Dense band-passed micro-crackle with swish layer and gusty envelope."),
     S("plains.distant", "event", "sfx.plains_distant", 4.0, 3,
       method="Far horn-like swell / slow metallic groan / beating low tones, long distant IR with slaps."),
+    # ---------------------------------------------------------------- per-level beds
+    # Constant player-attached layer: long seamless loops, mono 48 kHz, non-positional, Vorbis q2.
+    S("bed.poolrooms", "ambient", "sfx.bed_poolrooms", 40, loop=True, positional=False, level=-27, q=2, sr=48000,
+      method="Pool pump motor (120 Hz + harmonics) and impeller blade-pass tones, pink circulation flow with "
+             "moving gurgle bands, distant irregular lapping slaps and drops (all loop-periodic, pool IR wrapped "
+             "by circular convolution), very faint high tiled-room air tone."),
+    S("bed.garage", "ambient", "sfx.bed_garage", 48, loop=True, positional=False, level=-27, q=2, sr=48000,
+      method="Ventilation rush with harmonic duct resonances and slow turbulence, distant machinery cycle "
+             "(thumps, soft clanks, 41 Hz motor drone), three steam leaks (band-passed hiss with loop-periodic "
+             "irregular swells and sputter), sparse metal expansion ticks and two tiny groans; concrete IR baked "
+             "in by circular convolution."),
+    S("bed.office", "ambient", "sfx.bed_office", 40, loop=True, positional=False, level=-27, q=2, sr=48000,
+      method="Low-passed pink HVAC diffuser air with slow modulation, faint 120 Hz ballast stack, computer/server "
+             "fan hum (blade-pass harmonics, 60 Hz, faint coil whine), very faint distant saturated buzz, office IR."),
+    S("bed.plains", "ambient", "sfx.bed_plains", 48, loop=True, positional=False, level=-30, q=2, sr=48000,
+      method="Low-passed brown-noise wind with slow loop-periodic gust swells and faint wandering resonances, "
+             "faint gust-following grass hiss and micro-crackle."),
+    S("bed.level0_synth", "ambient", "sfx.bed_level0_synth", 40, loop=True, positional=False, level=-27, q=2,
+      sr=48000,
+      method="Ten 120 Hz ballast stacks detuned by whole cycles per loop (slow seamless beating), buzz-gated "
+             "band noise, faint 60 Hz mains hum, office IR. Original fallback for the bed.level0 recording."),
     # ---------------------------------------------------------------- transitions
     S("silence.transition", "event", "sfx.silence_transition", 3.0, positional=False,
       method="Brown-noise pressure swell with closing low-pass and sub tone, drop to near-silence, faint ringing."),
@@ -235,6 +271,9 @@ def load_user_sounds(path):
     { "music.user_lobby": { "files": ["user/my_track.ogg"], "category": "music",
                             "positional": false, "loop": false, "license": "CC-BY-4.0 Jane Doe" } }
     Files live under pack/java/assets/backrooms/sounds/ (keep them in sounds/user/).
+    Optional keys: "length" (s; loops are checked against it and need it for "stream"), "stereo"
+    (default: not positional), "level" (LUFS the file was normalised to, for the report), "method".
+    A user loop (loop: true) gets the same fade/overlap checks as the built-in loops.
     """
     import json
     import os
@@ -250,6 +289,7 @@ def load_user_sounds(path):
         positional = bool(d.get("positional", d.get("category") != "music"))
         out.append(Sound(sid, d.get("category", "music"), "external", float(d.get("length", 0)),
                          variants=len(files), loop=bool(d.get("loop", False)), positional=positional,
-                         stereo=not positional, paths=files, license=d.get("license", "UNSPECIFIED"),
+                         stereo=bool(d.get("stereo", not positional)), paths=files,
+                         license=d.get("license", "UNSPECIFIED"), level=float(d.get("level", -20)),
                          method=d.get("method", "User-supplied track")))
     return out

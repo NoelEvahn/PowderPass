@@ -50,7 +50,9 @@ final class Soundscape {
                 Ev.one("impact.distant", Place.FAR, 1, 300, 0.9f).rarely().reflecting(),
                 Ev.one("voice.whisper", Place.BEHIND, 1, 400, 0.35f).as(Kind.VOICE).rarely(),
                 Ev.one("light.arc", Place.MID, 0.6, 400, 0.6f).rarely(),
-                Ev.one("movement.distant", Place.FAR, 1, 240, 0.7f).rarely()));
+                Ev.one("movement.distant", Place.FAR, 1, 240, 0.7f).rarely(),
+                Ev.one("music.lobby_1", Place.LISTENER, 0.25, 1200, 0.35f).as(Kind.MUSIC).rarely(),
+                Ev.one("music.lobby_2", Place.LISTENER, 0.25, 1200, 0.35f).as(Kind.MUSIC).rarely()));
         TABLE.put(Level.POOLROOMS, List.of(
                 Ev.one("water.drip", Place.NEAR, 6, 15, 0.6f),
                 Ev.one("water.drip", Place.FAR, 4, 15, 0.5f).named("water.drip.far"),
@@ -67,7 +69,11 @@ final class Soundscape {
                 Ev.one("step.concrete", Place.FAR, 1.5, 200, 0.7f).as(Kind.STEPS).rarely(),
                 Ev.one("knock.distant", Place.FAR, 1, 200, 0.8f).reflecting(),
                 Ev.one("voice.conversation", Place.FAR, 0.6, 500, 0.5f).as(Kind.VOICE).rarely(),
-                Ev.one("impact.distant", Place.FAR, 0.8, 400, 1.0f).rarely().reflecting()));
+                Ev.one("impact.distant", Place.FAR, 0.8, 400, 1.0f).rarely().reflecting(),
+                Ev.one("steam.burst", Place.MID, 2.5, 90, 0.7f).reflecting(),
+                Ev.one("metal.clank", Place.FAR, 1.8, 150, 0.8f).reflecting(),
+                Ev.one("metal.groan", Place.FAR, 1.2, 240, 0.8f).reflecting(),
+                Ev.one("music.garage_1", Place.LISTENER, 0.25, 1200, 0.4f).as(Kind.MUSIC).rarely()));
         TABLE.put(Level.LEVEL_4, List.of(
                 Ev.one("office.click", Place.MID, 4, 40, 0.5f),
                 Ev.one("office.printer", Place.FAR, 1.5, 300, 0.6f),
@@ -84,6 +90,24 @@ final class Soundscape {
                 Ev.one("music.plains_1", Place.LISTENER, 0.25, 1200, 0.45f).as(Kind.MUSIC).rarely(),
                 Ev.one("music.plains_2", Place.LISTENER, 0.25, 1200, 0.45f).as(Kind.MUSIC).rarely(),
                 Ev.one("voice.cry", Place.FAR, 0.15, 1800, 0.3f).as(Kind.VOICE).rarely()));
+    }
+
+    /** One layer of a level's constant bed: a long seamless loop played on the listener. */
+    record Bed(String sound, float volume) {
+    }
+
+    private static final Map<Level, List<Bed>> BEDS = new EnumMap<>(Level.class);
+
+    static {
+        BEDS.put(Level.LEVEL_0, List.of(new Bed("bed.level0", 0.75f)));
+        BEDS.put(Level.POOLROOMS, List.of(new Bed("bed.poolrooms", 0.8f)));
+        BEDS.put(Level.LEVEL_1, List.of(new Bed("bed.garage", 0.85f)));
+        BEDS.put(Level.LEVEL_4, List.of(new Bed("bed.office", 0.75f)));
+        BEDS.put(Level.PLAINS, List.of(new Bed("bed.plains", 0.7f)));
+    }
+
+    static List<Bed> beds(Level level) {
+        return BEDS.getOrDefault(level, List.of());
     }
 
     static List<Ev> events(Level level) {

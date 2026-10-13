@@ -63,6 +63,8 @@ public class BackroomsPlugin extends JavaPlugin {
         Keys.init(this);
         cfg = new BackroomsConfig(getConfig());
         consoleDebug = cfg.debug;
+        // read once, before any generator exists: textured blocks or their vanilla fallbacks
+        com.powderpass.backrooms.gen.CustomBlocks.setEnabled(cfg.customBlocks);
         data = new DataStore(getDataFolder(), getLogger());
         data.load();
         worlds = new WorldManager(this, data);
@@ -98,6 +100,7 @@ public class BackroomsPlugin extends JavaPlugin {
         pm.registerEvents(possessions, this);
         pm.registerEvents(pack, this);
         pm.registerEvents(audio, this);
+        pm.registerEvents(new com.powderpass.backrooms.listener.CustomBlockGuard(this), this);
 
         startServices();
 

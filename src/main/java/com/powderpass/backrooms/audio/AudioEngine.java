@@ -56,7 +56,7 @@ public final class AudioEngine implements Listener {
     private final Emitters emitters = new Emitters();
     private final Map<UUID, State> states = new HashMap<>();
     private SoundIndex index = new SoundIndex();
-    private BukkitTask task;
+    private BukkitTask task, bedTask;
     private long now;
     private String loadProblem = "";
 
@@ -67,6 +67,9 @@ public final class AudioEngine implements Listener {
         boolean underwater;
         long profileAt = -1000;
         final Map<String, Long> loops = new HashMap<>();
+        /** Bed layers: event -> server tick at which to start its next pass. */
+        final Map<String, Integer> beds = new HashMap<>();
+        int bedsPausedUntil;
         final Map<String, Long> playing = new HashMap<>(); // event name -> tick it ends (for clean stops)
         final Map<String, Long> cooldown = new HashMap<>();
         final Deque<String> recent = new ArrayDeque<>();
@@ -100,11 +103,15 @@ public final class AudioEngine implements Listener {
         if (!loadProblem.isEmpty()) plugin.getLogger().warning("[Audio] " + loadProblem + "; custom audio is off.");
         if (!cfg().audioEnabled) return;
         task = plugin.getServer().getScheduler().runTaskTimer(plugin, this::tick, 20L, TICK);
+        // the bed needs tighter timing than everything else: a late re-trigger is an audible gap
+        bedTask = plugin.getServer().getScheduler().runTaskTimer(plugin, this::beds, 22L, 2L);
     }
 
     public void stop() {
         if (task != null) task.cancel();
+        if (bedTask != null) bedTask.cancel();
         task = null;
+        bedTask = null;
         for (Player p : plugin.getServer().getOnlinePlayers()) silence(p);
         states.clear();
         emitters.clear();
@@ -177,7 +184,7 @@ public final class AudioEngine implements Listener {
             for (int dz = -2; dz <= 2; dz++) {
                 if (!w.isChunkLoaded(pcx + dx, pcz + dz)) continue;
                 for (Emitters.Emitter em : emitters.chunk(w.getName(), s.level, gen, pcx + dx, pcz + dz)) {
-                    if (em.kind() == Emitters.Kind.MUSIC && !cfg().audioMusic) continue;
+                    if (em.kind() == Emitters.Kind.MUSIC) continue; // music plays on the listener (see events), never at a place
                     double d2 = dist2(pl, em);
                     if (d2 > em.radius() * em.radius() * cfg().audioDistanceScale * cfg().audioDistanceScale) continue;
                     if (em.kind() == Emitters.Kind.HUM && d2 < 100) lamps++;
@@ -233,6 +240,48 @@ public final class AudioEngine implements Listener {
         // a radio plays its track again; other music sources rest between plays; loops cross-fade
         long gap = isMusic ? (key.contains("#radio") ? 20 : 20L * (40 + ThreadLocalRandom.current().nextInt(80))) : -OVERLAP;
         s.loops.put(key, now + def.durationTicks() + gap);
+    }
+
+    // ------------------------------------------------------------------ bed
+
+    /**
+     * The constant bed: each level's long seamless loops, played on the listener (the sound follows them, so it is
+     * everywhere and never fades with distance), re-triggered 300 ms before the end so the faded ends cross.
+     */
+    private void beds() {
+        if (!cfg().audioBed) return;
+        int tick = plugin.getServer().getCurrentTick();
+        for (Player p : plugin.getServer().getOnlinePlayers()) {
+            State s = states.get(p.getUniqueId());
+            if (s == null || s.level == null || p.getGameMode() == GameMode.SPECTATOR || !custom(p)) continue;
+            if (tick < s.bedsPausedUntil) continue;
+            for (Soundscape.Bed b : Soundscape.beds(s.level)) {
+                String id = bedId(b.sound());
+                SoundIndex.Def def = index.def(id);
+                if (def == null) continue;
+                Integer next = s.beds.get(id);
+                if (next != null && next > tick) continue;
+                float vol = (float) (b.volume() * cfg().audioBedVolume * intensity(s.level));
+                if (vol <= 0.001f) continue;
+                p.playSound(net.kyori.adventure.sound.Sound.sound(Key.key("backrooms", id), net.kyori.adventure.sound.Sound.Source.AMBIENT, vol, 1f),
+                        net.kyori.adventure.sound.Sound.Emitter.self());
+                s.playing.put(id, now + def.durationTicks());
+                s.beds.put(id, tick + Math.max(20, def.durationTicks() - OVERLAP));
+            }
+        }
+    }
+
+    /** Level 0's bed is the supplied recording unless configured (or missing): then the synthesised one. */
+    private String bedId(String id) {
+        if (id.equals("bed.level0") && (!cfg().audioBedRecording || index.def(id) == null)) return "bed.level0_synth";
+        return id;
+    }
+
+    /** Stop a listener's bed now and keep it silent for {@code ticks} (power cut: the buzz dies with the lights). */
+    private void pauseBed(Player p, State s, int ticks) {
+        for (String id : s.beds.keySet()) p.stopSound(SoundStop.named(Key.key("backrooms", id)));
+        s.beds.clear();
+        s.bedsPausedUntil = plugin.getServer().getCurrentTick() + ticks;
     }
 
     // ------------------------------------------------------------------ events
@@ -295,7 +344,7 @@ public final class AudioEngine implements Listener {
                 SoundIndex.Def def = index.def(ev.sound());
                 String event = index.resolve(ev.sound() + ".ambient", null, false);
                 if (event == null) event = index.resolve(ev.sound(), null, false);
-                if (event != null) play(p, p.getLocation(), event, SoundCategory.MUSIC, vol, 1f, def.durationTicks());
+                if (event != null) playOnListener(p, event, net.kyori.adventure.sound.Sound.Source.MUSIC, vol, def.durationTicks());
             }
             default -> {
                 boolean muffled = ev.placement() != Soundscape.Place.LISTENER && cfg().audioQuality > 0
@@ -393,7 +442,10 @@ public final class AudioEngine implements Listener {
             String down = index.resolve("power.down", null, false);
             if (down != null) play(p, c, down, SoundCategory.AMBIENT, 0.9f, 1f, 50);
             State s = states.get(p.getUniqueId());
-            if (s != null) s.loops.replaceAll((k, v) -> now + ticks); // the hum stops with the lights
+            if (s != null) {
+                s.loops.replaceAll((k, v) -> now + ticks); // the hum stops with the lights
+                if (s.level == Level.LEVEL_0 || s.level == Level.LEVEL_4) pauseBed(p, s, ticks);
+            }
         }
         plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
             for (Player p : ps) {
@@ -421,6 +473,14 @@ public final class AudioEngine implements Listener {
         if (s != null) s.playing.put(event, now + index.ticks(event, durationTicks));
     }
 
+    /** A sound attached to the listener: it moves with them instead of staying where it started. */
+    private void playOnListener(Player p, String event, net.kyori.adventure.sound.Sound.Source src, float volume, int durationTicks) {
+        p.playSound(net.kyori.adventure.sound.Sound.sound(Key.key("backrooms", event), src, Math.max(0.01f, volume), 1f),
+                net.kyori.adventure.sound.Sound.Emitter.self());
+        State s = states.get(p.getUniqueId());
+        if (s != null) s.playing.put(event, now + index.ticks(event, durationTicks));
+    }
+
     /** Stop every custom sound this listener may still be hearing. */
     public void silence(Player p) {
         State s = states.get(p.getUniqueId());
@@ -431,6 +491,7 @@ public final class AudioEngine implements Listener {
             it.remove();
         }
         s.loops.clear();
+        s.beds.clear();
     }
 
     @EventHandler

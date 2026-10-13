@@ -1,0 +1,24 @@
+{
+  "_doc": "Custom textured blocks. Each is a powered note block in a state that vanilla play almost never produces (it needs a mob head on top AND redstone power), retextured by the Backrooms resource pack. Inside the Backrooms the plugin freezes note blocks so the states never change. 'fallback' is the vanilla block used when custom-blocks is off. 'color' is the average colour (renders, maps). Read by the plugin (CustomBlocks.java) and by tools/textures/build_textures.py.",
+  "version": 1,
+  "blocks": {
+    "l0_wall":           {"instrument": "piglin", "note": 0,  "textures": {"all": "l0_wall"},          "fallback": "minecraft:end_stone",          "color": "#cdbb72"},
+    "l0_wall_b":         {"instrument": "piglin", "note": 1,  "textures": {"all": "l0_wall_b"},        "fallback": "minecraft:smooth_sandstone",   "color": "#c7b36c"},
+    "l0_wall_stain":     {"instrument": "piglin", "note": 2,  "textures": {"all": "l0_wall_stain"},    "fallback": "minecraft:sandstone",          "color": "#b8a262"},
+    "l0_carpet":         {"instrument": "piglin", "note": 3,  "textures": {"all": "l0_carpet"},        "fallback": "minecraft:yellow_terracotta",  "color": "#9d8a50"},
+    "l0_carpet_wet":     {"instrument": "piglin", "note": 4,  "textures": {"all": "l0_carpet_wet"},    "fallback": "minecraft:brown_terracotta",   "color": "#6f5f37"},
+    "l0_ceiling":        {"instrument": "piglin", "note": 5,  "textures": {"all": "l0_ceiling"},       "fallback": "minecraft:bone_block[axis=y]", "color": "#d6cfb2"},
+    "l0_ceiling_stain":  {"instrument": "piglin", "note": 6,  "textures": {"all": "l0_ceiling_stain"}, "fallback": "minecraft:sandstone",          "color": "#c2b388"},
+    "light_panel":       {"instrument": "piglin", "note": 7,  "textures": {"all": "light_panel"}, "emissive": 15,"fallback": "minecraft:white_concrete",     "color": "#fff6d8"},
+    "light_panel_off":   {"instrument": "piglin", "note": 8,  "textures": {"all": "light_panel_off"},  "fallback": "minecraft:light_gray_concrete","color": "#a9a597"},
+    "light_panel_cool":  {"instrument": "piglin", "note": 9,  "textures": {"all": "light_panel_cool"}, "emissive": 15,"fallback": "minecraft:white_concrete",     "color": "#f4f8ff"},
+    "pool_tile":         {"instrument": "piglin", "note": 10, "textures": {"all": "pool_tile"},        "fallback": "minecraft:smooth_quartz",      "color": "#e9ecea"},
+    "pool_tile_blue":    {"instrument": "piglin", "note": 11, "textures": {"all": "pool_tile_blue"},   "fallback": "minecraft:light_blue_concrete","color": "#9fd0dd"},
+    "pool_tile_grime":   {"instrument": "piglin", "note": 12, "textures": {"all": "pool_tile_grime"},  "fallback": "minecraft:white_concrete",     "color": "#d4d6cc"},
+    "office_wall":       {"instrument": "piglin", "note": 13, "textures": {"all": "office_wall"},      "fallback": "minecraft:white_concrete",     "color": "#e2ddd2"},
+    "office_wall_b":     {"instrument": "piglin", "note": 14, "textures": {"all": "office_wall_b"},    "fallback": "minecraft:white_concrete",     "color": "#e9e2d6"},
+    "office_carpet":     {"instrument": "piglin", "note": 15, "textures": {"all": "office_carpet"},    "fallback": "minecraft:gray_wool",          "color": "#7e7a72"},
+    "office_carpet_b":   {"instrument": "piglin", "note": 16, "textures": {"all": "office_carpet_b"},  "fallback": "minecraft:light_blue_wool",    "color": "#6b5e60"},
+    "office_ceiling":    {"instrument": "piglin", "note": 17, "textures": {"all": "office_ceiling"},   "fallback": "minecraft:smooth_quartz",      "color": "#dcdcd6"}
+  }
+}

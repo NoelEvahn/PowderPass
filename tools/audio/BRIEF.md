@@ -6,7 +6,8 @@ Everything here is produced offline by `tools/audio/*.py` and committed. The plu
 - Python 3 with numpy and scipy installed; `ffmpeg` with `libvorbis`; `espeak-ng` (GPL tool, its *output* is not
   encumbered) for original synthetic speech. freesound.org / opengameart.org / mc-packs.net are NOT reachable from
   this sandbox (proxy 403). PyPI and archive.ubuntu.com are reachable. So: everything is synthesised or TTS-generated,
-  all original, released by this project as CC0. No third-party recordings.
+  all original, released by this project as CC0. No third-party recordings, with one owner-supplied exception:
+  `bed.level0` (see "Per-level beds"), registered as a user sound with its own license note.
 - Deterministic: fixed RNG seeds per asset so re-running produces byte-identical WAV input (OGG encoding should be
   stable too; pin `-q:a`).
 
@@ -31,9 +32,12 @@ referenced, a non-Vorbis or unreadable OGG (check with ffprobe), a positional so
 - Mono for everything positional. Stereo ONLY for `music.*.ambient` (non-positional, played at the listener).
 - `"stream": true` in sounds.json for anything longer than ~10 s (music, long loops).
 - Loops: 6–12 s, 300 ms equal-power fade in/out at both ends so the plugin can re-trigger with a 300 ms overlap
-  without clicks. Hum loops must be pitch-stable so overlaps do not beat audibly.
+  without clicks. Hum loops must be pitch-stable so overlaps do not beat audibly. Exception: the per-level beds
+  (`bed.*`) are 40–60 s so their repetition is not obvious.
 - Loudness: ambience around -24 LUFS-ish (quiet), one-shots peak -3 dBFS, music around -20 LUFS. Never clip.
-- Vorbis quality: `-q:a 3` for SFX, `-q:a 2` for long music. Target total pack size < 25 MB.
+- Vorbis quality: `-q:a 3` for SFX, `-q:a 2` for long music and for the beds (`Sound.q` overrides it per id).
+  Sample rate 44.1 kHz, except the beds at 48 kHz (`Sound.sr`; synthesis runs at 44.1 kHz and `generate.py`
+  resamples on encode). Target total Java pack size < 27 MB (`build_pack.py` warns above that).
 
 ## pack-index.json schema
 ```json
@@ -74,6 +78,28 @@ Electrical / light
 - `light.arc` [event, ~1 s, 3 variants] arc / sparks / short circuit.
 - `power.down` [event, ~2.5 s] hum winding down + relay clunk. `power.up` [event, ~2 s] relay clunk + hum swelling back.
 
+Per-level beds (the constant, player-attached layer)
+- One long seamless loop per level, played by the plugin ON THE LISTENER (non-positional, follows the player) for
+  as long as the player is in that level, re-triggered 300 ms before its end (6 ticks before `duration_ticks`) so
+  the two instances crossfade. Everything else (positional hums, events, music) plays on top of it.
+  All: [ambient, mono, 48 kHz, `positional: false`, `loop: true`, stream, Vorbis q2]. Built-in beds are made
+  loop-periodic (circular noise, `circ_filter`, `circ_conv` reverbs, `mix_wrap` events), so the overlap
+  reconstructs them exactly.
+- `bed.level0` [L 60 s, -26 LUFS] Level 0. A real recording of fluorescent lights buzzing supplied by the server
+  owner (from the "Backrooms PBR Resource Pack" by Pro_fessional, packsmc.com; redistribution permission must be
+  confirmed by the owner). It is a user sound: `pack/user_sounds.json` + `sounds/user/bed_level0.ogg`, made by
+  `tools/audio/import_user_loop.py`. The source recording is not in the repository.
+- `bed.level0_synth` [L 40 s, -27 LUFS] original CC0 fallback for Level 0: ten detuned 120 Hz ballast stacks
+  (slow beating), buzz-gated noise, faint mains hum. Use it when the recording may not be redistributed.
+- `bed.poolrooms` [L 40 s, -27 LUFS] pump motor + impeller hum, circulation flow, distant soft lapping against
+  tile, very faint high tiled-room air tone; pool reverb.
+- `bed.garage` [L 48 s, -27 LUFS] underground parking garage (Habitable Zone): ventilation rush with duct
+  resonances, low distant machinery cycle, steam leaks hissing and swelling irregularly, rare faint metal ticks
+  and tiny groans; concrete reverb.
+- `bed.office` [L 40 s, -27 LUFS] HVAC diffuser air, faint 120 Hz ballast buzz, low computer/server hum, very
+  faint distant electrical buzz.
+- `bed.plains` [L 48 s, -30 LUFS] extremely subtle low wind with slow gust swells, faint grass hiss.
+
 Machinery / air (Habitable Zone parking garage, Office)
 - `vent.hvac` [ambient, L 10s] air-handler rush with fan whine. `vent.small` [ambient, L 8s] grille hiss.
 - `machine.distant` [ambient, L 12s] distant rhythmic machinery with low thumps (has profile `concrete` baked in).
@@ -81,6 +107,12 @@ Machinery / air (Habitable Zone parking garage, Office)
 - `transformer.hum` [ambient, L 8s] 60/120 Hz heavy buzz.
 - `pipe.knock` [event, ~2 s, 3 variants, profiles] pipe vibration / water hammer.
 - `metal.creak` [event, ~2 s, 4 variants, profiles] thermal expansion creak.
+- `metal.clank` [event, ~2.5 s, 4 variants, profiles] something heavy hitting metal pipes/ducts far away: impact,
+  inharmonic ringing, rattle.
+- `metal.groan` [event, ~4 s, 3 variants, profiles, muffled] long low structural groan (stick-slip, slowly
+  gliding), distant.
+- `steam.burst` [event, ~2 s, 3 variants, profiles] pipe valve / leak letting out a burst of steam: sharp hiss
+  onset with moving resonance, sputter, tail, faint pipe ring.
 
 Water (Poolrooms, damp)
 - `water.drip` [event, ~1 s, 5 variants, profiles] single drips.

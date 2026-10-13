@@ -33,10 +33,11 @@ Requirements: Python 3 with `numpy` and `scipy`, `ffmpeg`/`ffprobe` with `libvor
 |---|---|
 | `catalog.py` | every sound id with its metadata (category, length, variants, profiles, muffled, loudness, method) |
 | `dsp.py` | filters, noise, envelopes, loudness (BS.1770), limiter, synthetic room IRs and the six acoustic profiles, loop assembly |
-| `sfx.py` | ambience beds and sound effects |
+| `sfx.py` | ambience loops, the per-level beds (`bed.*`) and sound effects |
 | `voices.py` | espeak-ng wrapper and voice processing (whisper, murmur, wall, PA, radio), formant-synthesised cry |
 | `music.py` | instruments (piano, Rhodes, pad, bell, bass, brush), mixing, effects, the nine compositions |
 | `generate.py` / `build_pack.py` | the two entry points |
+| `import_user_loop.py` | turns a long user-supplied recording into a seamless 48 kHz loop and registers it in `pack/user_sounds.json` |
 
 ## Determinism
 
@@ -54,6 +55,39 @@ SHA-1. A different numpy/scipy/libvorbis version can change the bits, but not th
      `noise` has length `n`. Use `periodic_smooth` for its slow level modulation.
 2. Add a `Sound(...)` entry to `catalog.py`.
 3. Run `generate.py --only <id>`, then `build_pack.py`.
+
+## Per-level beds
+
+Each level has one constant bed the plugin plays on the listener (non-positional, it follows the player) and
+re-triggers 300 ms before its end, under everything else:
+
+| level | bed id |
+|---|---|
+| Level 0 | `bed.level0` (owner-supplied recording), fallback `bed.level0_synth` (original, CC0) |
+| Poolrooms | `bed.poolrooms` |
+| Habitable Zone / parking garage | `bed.garage` |
+| Office | `bed.office` |
+| Plains | `bed.plains` |
+
+The synthesised beds are 40-48 s, mono, 48 kHz (`Sound.sr`), Vorbis q2 (`Sound.q`), -27 LUFS (plains -30).
+Generators are in the "per-level beds" section of `sfx.py`. They keep everything loop-periodic: noise
+generated at the period length (FFT-shaped noise is circular), `circ_filter`, `circ_conv` reverbs, events
+written with `mix_wrap`, and `_pcurve` / `_swell` periodic control curves.
+
+`bed.level0` comes from a recording the server owner supplied. Its license is unknown, so it is a user sound,
+not a catalog entry. To rebuild it from the source file (which is not committed):
+
+```sh
+python3 tools/audio/import_user_loop.py /path/to/fluorescentlight.ogg --id bed.level0 \
+    --out user/bed_level0.ogg --length 60 --lufs -26 --license "..." --method "..."
+python3 tools/audio/build_pack.py
+```
+
+The script downmixes to mono, resamples to 48 kHz and high-passes at 50 Hz. It then picks the steadiest stretch
+(lowest RMS spread, fewest transients) and builds a 59.7 s period whose last 4 s crossfade into its start. It
+adds the 300 ms loop fades and normalises the loop. User loops (`"loop": true` in `user_sounds.json`) get the
+same fade and overlap checks in `build_pack.py` as the built-in loops. `"length"` sets `stream` and the
+expected duration.
 
 The skinwalker creature sounds (`skinwalker.crackle`, `.screech`, `.chitter`, `.scuttle`) live at the end of
 `sfx.py` / `voices.py`; `skinwalker.chitter` is a deliberately short 4 s loop.

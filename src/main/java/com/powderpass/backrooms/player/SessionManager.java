@@ -165,6 +165,12 @@ public final class SessionManager {
             if (feedback != null) feedback.sendMessage(cfg().msg("level-disabled", "level", Level.LEVEL_0.displayName()));
             return false;
         }
+        if (!plugin.pack().mayEnter(p)) {
+            // the Backrooms are built from textured blocks: without the pack they would be walls of note blocks
+            p.sendMessage(cfg().msg("needs-pack"));
+            plugin.pack().offer(p);
+            return false;
+        }
         if (!inside(p)) saveReturn(p, p.getLocation());
         Location target = entryTarget(p, true);
         p.sendMessage(cfg().msg("entering"));

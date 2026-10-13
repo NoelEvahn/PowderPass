@@ -70,7 +70,26 @@ class FirstPersonRenderTest {
     }
 
     /** One display box: world->local (unit cube) transform, material, emissive level or -1. */
-    private record Box(Matrix4f inv, Material mat, int glow, float minX, float minY, float minZ, float maxX, float maxY, float maxZ) {
+    private record Box(Matrix4f inv, int[] col, int glow, float minX, float minY, float minZ, float maxX, float maxY, float maxZ) {
+    }
+
+    /** The pack's real textures for custom blocks (pack/java/assets/backrooms/textures/block), cached. */
+    private static final Map<String, BufferedImage> TEX = new java.util.concurrent.ConcurrentHashMap<>();
+
+    private static BufferedImage tex(String name) {
+        return TEX.computeIfAbsent(name, n -> {
+            try {
+                return ImageIO.read(new File("pack/java/assets/backrooms/textures/block/" + n + ".png"));
+            } catch (java.io.IOException e) {
+                return null;
+            }
+        });
+    }
+
+    private static int[] rgbOf(org.bukkit.block.data.BlockData d) {
+        CustomBlocks.Def c = CustomBlocks.of(d);
+        if (c != null) return new int[]{(c.rgb() >> 16) & 255, (c.rgb() >> 8) & 255, c.rgb() & 255};
+        return rgb(d.getMaterial());
     }
 
     @Test
@@ -78,20 +97,42 @@ class FirstPersonRenderTest {
         String out = System.getenv("RENDER_VIEWS");
         Assumptions.assumeTrue(out != null && !out.isBlank(), "set RENDER_VIEWS=<dir>");
         LevelGenerator g = Generators.create(Level.LEVEL_0, SEED, GenSettings.defaults());
-        // two viewpoints: the spawn, and a spot a district away
-        int[][] probes = {{0, 0}, {240, -120}, {-400, 300}};
-        int n = 0;
-        for (int[] pr : probes) {
-            Scene s = new Scene(g, pr[0], pr[1]);
+        var l0 = (com.powderpass.backrooms.gen.levels.Level0Generator) g;
+        // one viewpoint in the nearest region of each kind of space, plus one ordinary room further out
+        java.util.Map<com.powderpass.backrooms.gen.levels.Level0Generator.Zone, int[]> probes = new java.util.LinkedHashMap<>();
+        for (int r = 0; r < 12 && probes.size() < 4; r++) {
+            for (int rx = -r; rx <= r; rx++) for (int rz = -r; rz <= r; rz++) {
+                if (Math.max(Math.abs(rx), Math.abs(rz)) != r) continue;
+                var z = l0.zoneOfCell(rx * g.R, rz * g.R);
+                probes.putIfAbsent(z, new int[]{rx * g.S * g.R + g.S * g.R / 2 + 4, rz * g.S * g.R + g.S * g.R / 2 + 4});
+            }
+        }
+        for (var e : probes.entrySet()) {
+            Scene s = new Scene(g, e.getValue()[0], e.getValue()[1]);
             BufferedImage img = s.render();
-            File f = new File(out, "level0-view-" + (++n) + ".png");
+            File f = new File(out, "level0-" + e.getKey().name().toLowerCase(java.util.Locale.ROOT) + ".png");
             f.getParentFile().mkdirs();
             ImageIO.write(img, "png", f);
             System.out.println("wrote " + f.getAbsolutePath() + " " + s.note);
         }
     }
 
+    @Test
+    void renderTexturedLevels() throws Exception {
+        String out = System.getenv("RENDER_VIEWS");
+        Assumptions.assumeTrue(out != null && !out.isBlank(), "set RENDER_VIEWS=<dir>");
+        for (Level level : new Level[]{Level.POOLROOMS, Level.LEVEL_4}) {
+            LevelGenerator g = Generators.create(level, SEED, GenSettings.defaults());
+            Scene s = new Scene(g, 0, 0);
+            s.label = level.displayName();
+            File f = new File(out, level.key() + "-view.png");
+            ImageIO.write(s.render(), "png", f);
+            System.out.println("wrote " + f.getAbsolutePath() + " " + s.note);
+        }
+    }
+
     private static final class Scene {
+        String label = "Level 0";
         final LevelGenerator g;
         final Area a;
         final int x0, z0, x1, z1, y0, y1;
@@ -110,7 +151,7 @@ class FirstPersonRenderTest {
             z1 = spot[2] + r;
             a = new Area(g, x0, z0, x1, z1);
             y0 = g.floorY[0] - 2;
-            y1 = g.floorY[0] + 12;
+            y1 = g.floorY[0] + 26;
             light = new float[x1 - x0][y1 - y0][z1 - z0];
             propagateLight();
             for (int cx = Math.floorDiv(x0, 16); cx <= Math.floorDiv(x1 - 1, 16); cx++) {
@@ -219,7 +260,7 @@ class FirstPersonRenderTest {
                 Matrix4f inv = new Matrix4f(world);
                 if (Math.abs(inv.determinant()) < 1e-12) continue;
                 inv.invert();
-                boxes.add(new Box(inv, p.block.getMaterial(), p.brightness == null ? -1 : p.brightness, lo.x, lo.y, lo.z, hi.x, hi.y, hi.z));
+                boxes.add(new Box(inv, rgbOf(p.block), p.brightness == null ? -1 : p.brightness, lo.x, lo.y, lo.z, hi.x, hi.y, hi.z));
             }
         }
 
@@ -243,7 +284,7 @@ class FirstPersonRenderTest {
             gr.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
             gr.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 13));
             gr.setColor(new Color(255, 255, 255, 150));
-            gr.drawString("Level 0 — first-person ray-cast of the real generator output (blocks, display models, block light). Procedural textures, not Minecraft's.", 12, H - 12);
+            gr.drawString(label + " — first-person ray-cast of the real generator output: the pack's real textures on custom blocks, display models, block light. Not Minecraft's renderer.", 12, H - 12);
             gr.dispose();
             return img;
         }
@@ -340,7 +381,7 @@ class FirstPersonRenderTest {
         }
 
         int shadeBox(Box b, double[] hit, double hx, double hy, double hz, double dist) {
-            int[] c = rgb(b.mat);
+            int[] c = b.col;
             if (b.glow >= 0) {
                 double k = 0.35 + 0.65 * b.glow / 15.0;
                 return pack(c[0] * k * 1.08, c[1] * k * 1.08, c[2] * k * 1.06);
@@ -370,8 +411,23 @@ class FirstPersonRenderTest {
             if (nx != 0) { u = hz - Math.floor(hz); v = hy - Math.floor(hy); }
             else if (ny != 0) { u = hx - Math.floor(hx); v = hz - Math.floor(hz); }
             else { u = hx - Math.floor(hx); v = hy - Math.floor(hy); }
-            double tex = texture(m, ny != 0, u, v, X, Y, Z);
-            int[] c = rgb(m);
+            CustomBlocks.Def cd = CustomBlocks.of(b);
+            BufferedImage ti = cd == null ? null : tex(cd.id());
+            double tex;
+            int[] c;
+            if (ti != null) {
+                // the real pack texture; side faces are drawn top-down
+                int tw = ti.getWidth();
+                int px = Math.min(tw - 1, (int) (u * tw)), py = Math.min(tw - 1, (int) ((ny != 0 ? v : 1 - v) * tw));
+                int argb = ti.getRGB(px, py);
+                c = new int[]{(argb >> 16) & 255, (argb >> 8) & 255, argb & 255};
+                tex = 1;
+                // emissive panel models: unshaded, full bright (block model light_emission 15)
+                if (cd.id().startsWith("light_panel") && !cd.id().endsWith("_off")) return pack(c[0], c[1], c[2]);
+            } else {
+                tex = texture(m, ny != 0, u, v, X, Y, Z);
+                c = rgb(m);
+            }
             double l = lightAt(hx + nx * 0.5, hy + ny * 0.5, hz + nz * 0.5);
             double k = brightness(l) * faceShade * tex;
             return warm(c, k, l);

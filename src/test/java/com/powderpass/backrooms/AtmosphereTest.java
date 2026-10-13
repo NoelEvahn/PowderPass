@@ -177,7 +177,8 @@ class AtmosphereTest {
                 "knock.distant", "step.carpet", "step.concrete", "step.tile", "step.water", "voice.whisper", "voice.murmur",
                 "voice.conversation", "voice.announce", "voice.phrase", "voice.cry", "water.drip", "water.splash", "water.bubbles",
                 "metal.creak", "pipe.knock", "machine.start", "impact.distant", "movement.distant", "office.click", "office.printer",
-                "office.phone", "speaker.broken", "grass.rustle", "plains.distant", "light.arc")) {
+                "office.phone", "speaker.broken", "grass.rustle", "plains.distant", "light.arc",
+                "bed.level0_synth", "bed.poolrooms", "bed.garage", "bed.office", "bed.plains", "steam.burst", "metal.clank", "metal.groan")) {
             assertNotNull(idx.def(id), "engine uses '" + id + "' but the pack has no such sound");
         }
     }
@@ -189,7 +190,7 @@ class AtmosphereTest {
         DecorSpec lamp = null;
         for (int c = 0; c < 16 && lamp == null; c++) {
             for (DecorSpec d : g.decorations(c, 0)) {
-                if (d.model.equals("ceiling_panel")) {
+                if (d.model.equals("panel_light")) {
                     lamp = d;
                     break;
                 }
@@ -207,6 +208,10 @@ class AtmosphereTest {
         server.getScheduler().performTicks(60);
         assertTrue(p.customSounds.stream().anyMatch(s -> s.startsWith("backrooms:hum.fluorescent")), "fixture hum plays: " + p.customSounds);
         String hum = p.customSounds.stream().filter(s -> s.startsWith("backrooms:hum.fluorescent")).findFirst().orElseThrow();
+        // the constant bed plays on the listener, not at a place
+        assertTrue(p.customSounds.stream().anyMatch(s -> s.startsWith("backrooms:bed.level0") && s.endsWith("@self")), "Level 0 bed on the listener: " + p.customSounds);
+        long beds = p.customSounds.stream().filter(s -> s.startsWith("backrooms:bed.")).count();
+        assertEquals(1, beds, "one bed pass, not restarted every tick: " + p.customSounds);
         String[] xyz = hum.substring(hum.indexOf('@') + 1).split(",");
         assertTrue(Math.abs(Integer.parseInt(xyz[0]) - lamp.x) < 12 && Math.abs(Integer.parseInt(xyz[2]) - lamp.z) < 12, "hum comes from a fixture, not the listener");
         for (String s : p.customSounds) {

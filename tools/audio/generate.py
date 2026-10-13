@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import argparse
 import importlib
+import math
 import os
 import shutil
 import subprocess
@@ -24,6 +25,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
 import numpy as np  # noqa: E402
+from scipy import signal  # noqa: E402
 from scipy.io import wavfile  # noqa: E402
 
 import catalog  # noqa: E402
@@ -34,9 +36,23 @@ OUT = os.path.join(ROOT, "pack", "java", "assets", "backrooms", "sounds")
 FFMPEG = os.environ.get("FFMPEG", "ffmpeg")
 
 
-def encode(y: np.ndarray, rel: str, quality: int, tmpdir: str, keep_wav: str | None):
+def to_rate(y: np.ndarray, sr: int) -> np.ndarray:
+    """Resample from dsp.SR to sr (polyphase, deterministic). Loops keep their exact length in seconds
+    (e.g. 40 s: 1 764 000 -> 1 920 000 samples) and their silent end samples."""
+    if sr == dsp.SR:
+        return y
+    g = math.gcd(sr, dsp.SR)
+    z = signal.resample_poly(y, sr // g, dsp.SR // g, axis=0)
+    if np.all(y[0] == 0):
+        z[0] = 0.0
+    if np.all(y[-1] == 0):
+        z[-1] = 0.0
+    return z
+
+
+def encode(y: np.ndarray, rel: str, quality: int, tmpdir: str, keep_wav: str | None, sr: int = dsp.SR):
     wav = os.path.join(tmpdir, rel.replace("/", "__") + ".wav")
-    wavfile.write(wav, dsp.SR, np.asarray(y, dtype=np.float32))
+    wavfile.write(wav, sr, np.asarray(to_rate(y, sr), dtype=np.float32))
     dst = os.path.join(OUT, rel + ".ogg")
     os.makedirs(os.path.dirname(dst), exist_ok=True)
     subprocess.run([FFMPEG, "-nostdin", "-hide_banner", "-loglevel", "error", "-y", "-i", wav,
@@ -104,7 +120,7 @@ def job(sid: str, tmpdir: str, keep_wav):
             rel = f"{es.dir()}/{stem}_{i + 1}"
             if not es.stereo and y.ndim == 2:
                 raise RuntimeError(f"{rel}: positional/mono sound rendered stereo")
-            encode(y, rel, es.quality, tmpdir, keep_wav)
+            encode(y, rel, es.quality, tmpdir, keep_wav, es.sr)
             report.append((rel, len(y) / dsp.SR, dsp.to_db(dsp.peak(y))))
     return sid, time.time() - t0, report
 

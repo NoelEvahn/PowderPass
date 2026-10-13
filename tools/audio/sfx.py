@@ -1065,3 +1065,280 @@ def skinwalker_chitter(rng, v, n, P):
     ton = unit(ton)
     ton = 6.0 * np.tanh(ton / 6.0)      # memoryless soft limit of click peaks (keeps the layer periodic)
     return unit(ton), 0.5 * unit(noi)
+
+
+# ============================================================================ per-level beds (player-attached)
+# Long (40-48 s) seamless loops played on the listener. Almost everything lives in the loop-periodic part:
+# FFT-shaped noise is circular, filters run through circ_filter, reverbs through circ_conv, and discrete
+# events are written with mix_wrap -> two instances overlapping by 300 ms reconstruct the bed exactly.
+def _pcurve(P, rate, rng, lo=-1.0, hi=1.0):
+    """Smooth random curve that is exactly periodic over P samples (band-limited to ~rate Hz, via FFT)."""
+    K = max(2, int(round(rate * P / SR)))
+    k = np.arange(1, K + 1)
+    X = np.zeros(P // 2 + 1, complex)
+    X[1:K + 1] = (rng.normal(size=K) + 1j * rng.normal(size=K)) / np.sqrt(k)
+    y = np.fft.irfft(X, P)
+    y /= np.max(np.abs(y)) or 1.0
+    return lo + (y + 1) * 0.5 * (hi - lo)
+
+
+def _swell(P, rate, rng, thresh=0.0, power=1.5):
+    """0..1 periodic envelope that swells irregularly and rests at 0 between swells."""
+    e = np.clip(_pcurve(P, rate, rng) - thresh, 0, None)
+    return (e / (np.max(e) or 1.0)) ** power
+
+
+def _ping(rng, freqs, decays, dur=0.4, ex_hi=10000):
+    ex = burst(rng, 0.002, 0.0004, 600, ex_hi)
+    m = modal(freqs, [1.0 / (1 + 0.5 * k) for k in range(len(freqs))], decays, ns(dur), rng, True)
+    return signal.fftconvolve(ex, m)[: ns(dur)]
+
+
+def bed_poolrooms(rng, v, n, P):
+    # pump: motor 120 Hz electrical hum + 7-vane impeller blade-pass on a 29.6 Hz shaft
+    mot = harm_tone(P, qf(120, P), [0.5, 0.22, 0.12, 0.05], rng)
+    bpf = qf(7 * 29.6, P)
+    imp = harm_tone(P, bpf, [1.0, 0.35, 0.15], rng) * periodic_am(P, [(29.6, 0.18, 0.0), (0.23, 0.06, 1.0)])
+    shaft = harm_tone(P, qf(29.6, P), [0.4, 0.25], rng)
+    pump = circ_filter(unit(mot) + 0.6 * unit(imp) + 0.5 * unit(shaft), lambda x: lp(x, 900, 2))
+    # circulation flow + gurgle (moving band weights)
+    g = pink(P, rng)
+    flow = circ_filter(g, lambda x: lp(x, 850, 2)) * (1 + 0.1 * _pcurve(P, 0.2, rng))
+    g2 = pink(P, rng)
+    gur = np.zeros(P)
+    for lo_, hi_ in [(180, 360), (360, 720), (720, 1400)]:
+        gur += circ_filter(g2, lambda x: bp(x, lo_, hi_, 2)) * np.clip(_pcurve(P, 1.2, rng), 0, 1) ** 2
+    # distant lapping against tile: irregular slaps + 'tlok' drops, written around the loop
+    lap = np.zeros(P)
+    tp = rng.uniform(0, 1)
+    while tp < P / SR:
+        d = rng.uniform(0.5, 1.1)
+        k = ns(d)
+        slap = bp(pink(k, rng), 220, 1500, 2) * env_ar(k, rng.uniform(0.08, 0.2), d * 0.7, 1.5)
+        mix_wrap(lap, unit(slap) * rng.uniform(0.25, 1.0), ns(tp))
+        if rng.random() < 0.4:
+            mix_wrap(lap, drop(rng, rng.uniform(280, 520), 0.6, 0.045, 0.5, 0.0, 0.2), ns(tp + d * 0.3))
+        tp += rng.uniform(1.0, 3.2)
+    lap = circ_filter(lap, lambda x: lp(x, 1400, 2))
+    # very faint high tiled-room air tone
+    air = circ_filter(white(P, rng), lambda x: bp(x, 4500, 9500, 2)) * (1 + 0.2 * _pcurve(P, 0.1, rng))
+    whis = np.sin(2 * np.pi * qf(6300, P) * taxis(P) + 2.0 * np.sin(2 * np.pi * qf(0.17, P) * taxis(P)))
+    dry = 0.35 * unit(pump) + unit(flow) + 0.45 * unit(gur) + 0.35 * unit(lap) + 0.06 * unit(air) + 0.004 * whis
+    ir, _, _ = get_profile_ir("pool")
+    ton = 0.6 * dry + 0.55 * circ_conv(circ_filter(dry, lambda x: lp(x, 3000, 2)), ir)
+    return circ_filter(ton, lambda x: hp(x, 28, 2)), None
+
+
+def bed_garage(rng, v, n, P):
+    tP = taxis(P)
+    # ventilation: pink air rush with harmonic duct modes, slow turbulence
+    rush = circ_filter(pink(P, rng), lambda x: peq(peq(peq(peq(lp(x, 1500, 4), 63, 5, 6), 126, 4, 6),
+                                                         189, 3, 6), 340, 3, 3))
+    rush *= 1 + 0.14 * _pcurve(P, 0.25, rng) + 0.04 * _pcurve(P, 3.0, rng)
+    hiss = circ_filter(white(P, rng), lambda x: bp(x, 2000, 6000, 2))
+    blade = additive(2 * np.pi * qf(97, P) * tP + 2.5 * np.sin(2 * np.pi * qf(0.29, P) * tP), [1, 0.5, 0.2])
+    vent = unit(rush) + 0.05 * unit(hiss) + 0.06 * blade
+    # distant machinery: 16 slow cycles (3 s) of thump + soft clank + motor drone
+    mach = np.zeros(P)
+    cyc = 16
+    cl = P / cyc
+    for c in range(cyc):
+        base = int(c * cl)
+        gg = db(rng.normal(0, 2.0))
+        mix_wrap(mach, thump(rng, 62, 32, 0.25, 1.2, 0.8) * gg, base)
+        if rng.random() < 0.7:
+            ex = burst(rng, 0.01, 0.002, 300, 4000)
+            clank = signal.fftconvolve(ex, modal([310, 760, 1290, 1910], [1, 0.6, 0.35, 0.2],
+                                                 [0.35, 0.22, 0.12, 0.08], ns(0.7)))
+            mix_wrap(mach, clank * 0.6 * gg, base + int(0.52 * cl))
+    motor = harm_tone(P, qf(41, P), [1, 0.6, 0.35, 0.2, 0.1], rng) * 0.1
+    motor *= 1 + 0.35 * np.sin(2 * np.pi * qf(cyc / (P / SR), P) * tP)
+    mach = circ_filter(mach + motor, lambda x: lp(x, 650, 2))
+    # steam: three leaks that swell and fade irregularly (loop-periodic), with sputter and flutter
+    steam = np.zeros(P)
+    for fc, rate, thr, gain in [(3100, 0.08, 0.1, 1.0), (5200, 0.12, 0.25, 0.6), (2200, 0.06, 0.0, 0.6)]:
+        src = white(P, rng)
+        h = 0.6 * unit(circ_filter(src, lambda x: bp(x, fc * 0.55, fc * 1.8, 2)))
+        h += 0.4 * unit(circ_filter(src, lambda x: reson(x, fc, 4)))
+        sput = 1 - 0.55 * np.clip(_pcurve(P, 7, rng), 0, 1) ** 2
+        steam += h * _swell(P, rate, rng, thr) * sput * (1 + 0.15 * _pcurve(P, 2.5, rng)) * gain
+    # metal: sparse expansion ticks and two tiny groans
+    met = np.zeros(P)
+    for _ in range(7):
+        f = np.sort(rng.uniform(1500, 5200, 3))
+        mix_wrap(met, _ping(rng, f, rng.uniform(0.04, 0.18, 3)) * rng.uniform(0.3, 1.0), int(rng.uniform(0, P)))
+    pk = peak(met)
+    for k in range(2):
+        m = ns(1.6)
+        gr = creak(rng, m, [(0, 9), (0.7, rng.uniform(18, 28)), (1.6, 7)], np.sort(rng.uniform(180, 900, 5)),
+                   rng.uniform(0.1, 0.35, 5), env_points(m, [(0, 0), (0.4, 1), (1.1, 0.7), (1.5, 0)]))
+        gr = lp(gr, 1500, 2)
+        mix_wrap(met, gr * 0.6 * pk / max(peak(gr), 1e-9), int((k + rng.uniform(0.2, 0.8)) * P / 2))
+    met = circ_filter(met, lambda x: hp(x, 150, 2))
+    ir, _, _ = get_profile_ir("concrete")
+    machf = circ_conv(mach, ir)
+    dry = (unit(vent) + 0.3 * unit(0.4 * mach + machf) + 0.4 * unit(steam)
+           + 0.025 * met / max(rms(met), 1e-9))
+    ton = 0.75 * dry + 0.45 * circ_conv(circ_filter(dry, lambda x: lp(x, 5000, 2)), ir)
+    return circ_filter(ton, lambda x: hp(x, 28, 2)), None
+
+
+def bed_office(rng, v, n, P):
+    tP = taxis(P)
+    ballast = _tube(P, rng, qf(120, P), 1.3, 1.8, 0.04)
+    ballast *= periodic_am(P, [(0.31, 0.03, rng.uniform(0, 6)), (1.1, 0.012, 0.0)])
+    ballast = circ_filter(ballast, lambda x: lp(x, 5000, 2))
+    server = harm_tone(P, qf(60, P), [1, 0.5, 0.3, 0.15], rng)
+    fan = harm_tone(P, qf(236, P), [1, 0.45, 0.2, 0.1], rng) * periodic_am(P, [(0.19, 0.08, 0.0)])
+    fan_air = circ_filter(pink(P, rng), lambda x: bp(x, 300, 2000, 2))
+    whine = np.sin(2 * np.pi * qf(3420, P) * tP + 3 * np.sin(2 * np.pi * qf(0.13, P) * tP))
+    comp = (0.6 * unit(circ_filter(server, lambda x: lp(x, 400, 2))) + 0.5 * unit(fan) + 0.6 * unit(fan_air)
+            + 0.02 * whine)
+    w = np.sin(2 * np.pi * qf(120, P) * tP) + 0.25 * np.sin(2 * np.pi * qf(60, P) * tP + 0.7)
+    dist = np.tanh(2.5 * (w + 0.2))
+    dist = circ_filter(dist - dist.mean(), lambda x: lp(x, 1400, 2)) * (0.6 + 0.4 * _pcurve(P, 0.05, rng))
+    ir, _, _ = get_profile_ir("office")
+    cir, _, _ = get_profile_ir("concrete")
+    dist = circ_conv(dist, cir)
+    ton = 0.16 * unit(ballast) + 0.28 * unit(comp) + 0.05 * unit(dist)
+    ton = ton + 0.3 * circ_conv(ton, ir)
+    # HVAC diffuser air (noise part, loop-periodic level)
+    noi = unit(lp(pink(n, rng), 700, 2)) + 0.12 * unit(bp(white(n, rng), 2000, 6000, 2))
+    noi *= db(0.8 * periodic_smooth(n, P, 0.12, rng))
+    return ton, unit(noi)
+
+
+def bed_plains(rng, v, n, P):
+    gust = 0.6 + 0.4 * periodic_smooth(n, P, 0.06, rng, 0, 1) ** 1.5
+    gust *= 1 + 0.08 * periodic_smooth(n, P, 0.7, rng)
+    base = lp(brown(n, rng), 380, 2) * gust
+    src = pink(n, rng)
+    fs = [260, 370, 510, 690]
+    w = np.stack([np.clip(periodic_smooth(n, P, 0.1, rng), 0, 1) ** 2 for _ in fs])
+    whistle = sum(reson(src, f, 10) * wi for f, wi in zip(fs, w)) * gust ** 2
+    gr = bp(pink(n, rng), 2500, 8000, 2) * gust ** 2.5
+    imp = (rng.random(n) < (120 + 500 * gust ** 3) / SR) * white(n, rng)
+    crack = bp(imp, 2500, 9000, 2) * gust
+    noi = unit(base) + 0.1 * unit(whistle) + 0.07 * unit(gr) + 0.03 * unit(crack)
+    return None, hp(noi, 25, 2)
+
+
+def bed_level0_synth(rng, v, n, P):
+    f0 = qf(120, P)
+    ton = np.zeros(P)
+    for det in [0, 1, -1, 2, -2, 3, -3, 4, -5, 6]:  # whole cycles per loop -> slow, seamless beating
+        tube = _tube(P, rng, f0, rng.uniform(1.05, 1.45), rng.uniform(1.4, 2.4), rng.uniform(0.02, 0.08),
+                     maxf=6500, detune=det)
+        tube *= periodic_am(P, [(rng.uniform(0.05, 0.6), 0.05, rng.uniform(0, 6))])
+        if det:  # the other tubes mostly add rattly upper harmonics (their fundamentals would beat too hard)
+            tube = circ_filter(tube, lambda x: hp(x, 320, 2))
+        ton += unit(tube) * (1.0 if det == 0 else rng.uniform(0.3, 0.5))
+    ton = circ_filter(ton, lambda x: lp(x, 5000, 2))
+    mains = harm_tone(P, qf(60, P), [1.0, 0.5, 0.3, 0.15], rng)
+    mains = circ_filter(mains, lambda x: lp(x, 300, 2))
+    ir, _, _ = get_profile_ir("office")
+    ton = unit(ton + 0.25 * circ_conv(ton, ir)) + 0.12 * unit(mains)
+    t = taxis(n)
+    gate = (0.5 + 0.5 * np.cos(2 * np.pi * f0 * t)) ** 4
+    buzz = bp(pink(n, rng), 1200, 7000, 2) * gate * db(1.5 * periodic_smooth(n, P, 0.1, rng))
+    noi = 0.16 * unit(buzz) + 0.1 * unit(lp(brown(n, rng), 200, 2))
+    return ton, noi
+
+
+# ============================================================================ steam / heavy metal one-shots
+def steam_burst(rng, v):
+    dur = [1.8, 2.2, 2.0][v % 3] * rng.uniform(0.95, 1.05)
+    n = ns(dur + 0.2)
+    t = taxis(n)
+    src = white(n, rng)
+    # moving resonance: resonator bank weighted by a gliding centre frequency (log-gaussian)
+    fpk = rng.uniform(3800, 5200)
+    c = env_points(n, [(0, fpk * 0.55), (0.05, fpk), (0.4, fpk * 0.8), (dur, fpk * 0.5)])
+    c *= 1 + 0.07 * smooth_random(n, 5, rng)
+    bank = [1600, 2100, 2800, 3600, 4700, 6100, 7900]
+    mov = np.zeros(n)
+    for f in bank:
+        wgt = np.exp(-0.5 * (np.log(f / c) / 0.22) ** 2)
+        mov += reson(src, f, 3.0) * wgt
+    broad = bp(src, 1200, 10000, 2)
+    hiss = 0.65 * unit(mov) + 0.35 * unit(broad)
+    env = env_points(n, [(0, 0), (0.006, 1.0), (0.1, 0.72), (0.5 * dur, 0.5), (0.85 * dur, 0.18), (dur, 0)]) ** 1.2
+    # sputter: irregular chopping that grows after the onset, plus wet spits
+    depth = env_points(n, [(0, 0), (0.2, 0), (0.45, 0.6 + 0.2 * (v == 1)), (dur, 0.9)])
+    chop = 1 - depth * np.clip(smooth_random(n, 16 + 6 * v, rng), 0, 1) ** 1.3
+    hiss = hiss * env * chop
+    for _ in range(int(rng.integers(4, 10))):
+        tp = rng.uniform(0.3, dur * 0.85)
+        sp = burst(rng, rng.uniform(0.015, 0.04), 0.008, 700, 5000) * rng.uniform(0.3, 0.8)
+        mix_into(hiss, unit(sp) * np.interp(tp, t, env) * 1.2, ns(tp))
+    # tail darkens
+    wl = np.stack([env_points(n, [(0, 1), (0.4 * dur, 1), (dur, 0.1)]), env_points(n, [(0, 0), (0.4 * dur, 0), (dur, 0.9)])])
+    hiss = multi_cutoff_lp(hiss, [12000, 2600], wl)
+    # valve tick + faint metallic pipe ring excited by the onset and (weakly) by the hiss
+    f1 = rng.uniform(280, 460)
+    ring = modal(f1 * np.array([1, 2.76, 5.40, 8.93]) * rng.uniform(0.98, 1.02, 4), [1, 0.6, 0.35, 0.2],
+                 [0.45, 0.3, 0.18, 0.1], ns(3.0))
+    ex = burst(rng, 0.004, 0.001, 500, 8000)
+    x = pad_to(unit(hiss), ns(3.0))
+    tick = signal.fftconvolve(ex, ring)[: ns(3.0)]
+    mix_into(x, tick * 0.22 / max(peak(tick), 1e-9) * peak(x), 0)
+    symp = signal.fftconvolve(hiss[: ns(0.3)], ring)[: ns(3.0)]
+    mix_into(x, symp * 0.05 * rms(x) / max(rms(symp), 1e-9), 0)
+    return room(hp(x, 300, 2), 0.1)
+
+
+def metal_clank(rng, v):
+    n = ns(4.0)
+    x = np.zeros(n)
+    f1 = rng.uniform(75, 150)
+    pipe = modal(f1 * np.array([1, 2.76, 5.40, 8.93, 13.3]) * rng.uniform(0.97, 1.03, 5),
+                 [1, 0.75, 0.5, 0.3, 0.15], [0.7, 0.5, 0.32, 0.2, 0.12], n, rng, True)
+    sheet_f = np.sort(rng.uniform(180, 2600, 9))
+    sheet = modal(sheet_f, rng.uniform(0.3, 1.0, 9), rng.uniform(0.1, 0.45, 9), n, rng, True)
+    hits = [(0.02, 1.0)]
+    if v % 2 == 1:
+        hits.append((rng.uniform(0.18, 0.4), rng.uniform(0.35, 0.6)))
+    for tp, a in hits:
+        ex = burst(rng, 0.014, 0.003, None, 4500) * a
+        y = signal.fftconvolve(ex, pipe)[:n] + 0.7 * signal.fftconvolve(ex, sheet)[:n] * rms(pipe) / max(rms(sheet), 1e-9)
+        y = unit(y) * a
+        y += pad_to(thump(rng, 72, 34, 0.12, 0.8, 0.8), n) * 1.6 * a
+        boom = reson(lp(white(n, rng), 300, 2), rng.uniform(70, 110), 5) * env_exp(n, 0.35, 0.004)
+        y += unit(boom) * 0.6 * a
+        mix_into(x, y, ns(tp))
+    # rattle: loose small parts bouncing after the hit
+    tp, gap, amp = rng.uniform(0.05, 0.1), rng.uniform(0.05, 0.11), 0.5
+    for _ in range(int(rng.integers(6, 15))):
+        r = _ping(rng, np.sort(rng.uniform(1200, 5500, 3)), rng.uniform(0.01, 0.05, 3), 0.12, 7000)
+        mix_into(x, unit(r) * amp * 0.5, ns(tp))
+        tp += gap * rng.uniform(0.6, 1.3)
+        gap *= rng.uniform(0.75, 0.95)
+        amp *= rng.uniform(0.7, 0.9)
+    x = lp(x, 3200, 2)  # far away
+    return room(x, 0.18, "concrete")
+
+
+def metal_groan(rng, v):
+    dur = 4.0
+    n = ns(dur + 0.4)
+    t = taxis(n)
+    rp = [[(0, 7), (1.1, 20), (2.4, 34), (3.4, 16), (4.4, 6)],
+          [(0, 5), (1.6, 13), (2.6, 18), (3.3, 10), (4.4, 5)],
+          [(0, 9), (0.9, 26), (1.7, 12), (2.6, 30), (3.6, 9), (4.4, 6)]][v % 3]
+    modes = np.sort(rng.uniform(70, 650, 7))
+    env = env_points(n, [(0, 0), (0.6, 0.6), (1.6, 1.0), (2.9, 0.8), (3.7, 0)])
+    x = creak(rng, n, rp, modes, rng.uniform(0.15, 0.6, 7), env, 0.2)
+    # gliding buzzy moan, gated by the slips
+    f0 = env_points(n, [(0, rng.uniform(52, 60)), (2.0, rng.uniform(62, 72)), (4.4, rng.uniform(44, 52))])
+    f0 *= 1 + 0.01 * smooth_random(n, 3, rng)
+    moan = additive(phase_of(f0, n), [1 / k ** 0.8 for k in range(1, 14)])
+    moan = reson(moan, modes[2], 3) + 0.5 * lp(moan, 400, 2)
+    rate = env_points(n, rp)
+    slip = 0.55 + 0.45 * np.sin(np.cumsum(2 * np.pi * rate / SR)) ** 2
+    moan *= env * slip * (0.7 + 0.3 * smooth_random(n, 2, rng))
+    sub = lp(brown(n, rng), 90, 2) * env
+    y = unit(x) + 0.5 * unit(moan) + 0.25 * unit(sub)
+    y = lp(y, 1300, 2)
+    ir = make_ir(rng, [(0, 400, 1.3), (400, SR / 2, 0.9)], er=[(0.07, 0.3, 1200), (0.16, 0.15, 900)],
+                 predelay=0.03, onset=0.05)
+    return hp(apply_ir(y, ir, 0.7, 0.5), 35, 2)

@@ -25,10 +25,11 @@ public final class PoolroomsGenerator extends LevelGenerator {
     static final int K_DRY = 0, K_SHALLOW = 1, K_DEEP = 2, K_RAISED = 3, K_TERRACE = 4;
     private static final String[] KINDS = {"dry", "shallow", "deep", "raised", "terrace-pool"};
 
-    private static final B TILE = B.of(Material.SMOOTH_QUARTZ);
-    private static final B GROUT = B.of(Material.WHITE_CONCRETE);
-    private static final B POOL = B.of(Material.LIGHT_BLUE_CONCRETE);
-    private static final B ACCENT = B.of(Material.LIGHT_BLUE_CONCRETE);
+    // custom textured tiles (see CustomBlocks); the old one-colour grout grid is in the texture now
+    private static final B TILE = com.powderpass.backrooms.gen.CustomBlocks.get("pool_tile");
+    private static final B GROUT = com.powderpass.backrooms.gen.CustomBlocks.get("pool_tile");
+    private static final B POOL = com.powderpass.backrooms.gen.CustomBlocks.get("pool_tile_blue");
+    private static final B ACCENT = com.powderpass.backrooms.gen.CustomBlocks.get("pool_tile_blue");
     private static final B UNDER = B.of(Material.WHITE_CONCRETE);
     private static final B STEP = B.of(Material.QUARTZ_STAIRS, "[facing=west,half=bottom,waterlogged=true]");
     private static final B UNDERWATER_LIGHT = B.of(Material.LIGHT, "[level=12,waterlogged=true]");
