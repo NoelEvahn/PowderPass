@@ -43,7 +43,11 @@ class MapRenderTest {
         c(Material.STRIPPED_SPRUCE_WOOD, 0x8C6E44); c(Material.STONE_STAIRS, 0x7D7D7D); c(Material.SPRUCE_STAIRS, 0x73552F);
         c(Material.QUARTZ_STAIRS, 0xEBE5DE); c(Material.POLISHED_ANDESITE, 0x868886); c(Material.ANDESITE_STAIRS, 0x868886);
         c(Material.DARK_OAK_SLAB, 0x42301A); c(Material.CAULDRON, 0x4A4A4A); c(Material.BOOKSHELF, 0x6B5434);
-        c(Material.BLACK_CONCRETE, 0x101216);
+        c(Material.BLACK_CONCRETE, 0x101216); c(Material.LIGHT_BLUE_STAINED_GLASS, 0x6E9CC0); c(Material.BLACK_STAINED_GLASS, 0x1A1A1E);
+        c(Material.BIRCH_SLAB, 0xC5B57B); c(Material.SMOOTH_STONE_SLAB, 0xA8A8A8); c(Material.RED_TERRACOTTA, 0x8F3D2E); c(Material.CYAN_TERRACOTTA, 0x575B5B);
+        c(Material.BROWN_TERRACOTTA, 0x4D3323); c(Material.AZALEA, 0x5D7A2E); c(Material.FLOWERING_AZALEA, 0x6E7C3A); c(Material.DARK_OAK_DOOR, 0x4A3018);
+        c(Material.POLISHED_ANDESITE_STAIRS, 0x868886); c(Material.IRON_BARS, 0x8A8A8A); c(Material.STRIPPED_DARK_OAK_WOOD, 0x4A3A28);
+        c(Material.SMOOTH_QUARTZ_SLAB, 0xEBE5DE); c(Material.WHITE_STAINED_GLASS, 0xF4F4F4);
         c(Material.END_STONE, 0xDBDE9E); c(Material.BONE_BLOCK, 0xE5E1CF); c(Material.BIRCH_PLANKS, 0xC5B57B);
         c(Material.STRIPPED_BIRCH_WOOD, 0xC4B07B); c(Material.LIGHT_BLUE_WOOL, 0x3AAFD9); c(Material.LIGHT_GRAY_STAINED_GLASS, 0x99999D);
         c(Material.MOSS_BLOCK, 0x596E2D); c(Material.COARSE_DIRT, 0x77553B); c(Material.TUFF, 0x6C6D66); c(Material.ANDESITE, 0x888888);
@@ -106,7 +110,7 @@ class MapRenderTest {
         LevelGenerator g = Generators.create(s.level, SEED, GenSettings.defaults());
         int n = s.blocks, px = s.px, header = 64, legendH = 120;
         int x0 = -n / 2, z0 = -n / 2;
-        int fy = g.floorY[0];
+        int fy = g.floorY[s.level == Level.LEVEL_4 ? 2 : 0]; // the towers: a typical office floor, not the lobby
         boolean outdoor = s.level.outdoor();
         int w = n * px, h = n * px + header + legendH;
         BufferedImage img = new BufferedImage(w, h, BufferedImage.TYPE_INT_RGB);
@@ -171,7 +175,7 @@ class MapRenderTest {
         for (int ix = 0; ix < n; ix++) {
             for (int iz = 0; iz < n; iz++) {
                 Feature f = null;
-                for (int dy = 3; dy >= -14 && f == null; dy--) f = g.triggerAt(x0 + ix, fy + dy, z0 + iz);
+                for (int dy = s.level == Level.LEVEL_4 ? 40 : 3; dy >= -14 && f == null; dy--) f = g.triggerAt(x0 + ix, fy + dy, z0 + iz);
                 if (f == null || !f.isTransition()) continue;
                 Color c = DEST.getOrDefault(f.dest().describe(), Color.MAGENTA);
                 gr.setColor(c);
@@ -239,7 +243,7 @@ class MapRenderTest {
             case LEVEL_0 -> "Rooms with jutting wall sections, long parallel halls, pillar fields, tall halls; dots = lit panels; blue = puddles.";
             case LEVEL_1 -> "Parking garage: drive aisles, yellow stall lines, columns, rare supply/safe rooms; blue = puddles.";
             case POOLROOMS -> "Tiled bays between pillars; lighter blue = shallow, darker = deep; raised platforms and terrace pools.";
-            case LEVEL_4 -> "Office blocks split into rooms; grey / light-blue carpet sections, corridors, glass meeting rooms.";
+            case LEVEL_4 -> "Floor 2 of the office towers: cores, cubicle pods, glass offices (red) and conference rooms (teal), sky bridges; black = the drop.";
             case PLAINS -> "Grass with moss and coarse-dirt patches, dirt roads, wrong houses. Shading = height.";
         };
     }

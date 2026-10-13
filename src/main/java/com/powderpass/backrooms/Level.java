@@ -7,7 +7,7 @@ public enum Level {
     LEVEL_0("level0", "0", "Level 0", "The Lobby", "<#d8c46a>"),
     LEVEL_1("level1", "1", "Level 1", "Habitable Zone", "<#9da3a8>"),
     POOLROOMS("poolrooms", "poolrooms", "The Poolrooms", "Still water, endless tile", "<#7fe3e6>"),
-    LEVEL_4("level4", "4", "Level 4", "Abandoned Office", "<#b8c6cf>"),
+    LEVEL_4("level4", "4", "Level 4", "The Office Towers", "<#b8c6cf>"),
     PLAINS("plains", "plains", "The Plains", "It is always this evening", "<#a7b39a>");
 
     private final String key;
@@ -48,6 +48,14 @@ public enum Level {
     /** Levels open to the sky (no ceiling, daylight). */
     public boolean outdoor() {
         return this == PLAINS;
+    }
+
+    /**
+     * Levels with no roof over them: the sky is visible (the Plains, and Level 4's towers standing in the night).
+     * Unlike {@link #outdoor()} this does not change creature behaviour or display ranges.
+     */
+    public boolean openSky() {
+        return this == PLAINS || this == LEVEL_4;
     }
 
     public static Level parse(String s) {

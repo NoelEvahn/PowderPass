@@ -174,7 +174,7 @@ class GenerationTest {
         for (int x = area.minX; x < area.maxX; x += 3) {
             for (int z = area.minZ; z < area.maxZ; z += 3) {
                 assertEquals(Material.BEDROCK, area.type(x, g.bottomY, z), level + " missing bedrock floor");
-                if (!level.outdoor()) assertEquals(Material.BEDROCK, area.type(x, g.roofY, z), level + " missing bedrock roof at " + x + "," + z);
+                if (!level.openSky()) assertEquals(Material.BEDROCK, area.type(x, g.roofY, z), level + " missing bedrock roof at " + x + "," + z);
             }
         }
     }
