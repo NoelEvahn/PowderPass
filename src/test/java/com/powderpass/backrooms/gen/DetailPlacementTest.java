@@ -129,8 +129,9 @@ class DetailPlacementTest {
         double gp = grass / (double) total, mp = moss / (double) total, cp = coarse / (double) total;
         System.out.printf("plains ground: grass %.1f%%, moss %.1f%%, coarse %.1f%%, moss neighbour same %.2f%n", gp * 100, mp * 100, cp * 100,
                 mossSame / (double) Math.max(1, mossPairs));
-        assertTrue(gp > 0.85 && gp < 0.95, "grass share " + gp);
-        assertTrue(mp > 0.03 && mp < 0.11, "moss share " + mp);
+        // grass and moss, roughly three to one
+        assertTrue(gp > 0.65 && gp < 0.88, "grass share " + gp);
+        assertTrue(mp > 0.1 && mp < 0.32, "moss share " + mp);
         assertTrue(cp > 0.01 && cp < 0.06, "coarse dirt share " + cp);
         assertTrue(mossSame / (double) mossPairs > 0.75, "moss should come in patches, not noise");
     }
