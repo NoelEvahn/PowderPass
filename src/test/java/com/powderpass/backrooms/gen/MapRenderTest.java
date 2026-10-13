@@ -48,6 +48,7 @@ class MapRenderTest {
         c(Material.STRIPPED_BIRCH_WOOD, 0xC4B07B); c(Material.LIGHT_BLUE_WOOL, 0x3AAFD9); c(Material.LIGHT_GRAY_STAINED_GLASS, 0x99999D);
         c(Material.MOSS_BLOCK, 0x596E2D); c(Material.COARSE_DIRT, 0x77553B); c(Material.TUFF, 0x6C6D66); c(Material.ANDESITE, 0x888888);
         c(Material.SHORT_GRASS, 0x7FA35A); c(Material.TALL_GRASS, 0x7FA35A); c(Material.STONE_STAIRS, 0x7D7D7D); c(Material.BARRIER, 0xFF00FF); c(Material.LADDER, 0x9C7B45);
+        c(Material.ROOTED_DIRT, 0x90684C); c(Material.DEEPSLATE, 0x505052);
     }
 
     private static void c(Material m, int rgb) {
@@ -226,7 +227,7 @@ class MapRenderTest {
         ly += 26;
         gr.setColor(new Color(0xBBBBBB));
         gr.drawString(outdoor
-                ? "Ringed labels = colossal display-entity structures · dark dots = utility poles · white cross = spawn"
+                ? "Ringed labels = colossal display-entity objects · black funnels = sinkholes · white cross = spawn"
                 : "Pale dots = lamps (light block + display fixture) · darker = walls · white cross = safe spawn", 14, ly);
         ly += 20;
         gr.drawString(legendFor(s.level), 14, ly);
@@ -240,7 +241,7 @@ class MapRenderTest {
             case LEVEL_1 -> "Parking garage: drive aisles, yellow stall lines, columns, rare supply/safe rooms; blue = puddles.";
             case POOLROOMS -> "Tiled bays between pillars; lighter blue = shallow, darker = deep; raised platforms and terrace pools.";
             case LEVEL_4 -> "Office blocks split into rooms; grey / light-blue carpet sections, corridors, glass meeting rooms.";
-            case PLAINS -> "Grass with moss and coarse-dirt patches, dirt roads, wrong houses. Shading = height.";
+            case PLAINS -> "Grass and moss fields, lone houses and small groups of them (no roads), sinkholes. Shading = height.";
         };
     }
 
