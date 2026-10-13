@@ -3,6 +3,7 @@ package com.powderpass.backrooms.gen.levels;
 import com.powderpass.backrooms.Level;
 import com.powderpass.backrooms.gen.B;
 import com.powderpass.backrooms.gen.CellCtx;
+import com.powderpass.backrooms.gen.CustomBlocks;
 import com.powderpass.backrooms.gen.DecorSpec;
 import com.powderpass.backrooms.gen.Dest;
 import com.powderpass.backrooms.gen.Feature;
@@ -27,16 +28,23 @@ public final class HabitableGenerator extends LevelGenerator {
     private static final int CEIL = FLOOR + 5;
     static final int AISLE0 = 12, AISLE1 = 19;
     static final int R_NONE = 0, R_CACHE = 1, R_SAFE = 2;
+    /** Decoration ids of the parked (drivable) cars and the steam pipe runs; see GarageProps. */
+    public static final String CAR_MODEL = "garage_car", PIPE_MODEL = "garage_pipes:15.5";
 
-    private static final B MASS = B.of(Material.GRAY_CONCRETE);
-    private static final B FLOOR_B = B.of(Material.SMOOTH_STONE);
-    private static final B FLOOR_ALT = B.of(Material.ANDESITE);
-    private static final B DAMAGED = B.of(Material.TUFF);
-    private static final B WALL = B.of(Material.LIGHT_GRAY_CONCRETE);
-    private static final B CEIL_B = B.of(Material.GRAY_CONCRETE);
-    private static final B PILLAR = B.of(Material.POLISHED_ANDESITE);
-    private static final B BEAM = B.of(Material.POLISHED_ANDESITE);
-    private static final B LINE = B.of(Material.YELLOW_CONCRETE);
+    // the garage's own textured concrete (see CustomBlocks and tools/textures/recipes_level1.py)
+    private static final B MASS = CustomBlocks.get("garage_mass");
+    private static final B FLOOR_B = CustomBlocks.get("garage_floor");
+    /** Broad discoloured patches: patched repairs in darker, rougher concrete. */
+    private static final B FLOOR_ALT = CustomBlocks.get("garage_mass");
+    private static final B DAMAGED = CustomBlocks.get("garage_floor_cracked");
+    private static final B OIL = CustomBlocks.get("garage_floor_oil");
+    private static final B WALL = CustomBlocks.get("garage_wall");
+    private static final B WALL_STAINED = CustomBlocks.get("garage_wall_stained");
+    private static final B CEIL_B = CustomBlocks.get("garage_ceiling");
+    private static final B PILLAR = CustomBlocks.get("garage_column");
+    private static final B HAZARD = CustomBlocks.get("garage_hazard");
+    private static final B BEAM = CustomBlocks.get("garage_wall");
+    private static final B LINE = CustomBlocks.get("garage_line");
     private static final B WOOD = B.of(Material.SPRUCE_PLANKS);
     private static final B BARREL = B.of(Material.BARREL, "[facing=up]");
     private static final B TILE = B.of(Material.WHITE_CONCRETE);
@@ -134,7 +142,8 @@ public final class HabitableGenerator extends LevelGenerator {
                 int wx = c.wx(u), wz = c.wz(v);
                 // floor: smooth stone, broad andesite discolouration, tuff where it is breaking up
                 double n = ValueNoise.sample(seed ^ 0xF10, wx / 9.0, wz / 9.0);
-                B floor = n > 0.7 ? FLOOR_ALT : FLOOR_B;
+                B floor = n > 0.76 ? FLOOR_ALT : FLOOR_B;
+                if (oil(wx, wz, u, v)) floor = OIL;
                 if (w > 0.3 && ValueNoise.sample(seed ^ 0x7FF, wx / 3.0, wz / 3.0) > 0.88 - 0.1 * w) floor = DAMAGED;
                 // stall lines and the dashed aisle centre line
                 int su = Math.floorMod(u, 4);
@@ -148,13 +157,33 @@ public final class HabitableGenerator extends LevelGenerator {
                 }
                 // beams under the ceiling on every 8th line across the bay
                 if (Math.floorMod(u, 8) == 2) c.set(u, CEIL - 1, v, BEAM);
-                if (pillar(u, v)) c.column(u, v, c.fy + 1, CEIL - 1, PILLAR);
-                if (back && v == 1 && !backWallGap(u)) c.column(u, v, c.fy + 1, CEIL - 1, WALL);
+                if (pillar(u, v)) {
+                    c.set(u, c.fy + 1, v, HAZARD); // yellow/black band at the foot of every column
+                    c.column(u, v, c.fy + 2, CEIL - 1, PILLAR);
+                }
+                if (back && v == 1 && !backWallGap(u)) wallColumn(c, u, v);
             }
         }
         if (room != null) paintRoom(c, room);
         Feature f = featureAt(c.floor, c.cx, c.cz);
         if (f != null) feature(c, f);
+    }
+
+    /** Oil drips under where engines stand: a block or two near the middle of some stalls. */
+    private boolean oil(int wx, int wz, int u, int v) {
+        boolean row0 = v >= 6 && v <= 9, row1 = v >= 22 && v <= 25;
+        if (!row0 && !row1 || Math.floorMod(u, 4) == 2) return false;
+        long h = Rng.hash(seed ^ 0x0111L, Math.floorDiv(wx - 3, 4), wz >> 5, row0 ? 0 : 1);
+        if (!Rng.chance(h, 0.4)) return false;
+        int cu = Math.floorMod(u, 4) == 0 ? 0 : 1, cv = row0 ? (Rng.chance(Rng.hash(h, 1), 0.5) ? 7 : 8) : (Rng.chance(Rng.hash(h, 1), 0.5) ? 23 : 24);
+        return cu == 0 && (v == cv || (Rng.chance(Rng.hash(h, 2), 0.4) && Math.abs(v - cv) == 1));
+    }
+
+    /** One column of wall: a grimy splash zone at the bottom, water-stained courses in patches, clean board-formed concrete. */
+    private void wallColumn(CellCtx c, int u, int v) {
+        int wx = c.wx(u), wz = c.wz(v);
+        boolean damp = ValueNoise.sample(seed ^ 0x57A1, wx / 7.0, wz / 7.0) > 0.66;
+        for (int y = c.fy + 1; y < CEIL; y++) c.set(u, y, v, y == c.fy + 1 || damp ? WALL_STAINED : WALL);
     }
 
     /** Box of wall with a 2-wide doorway onto the aisle side (v1+1). */
@@ -163,7 +192,8 @@ public final class HabitableGenerator extends LevelGenerator {
             for (int v = v0 - 1; v <= v1 + 1; v++) {
                 boolean edge = u == u0 - 1 || u == u1 + 1 || v == v0 - 1 || v == v1 + 1;
                 if (!c.in(u, v)) continue;
-                for (int y = c.fy + 1; y < CEIL; y++) c.set(u, y, v, edge ? wall : B.AIR);
+                if (edge) wallColumn(c, u, v);
+                else for (int y = c.fy + 1; y < CEIL; y++) c.set(u, y, v, B.AIR);
                 if (!edge) c.set(u, c.fy, v, FLOOR_B);
             }
         }
@@ -311,7 +341,7 @@ public final class HabitableGenerator extends LevelGenerator {
                 if (!Rng.chance(hs, 0.09 * density)) continue;
                 if (row == 0 && (f != null || room != null) && su > 9 && su < 25) continue;
                 double sv = row == 0 ? 7.5 : 24.5;
-                out.add(new DecorSpec("d:car", ox + su, fy, oz + sv, row == 0 ? 0f : 180f, 0f, 0f, hs));
+                out.add(new DecorSpec(CAR_MODEL, ox + su, fy, oz + sv, row == 0 ? 0f : 180f, 0f, 0f, hs));
             }
         }
     }
@@ -322,9 +352,9 @@ public final class HabitableGenerator extends LevelGenerator {
         double ox = cx * S, oz = cz * S;
         int fy = FLOOR + 1;
         double w = wear(cx, cz, 0x3EA1L);
-        // overhead services: two pipe runs over the north stalls, a duct over the south ones in some bays
-        out.add(detail(DecorSpec.TIER_ARCH, Rng.hash(h, 1), "d:pipe:light_gray_concrete:15.5:0.22", ox + 0.3, CEIL - 1.2, oz + 2.5, 0f, 0f));
-        out.add(detail(DecorSpec.TIER_ARCH, Rng.hash(h, 2), "d:pipe:light_gray_concrete:15.5:0.22", ox + 16.3, CEIL - 1.2, oz + 2.5, 0f, 0f));
+        // overhead services: two steam pipe runs (some leaking) over the north stalls, a duct over the south ones in some bays
+        out.add(detail(DecorSpec.TIER_ARCH, Rng.hash(h, 1), PIPE_MODEL, ox + 0.3, CEIL - 1.2, oz + 2.5, 0f, 0f));
+        out.add(detail(DecorSpec.TIER_ARCH, Rng.hash(h, 2), PIPE_MODEL, ox + 16.3, CEIL - 1.2, oz + 2.5, 0f, 0f));
         if (zone(cx, cz, 0xD0C7L, 80) > 0.55) {
             out.add(detail(DecorSpec.TIER_ARCH, Rng.hash(h, 3), "d:duct:15", ox + 1.5, CEIL - 1.0, oz + 29.5, 0f, 0f));
         }

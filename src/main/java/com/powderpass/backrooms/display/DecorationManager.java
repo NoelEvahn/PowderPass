@@ -53,6 +53,8 @@ public final class DecorationManager implements Listener {
     private long tick;
     private long lastCostNanos;
     private final Map<UUID, Long> actionCooldown = new HashMap<>();
+    /** Decorations temporarily taken over by something else (a parked car being driven): world uid + "|" + spec key. */
+    private final Set<String> hidden = new HashSet<>();
 
     private static final class WorldState {
         final World world;
@@ -196,6 +198,7 @@ public final class DecorationManager implements Listener {
         float view = cfg().viewRange;
         for (DecorSpec spec : ws.gen.decorations(cx, cz)) {
             if (spec.tier > 0 && (!keepDetail(ws.gen.level, spec) || details >= cfg().detailMaxPerChunk)) continue;
+            if (!hidden.isEmpty() && hidden.contains(hiddenKey(ws.world, spec.key()))) continue;
             Model model;
             try {
                 model = ModelLibrary.build(spec.model, spec.seed);
@@ -212,23 +215,67 @@ public final class DecorationManager implements Listener {
             Location anchor = new Location(ws.world, spec.x, spec.y, spec.z, 0, 0);
             if (spec.tier > 0 && details + n > cfg().detailMaxPerChunk) continue;
             float range = spec.tier > 0 ? cfg().detailViewRange : model.viewRange > 0 ? model.viewRange : view;
-            Matrix4f base = new Matrix4f()
-                    .rotateY((float) Math.toRadians(-spec.yaw))
-                    .rotateX((float) Math.toRadians(spec.pitch))
-                    .rotateZ((float) Math.toRadians(spec.roll));
-            Instance inst = new Instance(spec, model, anchor, base);
-            for (int i = 0; i < model.parts.size(); i++) {
-                Part p = model.parts.get(i);
-                Matrix4f m = new Matrix4f(base).mul(p.local);
-                inst.ents[i] = DisplayFactory.spawn(ws.world, anchor, p, m, range, "decor", spec.key());
-                if (p.kind == Part.Kind.INTERACTION) interactions.put(inst.ents[i].getUniqueId(), inst);
-            }
+            Instance inst = spawnInstance(ws, spec, model, anchor, range);
             used += n;
             if (spec.tier > 0) details += n;
             ws.entities += n;
             out.add(inst);
         }
         return out;
+    }
+
+    private Instance spawnInstance(WorldState ws, DecorSpec spec, Model model, Location anchor, float range) {
+        Matrix4f base = new Matrix4f()
+                .rotateY((float) Math.toRadians(-spec.yaw))
+                .rotateX((float) Math.toRadians(spec.pitch))
+                .rotateZ((float) Math.toRadians(spec.roll));
+        Instance inst = new Instance(spec, model, anchor, base);
+        for (int i = 0; i < model.parts.size(); i++) {
+            Part p = model.parts.get(i);
+            Matrix4f m = new Matrix4f(base).mul(p.local);
+            inst.ents[i] = DisplayFactory.spawn(ws.world, anchor, p, m, range, "decor", spec.key());
+            if (p.kind == Part.Kind.INTERACTION) interactions.put(inst.ents[i].getUniqueId(), inst);
+        }
+        return inst;
+    }
+
+    private static String hiddenKey(World w, String specKey) {
+        return w.getUID() + "|" + specKey;
+    }
+
+    /** Take a decoration out of the world (its entities go now) until {@link #show} brings it back. */
+    public void hide(World w, String specKey) {
+        hidden.add(hiddenKey(w, specKey));
+        WorldState ws = worlds.get(w.getUID());
+        if (ws == null) return;
+        for (List<Instance> list : ws.active.values()) {
+            Iterator<Instance> it = list.iterator();
+            while (it.hasNext()) {
+                Instance i = it.next();
+                if (i.spec.key().equals(specKey)) {
+                    ws.entities -= remove(i);
+                    it.remove();
+                }
+            }
+        }
+    }
+
+    /** Put a hidden decoration back (spawned right away when its chunk is active, else on the next activation). */
+    public void show(World w, DecorSpec spec) {
+        if (!hidden.remove(hiddenKey(w, spec.key()))) return;
+        WorldState ws = worlds.get(w.getUID());
+        if (ws == null || tasks.isEmpty()) return;
+        List<Instance> list = ws.active.get(key(Math.floorDiv((int) Math.floor(spec.x), 16), Math.floorDiv((int) Math.floor(spec.z), 16)));
+        if (list == null) return;
+        Model model = ModelLibrary.build(spec.model, spec.seed);
+        if (model == null) return;
+        float range = model.viewRange > 0 ? model.viewRange : cfg().viewRange;
+        list.add(spawnInstance(ws, spec, model, new Location(w, spec.x, spec.y, spec.z, 0, 0), range));
+        ws.entities += model.entityCount();
+    }
+
+    public boolean hidden(World w, String specKey) {
+        return hidden.contains(hiddenKey(w, specKey));
     }
 
     /** Runtime density filter for surface details (tiers 1-3), using each spec's deterministic rank. */
