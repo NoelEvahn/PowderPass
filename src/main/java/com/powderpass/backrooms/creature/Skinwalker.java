@@ -57,10 +57,12 @@ final class Skinwalker extends Creature {
     public void spawn(Location at, Player onlyViewer) {
         Level level = plugin.worlds().levelOf(at.getWorld());
         List<CreatureType> options = switch (level == null ? Level.LEVEL_0 : level) {
-            case LEVEL_0 -> List.of(CreatureType.FACELING, CreatureType.SMILER, CreatureType.WATCHER);
-            case LEVEL_1 -> List.of(CreatureType.HOUND, CreatureType.FACELING);
-            case LEVEL_4 -> List.of(CreatureType.WATCHER, CreatureType.FACELING);
-            default -> List.of(CreatureType.FACELING);
+            // it only ever wears what belongs to the level
+            case LEVEL_0 -> List.of(CreatureType.BACTERIA, CreatureType.WATCHER);
+            case POOLROOMS -> List.of(CreatureType.WATCHER);
+            case LEVEL_1 -> List.of(CreatureType.HOUND, CreatureType.WATCHER, CreatureType.SMILER);
+            case LEVEL_4 -> List.of(CreatureType.HOUND, CreatureType.FACELING);
+            case PLAINS -> List.of(CreatureType.WATCHER, CreatureType.SMILER);
         };
         disguise = options.get(ThreadLocalRandom.current().nextInt(options.size()));
         super.spawn(at, onlyViewer);
@@ -82,6 +84,7 @@ final class Skinwalker extends Creature {
             case SMILER -> Bodies.smiler();
             case WATCHER -> Bodies.watcher();
             case HOUND -> Bodies.hound();
+            case BACTERIA -> Bodies.bacteria();
             default -> Bodies.faceling();
         };
     }
@@ -168,6 +171,7 @@ final class Skinwalker extends Creature {
             }
             case HOUND -> body.pose(Poses.hound(walkPhase * 0.9, moving ? 0.6 : 0, 0, 0.05 + 0.05 * Math.sin(age * 0.2), Math.sin(age * 0.04) * 0.3, 0), interp);
             case SMILER -> body.pose(Poses.smiler(0.1, 1.0, 0, 0, Math.sin(age * 0.03) * 6, false, Math.sin(age * 0.06)), interp);
+            case BACTERIA -> body.pose(Poses.bacteria(walkPhase * 0.75, moving ? 0.5 : 0, r.nextDouble() < 0.3 ? r.nextLong() | 1 : 0, 0, 0), interp);
             default -> {
             }
         }

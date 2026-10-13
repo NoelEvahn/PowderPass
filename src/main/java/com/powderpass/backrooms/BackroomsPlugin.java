@@ -119,6 +119,7 @@ public class BackroomsPlugin extends JavaPlugin {
             cmd.setExecutor(bc);
             cmd.setTabCompleter(bc);
         }
+        if (cfg.creatureTableMigrated) getLogger().info("config.yml has the old creature table: using the new per-level creature weights (add 'creatures.table-version: 2' to keep your own).");
         getLogger().info("Backrooms ready: " + worlds.worlds().size() + "/" + Level.values().length + " levels loaded in " + (System.currentTimeMillis() - t) + " ms (seed " + data.baseSeed() + ").");
     }
 

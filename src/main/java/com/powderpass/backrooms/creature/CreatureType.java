@@ -7,6 +7,7 @@ public enum CreatureType {
     HOUND("hound", "Hound", "threat", "Hunts by sound and sight. Sprinting draws it; sneaking and breaking line of sight lose it. Killable."),
     DRIFTER("drifter", "Drifter", "threat", "Glides under deep water and drags swimmers down. Leave the water or strike it."),
     WATCHER("watcher", "Watcher", "stalker", "A black silhouette at the end of the hall. It only moves while nobody is looking at it."),
+    BACTERIA("bacteria", "Bacteria", "threat", "Tall, thin and black, wound in cable-like strands. Hunts by sound and movement: stand completely still and silent and it loses you."),
     SKINWALKER("skinwalker", "Skinwalker", "threat", "Wears other creatures, then people. Locks its victim inside their own body and walks with their friends. Kill its true form to free them.");
 
     public final String id;

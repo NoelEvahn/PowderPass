@@ -76,6 +76,7 @@ public final class AudioEngine implements Listener {
         long nextEvent;
         long nextVoice;
         long nextMusic;
+        long nextAnnounce;
         boolean debug;
         String lastEvent = "-";
     }
@@ -141,11 +142,13 @@ public final class AudioEngine implements Listener {
                     s.nextEvent = now + 200 + ThreadLocalRandom.current().nextInt(400);
                     s.nextMusic = now + 20L * 60 * 4;
                     s.nextVoice = now + 20L * 90;
+                    s.nextAnnounce = now + 20L * Math.max(10, cfg().announceSeconds) / 2;
                 }
                 try {
                     updateAcoustics(p, s);
                     if (cfg().audioAmbient) loops(p, s);
                     events(p, s);
+                    announce(p, s);
                     if (s.debug) debugBar(p, s);
                 } catch (RuntimeException ex) {
                     plugin.getLogger().warning("[Audio] " + p.getName() + ": " + ex);
@@ -312,6 +315,29 @@ public final class AudioEngine implements Listener {
             pick -= w[i];
             if (pick <= 0) {
                 fire(p, s, table.get(i));
+                return;
+            }
+        }
+    }
+
+    /** About every {@code audio.announce-seconds}: a PA announcement, or a voice, picked by weight for the level. */
+    private void announce(Player p, State s) {
+        int every = cfg().announceSeconds;
+        if (every <= 0 || !cfg().audioVoices || now < s.nextAnnounce) return;
+        ThreadLocalRandom r = ThreadLocalRandom.current();
+        s.nextAnnounce = now + (long) (20L * every * (0.75 + r.nextDouble() * 0.5));
+        List<Soundscape.Ev> table = Soundscape.announcements(s.level);
+        double total = 0;
+        for (Soundscape.Ev ev : table) if (index.def(ev.sound()) != null) total += ev.weight();
+        if (total <= 0) return;
+        double pick = r.nextDouble() * total;
+        for (Soundscape.Ev ev : table) {
+            if (index.def(ev.sound()) == null) continue;
+            pick -= ev.weight();
+            if (pick <= 0) {
+                long keepVoice = s.nextVoice;
+                fire(p, s, ev);
+                s.nextVoice = keepVoice; // announcements do not hold back the rarer voice events
                 return;
             }
         }

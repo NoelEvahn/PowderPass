@@ -75,7 +75,8 @@ public final class BackroomsConfig {
     public final Map<String, CreatureSettings> creatures = new HashMap<>();
 
     public final boolean eventsEnabled, ambient;
-    public final int eventCheckSeconds, ambientSeconds, flickerRadius;
+    public final int eventCheckSeconds, ambientSeconds, flickerRadius, blackoutSmilers, announceSeconds;
+    public final double lightEventChance;
     public final double eventChance;
 
     public final boolean sanityEnabled, sanityActionbar;
@@ -84,13 +85,23 @@ public final class BackroomsConfig {
 
     private final Map<String, String> messages = new HashMap<>();
 
+    /**
+     * Which creatures live where (table version 2): Level 0 Bacteria and Watchers; Poolrooms Drifters and Watchers;
+     * Level 1 Hounds, Watchers and Smilers; Level 4 Hounds and Facelings; Plains Watchers and Smilers; the Skinwalker
+     * everywhere.
+     */
+    static final int CREATURE_TABLE_VERSION = 2;
     private static final Map<String, CreatureSettings> DEFAULT_CREATURES = Map.of(
-            "smiler", new CreatureSettings(true, 6, 20, Map.of(Level.LEVEL_0, 5.0, Level.LEVEL_1, 3.0)),
-            "faceling", new CreatureSettings(true, 0, 1, Map.of(Level.LEVEL_0, 4.0, Level.LEVEL_1, 2.0, Level.POOLROOMS, 2.0, Level.LEVEL_4, 6.0, Level.PLAINS, 10.0)),
-            "hound", new CreatureSettings(true, 5, 30, Map.of(Level.LEVEL_1, 6.0)),
+            "bacteria", new CreatureSettings(true, 12, 120, Map.of(Level.LEVEL_0, 4.0)),
+            "smiler", new CreatureSettings(true, 6, 20, Map.of(Level.LEVEL_1, 3.0, Level.PLAINS, 3.0)),
+            "faceling", new CreatureSettings(true, 0, 1, Map.of(Level.LEVEL_4, 6.0)),
+            "hound", new CreatureSettings(true, 5, 30, Map.of(Level.LEVEL_1, 6.0, Level.LEVEL_4, 4.0)),
             "drifter", new CreatureSettings(true, 2, 20, Map.of(Level.POOLROOMS, 8.0)),
-            "watcher", new CreatureSettings(true, 4, 20, Map.of(Level.LEVEL_0, 4.0, Level.LEVEL_4, 6.0, Level.LEVEL_1, 1.0)),
-            "skinwalker", new CreatureSettings(true, 9, 80, Map.of(Level.LEVEL_0, 1.0, Level.LEVEL_1, 1.5, Level.LEVEL_4, 1.5, Level.POOLROOMS, 0.5, Level.PLAINS, 0.5)));
+            "watcher", new CreatureSettings(true, 4, 20, Map.of(Level.LEVEL_0, 4.0, Level.POOLROOMS, 3.0, Level.LEVEL_1, 2.0, Level.PLAINS, 5.0)),
+            "skinwalker", new CreatureSettings(true, 9, 80, Map.of(Level.LEVEL_0, 1.0, Level.LEVEL_1, 1.5, Level.LEVEL_4, 1.5, Level.POOLROOMS, 0.8, Level.PLAINS, 0.8)));
+
+    /** True when an old config.yml's creature weights were replaced by the current per-level table. */
+    public boolean creatureTableMigrated;
 
     public record CreatureSettings(boolean enabled, double damage, double health, Map<Level, Double> weights) {
     }
@@ -213,6 +224,10 @@ public final class BackroomsConfig {
         despawnDistance = clamp(c.getInt("creatures.despawn-distance", 64), 24, 256);
         for (Level l : Level.values()) levelChance.put(l, c.getDouble("creatures.level-chance." + l.key(), 0.2));
         ConfigurationSection types = c.getConfigurationSection("creatures.types");
+        // a config.yml written before the per-level table changed keeps its enable/damage/health, but takes the new
+        // level weights (see CREATURE_TABLE_VERSION)
+        boolean oldTable = c.getInt("creatures.table-version", 1) < CREATURE_TABLE_VERSION;
+        creatureTableMigrated = oldTable && types != null;
         if (types != null) {
             for (String t : types.getKeys(false)) {
                 ConfigurationSection s = types.getConfigurationSection(t);
@@ -225,7 +240,9 @@ public final class BackroomsConfig {
                         if (l != null) w.put(l, ws.getDouble(lk));
                     }
                 }
-                creatures.put(t.toLowerCase(Locale.ROOT), new CreatureSettings(s.getBoolean("enabled", true), s.getDouble("damage", 4), s.getDouble("health", 20), w));
+                String key = t.toLowerCase(Locale.ROOT);
+                if (oldTable && DEFAULT_CREATURES.containsKey(key)) w = DEFAULT_CREATURES.get(key).weights();
+                creatures.put(key, new CreatureSettings(s.getBoolean("enabled", true), s.getDouble("damage", 4), s.getDouble("health", 20), w));
             }
         }
         // types missing from an older config.yml still spawn with their built-in defaults
@@ -237,6 +254,9 @@ public final class BackroomsConfig {
         ambient = c.getBoolean("events.ambient", true);
         ambientSeconds = clamp(c.getInt("events.ambient-seconds", 9), 2, 600);
         flickerRadius = clamp(c.getInt("events.flicker-radius", 14), 4, 32);
+        lightEventChance = Math.max(0, Math.min(1, c.getDouble("events.light-event-chance", 0.25)));
+        blackoutSmilers = clamp(c.getInt("events.blackout-smilers", 3), 0, 8);
+        announceSeconds = clamp(c.getInt("audio.announce-seconds", 40), 0, 3600);
 
         sanityEnabled = c.getBoolean("sanity.enabled", true);
         sanityActionbar = c.getBoolean("sanity.show-actionbar", false);

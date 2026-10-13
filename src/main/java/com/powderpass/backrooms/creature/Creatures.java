@@ -30,6 +30,7 @@ final class Creatures {
             case DRIFTER -> new Drifter(plugin, mgr, s);
             case WATCHER -> new Watcher(plugin, mgr, s);
             case SKINWALKER -> new Skinwalker(plugin, mgr, s);
+            case BACTERIA -> new Bacteria(plugin, mgr, s);
         };
     }
 
@@ -45,6 +46,12 @@ final class Creatures {
         private int giggleIn = 40;
         /** Animation state, eased toward targets each think. */
         private double open, reach, emerge, tilt, tiltGoal;
+        /** Came with a blackout: leaves when the lights return. */
+        private boolean blackoutBound;
+
+        void bindToBlackout() {
+            blackoutBound = true;
+        }
 
         Smiler(BackroomsPlugin p, CreatureManager m, BackroomsConfig.CreatureSettings s) {
             super(p, m, CreatureType.SMILER, 10);
@@ -83,7 +90,13 @@ final class Creatures {
             }
             face(p.getLocation());
             boolean watched = watchedBy(p, 28, 40);
-            int playerLight = p.getEyeLocation().getBlock().getLightFromBlocks();
+            boolean blackout = plugin.environment().blackoutNear(p.getLocation());
+            if (blackoutBound && !blackout) {
+                vanish(true);
+                return;
+            }
+            // the lights are out (client-side): to a Smiler it is dark
+            int playerLight = blackout ? 0 : p.getEyeLocation().getBlock().getLightFromBlocks();
             double d = dist(p);
             animate(watched, d, dt);
             if (watched) {

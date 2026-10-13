@@ -162,6 +162,38 @@ final class Poses {
         return p;
     }
 
+    // ------------------------------------------------------------------ bacteria
+
+    /**
+     * @param phase  gait phase (radians)
+     * @param amp    gait amplitude (0 standing, 1 sprinting)
+     * @param glitch seed for this frame's jitter (0 = none): every joint twitches a little, wrongly
+     * @param lean   0..1 leaning down over someone, arms half raised
+     * @param tilt   head roll, radians
+     */
+    static Map<String, Matrix4f> bacteria(double phase, double amp, long glitch, double lean, double tilt) {
+        Map<String, Matrix4f> p = new LinkedHashMap<>();
+        java.util.Random r = new java.util.Random(glitch);
+        double j = glitch == 0 ? 0 : 0.22;
+        double hip = Bodies.BAC_HIP, sh = Bodies.BAC_SHOULDER;
+        for (int s = -1; s <= 1; s += 2) {
+            String leg = s < 0 ? "leg_l" : "leg_r";
+            double ph = phase + (s < 0 ? 0 : Math.PI);
+            double swing = Math.sin(ph) * 0.65 * amp;
+            double lift = Math.max(0, Math.cos(ph)) * 0.9 * amp;
+            p.put(leg, about(s * 0.09, hip, 0, rx(swing + r.nextGaussian() * j * 0.5)));
+            p.put(leg + ".lo", about(s * 0.12, Bodies.BAC_KNEE_Y, 0.07, rx(lift + r.nextGaussian() * j * 0.5)));
+            String arm = s < 0 ? "arm_l" : "arm_r";
+            double aswing = -Math.sin(ph) * 0.5 * amp - 0.9 * lean;
+            p.put(arm, about(s * 0.24, sh - 0.03, 0.12, new Matrix4f().rotateX((float) (aswing + r.nextGaussian() * j)).rotateZ((float) (s * (0.15 * lean + r.nextGaussian() * j * 0.6)))));
+            p.put(arm + ".lo", about(s * 0.3, Bodies.BAC_ELBOW_Y, 0.08, rx(-0.6 * lean - 0.25 * amp + r.nextGaussian() * j)));
+        }
+        p.put("torso", about(0, hip, 0, rx(0.5 * lean + 0.15 * amp + r.nextGaussian() * j * 0.3)));
+        p.put("head", new Matrix4f(p.get("torso")).mul(about(0, Bodies.BAC_NECK, 0.18,
+                new Matrix4f().rotateZ((float) (tilt + r.nextGaussian() * j * 2)).rotateX((float) (0.4 * lean + r.nextGaussian() * j)))));
+        return p;
+    }
+
     // ------------------------------------------------------------------ skinwalker
 
     /**

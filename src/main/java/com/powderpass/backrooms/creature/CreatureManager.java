@@ -152,6 +152,7 @@ public final class CreatureManager {
             case DRIFTER -> findWaterSpot(p, 8, 22);
             case WATCHER -> findSpot(p, 16, 32, 2, true, l -> true);
             case SKINWALKER -> findSpot(p, 18, 30, 2, true, l -> true);
+            case BACTERIA -> findSpot(p, 24, 40, 3, true, l -> true);
         };
         if (spot == null && type == CreatureType.SMILER) {
             // no proper darkness nearby: settle for the dimmest hidden corner
@@ -170,8 +171,26 @@ public final class CreatureManager {
         return c;
     }
 
-    /** A private, harmless sighting only one player can see. */
+    /**
+     * Smilers that come with a blackout: {@code count} of them in hidden spots around the player, bound to the dark (they
+     * are gone when the lights come back).
+     */
+    public int smilersInTheDark(Player p, int count) {
+        int n = 0;
+        for (int i = 0; i < count; i++) {
+            Location spot = findSpot(p, 6, 16, 2, true, l -> true);
+            if (spot == null) continue;
+            Creature c = spawn(CreatureType.SMILER, spot, null);
+            if (c instanceof Creatures.Smiler sm) sm.bindToBlackout();
+            n++;
+        }
+        return n;
+    }
+
+    /** A private, harmless sighting only one player can see (only where Facelings belong). */
     public void hallucinate(Player p) {
+        com.powderpass.backrooms.Level level = plugin.worlds().levelOf(p.getWorld());
+        if (level == null || cfg().creature(CreatureType.FACELING.id).weights().getOrDefault(level, 0.0) <= 0) return;
         Location spot = findSpot(p, 16, 28, 3, false, l -> true);
         if (spot != null) spawn(CreatureType.FACELING, spot, p);
     }

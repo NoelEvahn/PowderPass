@@ -8,9 +8,9 @@ import java.util.Set;
 
 /** Environmental events: rare, quiet, and almost never directly dangerous. */
 public enum EventType {
-    FLICKER("flicker", "Nearby fixtures stutter and buzz.", EnumSet.of(Level.LEVEL_0, Level.LEVEL_1, Level.POOLROOMS, Level.LEVEL_4)),
-    BLACKOUT("blackout", "The lights die for a few seconds. Things move in the dark.", EnumSet.of(Level.LEVEL_0, Level.LEVEL_1, Level.LEVEL_4)),
-    LIGHTS_OUT("lights_out", "Lights switch off one by one, coming toward you.", EnumSet.of(Level.LEVEL_0, Level.LEVEL_1, Level.LEVEL_4)),
+    FLICKER("flicker", "Nearby fixtures stutter and buzz.", EnumSet.allOf(Level.class)),
+    BLACKOUT("blackout", "The lights die for a few seconds. Things move in the dark (in Level 1, Smilers).", EnumSet.allOf(Level.class)),
+    LIGHTS_OUT("lights_out", "Lights switch off one by one, coming toward you.", EnumSet.allOf(Level.class)),
     FOOTSTEPS("footsteps", "Footsteps follow a few paces behind.", EnumSet.allOf(Level.class)),
     KNOCKING("knocking", "Something knocks on the other side of a wall.", EnumSet.of(Level.LEVEL_0, Level.LEVEL_1, Level.LEVEL_4, Level.PLAINS)),
     DOOR_BEHIND("door_behind", "A door somewhere behind you opens. Then closes.", EnumSet.of(Level.LEVEL_0, Level.LEVEL_4, Level.PLAINS)),

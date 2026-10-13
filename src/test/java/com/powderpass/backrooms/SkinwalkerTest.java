@@ -91,7 +91,7 @@ class SkinwalkerTest {
         Creature c = skinwalkerAt(-10.5, -10.5);
         assertTrue(c.state().startsWith("skinwalker:mimic:"), c.state());
         String disguise = c.state().substring("skinwalker:mimic:".length());
-        assertTrue(java.util.Set.of("faceling", "smiler", "watcher").contains(disguise), "Level 0 disguises: " + disguise);
+        assertTrue(java.util.Set.of("bacteria", "watcher").contains(disguise), "Level 0 disguises: " + disguise);
     }
 
     @Test

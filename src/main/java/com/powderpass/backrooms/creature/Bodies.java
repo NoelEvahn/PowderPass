@@ -418,6 +418,68 @@ final class Bodies {
         return m;
     }
 
+    // ===================================================================== Bacteria
+
+    static final double BAC_HIP = 1.62, BAC_SHOULDER = 2.55, BAC_NECK = 2.66;
+
+    /** Knee and elbow of the Bacteria at rest (for the gait pivots). */
+    static final double BAC_KNEE_Y = 0.86, BAC_ELBOW_Y = 1.72;
+
+    /**
+     * The Bacteria ("the Lifeform"): very tall, black and thin, limbs too long and too many joints' worth of bend,
+     * long fingers, a small blank head, and cable-like strands wound around its legs, body and arms.
+     * Bones: {@code leg_l/leg_r} with {@code .lo}, {@code torso}, {@code arm_l/arm_r} with {@code .lo}, {@code head}.
+     */
+    static Model bacteria() {
+        Model m = new Model();
+        Material skin = BLACK_CONCRETE, cable = GRAY_TERRACOTTA, dull = BLACK_TERRACOTTA;
+        for (int s = -1; s <= 1; s += 2) {
+            String leg = s < 0 ? "leg_l" : "leg_r";
+            Vector3f hip = v(s * 0.09, BAC_HIP, 0), knee = v(s * 0.12, BAC_KNEE_Y, 0.07), ankle = v(s * 0.11, 0.06, -0.03);
+            m.rod(skin, hip, knee, 0.075).named(leg);
+            m.rod(skin, knee, ankle, 0.06).named(leg + ".lo");
+            m.box(skin, ankle.x - 0.04, 0, ankle.z - 0.02, 0.08, 0.04, 0.2).named(leg + ".lo");
+            helix(m, cable, leg, hip, knee, 0.06, 2, s * 0.7);
+            helix(m, cable, leg + ".lo", knee, ankle, 0.05, 2, s * 1.3);
+        }
+        // a narrow pelvis, a long thin trunk bent forward, ribs pressing through
+        m.box(skin, -0.13, BAC_HIP - 0.06, -0.06, 0.26, 0.16, 0.12).named("torso");
+        m.rod(skin, v(0, BAC_HIP + 0.08, 0), v(0, 2.12, 0.05), 0.11).named("torso");
+        m.rod(skin, v(0, 2.12, 0.05), v(0, BAC_SHOULDER, 0.12), 0.15).named("torso");
+        m.boxC(skin, 0, BAC_SHOULDER - 0.02, 0.12, 0.46, 0.08, 0.1, 'z', 6).named("torso");
+        for (int i = 0; i < 4; i++) m.boxC(dull, 0, 2.18 + i * 0.08, 0.15, 0.2 - i * 0.02, 0.025, 0.06, 'x', 10).named("torso");
+        helix(m, cable, "torso", v(0, BAC_HIP, 0), v(0, BAC_SHOULDER, 0.12), 0.11, 4, 0.4);
+        for (int s = -1; s <= 1; s += 2) {
+            String arm = s < 0 ? "arm_l" : "arm_r";
+            Vector3f sh = v(s * 0.24, BAC_SHOULDER - 0.03, 0.12), el = v(s * 0.3, BAC_ELBOW_Y, 0.08), wr = v(s * 0.3, 0.92, 0.14);
+            m.rod(skin, sh, el, 0.06).named(arm);
+            m.rod(skin, el, wr, 0.05).named(arm + ".lo");
+            fingers(m, skin, skin, arm + ".lo", wr, v(0, -1, 0.06), v(0, 0, 1), 4, 0.42, 0.08, 0.3, 0.018);
+            helix(m, cable, arm, sh, el, 0.05, 1, s * 0.9);
+            helix(m, cable, arm + ".lo", el, wr, 0.045, 1, s * 1.7);
+        }
+        // a long neck and a small blank head, pushed forward
+        m.rod(skin, v(0, BAC_SHOULDER, 0.12), v(0, BAC_NECK + 0.2, 0.2), 0.06).named("head");
+        m.boxC(skin, 0, BAC_NECK + 0.38, 0.24, 0.17, 0.32, 0.2, 'x', 18).named("head");
+        m.boxC(dull, 0, BAC_NECK + 0.52, 0.22, 0.13, 0.08, 0.16, 'x', 18).named("head");
+        return m;
+    }
+
+    /** Thin strands wound around a limb segment {@code a}-{@code b}: short rods around it in a helix. */
+    private static void helix(Model m, Material mat, String name, Vector3f a, Vector3f b, double radius, int turns, double phase) {
+        Vector3f axis = new Vector3f(b).sub(a);
+        Vector3f side = new Vector3f(axis).cross(new Vector3f(0.3f, 0, 1)).normalize();
+        Vector3f side2 = new Vector3f(axis).cross(side).normalize();
+        int steps = turns * 3;
+        Vector3f prev = null;
+        for (int i = 0; i <= steps; i++) {
+            double t = i / (double) steps, ang = phase + t * turns * Math.PI * 2;
+            Vector3f p = lerp(a, b, t).add(new Vector3f(side).mul((float) (Math.cos(ang) * radius))).add(new Vector3f(side2).mul((float) (Math.sin(ang) * radius)));
+            if (prev != null) m.rod(mat, prev, p, 0.018).named(name);
+            prev = p;
+        }
+    }
+
     // ===================================================================== Skinwalker
 
     /**

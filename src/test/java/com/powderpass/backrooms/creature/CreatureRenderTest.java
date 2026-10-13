@@ -130,6 +130,8 @@ class CreatureRenderTest {
                 new Spec("hound", Bodies.hound(), 0.55, 3.4, "rearing before the lunge", Poses.hound(0, 0, 1, 1, 0, 0.15), 60),
                 new Spec("drifter", Bodies.drifter(), 0.4, 3.2, "reaching, mid-stroke", Poses.drifter(1.2, 0.4, 1, 1), 35),
                 new Spec("watcher", Bodies.watcher(), 1.15, 4.0, "moving (edges smear)", Poses.watcherHaze(7, false), 25),
+                new Spec("bacteria", Bodies.bacteria(), 1.7, 5.0, "hunting: glitching mid-stride", Poses.bacteria(0.9, 1, 12345L, 0, 0.2), 25),
+                new Spec("bacteria-loom", Bodies.bacteria(), 1.7, 5.0, "leaning over someone who keeps still", Poses.bacteria(0, 0, 0, 1, 0.3), 40),
                 new Spec("skinwalker", Bodies.skinwalker(), 0.9, 5.6, "pouncing: jaws split, arms strike", Poses.skinwalker(0.8, true, 0, 1, 1, 1, 0.15, 1), 25)};
         for (Spec s : specs) {
             List<Box> rest = new ArrayList<>(boxes(s.model, new Matrix4f()));

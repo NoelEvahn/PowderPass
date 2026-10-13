@@ -151,6 +151,7 @@ audio:
   level0-bed: recording          # recording (the supplied fluorescent recording) | synth (original synthesised buzz)
   ambient: true                  # looping physical sources near you: fixture hum, vents, water, machinery
   music: true                    # rare music; it plays on the player, not at a place
+  announce-seconds: 40           # a PA announcement or a voice about this often in Level 0, Poolrooms, Level 1 and 4 (0 = off)
   voices: true                   # whispers, distant conversations, announcements
   event-density: 1.0             # 0..4, how often one-shot events happen (silence is part of the design)
   rare-frequency: 1.0            # 0..4, scales the rare events
@@ -224,13 +225,17 @@ creatures:
   despawn-distance: 64
   # base spawn chance per attempt per player, by level
   level-chance: {level0: 0.30, level1: 0.32, poolrooms: 0.2, level4: 0.25, plains: 0.3}
+  # Which creatures live where. A config.yml without "table-version: 2" keeps each type's enabled/damage/health
+  # but takes these level weights.
+  table-version: 2
   types:
-    smiler:    {enabled: true, damage: 6.0, weight: {level0: 5, level1: 3}}
-    faceling:  {enabled: true, weight: {level0: 4, level1: 2, poolrooms: 2, level4: 6, plains: 10}}
-    hound:     {enabled: true, damage: 5.0, health: 30.0, weight: {level1: 6}}
+    bacteria:  {enabled: true, damage: 12.0, health: 120.0, weight: {level0: 4}}
+    smiler:    {enabled: true, damage: 6.0, weight: {level1: 3, plains: 3}}
+    faceling:  {enabled: true, weight: {level4: 6}}
+    hound:     {enabled: true, damage: 5.0, health: 30.0, weight: {level1: 6, level4: 4}}
     drifter:   {enabled: true, damage: 2.0, health: 20.0, weight: {poolrooms: 8}}
-    watcher:   {enabled: true, damage: 4.0, weight: {level0: 4, level1: 1, level4: 6}}
-    skinwalker: {enabled: true, damage: 9.0, health: 80.0, weight: {level0: 1, level1: 1.5, level4: 1.5, poolrooms: 0.5, plains: 0.5}}
+    watcher:   {enabled: true, damage: 4.0, weight: {level0: 4, poolrooms: 3, level1: 2, plains: 5}}
+    skinwalker: {enabled: true, damage: 9.0, health: 80.0, weight: {level0: 1, level1: 1.5, level4: 1.5, poolrooms: 0.8, plains: 0.8}}
 
 events:
   enabled: true
@@ -239,6 +244,10 @@ events:
   ambient: true
   ambient-seconds: 9
   flicker-radius: 14
+  # On top of the per-player events: every 20 s each occupied level has this chance of a flicker, blackout or
+  # lights-out around one of its players, in every level.
+  light-event-chance: 0.25
+  blackout-smilers: 3            # Smilers that appear around each player during a Level 1 blackout (0 = none)
 
 sanity:
   enabled: true

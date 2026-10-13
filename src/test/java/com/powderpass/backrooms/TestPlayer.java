@@ -47,6 +47,12 @@ final class TestPlayer extends PlayerMock {
         customSounds.add(sound + "@" + location.getBlockX() + "," + location.getBlockY() + "," + location.getBlockZ());
     }
 
+    /** MockBukkit has no ray tracing: treat everything as out of sight (hidden spawn spots exist, nothing is "watched"). */
+    @Override
+    public boolean hasLineOfSight(Location other) {
+        return false;
+    }
+
     /** A sound attached to the player ("key@self"). */
     @Override
     public void playSound(net.kyori.adventure.sound.Sound sound, net.kyori.adventure.sound.Sound.Emitter emitter) {

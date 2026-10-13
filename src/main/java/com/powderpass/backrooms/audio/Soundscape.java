@@ -106,6 +106,33 @@ final class Soundscape {
         BEDS.put(Level.PLAINS, List.of(new Bed("bed.plains", 0.7f)));
     }
 
+    private static final Map<Level, List<Ev>> ANNOUNCE = new EnumMap<>(Level.class);
+
+    static {
+        // roughly every 40 s (audio.announce-seconds): the building talks, or someone does
+        ANNOUNCE.put(Level.LEVEL_0, List.of(
+                Ev.one("voice.announce", Place.FAR, 4, 0, 0.55f).as(Kind.VOICE).named("announce"),
+                Ev.one("voice.phrase", Place.FAR, 2, 0, 0.4f).as(Kind.VOICE).named("announce.phrase"),
+                Ev.one("voice.whisper", Place.BEHIND, 1, 0, 0.3f).as(Kind.VOICE).named("announce.whisper")));
+        ANNOUNCE.put(Level.POOLROOMS, List.of(
+                Ev.one("voice.announce", Place.FAR, 4, 0, 0.6f).as(Kind.VOICE).named("announce"),
+                Ev.one("voice.murmur", Place.FAR, 1.5, 0, 0.4f).as(Kind.VOICE).named("announce.murmur"),
+                Ev.one("voice.phrase", Place.FAR, 1.5, 0, 0.4f).as(Kind.VOICE).named("announce.phrase")));
+        ANNOUNCE.put(Level.LEVEL_1, List.of(
+                Ev.one("voice.announce", Place.FAR, 4, 0, 0.7f).as(Kind.VOICE).named("announce"),
+                Ev.one("voice.radio", Place.MID, 2, 0, 0.5f).as(Kind.VOICE).named("announce.radio"),
+                Ev.one("voice.conversation", Place.FAR, 1.5, 0, 0.5f).as(Kind.VOICE).named("announce.talk")));
+        ANNOUNCE.put(Level.LEVEL_4, List.of(
+                Ev.one("voice.announce", Place.FAR, 4, 0, 0.6f).as(Kind.VOICE).named("announce"),
+                Ev.one("voice.conversation", Place.MID, 2, 0, 0.45f).as(Kind.VOICE).named("announce.talk"),
+                Ev.one("voice.phrase", Place.FAR, 1.5, 0, 0.4f).as(Kind.VOICE).named("announce.phrase")));
+    }
+
+    /** The voices and PA announcements of a level (none in the Plains). */
+    static List<Ev> announcements(Level level) {
+        return ANNOUNCE.getOrDefault(level, List.of());
+    }
+
     static List<Bed> beds(Level level) {
         return BEDS.getOrDefault(level, List.of());
     }

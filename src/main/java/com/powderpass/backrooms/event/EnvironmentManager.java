@@ -60,6 +60,26 @@ public final class EnvironmentManager {
             tasks.add(plugin.getServer().getScheduler().runTaskTimer(plugin, this::eventPass, period, period));
         }
         tasks.add(plugin.getServer().getScheduler().runTaskTimer(plugin, this::housekeeping, 100L, 200L));
+        if (cfg().eventsEnabled && cfg().lightEventChance > 0) {
+            tasks.add(plugin.getServer().getScheduler().runTaskTimer(plugin, this::lightPass, 400L, 400L));
+        }
+    }
+
+    /**
+     * The lights misbehave anywhere, any time: every 20 s each occupied level has a chance of a flicker, a blackout or
+     * the lights going out one by one around one of its players.
+     */
+    private void lightPass() {
+        ThreadLocalRandom r = ThreadLocalRandom.current();
+        for (Map.Entry<Level, World> e : plugin.worlds().worlds().entrySet()) {
+            List<Player> ps = new ArrayList<>();
+            for (Player p : e.getValue().getPlayers()) if (p.getGameMode() != GameMode.SPECTATOR) ps.add(p);
+            if (ps.isEmpty() || r.nextDouble() >= cfg().lightEventChance) continue;
+            Player p = ps.get(r.nextInt(ps.size()));
+            if (blackoutNear(p.getLocation())) continue;
+            double roll = r.nextDouble();
+            trigger(roll < 0.62 ? EventType.FLICKER : roll < 0.9 ? EventType.BLACKOUT : EventType.LIGHTS_OUT, p);
+        }
     }
 
     public void stop() {
@@ -358,6 +378,14 @@ public final class EnvironmentManager {
         for (Block b : lights) lamp(v, b, false);
         for (Player p : v) p.addPotionEffect(new PotionEffect(PotionEffectType.DARKNESS, Math.min(duration, 80), 0, false, false));
         blackouts.add(new Blackout(c.getWorld(), c.clone(), radius + 8, tick + duration));
+        // in the garage the dark is never empty: Smilers are there, all around, until the lights come back
+        if (plugin.worlds().levelOf(c.getWorld()) == Level.LEVEL_1 && cfg().blackoutSmilers > 0) {
+            for (Player p : v) {
+                if (p.getGameMode() == GameMode.SURVIVAL || p.getGameMode() == GameMode.ADVENTURE) {
+                    plugin.creatures().smilersInTheDark(p, cfg().blackoutSmilers);
+                }
+            }
+        }
         plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
             restore(lights, c);
             c.getWorld().playSound(c, Sound.BLOCK_BEACON_ACTIVATE, SoundCategory.AMBIENT, 0.6f, 1.4f);
