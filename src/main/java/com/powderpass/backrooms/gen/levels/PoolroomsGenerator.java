@@ -288,6 +288,7 @@ public final class PoolroomsGenerator extends LevelGenerator {
                     int nx = px[i] + d[0], nz = pz[i] + d[1];
                     if (path.containsKey(key(nx, nz))) continue;
                     if (i == 0 && d[0] == -dx && d[1] == -dz) continue; // the way in from the gallery
+                    if (i == N - 1 && d[0] == dx && d[1] == dz) continue; // the way out over the pool
                     rim.merge(key(nx, nz), py[i], Math::max);
                 }
             }
