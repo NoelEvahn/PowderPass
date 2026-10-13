@@ -82,8 +82,8 @@ The yellow house and the backyard pools are still in the Plains, but they lead n
 
 Some fixtures are dead and some flicker. Flicker and blackouts switch the troffer blocks off together with their light, client-side.
 
-**Custom textured blocks.** Level 0, the Poolrooms and the Office are built from the Backrooms' own textured blocks, which exist only through the resource pack:
-- **How they work:** each one is a powered note block in a state that ordinary play almost never produces (it needs a mob head on top and redstone power), and the pack gives exactly those 18 states their textures. Every other note block keeps its vanilla look. The Habitable Zone and the Plains still use vanilla blocks.
+**Custom textured blocks.** Level 0, the Poolrooms, Level 1 and Level 4 are built from the Backrooms' own textured blocks, which exist only through the resource pack:
+- **How they work:** each one is a powered note block in a state that ordinary play almost never produces (it needs a mob head on top and redstone power), and the pack gives exactly those 38 states their textures. Every other note block keeps its vanilla look. The Plains use vanilla grass and moss.
 - **Inside the Backrooms:** note blocks are frozen. They ignore neighbour updates, cannot be retuned and never play.
 - **Without the pack:** players who have not loaded it cannot fall into the Backrooms; they are told to accept it. This gate is skipped while the pack URL is unreachable, so a hosting problem never locks anyone out.
 - **Bedrock** players cannot load the Java pack. With `bedrock.allow-entry` (default on) they are let in and see note blocks.
@@ -118,34 +118,31 @@ Each level uses a **different generation rule**:
 ![Level 0 pillar field](docs/views/level0-pillars.png)
 ![Level 0 tall hall](docs/views/level0-tall.png)
 
-**The Poolrooms.** *One continuous hall of bays.* 12-block bays between 2×2 pillars; nothing is a corridor.
-- Bay types:
-  - dry, shallow or deep (3–8 blocks) bays, with deeper bays under taller ceilings;
-  - raised dry platforms, one step up;
-  - terrace pools, a pool held one level higher;
-  - submerged quartz steps in deep pools, so you can walk out instead of climbing.
-- Blocks: smooth quartz tile with a white-concrete grout grid every 4 blocks, light-blue pool lining with the same grid under water, and pillars with pale-blue accent bands.
-- Displays: pool-edge coping along every dry/wet boundary, drain covers on pool floors, softened pillar corners, small recessed grilles. It is kept exceptionally clean, with no aging.
+**The Poolrooms.** *Three storeys of tile.* A lower, a main and an upper floor, 32 blocks apart, joined by tiled spiral stair towers (one per 60-block region, with a labelled door on every floor). Everyone arrives on the main floor. Each region of each floor is one of five spaces:
+- **Bays:** 12-block bays between 2×2 pillars: dry walks, wading pools, deep lakes with submerged steps.
+- **Dry tile:** walking areas with raised platforms and free-standing screens.
+- **Bright rooms:** no walls at all, under a 22–28-block ceiling covered in light panels, often with a reflecting pool and a giant Greek head rising out of it.
+- **Long tall hallways:** 22 blocks high and 180 long, with 2×2 holes in the walls into small places: pools, steps down into sunken pools, busts, glowing alcoves.
+- **Massive halls:** 56 blocks high, with a gallery, a grand staircase, a half-sunk 25-block Greek head and a **water slide**. Step into the chute at the gallery to ride it down into the pool (the ride is steered; no fall damage).
 
-**Level 1 — Habitable Zone.** *An endless underground parking garage.* One continuous low concrete floor plate made of 32-block bays.
-- Layout: each bay has a drive aisle with a dashed centre line and a row of stalls either side, marked with yellow lines. Polished-andesite columns sit at the back of the stalls, under beams. Some bays have a partition wall with gaps.
-- Blocks: smooth stone floor with broad andesite discolouration, plus tuff and puddles only in worn zones.
-- Displays: pipe runs with brackets and rust, ventilation ducts, a junction box with conduit, vent grilles and wall joints, column moisture streaks, floor and ceiling cracks.
-- A few stalls hold parked cars, some under dust sheets.
-- **Rare supply rooms** appear in about 6% of bays. About a third of them are **safe rooms** (wooden floor; creatures never enter, sanity recovers).
+Floaties drift and bob on the water: rings, ducks, mattresses, beach balls. The way on (grey service door) and the drain back to Level 0 are on the main floor.
 
-**Level 4 — Abandoned Office.** *Partitioned, not carved.* 48-block city blocks are split into rooms by binary space partitioning, with a perimeter corridor.
-- Rooms by size: open-plan desk farms, glass meeting rooms, break rooms, offices, closets, storage.
-- Blocks: white concrete walls on a light-grey skirting, a smooth-quartz ceiling, and light-grey stained-glass meeting rooms. Carpet is laid in sections (mostly grey, some light blue), with a 2×2 tile pattern in the desk farms.
-- Displays: suspended-ceiling grid lines, drywall joints, outlets, cable channels in the farms, window sills and heads, ceiling vents. Rarely, peeling paint and damp ceiling stains.
-- Furniture stays sparse. Some rooms are completely unlit.
+**Level 1 — Habitable Zone.** *An endless underground parking garage* in 32-block bays, built from its own textured concrete blocks (walls, stained walls, floor with oil and cracks, stall lines, hazard stripes, columns, ceiling).
+- Drive aisles with stall rows, columns under beams, pipe runs that **leak steam** (visible jets and a positional hiss), ducts, rare supply rooms and safe rooms.
+- **Drivable cars:** right-click a parked car to get in. The first seat is the driver; up to 4 riders. W/S accelerate and reverse, A/D steer, Space brakes, Sprint sounds the horn, Sneak gets out. Headlights, taillights and brake/reverse lights follow the controls; an abandoned car turns back into a parked one.
+- **Blackouts** here bring Smilers around you, gone when the lights return.
 
-**The Plains.** *Open sky, stuck at evening.* A near-featureless flat field.
-- Ground: about 90% grass, 7% moss and 3% coarse dirt, always in correlated patches.
-- Vegetation: sparse short grass in loose drifts, rare tall grass, and rare very shallow hollows.
-- Display grass-blade clumps, some of them pale and dry.
-- Sparse dirt roads lined with utility poles, and identical white houses with something wrong with them. Colossal display structures stand on the horizon (see the tracking-range note below).
-- A Faceling watches from the field.
+**Level 4 — Office Towers.** *2000s office towers in an endless night.* No ground, only the dark far below; walking off an edge is death.
+- Every 64-block plot holds a tower of 3–8 floors around a core with a switchback stairwell and a **lift**. Floors are open plan: cubicle pods with CRT PCs behind partitions, glass-fronted private offices and conference rooms for the more important people, a lobby with reception on the ground floor, glass curtain walls.
+- **Sky bridges** (enclosed or railed) join neighbouring towers at various floors; any group of towers is connected.
+- **Lifts:** press a floor button in the car (or sneak inside it for a menu). The doors close, the motor runs, a ding, and you are on that floor. 10% of rides (`lift-stray-chance`) open the doors in a **random other Backrooms level** instead.
+- Built from its own textured blocks (facades, floor and lobby tiles, partitions, walls, columns, lift steel, roof, ceiling).
+
+**The Plains.** *Empty fields under a sky stuck at sunset.* Mostly grass and moss, no roads and no wires.
+- Lone houses stand in the grass facing nowhere, and now and then a handful sit together at odd angles as if dropped. Some are wrong (no door, a door too high, sunk, floating, a door into a wall).
+- **Giant everyday things**, about 40 blocks tall, stand in the fields: a chair, a lamp, a traffic cone, a rubber duck, a CRT, a telephone, a fan, a shoe, a mug, a teddy, a pencil, a hydrant, a bucket, a light bulb.
+- **Sinkholes:** irregular holes about 100 blocks across that narrow to a few blocks and fall out of the world. Jumping in kills you.
+- The exits out of the Backrooms are here, and only here.
 
 > Distant colossi need clients to track entities far away. Raise `world-settings.default.entity-tracking-range.display` in `spigot.yml` if they pop in late; `displays.outdoor-activation-radius-chunks` controls how far they spawn.
 
@@ -339,7 +336,7 @@ Commands work from the console wherever a target player or level is given. Alias
 | `world-prefix` | World folder prefix |
 | `levels.<level>.enabled` | Load this level's world. A disabled level's transitions show "the way is sealed". Players left in a disabled level are sent home when they join |
 | `levels.<level>.biome` | Biome key for ambient particles, sounds and water colour |
-| `levels.<level>.generation.*` | **Locked** per level when its world is created. Each level has its own keys: Level 0 has hall, thick-wall, repeat and loop chances plus `poolrooms-chance` (how rare the seam onward is); the Habitable Zone has `supply-room-chance`; the Poolrooms have water ratio and screens; Level 4 has the room-light chance; the Plains have road, house and colossus chances. Every level past Level 0 also has `back-chance` (the way back), plus landmark chance and decoration density |
+| `levels.<level>.generation.*` | **Locked** per level when its world is created. Each level has its own keys: Level 0 has hall, thick-wall, repeat and loop chances plus `poolrooms-chance` (how rare the seam onward is); the Habitable Zone has `supply-room-chance`; the Poolrooms have water ratio, screens and the massive-hall, hallway and bright-room chances; Level 4 has bridge, dark-floor and `lift-stray-chance` (default 0.10); the Plains have lone-house, hamlet, giant and sinkhole chances. Every level past Level 0 also has `back-chance` (the way back), plus landmark chance and decoration density |
 | `entry.allow-self-enter` / `allow-self-leave` / `allowed-worlds` / `spread-radius` / `title` | Entry rules |
 | `entry.fall.enabled` / `entry.fall.height` | Enter by falling from this many blocks above the roof (default 90); off = instant teleport |
 | `entry.suffocation.enabled` / `entry.suffocation.seconds` | The sand/gravel suffocation trigger and how long it takes (default 2 s). It honours `allowed-worlds` and needs `backrooms.use` |
@@ -418,7 +415,7 @@ Commands work from the console wherever a target player or level is given. Alias
 
 ## Testing
 
-`gradle test` runs 85 automated tests (plus five renderers that are off by default). All of them pass on this build.
+`gradle test` runs 120 automated tests (plus ten renderers that are off by default). All of them pass on this build. New in this version: per-level creature sets and the Bacteria's hunt-by-movement, light events in every level and Level 1 blackout Smilers, the Poolrooms' storeys, stairs and slides (`PoolroomsLayoutTest`), car physics and riding (`CarPhysicsTest`, `VehicleTest`), the office towers, bridges and lifts including the stray ride (`OfficeTowersTest`, `OfficeTowersLiftTest`), and the Plains' fields, houses and sinkholes (`PlainsLayoutTest`).
 
 - **Custom blocks (4 tests):**
   - Every textured block has its own rare powered note block state, and it parses.
@@ -486,7 +483,7 @@ No Paper server binary could be downloaded in the build environment, so nothing 
 - Vanilla clients cannot apply real-time reverb or filters from a server. Acoustics are approximations: pre-rendered room versions, muffled versions, and one delayed reflection for impacts.
 - Music is not sample-synchronised between players. Loops are re-triggered, so a very slight seam is possible on a laggy connection.
 - The espeak-ng voices are robotic formant voices.
-- **Custom blocks have not been seen on a real client.** Check that the 18 textured note block states render, that light panels glow (block model `light_emission`), and that nothing else in your world uses those states. Optionally set Paper's `block-updates.disable-noteblock-updates: true` as an extra guard.
+- **Custom blocks have not been seen on a real client.** Check that the 38 textured note block states render, that light panels glow (block model `light_emission`), and that nothing else in your world uses those states. Optionally set Paper's `block-updates.disable-noteblock-updates: true` as an extra guard.
 - **Bedrock:** a companion `.mcpack` with `sound_definitions.json` (both `backrooms:<id>` and `<id>` keys) is generated, but it is untested with Geyser. Whether Geyser forwards these custom sound ids is unverified, so `bedrock.custom-sounds` is off by default.
 - mc-packs.net could not be reached from the build environment, so the upload itself is your step.
 
@@ -513,4 +510,11 @@ No Paper server binary could be downloaded in the build environment, so nothing 
     - With Simple Voice Chat: muting, then playback of recorded speech. This is untested against the real voice chat plugin.
 12. **Fog:** the resting fog distances, a `fog` event (`/backrooms event trigger fog`), and the normal view distance coming back on leaving.
 13. **Surface details:** look for alignment, z-fighting and anything blocking a doorway, at `displays.details.density` 1 and 2.
-14. **Performance with several players:** watch `/backrooms status` tick costs, then tune `displays.activation-radius-chunks` and the entity caps if needed.
+14. **New in this version:**
+    - Cars: getting in, 4 seats, steering feel, lights, exiting, a car abandoned and re-parked.
+    - Steam jets and hiss in Level 1; announcements about every 40 s.
+    - Level 4: lift buttons and menu, the 10% stray ride, bridges, falling off an edge.
+    - Poolrooms: slide rides (smoothness, lag), floaties, light in the 56-block halls, the Greek heads under real lighting.
+    - Plains: giant objects at distance, sinkhole deaths.
+    - Bacteria: freezing really makes it lose you.
+15. **Performance with several players:** watch `/backrooms status` tick costs, then tune `displays.activation-radius-chunks` and the entity caps if needed.

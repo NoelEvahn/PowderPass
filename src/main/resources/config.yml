@@ -27,11 +27,14 @@ levels:
       landmark-chance: 0.6
       decor-density: 1.0
       loop-chance: 0.16        # extra connections beyond the spanning maze
-  poolrooms:           # one continuous tiled hall of bays
+  poolrooms:           # three storeys of tile: bays, dry tile, bright rooms, tall hallways, massive halls with slides
     enabled: true
     biome: "minecraft:warm_ocean"
     generation:
       water-ratio: 0.55
+      massive-chance: 0.1      # per region: a 56-block hall with a gallery, a Greek head and a water slide
+      hallway-chance: 0.06     # per region: a long tall hallway with 2x2 holes into small rooms
+      bright-room-chance: 0.12 # per region: a wall-less room under a ceiling of light panels
       screen-chance: 0.2       # free-standing tile screens (always with an opening)
       back-chance: 0.4         # per district: the drain back down to Level 0
       landmark-chance: 0.5
@@ -45,11 +48,13 @@ levels:
       back-chance: 0.4         # per district: the flooded stairwell back to the Poolrooms
       landmark-chance: 0.3
       decor-density: 1.0
-  level4:              # Abandoned Office: city blocks split into rooms
+  level4:              # Office Towers: 2000s office towers in an endless night, joined by sky bridges
     enabled: true
     biome: "minecraft:the_void"
     generation:
-      room-light-chance: 0.7
+      bridge-chance: 0.35      # extra sky bridges between neighbouring towers (a connected set is always built)
+      dark-floor-chance: 0.12  # floors with the lights off
+      lift-stray-chance: 0.10  # each lift ride: the doors open in a random other Backrooms level
       back-chance: 0.4         # per district: the stairwell back down to the garage
       landmark-chance: 0.5
       decor-density: 1.0
