@@ -43,6 +43,9 @@ final class Skinwalker extends Creature {
     Possession possession;
     private Player target;
     private int trueTicks, idleTicks, attackCooldown, scuttleIn, chitterIn, kills;
+    /** True-form animation: ticks left of the arm strike and of the rearing screech; current head roll. */
+    private int strikeTicks, rearTicks;
+    private double twitch;
     private boolean screamed;
 
     Skinwalker(BackroomsPlugin plugin, CreatureManager mgr, BackroomsConfig.CreatureSettings s) {
@@ -135,15 +138,39 @@ final class Skinwalker extends Creature {
         double d = dist(p);
         if (!watched) {
             moveToward(p.getLocation(), 0.16, 1.2);
-            if (disguise == CreatureType.FACELING) animateWalk(Bodies.FACELING_HIP, Bodies.FACELING_SHOULDER, 0.3, true);
-            else if (disguise == CreatureType.WATCHER) animateWalk(Bodies.WATCHER_HIP, Bodies.WATCHER_SHOULDER, 0.25, true);
+            animateDisguise(true);
             // the only tell: now and then, something cracks when you are not looking
             if (d < 12 && ThreadLocalRandom.current().nextDouble() < 0.015) sfx(loc(), "skinwalker.crackle", Sound.BLOCK_BONE_BLOCK_BREAK, 0.25f, 0.5f);
         } else {
             place(x, y, z, yaw);
-            if (disguise == CreatureType.FACELING) animateWalk(Bodies.FACELING_HIP, Bodies.FACELING_SHOULDER, 0, false);
+            animateDisguise(false);
         }
         if (d <= 2.0 && targetable(p) && !possessions().isVictim(p)) take(p);
+    }
+
+    /**
+     * Moves like whatever it is wearing, almost. The one wrong thing: now and then, while nobody is looking, the
+     * borrowed head turns all the way round.
+     */
+    private void animateDisguise(boolean moving) {
+        if (body == null) return;
+        int interp = plugin.cfg().creatureTickInterval + 1;
+        ThreadLocalRandom r = ThreadLocalRandom.current();
+        switch (disguise) {
+            case FACELING -> {
+                animateWalk(Bodies.FACELING_HIP, Bodies.FACELING_SHOULDER, moving ? 0.3 : 0, moving);
+                boolean wrong = moving && r.nextDouble() < 0.02;
+                body.pose("head", wrong ? new Matrix4f().rotateY((float) Math.PI) : new Matrix4f(), wrong ? 3 : 8);
+            }
+            case WATCHER -> {
+                animateWalk(Bodies.WATCHER_HIP, Bodies.WATCHER_SHOULDER, moving ? 0.25 : 0, moving);
+                body.pose(Poses.watcherHaze(r.nextLong(), !moving), interp);
+            }
+            case HOUND -> body.pose(Poses.hound(walkPhase * 0.9, moving ? 0.6 : 0, 0, 0.05 + 0.05 * Math.sin(age * 0.2), Math.sin(age * 0.04) * 0.3, 0), interp);
+            case SMILER -> body.pose(Poses.smiler(0.1, 1.0, 0, 0, Math.sin(age * 0.03) * 6, false, Math.sin(age * 0.06)), interp);
+            default -> {
+            }
+        }
     }
 
     /** It reached a player: wear them if they have company, otherwise there is nobody to fool. */
@@ -246,6 +273,7 @@ final class Skinwalker extends Creature {
         if (!screamed) {
             screamed = true;
             sfx(loc(), "skinwalker.screech", Sound.ENTITY_GHAST_SCREAM, 0.9f, 0.5f);
+            rearTicks = 24;
         }
         double d = dist(target);
         if (d <= 2.3 && attackCooldown == 0) {
@@ -258,6 +286,7 @@ final class Skinwalker extends Creature {
             mgr.noteAttack(target, type);
             sfx(loc(), "skinwalker.screech", Sound.ENTITY_SPIDER_HURT, 0.6f, 0.4f);
             attackCooldown = 30;
+            strikeTicks = 8;
             if (target.isDead() || target.getHealth() <= 0) {
                 kills++;
                 if (possession != null && possession.active()) possession.release(true); // it fed; the worn body is spent
@@ -278,20 +307,21 @@ final class Skinwalker extends Creature {
         if (possession != null && possession.active()) possession.carry(loc(), yaw);
     }
 
+    /** The true form's whole-body animation, see {@link Poses#skinwalker}. */
     private void legs(boolean moving) {
         if (body == null) return;
-        int interp = plugin.cfg().creatureTickInterval + 1;
-        for (int i = 0; i < 8; i++) {
-            double phaseOff = (i % 2 == 0 ? 0 : Math.PI) + (i < 4 ? 0 : Math.PI / 2);
-            double a = moving ? Math.sin(walkPhase * 1.4 + phaseOff) * 0.35 : Math.sin(age * 0.05 + i) * 0.04;
-            int side = i < 4 ? -1 : 1;
-            double hz = 0.45 - (i % 4) * 0.42;
-            body.pose("leg" + i, new Matrix4f().translate((float) (side * 0.42), 1.2f, (float) hz).rotateY((float) a)
-                    .rotateZ((float) (moving ? Math.max(0, Math.cos(walkPhase * 1.4 + phaseOff)) * 0.25 * side : 0))
-                    .translate((float) (-side * 0.42), -1.2f, (float) -hz), interp);
-        }
-        double jaw = moving ? 0.15 + 0.15 * Math.sin(age * 0.6) : 0.05;
-        body.pose("jaw", new Matrix4f().translate(0, 1.0f, 0.65f).rotateX((float) jaw).translate(0, -1.0f, -0.65f), interp);
+        int dt = plugin.cfg().creatureTickInterval;
+        ThreadLocalRandom r = ThreadLocalRandom.current();
+        strikeTicks = Math.max(0, strikeTicks - dt);
+        rearTicks = Math.max(0, rearTicks - dt);
+        // the head never quite settles: small rolls, and now and then a hard jerk
+        if (r.nextDouble() < 0.12) twitch = r.nextDouble() < 0.25 ? r.nextGaussian() * 0.45 : r.nextGaussian() * 0.08;
+        double close = target == null ? 0 : Math.max(0, 1 - dist(target) / 7);
+        double jaw = Math.max(close, strikeTicks > 0 ? 1 : 0.12 + 0.12 * Math.sin(age * 0.7));
+        double split = Math.max(close * 0.8, rearTicks > 0 ? 1 : 0.1 * (1 + Math.sin(age * 0.45)));
+        double strike = strikeTicks > 4 ? 1 : strikeTicks > 0 ? 0.4 : 0;
+        double rear = rearTicks > 0 ? Math.min(1, rearTicks / 8.0) : 0;
+        body.pose(Poses.skinwalker(walkPhase * 1.4, moving, age, jaw, split, strike, twitch, rear), dt + 1);
     }
 
     private void vanish() {

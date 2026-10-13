@@ -178,12 +178,16 @@ None of these is a renamed vanilla mob. Each is a coordinated group of display e
 
 | Type | Levels | Class | Behaviour and counterplay |
 |---|---|---|---|
-| **Smiler** | 0, 1 | threat | Floating grin and eyes, found only in the dark. Freezes while watched; stare for about 4 s and it dissolves. Creeps forward when you look away. Light at ≥11 keeps it at bay. A giggle warns you when it is close. |
-| **Faceling** | all | sighting | Tall and faceless. Stalks at 12–20 blocks and leaves when stared at. Harmless, but drains sanity; also appears as **private hallucinations**. **In the Plains** it stands 40–70 blocks out in the field, comes 7 blocks closer every 7 s you don't look at it, and leaves when stared at for 5 s or approached within 18 blocks. |
-| **Hound** | 1 | threat (killable, 30 HP) | Quadruped. **Hunts by sound** (sprinting is loud, sneaking almost silent) and by sight. Growls and lowers its head before a lunge. Flees when badly hurt. |
-| **Watcher** | 0, 1, 4 | stalker (hit it and it is gone) | A flat black silhouette at the end of a hall. While anyone looks at it, it does not move at all; the moment nobody is, it closes the distance fast and silently. Stare it down for about 7 s and it disappears. If it reaches you: damage, darkness, and the lights flicker. |
-| **Drifter** | Poolrooms | threat (20 HP) | Pale shape in deep water. Bubbles warn you. It drags swimmers down; leave the water or strike it. |
+| **Smiler** | 0, 1 | threat | A shapeless smoky dark mass: slanted reflective eyes and a grin of interlocking needle teeth. Up close, more eyes slide out of the dark, the mouth opens and two long black many-jointed arms reach for you. Found only in the dark. Freezes while watched; stare for about 4 s and it dissolves. Creeps forward when you look away. Light at ≥11 keeps it at bay. A giggle warns you when it is close. |
+| **Faceling** | all | sighting | Tall and thin in a dated suit, arms down to its knees, long twitching fingers, a smooth head with only smudges where a face should be. Stare at it too long and its head drops sideways while the seam of a mouth tears open down to the neck. Stalks at 12–20 blocks and leaves when stared at. Harmless, but drains sanity; also appears as **private hallucinations**. **In the Plains** it stands 40–70 blocks out in the field, comes 7 blocks closer every 7 s you don't look at it, and leaves when stared at for 5 s or approached within 18 blocks. |
+| **Hound** | 1 | threat (killable, 30 HP) | A starved naked human on all fours: every rib and vertebra showing, elbows bent the wrong way above its shoulders, clawed fingers, a curtain of black hair over white eyes and a mouth too wide for its face. Rears onto its hind legs, jaw gaping and eyes flaring, before it lunges. **Hunts by sound** (sprinting is loud, sneaking almost silent) and by sight. Growls and lowers its head before a lunge. Flees when badly hurt. |
+| **Watcher** | 0, 1, 4 | stalker (hit it and it is gone) | A flat black silhouette at the end of a hall, too tall and too thin, head cocked, with two pinprick eyes you only notice up close. Its edges smear while it moves. While anyone looks at it, it does not move at all; the moment nobody is, it closes the distance fast and silently. Stare it down for about 7 s and it disappears. If it reaches you: damage, darkness, and the lights flicker. |
+| **Drifter** | Poolrooms | threat (20 HP) | A drowned eel-long body behind a human face frozen mid-scream, hollow eyes, trailing hair and two thin arms reaching ahead; it swims with its whole length. Bubbles warn you. It drags swimmers down; leave the water or strike it. |
 | **Skinwalker** | 0, 1, 4 (rarer in Poolrooms and Plains) | threat (true form 80 HP) | Wears other creatures, then people. See below. |
+
+![Every creature, before and after the redesign](docs/creatures/before-after.png)
+
+Each model is built from 40–160 display parts on a small skeleton, so jaws, arms, fingers, legs and heads animate on their own (rendered sheets for each creature are in [docs/creatures](docs/creatures); regenerate with `RENDER_CREATURES=docs/creatures gradle test --tests '*CreatureRenderTest'`). Idle animation runs at half rate and only changed transforms are sent, to keep the packet load reasonable.
 
 Creatures notice everyone except spectators, so they also appear and stalk around **creative-mode** players (useful for testing). They only ever **hurt** players in survival or adventure mode.
 
@@ -363,7 +367,7 @@ Commands work from the console wherever a target player or level is given. Alias
 
 ## Testing
 
-`gradle test` runs 74 automated tests (plus three renderers that are off by default). All of them pass on this build.
+`gradle test` runs 77 automated tests (plus four renderers that are off by default). All of them pass on this build.
 
 - **Generation (31 tests across all 5 levels):**
   - Determinism across instances and chunk order, and seed sensitivity.
@@ -381,6 +385,7 @@ Commands work from the console wherever a target player or level is given. Alias
   - No detail sits in a transition trigger.
   - Repeated chunk generation is identical; nothing is anchored in another chunk or duplicated across chunks; props come before details for budgets.
   - The Plains ground mix is 89.9% grass, 6.9% moss and 3.2% coarse dirt, in patches.
+- **Creature skeletons (3 tests):** every bone a pose animates exists in its model; a child bone follows its parent and then its own pose; neutral poses keep the rest shape.
 - **Skinwalker (8 tests, with a test stand-in for Paper's Mannequin):**
   - It starts in another creature's shape.
   - A lone player is hunted, not worn.

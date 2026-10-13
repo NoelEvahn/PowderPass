@@ -111,6 +111,13 @@ public final class Model {
         return add(p);
     }
 
+    /** A unit block transformed by {@code m} (after the current stack transform): shears, rhombi, anything. */
+    public Part boxM(Material mat, Matrix4f m) {
+        Part p = new Part(Part.Kind.BLOCK, new Matrix4f(cur).mul(m));
+        p.block = mat.createBlockData();
+        return add(p);
+    }
+
     /** Thin rod between two points (cables, pipes, limbs). */
     public Part rod(Material m, Vector3f a, Vector3f b, double thickness) {
         Vector3f d = new Vector3f(b).sub(a);

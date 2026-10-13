@@ -39,6 +39,8 @@ class CreatureRenderTest {
         c(Material.LIGHT_GRAY_CONCRETE, 0x8C8C84); c(Material.WHITE_TERRACOTTA, 0xD1B2A1); c(Material.BLACK_WOOL, 0x15161B);
         c(Material.LIGHT_GRAY_TERRACOTTA, 0x876B62); c(Material.YELLOW_TERRACOTTA, 0xBA8524); c(Material.BROWN_WOOL, 0x6B4226);
         c(Material.BLUE_WOOL, 0x35399D); c(Material.CYAN_TERRACOTTA, 0x575B5B);
+        c(Material.MUSHROOM_STEM, 0xCBC4B9); c(Material.RED_TERRACOTTA, 0x8F3D2E); c(Material.BLACK_TERRACOTTA, 0x251610);
+        c(Material.NETHER_WART_BLOCK, 0x732A1E); c(Material.BLACK_STAINED_GLASS, 0x191919); c(Material.WHITE_STAINED_GLASS, 0xFFFFFF);
     }
 
     private static void c(Material m, int rgb) {
@@ -55,16 +57,25 @@ class CreatureRenderTest {
         MockBukkit.unmock();
     }
 
-    private record Box(Matrix4f inv, Matrix4f world, int[] rgb, boolean glow) {
+    /** {@code alpha} < 1 for stained glass (seen through, tinted). */
+    private record Box(Matrix4f inv, Matrix4f world, int[] rgb, boolean glow, double alpha) {
     }
 
     private static List<Box> boxes(Model m, Matrix4f base) {
+        return boxes(m, base, Map.of());
+    }
+
+    /** The model in a pose: bone name to pose matrix, composed exactly as {@link Body#pose} does in game. */
+    private static List<Box> boxes(Model m, Matrix4f base, Map<String, Matrix4f> poses) {
         List<Box> out = new ArrayList<>();
         for (Part p : m.parts) {
             if (p.kind != Part.Kind.BLOCK || p.block == null) continue;
-            Matrix4f w = new Matrix4f(base).mul(p.local);
+            Matrix4f local = p.name == null ? p.local : Body.compose(p.name, poses, p.local);
+            Matrix4f w = new Matrix4f(base).mul(local);
             if (Math.abs(w.determinant()) < 1e-12) continue;
-            out.add(new Box(new Matrix4f(w).invert(), w, RGB.getOrDefault(p.block.getMaterial(), new int[]{150, 150, 150}), p.brightness != null));
+            Material mat = p.block.getMaterial();
+            double alpha = mat == Material.BLACK_STAINED_GLASS ? 0.55 : mat == Material.WHITE_STAINED_GLASS ? 0.3 : 1;
+            out.add(new Box(new Matrix4f(w).invert(), w, RGB.getOrDefault(mat, new int[]{150, 150, 150}), p.brightness != null, alpha));
         }
         return out;
     }
@@ -102,6 +113,50 @@ class CreatureRenderTest {
         line.addAll(boxes(Bodies.hound(), new Matrix4f().translate(1.6f, 0, 0).rotateY((float) Math.toRadians(-30))));
         render(line, 0, 6, 5.6, 1.1, "Skinwalker — borrowed shapes", "Before it reaches anyone it wears another creature of the level: a Faceling, a Watcher, a Hound (or a Smiler).")
                 .let(f -> write(f, new File(out, "skinwalker-disguises.png")));
+    }
+
+    /** One sheet per creature: front three-quarter, side, and an action pose from {@link Poses}. */
+    @Test
+    void renderAll() throws Exception {
+        String out = System.getenv("RENDER_CREATURES");
+        Assumptions.assumeTrue(out != null && !out.isBlank(), "set RENDER_CREATURES=<dir>");
+        String tag = System.getenv().getOrDefault("RENDER_TAG", "");
+        new File(out).mkdirs();
+        record Spec(String name, Model model, double look, double dist, String actionName, Map<String, Matrix4f> action, double actionYaw) {
+        }
+        Spec[] specs = {
+                new Spec("smiler", Bodies.smiler(), 1.5, 3.4, "lunging: mouth open, arms out of the dark, more eyes", Poses.smiler(1, 1.25, 1, 1, 12, false, 1), 20),
+                new Spec("faceling", Bodies.faceling(), 1.6, 3.6, "stared at too long", Poses.faceling(-38, 1, 1, 0), 10),
+                new Spec("hound", Bodies.hound(), 0.55, 3.4, "rearing before the lunge", Poses.hound(0, 0, 1, 1, 0, 0.15), 60),
+                new Spec("drifter", Bodies.drifter(), 0.4, 3.2, "reaching, mid-stroke", Poses.drifter(1.2, 0.4, 1, 1), 35),
+                new Spec("watcher", Bodies.watcher(), 1.15, 4.0, "moving (edges smear)", Poses.watcherHaze(7, false), 25),
+                new Spec("skinwalker", Bodies.skinwalker(), 0.9, 5.6, "pouncing: jaws split, arms strike", Poses.skinwalker(0.8, true, 0, 1, 1, 1, 0.15, 1), 25)};
+        for (Spec s : specs) {
+            List<Box> rest = new ArrayList<>(boxes(s.model, new Matrix4f()));
+            List<Box> act = new ArrayList<>(boxes(s.model, new Matrix4f(), s.action));
+            if (s.name.equals("skinwalker")) {
+                rest.addAll(boxes(strandedBody(), new Matrix4f()));
+                act.addAll(boxes(strandedBody(), new Matrix4f()));
+            }
+            BufferedImage[] panels = {render(rest, 30, 12, s.dist, s.look, "rest, front", "").img,
+                    render(rest, 95, 6, s.dist, s.look, "rest, side", "").img,
+                    render(act, s.actionYaw, 10, s.dist, s.look, s.actionName, "").img};
+            int pw = W / 2, ph = H / 2;
+            BufferedImage sheet = new BufferedImage(pw * 3, ph + 70, BufferedImage.TYPE_INT_RGB);
+            Graphics2D g = sheet.createGraphics();
+            g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+            for (int k = 0; k < 3; k++) g.drawImage(panels[k], k * pw, 70, pw, ph, null);
+            g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+            g.setColor(new Color(230, 225, 205));
+            g.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 28));
+            g.drawString(s.name + "  (" + countParts(s.model) + " display parts)", 20, 45);
+            g.dispose();
+            write(sheet, new File(out, tag + s.name + ".png"));
+        }
+    }
+
+    private static int countParts(Model m) {
+        return m.parts.size();
     }
 
     private static void write(BufferedImage img, File f) {
@@ -153,20 +208,38 @@ class CreatureRenderTest {
     }
 
     private static int trace(List<Box> boxes, double[] o, double[] d, double[] lamp) {
-        double best = 1e9;
-        Box hit = null;
-        double[] hn = null;
-        for (Box b : boxes) {
-            double[] r = hitBox(b, o, d);
-            if (r != null && r[0] < best) {
-                best = r[0];
-                hit = b;
-                hn = new double[]{r[1], r[2], r[3]};
-            }
+        // every hit along the ray, front to back; glass tints what is behind it
+        List<double[]> hits = new ArrayList<>();
+        for (int i = 0; i < boxes.size(); i++) {
+            double[] r = hitBox(boxes.get(i), o, d);
+            if (r != null) hits.add(new double[]{r[0], r[1], r[2], r[3], i});
         }
-        // floor plane y=0
+        hits.sort((x, y) -> Double.compare(x[0], y[0]));
+        double[] acc = {0, 0, 0};
+        double through = 1;
+        for (double[] h : hits) {
+            Box b = boxes.get((int) h[4]);
+            int[] c = b.rgb;
+            double[] col;
+            if (b.glow) {
+                col = new double[]{c[0], c[1], c[2]};
+            } else {
+                double[] p = {o[0] + d[0] * h[0], o[1] + d[1] * h[0], o[2] + d[2] * h[0]};
+                double[] n = {h[1], h[2], h[3]};
+                double l = lightAt(p, n, lamp) * (shadowed(boxes, new double[]{p[0] + n[0] * 0.01, p[1] + n[1] * 0.01, p[2] + n[2] * 0.01}, lamp) ? 0.45 : 1);
+                col = new double[]{c[0] * l + 4, c[1] * l + 4, c[2] * l + 4};
+            }
+            for (int k = 0; k < 3; k++) acc[k] += col[k] * b.alpha * through;
+            through *= 1 - b.alpha;
+            if (through < 0.02) return rgb(acc[0], acc[1], acc[2]);
+        }
+        int bg = background(boxes, o, d, lamp);
+        return rgb(acc[0] + ((bg >> 16) & 255) * through, acc[1] + ((bg >> 8) & 255) * through, acc[2] + (bg & 255) * through);
+    }
+
+    private static int background(List<Box> boxes, double[] o, double[] d, double[] lamp) {
         double tf = d[1] < 0 ? -o[1] / d[1] : 1e9;
-        if (hit == null && tf < 1e8) {
+        if (tf < 1e8) {
             double x = o[0] + d[0] * tf, z = o[2] + d[2] * tf;
             double l = lightAt(new double[]{x, 0, z}, new double[]{0, 1, 0}, lamp);
             boolean grid = Math.abs(x - Math.round(x)) < 0.02 || Math.abs(z - Math.round(z)) < 0.02;
@@ -174,12 +247,7 @@ class CreatureRenderTest {
             int base = grid ? 120 : 150;
             return rgb(base * 0.9 * l * shadow + 6, base * 0.8 * l * shadow + 5, base * 0.45 * l * shadow + 3);
         }
-        if (hit == null) return rgb(10, 9, 7);
-        int[] c = hit.rgb;
-        if (hit.glow) return rgb(c[0], c[1], c[2]);
-        double[] p = {o[0] + d[0] * best, o[1] + d[1] * best, o[2] + d[2] * best};
-        double l = lightAt(p, hn, lamp) * (shadowed(boxes, new double[]{p[0] + hn[0] * 0.01, p[1] + hn[1] * 0.01, p[2] + hn[2] * 0.01}, lamp) ? 0.45 : 1);
-        return rgb(c[0] * l + 4, c[1] * l + 4, c[2] * l + 4);
+        return rgb(10, 9, 7);
     }
 
     private static boolean shadowed(List<Box> boxes, double[] p, double[] lamp) {
@@ -187,6 +255,7 @@ class CreatureRenderTest {
         double len = Math.sqrt(d[0] * d[0] + d[1] * d[1] + d[2] * d[2]);
         d = new double[]{d[0] / len, d[1] / len, d[2] / len};
         for (Box b : boxes) {
+            if (b.alpha < 1) continue;
             double[] r = hitBox(b, p, d);
             if (r != null && r[0] > 1e-3 && r[0] < len) return true;
         }

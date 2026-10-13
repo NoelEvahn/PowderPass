@@ -43,6 +43,8 @@ final class Creatures {
         private final double damage;
         private int watchedTicks;
         private int giggleIn = 40;
+        /** Animation state, eased toward targets each think. */
+        private double open, reach, emerge, tilt, tiltGoal;
 
         Smiler(BackroomsPlugin p, CreatureManager m, BackroomsConfig.CreatureSettings s) {
             super(p, m, CreatureType.SMILER, 10);
@@ -83,11 +85,10 @@ final class Creatures {
             boolean watched = watchedBy(p, 28, 40);
             int playerLight = p.getEyeLocation().getBlock().getLightFromBlocks();
             double d = dist(p);
+            animate(watched, d, dt);
             if (watched) {
                 watchedTicks += dt;
                 place(x, y, z, yaw);
-                if (watchedTicks % 30 < dt) body.pose("eye", new Matrix4f().translate(0, 1.87f, 0).scale(1f, 0.2f, 1f).translate(0, -1.87f, 0), 3);
-                else if (watchedTicks % 30 < dt * 3) body.pose("eye", new Matrix4f(), 3);
                 if (watchedTicks > 90) {
                     vanish(true);
                 }
@@ -107,10 +108,6 @@ final class Creatures {
                 }
                 return;
             }
-            // close and unobserved: the grin widens
-            double wide = d < 8 ? 1.0 + (8 - d) * 0.03 : 1.0;
-            body.pose("grin", new Matrix4f().translate(0, (float) Bodies.SMILER_MOUTH, 0).scale((float) wide, 1f, 1f)
-                    .translate(0, (float) -Bodies.SMILER_MOUTH, 0), dt + 1);
             if (d <= 1.4) {
                 if (!targetable(p)) {
                     vanish(true);
@@ -125,6 +122,24 @@ final class Creatures {
             }
             double speed = playerLight <= 4 ? 0.32 : 0.18;
             moveToward(p.getLocation(), speed, 1.2);
+        }
+
+        /**
+         * Watched: the mouth closes, the arms sink back into the dark, the eyes blink slowly. Unwatched and close:
+         * the grin widens and opens, more eyes slide out of the mass, the arms reach.
+         */
+        private void animate(boolean watched, double d, int dt) {
+            if (age % 4 >= dt && !watched) return; // every other think is plenty; interpolation fills the gap
+            double near = Math.max(0, Math.min(1, (10 - d) / 8));
+            double k = watched ? 0.5 : 0.25;
+            open += ((watched ? 0 : near) - open) * k;
+            reach += ((watched ? 0 : Math.max(0, (5.5 - d) / 4)) - reach) * k;
+            emerge += ((watched ? 0 : near) - emerge) * 0.2;
+            if (rnd().nextDouble() < 0.06) tiltGoal = rnd().nextGaussian() * (watched ? 4 : 14);
+            tilt += (tiltGoal - tilt) * 0.3;
+            boolean blink = watched ? watchedTicks % 30 < dt * 2 : rnd().nextDouble() < 0.03;
+            double wide = 1.0 + near * 0.25;
+            body.pose(Poses.smiler(Math.min(1, open), wide, Math.min(1, reach), Math.min(1, emerge), tilt, blink, Math.sin(age * 0.05)), 5);
         }
 
         private void vanish(boolean stared) {
@@ -149,6 +164,7 @@ final class Creatures {
         private int unseen;
         private boolean leaving;
         private Location leaveTo;
+        private double tilt, mouth, curl;
 
         Faceling(BackroomsPlugin p, CreatureManager m) {
             super(p, m, CreatureType.FACELING, 1);
@@ -196,6 +212,10 @@ final class Creatures {
             }
             if (!leaving && watchedTicks > 30) {
                 leaving = true;
+                // it does not like being looked at: the head drops sideways and the seam of a mouth tears open
+                tilt = rnd().nextBoolean() ? 78 : -78;
+                mouth = 1;
+                body.pose(Poses.faceling(tilt, mouth, 1, 0), 3);
                 Vector away = loc().toVector().subtract(p.getLocation().toVector()).setY(0);
                 if (away.lengthSquared() < 0.01) away = new Vector(1, 0, 0);
                 leaveTo = loc().add(away.normalize().multiply(14));
@@ -204,6 +224,8 @@ final class Creatures {
             if (leaving) {
                 boolean done = moveToward(leaveTo, 0.16, 1.0);
                 animateWalk(Bodies.FACELING_HIP, Bodies.FACELING_SHOULDER, 0.5, true);
+                mouth = Math.max(0.35, mouth - 0.02);
+                body.pose(Poses.faceling(tilt, mouth, 0.6 + 0.4 * Math.sin(age * 0.9), Math.sin(age * 0.08)), dt + 1);
                 if (done || (!watchedBy(p, 40, 64) && age % 20 < dt) || age > 20 * 100) remove();
                 return;
             }
@@ -219,8 +241,7 @@ final class Creatures {
                 face(p.getLocation());
                 place(x, y, z, yaw);
                 animateWalk(Bodies.FACELING_HIP, Bodies.FACELING_SHOULDER, 0, false);
-                if (age % 40 < dt) body.pose("head", new Matrix4f().translate(0, (float) Bodies.FACELING_NECK, 0)
-                        .rotateZ((float) Math.toRadians(rnd().nextInt(-40, 41))).translate(0, (float) -Bodies.FACELING_NECK, 0), 14);
+                idle(dt);
             }
         }
 
@@ -259,6 +280,15 @@ final class Creatures {
                 place(x, y, z, yaw);
             }
             animateWalk(Bodies.FACELING_HIP, Bodies.FACELING_SHOULDER, 0, false);
+            idle(dt);
+        }
+
+        /** Standing: slow breathing, fingers that never stop moving, a head that tilts and holds there. */
+        private void idle(int dt) {
+            if (age % 40 < dt) tilt = rnd().nextInt(-40, 41);
+            if (age % 8 >= dt && age % 40 >= dt) return;
+            if (rnd().nextDouble() < 0.4) curl = rnd().nextDouble() * 2 - 1;
+            body.pose(Poses.faceling(tilt, 0, curl, Math.sin(age * 0.08)), age % 40 < dt ? 14 : 9);
         }
 
         @Override
@@ -280,6 +310,7 @@ final class Creatures {
         private int stateTicks;
         private int lostTicks;
         private Vector lungeDir;
+        private double headTilt;
 
         Hound(BackroomsPlugin p, CreatureManager m, BackroomsConfig.CreatureSettings s) {
             super(p, m, CreatureType.HOUND, s.health());
@@ -378,13 +409,13 @@ final class Creatures {
                 }
                 case TELEGRAPH -> {
                     moving = false;
-                    body.pose("head", new Matrix4f().translate(0, -0.12f, 0.05f), 6);
-                    body.brightness("eyes", 15);
+                    body.brightness("body.head.eyes", 15);
                     if (prey != null) face(prey.getLocation());
                     place(x, y, z, yaw);
                     if (stateTicks >= 22) {
                         lungeDir = prey == null ? new Vector(0, 0, 1) : prey.getLocation().toVector().subtract(loc().toVector()).setY(0).normalize();
                         world.playSound(loc(), Sound.ENTITY_WOLF_HURT, SoundCategory.HOSTILE, 1f, 0.4f);
+                        body.brightness("body.head.eyes", 10);
                         set(State.LUNGE);
                     }
                 }
@@ -403,7 +434,6 @@ final class Creatures {
                     } else if (stateTicks > 10) {
                         set(State.RECOVER);
                     }
-                    body.pose("head", new Matrix4f(), 4);
                 }
                 case RECOVER -> {
                     if (prey != null) {
@@ -419,19 +449,15 @@ final class Creatures {
             if (!dead) animateLegs(moving && state != State.TELEGRAPH);
         }
 
+        /** Gait, the rear-up before a lunge, a jaw that works, a head that scans and twitches. */
         private void animateLegs(boolean moving) {
-            double a = moving ? Math.sin(walkPhase * 0.9) * (state == State.HUNT ? 0.7 : 0.4) : 0;
             int interp = plugin.cfg().creatureTickInterval + 1;
-            body.pose("leg_fl", swingZ(0.5, 0.3, a), interp);
-            body.pose("leg_br", swingZ(0.5, -0.45, a), interp);
-            body.pose("leg_fr", swingZ(0.5, 0.3, -a), interp);
-            body.pose("leg_bl", swingZ(0.5, -0.45, -a), interp);
-            double jaw = state == State.TELEGRAPH || state == State.LUNGE ? 0.5 : 0.05 * Math.sin(age * 0.3);
-            body.pose("jaw", new Matrix4f().translate(0, 0.6f, 0.48f).rotateX((float) jaw).translate(0, -0.6f, -0.48f), interp);
-        }
-
-        private static Matrix4f swingZ(double pivotY, double pivotZ, double rad) {
-            return new Matrix4f().translate(0, (float) pivotY, (float) pivotZ).rotateX((float) rad).translate(0, (float) -pivotY, (float) -pivotZ);
+            double amp = !moving ? 0 : state == State.HUNT || state == State.FLEE ? 1.0 : 0.6;
+            double rear = state == State.TELEGRAPH ? Math.min(1, stateTicks / 10.0) : state == State.LUNGE ? Math.max(0, 1 - stateTicks / 4.0) : 0;
+            double jaw = state == State.TELEGRAPH || state == State.LUNGE ? 1 : state == State.HUNT ? 0.35 + 0.25 * Math.sin(age * 0.8) : 0.05 + 0.05 * Math.sin(age * 0.3);
+            double look = state == State.WANDER || state == State.INVESTIGATE ? Math.sin(age * 0.045) * 0.45 : 0;
+            if (rnd().nextDouble() < 0.08) headTilt = rnd().nextDouble() < 0.3 ? rnd().nextGaussian() * 0.5 : 0;
+            body.pose(Poses.hound(walkPhase * 0.9, amp, rear, jaw, look, headTilt), interp);
         }
 
         @Override
@@ -548,12 +574,15 @@ final class Creatures {
             }
         }
 
+        /** Swims with its whole length; reaches and screams when it is close to someone in the water. */
         private void undulate() {
-            int interp = plugin.cfg().creatureTickInterval + 1;
-            for (int i = 1; i < 4; i++) {
-                double a = Math.sin(age * 0.25 - i * 0.9) * 0.25 * i;
-                body.pose("seg" + i, new Matrix4f().translate(0, 0, (float) (-i * 0.55 + 0.55)).rotateY((float) a).translate(0, 0, (float) (i * 0.55 - 0.55)), interp);
-            }
+            int dt = plugin.cfg().creatureTickInterval;
+            if (age % 4 >= dt) return;
+            int interp = 5;
+            boolean hunting = held != null || nearTicks > 0;
+            double amp = held != null ? 0.45 : hunting ? 0.35 : 0.18;
+            double speed = hunting ? 0.4 : 0.22;
+            body.pose(Poses.drifter(age * speed, amp, hunting ? 1 : 0, held != null ? 1 : hunting ? 0.6 : 0.15), interp);
         }
 
         private void release() {
@@ -619,7 +648,8 @@ final class Creatures {
                 return;
             }
             if (anyoneWatching(42, 64)) {
-                // frozen solid; not even the head turns
+                // frozen solid; not even the head turns, and the smear settles into a clean silhouette
+                if (unseenTicks > 0) body.pose(Poses.watcherHaze(0, true), 1);
                 unseenTicks = 0;
                 watchedTicks += dt;
                 if (watchedTicks % 20 < dt) mgr.sanityHit(p, 1.5);
@@ -649,9 +679,11 @@ final class Creatures {
             }
             moveToward(p.getLocation(), 0.42, 1.0);
             animateWalk(Bodies.WATCHER_HIP, Bodies.WATCHER_SHOULDER, 0.25, true);
+            // moving, its edges smear like a bad frame of film
+            body.pose(Poses.watcherHaze(rnd().nextLong(), false), 1);
             if (++tilt % 20 == 0) {
-                body.pose("head", new Matrix4f().translate(0, 1.75f, 0).rotateZ((float) Math.toRadians(rnd().nextInt(-25, 26)))
-                        .translate(0, -1.75f, 0), 1);
+                body.pose("head", new Matrix4f().translate(0, (float) Bodies.WATCHER_NECK, 0).rotateZ((float) Math.toRadians(rnd().nextInt(-25, 26)))
+                        .translate(0, (float) -Bodies.WATCHER_NECK, 0), 1);
             }
         }
 
