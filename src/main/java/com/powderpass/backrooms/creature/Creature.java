@@ -73,8 +73,20 @@ public abstract class Creature {
         body = new Body(model());
         int interval = plugin.cfg().creatureTickInterval;
         body.spawn(plugin, loc(), viewRange(), id.toString(), onlyViewer, interval + 1);
+        if (onlyViewer == null) makeHitbox();
+        onSpawn();
+    }
+
+    protected void onSpawn() {
+    }
+
+    /** (Re)create the Interaction hitbox from {@link #hitboxSize()} and register it with the manager. */
+    protected void makeHitbox() {
+        UUID old = hitboxId();
+        if (hitbox != null && hitbox.isValid()) hitbox.remove();
+        hitbox = null;
         float[] hb = hitboxSize();
-        if (hb != null && onlyViewer == null) {
+        if (hb != null) {
             hitbox = world.spawn(loc(), Interaction.class, e -> {
                 e.setPersistent(false);
                 e.setInteractionWidth(hb[0]);
@@ -83,10 +95,16 @@ public abstract class Creature {
                 e.getPersistentDataContainer().set(Keys.CREATURE, PersistentDataType.STRING, id.toString());
             });
         }
-        onSpawn();
+        mgr.rebindHitbox(this, old);
     }
 
-    protected void onSpawn() {
+    /** Swap the display body for another model (the skinwalker changes shape). */
+    protected void reshape(Model model) {
+        if (body != null) body.remove();
+        body = null;
+        if (model == null) return;
+        body = new Body(model);
+        body.spawn(plugin, loc(), viewRange(), id.toString(), viewer, plugin.cfg().creatureTickInterval + 1);
     }
 
     /** Display view range (1.0 = 64 blocks). */
@@ -105,7 +123,7 @@ public abstract class Creature {
     public final void tick() {
         if (dead) return;
         age += plugin.cfg().creatureTickInterval;
-        if (!body.valid() || (hitbox != null && !hitbox.isValid()) || !world.isChunkLoaded((int) Math.floor(x) >> 4, (int) Math.floor(z) >> 4)) {
+        if ((body != null && !body.valid()) || (hitbox != null && !hitbox.isValid()) || !world.isChunkLoaded((int) Math.floor(x) >> 4, (int) Math.floor(z) >> 4)) {
             remove();
             return;
         }
@@ -124,7 +142,7 @@ public abstract class Creature {
         z = nz;
         yaw = nyaw;
         Location l = loc();
-        body.move(l);
+        if (body != null) body.move(l);
         if (hitbox != null) hitbox.teleport(new Location(world, x, y, z));
     }
 
@@ -167,6 +185,7 @@ public abstract class Creature {
 
     /** Walk cycle for named limbs (legs/arms swing around their hip/shoulder). */
     protected void animateWalk(double hipY, double shoulderY, double amp, boolean moving) {
+        if (body == null) return;
         double a = moving ? Math.sin(walkPhase * 0.6) * amp : 0;
         int interp = plugin.cfg().creatureTickInterval + 1;
         body.pose("leg_l", swing(hipY, a), interp);
@@ -285,6 +304,11 @@ public abstract class Creature {
     /** Minimum distance before this creature despawns (0 = use the configured distance). */
     public double despawnRange() {
         return 0;
+    }
+
+    /** Short behaviour state for status output and tests. */
+    public String state() {
+        return type.id;
     }
 
     /** Harmless, private creatures do not count toward spawn caps. */

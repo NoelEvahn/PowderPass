@@ -43,6 +43,11 @@ public final class BackroomsConfig {
     public final float viewRange;
     public final boolean detailsEnabled, performanceMode;
     public final boolean fogEnabled;
+    // skinwalker
+    public final int skinwalkerDisguiseSeconds, skinwalkerTrueSeconds, skinwalkerPunchesToExpose;
+    public final double skinwalkerGroupRadius;
+    public final boolean skinwalkerChatMimic, skinwalkerVoiceMimic, skinwalkerLockCommands;
+    public final float skinwalkerVoiceDistance;
     // audio
     public final boolean audioEnabled, audioMusic, audioAmbient, audioVoices;
     public final double audioDensity, audioRare, audioMusicFrequency, audioDistanceScale;
@@ -83,7 +88,8 @@ public final class BackroomsConfig {
             "faceling", new CreatureSettings(true, 0, 1, Map.of(Level.LEVEL_0, 4.0, Level.LEVEL_1, 2.0, Level.POOLROOMS, 2.0, Level.LEVEL_4, 6.0, Level.PLAINS, 10.0)),
             "hound", new CreatureSettings(true, 5, 30, Map.of(Level.LEVEL_1, 6.0)),
             "drifter", new CreatureSettings(true, 2, 20, Map.of(Level.POOLROOMS, 8.0)),
-            "watcher", new CreatureSettings(true, 4, 20, Map.of(Level.LEVEL_0, 4.0, Level.LEVEL_4, 6.0, Level.LEVEL_1, 1.0)));
+            "watcher", new CreatureSettings(true, 4, 20, Map.of(Level.LEVEL_0, 4.0, Level.LEVEL_4, 6.0, Level.LEVEL_1, 1.0)),
+            "skinwalker", new CreatureSettings(true, 9, 80, Map.of(Level.LEVEL_0, 1.0, Level.LEVEL_1, 1.5, Level.LEVEL_4, 1.5, Level.POOLROOMS, 0.5, Level.PLAINS, 0.5)));
 
     public record CreatureSettings(boolean enabled, double damage, double health, Map<Level, Double> weights) {
     }
@@ -162,6 +168,14 @@ public final class BackroomsConfig {
         packHostPort = clamp(c.getInt("resource-pack.host.port", 8163), 1, 65535);
         packHostPublicAddress = c.getString("resource-pack.host.public-address", "");
         bedrockCustomSounds = c.getBoolean("bedrock.custom-sounds", false);
+        skinwalkerDisguiseSeconds = clamp(c.getInt("skinwalker.disguise-seconds", 150), 10, 3600);
+        skinwalkerTrueSeconds = clamp(c.getInt("skinwalker.true-form-seconds", 90), 10, 3600);
+        skinwalkerPunchesToExpose = clamp(c.getInt("skinwalker.punches-to-expose", 6), 1, 100);
+        skinwalkerGroupRadius = Math.max(8, Math.min(128, c.getDouble("skinwalker.group-radius", 48)));
+        skinwalkerChatMimic = c.getBoolean("skinwalker.chat-mimic", true);
+        skinwalkerVoiceMimic = c.getBoolean("skinwalker.voice-mimic", true);
+        skinwalkerLockCommands = c.getBoolean("skinwalker.lock-commands", true);
+        skinwalkerVoiceDistance = (float) Math.max(4, Math.min(64, c.getDouble("skinwalker.voice-distance", 24)));
         fogEnabled = c.getBoolean("fog.enabled", true);
         fogBankDistance = clamp(c.getInt("fog.bank-view-distance", 3), 2, 32);
         Map<Level, Integer> fogDefaults = Map.of(Level.LEVEL_0, 0, Level.POOLROOMS, 7, Level.LEVEL_1, 5, Level.LEVEL_4, 0, Level.PLAINS, 6);

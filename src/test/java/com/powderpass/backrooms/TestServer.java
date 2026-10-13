@@ -57,6 +57,19 @@ final class TestServer extends ServerMock {
         }
 
         @Override
+        @SuppressWarnings("unchecked")
+        public <T extends org.bukkit.entity.Entity> T spawn(Location location, Class<T> clazz, java.util.function.Consumer<? super T> function) {
+            if (clazz == org.bukkit.entity.Mannequin.class) {
+                MannequinMock m = new MannequinMock((org.mockbukkit.mockbukkit.ServerMock) org.bukkit.Bukkit.getServer());
+                m.setLocation(location);
+                ((org.mockbukkit.mockbukkit.ServerMock) org.bukkit.Bukkit.getServer()).registerEntity(m);
+                if (function != null) function.accept((T) m);
+                return (T) m;
+            }
+            return super.spawn(location, clazz, function);
+        }
+
+        @Override
         public int getSendViewDistance() {
             return 10;
         }

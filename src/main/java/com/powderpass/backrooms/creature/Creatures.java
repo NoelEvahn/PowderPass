@@ -29,6 +29,7 @@ final class Creatures {
             case HOUND -> new Hound(plugin, mgr, s);
             case DRIFTER -> new Drifter(plugin, mgr, s);
             case WATCHER -> new Watcher(plugin, mgr, s);
+            case SKINWALKER -> new Skinwalker(plugin, mgr, s);
         };
     }
 

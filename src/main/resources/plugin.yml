@@ -3,6 +3,7 @@ version: '${version}'
 main: com.powderpass.backrooms.BackroomsPlugin
 api-version: '1.21.11'
 load: POSTWORLD
+softdepend: [voicechat]
 author: PowderPass
 description: A five-level Backrooms dimension built from custom worlds and display-entity models.
 commands:
@@ -46,6 +47,9 @@ permissions:
     default: op
   backrooms.bypass.commands:
     description: Use commands listed in restrictions.blocked-commands while inside the Backrooms.
+    default: op
+  backrooms.bypass.skinwalker:
+    description: Can still run commands while being worn by a skinwalker.
     default: op
   backrooms.bypass.protection:
     description: Break and place blocks inside the Backrooms when block protection is on.

@@ -82,6 +82,15 @@ public final class CreatureManager {
         return best;
     }
 
+    Possessions possessions() {
+        return plugin.possessions();
+    }
+
+    void rebindHitbox(Creature c, java.util.UUID old) {
+        if (old != null) byHitbox.remove(old);
+        if (c.hitboxId() != null && creatures.contains(c)) byHitbox.put(c.hitboxId(), c);
+    }
+
     void unregister(Creature c) {
         creatures.remove(c);
         if (c.hitboxId() != null) byHitbox.remove(c.hitboxId());
@@ -142,6 +151,7 @@ public final class CreatureManager {
             case HOUND -> findSpot(p, 18, 32, 1, true, l -> true);
             case DRIFTER -> findWaterSpot(p, 8, 22);
             case WATCHER -> findSpot(p, 16, 32, 2, true, l -> true);
+            case SKINWALKER -> findSpot(p, 18, 30, 2, true, l -> true);
         };
         if (spot == null && type == CreatureType.SMILER) {
             // no proper darkness nearby: settle for the dimmest hidden corner

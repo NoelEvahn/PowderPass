@@ -177,6 +177,22 @@ bedrock:
   # and set this to true. Untested: if they hear nothing, set it back to false.
   custom-sounds: false
 
+skinwalker:
+  # It wears another creature until it reaches a player. If that player has company within group-radius,
+  # it locks them in spectator mode inside their own body (no moving, chat, commands or voice chat) and walks
+  # with the group wearing their skin. After disguise-seconds, or punches-to-expose punches within 20 s, or
+  # when the group is gone, it cracks open into its true form with the player's body caught underneath.
+  # Killing the true form frees the player; if it survives true-form-seconds or kills someone, they die.
+  # A lone player is not worn: it goes straight to its true form.
+  disguise-seconds: 150
+  true-form-seconds: 90
+  punches-to-expose: 6
+  group-radius: 48
+  chat-mimic: true             # repeats lines the victim typed inside the Backrooms (kept in memory only)
+  voice-mimic: true            # with Simple Voice Chat: replays the victim's recent speech (memory only, never saved)
+  voice-distance: 24
+  lock-commands: true          # victims cannot run commands (backrooms.bypass.skinwalker exempts)
+
 fog:
   # Fog is made by lowering each player's server view distance inside a level: the client draws its fog at
   # the edge of what it can see. 0 = leave the view distance alone. Restored when they leave the Backrooms.
@@ -199,6 +215,7 @@ creatures:
     hound:     {enabled: true, damage: 5.0, health: 30.0, weight: {level1: 6}}
     drifter:   {enabled: true, damage: 2.0, health: 20.0, weight: {poolrooms: 8}}
     watcher:   {enabled: true, damage: 4.0, weight: {level0: 4, level1: 1, level4: 6}}
+    skinwalker: {enabled: true, damage: 9.0, health: 80.0, weight: {level0: 1, level1: 1.5, level4: 1.5, poolrooms: 0.5, plains: 0.5}}
 
 events:
   enabled: true

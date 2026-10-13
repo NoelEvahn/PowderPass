@@ -136,6 +136,25 @@ SOUNDS: List[Sound] = [
       method="Granular friction drag through furniture resonances + slow creak + set-down thump / rumble."),
     S("breath.heavy", "event", "sfx.breath_heavy", 4.0, 3,
       method="Formant-filtered noise inhales/exhales with tremble and a creaky glottal rasp; dry, close."),
+    # ---------------------------------------------------------------- creature (skinwalker)
+    S("skinwalker.crackle", "event", "sfx.skinwalker_crackle", 2.5, 3, profiles=ALL, muffled=True,
+      method="Accelerating Poisson cluster (~7/s -> ~50/s) of bone cracks (fracture micro-impulses through damped "
+             "inharmonic modal bodies + low knock), knuckle ratchets, bright snaps and wet joint pops (gliding "
+             "cavitation pop + gated squelch noise), stick-slip sinew strain underneath, final heavy crunch "
+             "(deep knock, dense splinter burst, gritty crush noise, wet tail). No voice."),
+    S("skinwalker.screech", "event", "voices.skinwalker_screech", 2.0, 2, profiles=ALL,
+      method="Pitch-dropping saturated harmonic shriek (period-doubling rasp, inharmonic second voice, high "
+             "formants) over an espeak-ng pure vowel (phoneme input, no words) glide-resampled down, ring-modulated "
+             "and saturated, plus a throat growl and chitin mandible click rattles."),
+    # target -25.5: the 2 x 0.3 s fades are 15 % of a 4 s loop and Vorbis trims some click HF, so the
+    # decoded file measures about -26.3 LUFS
+    S("skinwalker.chitter", "ambient", "sfx.skinwalker_chitter", 4, loop=True, level=-25.5,
+      method="Loop-periodic chitin clicks (irregular chitter bursts, fast stridulating trills, lone clicks through "
+             "short inharmonic shell modes, soft-limited) over a low wet breath (formant-filtered pink noise with "
+             "loop-periodic inhale/exhale envelope, gated squelch, sub rumble)."),
+    S("skinwalker.scuttle", "event", "sfx.skinwalker_scuttle", 0.3, 6, profiles=ALL,
+      method="3-7 hard leg-tip taps 16-45 ms apart (sharp tick, short shell ring, floor knock, occasional flam), "
+             "flat / crescendo / decrescendo bursts."),
     # ---------------------------------------------------------------- radio / speakers
     S("radio.static", "ambient", "sfx.radio_static", 8, loop=True, level=-26,
       method="AM-band hiss with fading, Poisson crackles, faint drifting heterodyne whistle."),

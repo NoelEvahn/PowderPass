@@ -565,6 +565,103 @@
         "breath.heavy": 80
       }
     },
+    "skinwalker.crackle": {
+      "category": "event",
+      "duration_ticks": 52,
+      "loop": false,
+      "positional": true,
+      "variants": 3,
+      "profiles": [
+        "carpet",
+        "office",
+        "concrete",
+        "pool",
+        "corridor",
+        "open"
+      ],
+      "muffled": true,
+      "stream": false,
+      "event_ticks": {
+        "skinwalker.crackle": 52,
+        "skinwalker.crackle.carpet": 51,
+        "skinwalker.crackle.office": 54,
+        "skinwalker.crackle.concrete": 73,
+        "skinwalker.crackle.pool": 103,
+        "skinwalker.crackle.corridor": 58,
+        "skinwalker.crackle.open": 51,
+        "skinwalker.crackle.carpet.muffled": 58,
+        "skinwalker.crackle.office.muffled": 58,
+        "skinwalker.crackle.concrete.muffled": 73,
+        "skinwalker.crackle.pool.muffled": 103,
+        "skinwalker.crackle.corridor.muffled": 60,
+        "skinwalker.crackle.open.muffled": 58
+      }
+    },
+    "skinwalker.screech": {
+      "category": "event",
+      "duration_ticks": 46,
+      "loop": false,
+      "positional": true,
+      "variants": 2,
+      "profiles": [
+        "carpet",
+        "office",
+        "concrete",
+        "pool",
+        "corridor",
+        "open"
+      ],
+      "muffled": false,
+      "stream": false,
+      "event_ticks": {
+        "skinwalker.screech": 46,
+        "skinwalker.screech.carpet": 44,
+        "skinwalker.screech.office": 47,
+        "skinwalker.screech.concrete": 65,
+        "skinwalker.screech.pool": 95,
+        "skinwalker.screech.corridor": 51,
+        "skinwalker.screech.open": 44
+      }
+    },
+    "skinwalker.chitter": {
+      "category": "ambient",
+      "duration_ticks": 80,
+      "loop": true,
+      "positional": true,
+      "variants": 1,
+      "profiles": [],
+      "muffled": false,
+      "stream": false,
+      "event_ticks": {
+        "skinwalker.chitter": 80
+      }
+    },
+    "skinwalker.scuttle": {
+      "category": "event",
+      "duration_ticks": 10,
+      "loop": false,
+      "positional": true,
+      "variants": 6,
+      "profiles": [
+        "carpet",
+        "office",
+        "concrete",
+        "pool",
+        "corridor",
+        "open"
+      ],
+      "muffled": false,
+      "stream": false,
+      "event_ticks": {
+        "skinwalker.scuttle": 10,
+        "skinwalker.scuttle.carpet": 8,
+        "skinwalker.scuttle.office": 12,
+        "skinwalker.scuttle.concrete": 29,
+        "skinwalker.scuttle.pool": 53,
+        "skinwalker.scuttle.corridor": 16,
+        "skinwalker.scuttle.open": 9
+      }
+    },
     "radio.static": {
       "category": "ambient",
       "duration_ticks": 160,

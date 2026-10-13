@@ -183,8 +183,44 @@ None of these is a renamed vanilla mob. Each is a coordinated group of display e
 | **Hound** | 1 | threat (killable, 30 HP) | Quadruped. **Hunts by sound** (sprinting is loud, sneaking almost silent) and by sight. Growls and lowers its head before a lunge. Flees when badly hurt. |
 | **Watcher** | 0, 1, 4 | stalker (hit it and it is gone) | A flat black silhouette at the end of a hall. While anyone looks at it, it does not move at all; the moment nobody is, it closes the distance fast and silently. Stare it down for about 7 s and it disappears. If it reaches you: damage, darkness, and the lights flicker. |
 | **Drifter** | Poolrooms | threat (20 HP) | Pale shape in deep water. Bubbles warn you. It drags swimmers down; leave the water or strike it. |
+| **Skinwalker** | 0, 1, 4 (rarer in Poolrooms and Plains) | threat (true form 80 HP) | Wears other creatures, then people. See below. |
 
 Creatures notice everyone except spectators, so they also appear and stalk around **creative-mode** players (useful for testing). They only ever **hurt** players in survival or adventure mode.
+
+### The Skinwalker
+
+![Skinwalker true form](docs/creatures/skinwalker-true-form.png)
+
+1. **Borrowed shape.** It appears as another creature of the level: a Faceling, Smiler or Watcher in Level 0, a Hound or Faceling in the Habitable Zone, a Watcher or Faceling in the Office. It behaves almost like one, except that it keeps coming closer while nobody is looking. Now and then something cracks quietly. Strike it and the disguise splits open into its true form.
+2. **Worn player.** If it reaches a player who has company within 48 blocks, it takes them.
+   - **The victim** is locked inside their own body. They are put in spectator mode watching through its eyes, and cannot move, leave the view, change game mode, type in chat, run commands (except with `backrooms.bypass.skinwalker`) or talk on voice chat.
+   - **The body** is a `Mannequin` wearing the victim's skin, name and visible equipment.
+   - **It acts human:**
+     - walks with the group a little behind the leader, at their pace, with footsteps;
+     - looks where they look, or at the nearest face; idles and glances around;
+     - copies sneaks, jumps and arm swings a beat late;
+     - when punched, takes it and punches back harmlessly;
+     - now and then repeats a line the victim typed in chat inside the Backrooms;
+     - with Simple Voice Chat, plays back recordings of the victim's actual voice from where the body stands.
+   - **Its tell:** sometimes it stares at someone a little too long.
+3. **True form.** It stops pretending after `disguise-seconds` (150), or after 6 punches within 20 seconds, or when the group is gone.
+   - Its back cracks open into a spider-like thing on eight long jointed legs, with a ridged spine and a split skull full of teeth. The victim's body hangs in its ribs, and the victim is still watching from inside.
+   - It scuttles at about 6 blocks per second, chittering, and pounces for 9 damage.
+   - **Kill it** (80 HP) and the victim is freed alive.
+   - If it survives `true-form-seconds` (90) or kills someone, the victim dies.
+   - **A lone player is never worn.** There is nobody to fool, so it goes straight to its true form.
+
+**Safety:** the victim's original game mode is saved in their player data before anything changes. Disconnecting, an admin `entity clear`, `/backrooms reload`, plugin disable and crash recovery on the next join all give the player back their game mode on safe ground.
+
+**Voice and chat mimicry, and privacy:**
+- Inside the Backrooms, the plugin keeps the last few chat lines and, with Simple Voice Chat, about the last 12 short utterances of each player. These are held **in memory only**, never written to disk, and dropped when the player leaves the Backrooms or disconnects.
+- Turn the features off with `skinwalker.chat-mimic` / `skinwalker.voice-mimic`. Tell your players if you keep them on.
+- Simple Voice Chat is used **by reflection only**: none of its code is included in this plugin, and the plugin works normally without it.
+- Without it there is no voice muting or voice playback. The other locks still apply.
+
+The repeated chat line is sent in vanilla `<name> message` format, so a server with custom chat formatting will show the difference.
+
+![Borrowed shapes](docs/creatures/skinwalker-disguises.png)
 
 Spawning is deliberately rare:
 - Each player gets an attempt every 15 s, with chances per level.
@@ -236,6 +272,7 @@ Commands work from the console wherever a target player or level is given. Alias
 | `backrooms.use` | everyone |
 | `backrooms.admin` and its children (`.teleport`, `.entities`, `.events`, `.debug`, `.reload`, `.audio`, plus `backrooms.bypass.commands`) | op |
 | `backrooms.bypass.protection` | nobody (build inside the Backrooms) |
+| `backrooms.bypass.skinwalker` | op (can still run commands while being worn) |
 
 ---
 
@@ -262,6 +299,7 @@ Commands work from the console wherever a target player or level is given. Alias
 | `resource-pack.*` | `enabled`, `url` (default mc-packs.net with `{sha1}`), `required` (kick players who decline), `prompt`, and `host.enabled` / `bind` / `port` / `public-address` for the optional built-in server |
 | `bedrock.custom-sounds` | Treat Bedrock players as having custom sounds (only after installing the `.mcpack` in Geyser) |
 | `creatures.*` | Tick interval, spawn attempt period, caps, despawn distance, `level-chance`, per-type `enabled`/`damage`/`health`/`weight` per level |
+| `skinwalker.*` | Timing: `disguise-seconds`, `true-form-seconds`, `punches-to-expose`, `group-radius`. Mimicry: `chat-mimic`, `voice-mimic`, `voice-distance`. Locks: `lock-commands` |
 | `events.*` | Events on/off, check period, chance, ambience, flicker radius |
 | `sanity.*` | Sanity on/off; optional action-bar readout |
 | `items.*` | Flashlight battery length |
@@ -325,7 +363,7 @@ Commands work from the console wherever a target player or level is given. Alias
 
 ## Testing
 
-`gradle test` runs 66 automated tests (plus one map renderer that is off by default). All of them pass on this build.
+`gradle test` runs 74 automated tests (plus three renderers that are off by default). All of them pass on this build.
 
 - **Generation (31 tests across all 5 levels):**
   - Determinism across instances and chunk order, and seed sensitivity.
@@ -343,6 +381,17 @@ Commands work from the console wherever a target player or level is given. Alias
   - No detail sits in a transition trigger.
   - Repeated chunk generation is identical; nothing is anchored in another chunk or duplicated across chunks; props come before details for budgets.
   - The Plains ground mix is 89.9% grass, 6.9% moss and 3.2% coarse dirt, in patches.
+- **Skinwalker (8 tests, with a test stand-in for Paper's Mannequin):**
+  - It starts in another creature's shape.
+  - A lone player is hunted, not worn.
+  - With company, the victim is locked:
+    - spectator mode on the body, with the original mode saved first;
+    - chat, commands, leaving the view and changing game mode are all blocked.
+  - The body wears their name, keeps up with the group, punches back, and repeats the victim's chat line.
+  - Six punches expose it: the body is carried limp and nameless. Killing it frees the victim and removes the body.
+  - If it lasts long enough, the victim dies.
+  - Disconnecting, an admin clear and a crash leftover all restore the player.
+  - Voice mimicry is a no-op without Simple Voice Chat.
 - **Atmosphere (6 tests):**
   - Fog follows the level and is restored on leaving.
   - The embedded pack is extracted, byte-identical and SHA-1-hashed, and re-extracted after a version change or damage.
@@ -388,6 +437,11 @@ No Paper server binary could be downloaded in the build environment, so nothing 
     - Accept the pack; hums should be locatable under fixtures; `/backrooms audio debug`; `/backrooms audio test <id>`.
     - Check that loops have no audible seam, and that muffled music clears up as you round a corner.
     - Check the Office radio and how the Poolrooms sound underwater.
-11. **Fog:** the resting fog distances, a `fog` event (`/backrooms event trigger fog`), and the normal view distance coming back on leaving.
-12. **Surface details:** look for alignment, z-fighting and anything blocking a doorway, at `displays.details.density` 1 and 2.
-13. **Performance with several players:** watch `/backrooms status` tick costs, then tune `displays.activation-radius-chunks` and the entity caps if needed.
+11. **Skinwalker (needs two or more players):**
+    - The capture, and what the victim sees from inside.
+    - Whether the Mannequin's skin, name and poses look right, especially the limp SWIMMING pose under the true form, whose exact placement needs tuning in-game.
+    - Footsteps, the punch-back, and the chat line.
+    - With Simple Voice Chat: muting, then playback of recorded speech. This is untested against the real voice chat plugin.
+12. **Fog:** the resting fog distances, a `fog` event (`/backrooms event trigger fog`), and the normal view distance coming back on leaving.
+13. **Surface details:** look for alignment, z-fighting and anything blocking a doorway, at `displays.details.density` 1 and 2.
+14. **Performance with several players:** watch `/backrooms status` tick costs, then tune `displays.activation-radius-chunks` and the entity caps if needed.

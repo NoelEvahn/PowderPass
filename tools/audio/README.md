@@ -55,4 +55,7 @@ SHA-1. A different numpy/scipy/libvorbis version can change the bits, but not th
 2. Add a `Sound(...)` entry to `catalog.py`.
 3. Run `generate.py --only <id>`, then `build_pack.py`.
 
+The skinwalker creature sounds (`skinwalker.crackle`, `.screech`, `.chitter`, `.scuttle`) live at the end of
+`sfx.py` / `voices.py`; `skinwalker.chitter` is a deliberately short 4 s loop.
+
 User-supplied, properly licensed tracks go in `pack/user_sounds.json`. See `pack/MANIFEST.md`.

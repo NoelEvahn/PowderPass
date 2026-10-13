@@ -30,6 +30,17 @@ final class TestPlayer extends PlayerMock {
     final List<String> stopped = new ArrayList<>();
     int sendViewDistance = -1;
     int packRequests;
+    org.bukkit.entity.Entity spectatorTarget;
+
+    @Override
+    public org.bukkit.entity.Entity getSpectatorTarget() {
+        return spectatorTarget;
+    }
+
+    @Override
+    public void setSpectatorTarget(org.bukkit.entity.Entity e) {
+        spectatorTarget = e;
+    }
 
     @Override
     public void playSound(Location location, String sound, SoundCategory category, float volume, float pitch) {

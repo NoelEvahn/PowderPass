@@ -51,6 +51,7 @@ public class BackroomsPlugin extends JavaPlugin {
     private FlashlightService flashlights;
     private com.powderpass.backrooms.world.FallEntry falls;
     private com.powderpass.backrooms.event.FogService fog;
+    private com.powderpass.backrooms.creature.Possessions possessions;
     private com.powderpass.backrooms.audio.PackManager pack;
     private com.powderpass.backrooms.audio.AudioEngine audio;
     private BukkitTask debugTask;
@@ -83,6 +84,7 @@ public class BackroomsPlugin extends JavaPlugin {
         flashlights = new FlashlightService(this);
         falls = new com.powderpass.backrooms.world.FallEntry(this);
         fog = new com.powderpass.backrooms.event.FogService(this);
+        possessions = new com.powderpass.backrooms.creature.Possessions(this);
         pack = new com.powderpass.backrooms.audio.PackManager(this);
         audio = new com.powderpass.backrooms.audio.AudioEngine(this, pack);
 
@@ -93,6 +95,7 @@ public class BackroomsPlugin extends JavaPlugin {
         pm.registerEvents(decorations, this);
         pm.registerEvents(falls, this);
         pm.registerEvents(fog, this);
+        pm.registerEvents(possessions, this);
         pm.registerEvents(pack, this);
         pm.registerEvents(audio, this);
 
@@ -116,6 +119,7 @@ public class BackroomsPlugin extends JavaPlugin {
         flashlights.start();
         falls.start();
         fog.start();
+        possessions.start();
         pack.start();
         audio.start();
         if (debugTask != null) debugTask.cancel();
@@ -132,6 +136,7 @@ public class BackroomsPlugin extends JavaPlugin {
         if (flashlights != null) flashlights.stop();
         if (environment != null) environment.stop();
         if (creatures != null) creatures.stop();
+        if (possessions != null) possessions.stop();
         if (decorations != null) decorations.stop();
         if (transitions != null) transitions.stop();
         if (sessions != null) sessions.stop();
@@ -235,6 +240,10 @@ public class BackroomsPlugin extends JavaPlugin {
 
     public com.powderpass.backrooms.audio.AudioEngine audio() {
         return audio;
+    }
+
+    public com.powderpass.backrooms.creature.Possessions possessions() {
+        return possessions;
     }
 
     public com.powderpass.backrooms.event.FogService fog() {

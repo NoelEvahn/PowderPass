@@ -98,6 +98,15 @@ Presence
 - `movement.distant` [event, ~3 s, 3 variants, profiles, muffled] something shifting / dragging far away.
 - `breath.heavy` [event, ~4 s, 3 variants] close, unsettling breathing (mono, dry).
 
+Creature (skinwalker: imitates players, then cracks open into a spider-like true form)
+- `skinwalker.crackle` [event, ~2.5 s, 3 variants, profiles, muffled] accelerating bone cracks/snaps and wet joint
+  pops ending in a heavy crunch. No voice.
+- `skinwalker.screech` [event, ~2 s, 2 variants, profiles] layered pitch-dropping shriek, almost-human vowel
+  underneath (espeak-ng vowel only, never words), clicks.
+- `skinwalker.chitter` [ambient, L 4s (exception to the 6-12 s rule), ~-26 LUFS] rapid irregular chitin clicking
+  over a low wet breath.
+- `skinwalker.scuttle` [event, ~0.3 s, 6 variants, profiles] fast multi-leg skitter: several hard taps.
+
 Radio / speakers
 - `radio.static` [ambient, L 8s] AM static/hiss loop. `speaker.broken` [event, ~2 s, 3 variants] crackle/distortion
   burst.

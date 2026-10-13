@@ -25,7 +25,10 @@ which is listed in their table row.
   any real person). The whispers, murmurs and conversations use random nonsense syllables, cut up and
   partly reversed, so they cannot be understood. `voice.phrase`, `voice.announce` and `voice.radio` speak the
   short original lines given in the brief. `voice.cry` uses no TTS: it is a formant-synthesised vowel, heavily
-  distanced.
+  distanced. `skinwalker.screech` uses espeak-ng only for a sustained pure vowel (phoneme input, no words),
+  pitch-dragged, ring-modulated and saturated under a synthesised shriek.
+* **Creature** (`sfx.py`, `voices.py`): the skinwalker's bone cracks, joint pops, chitin clicks and leg taps are
+  modal resonator banks excited by short noise impulses; nothing is recorded and nothing is gory speech.
 * **Music** (`music.py`): composed procedurally from chord progressions and voicings written for this
   project, with seeded motif-based melodies whose strong beats snap to chord tones. The instruments are all
   synthesised: an additive piano with inharmonic stretched partials, two detuned strings per note and
@@ -39,10 +42,11 @@ which is listed in their table row.
 * 44.1 kHz Ogg Vorbis (libvorbis, `-q:a 3` for SFX/voices, `-q:a 2` for music).
 * Mono for everything except `music.plains_N.ambient`, which is stereo and non-positional.
 * Ambience loops are normalised to an integrated loudness (ITU-R BS.1770, gated) of about -24 LUFS. Some are
-  intentionally quieter: `hum.mains` -28, `vent.small` -27, `room.damp` -32, `wind.plains` -30. Music is at
+  intentionally quieter: `hum.mains` -28, `vent.small` -27, `room.damp` -32, `wind.plains` -30,
+  `skinwalker.chitter` about -26 (measured on the decoded file). Music is at
   -20 LUFS with a -1.5 dBFS ceiling. One-shot dry takes peak at -3 dBFS. Profile versions are never louder than
   that, and muffled versions are about 6 dB down.
-* Loops are exactly 8, 10 or 12 s, with 300 ms fades at both ends for a 6-tick overlapping re-trigger. Noise
+* Loops are exactly 8, 10 or 12 s (`skinwalker.chitter`: 4 s, a short creature loop), with 300 ms fades at both ends for a 6-tick overlapping re-trigger. Noise
   components use equal-power (sin/cos) fades. Tonal components are exactly periodic over `length - 0.3 s` and
   use complementary sin^2/cos^2 fades, so a 300 ms overlap of two instances rebuilds the hum seamlessly instead
   of giving a +3 dB bump. `build_pack.py` simulates that overlap for every loop.
@@ -139,6 +143,10 @@ was fetched, sampled, transcribed or quoted. Only broad, commonly described char
 | `step.water` (+6 profile/muffled events) | 28 x .ogg in `sounds/step/water/` (4 take(s), 1.1 s, mono) | event | Two sloshes (moving band weights), bubbles, falling drops. | CC0-1.0, original (this project) |
 | `movement.distant` (+12 profile/muffled events) | 39 x .ogg in `sounds/movement/distant/` (3 take(s), 3.3 s, mono) | event | Granular friction drag through furniture resonances + slow creak + set-down thump / rumble. | CC0-1.0, original (this project) |
 | `breath.heavy` | 3 x .ogg in `sounds/breath/heavy/` (3 take(s), 4.0 s, mono) | event | Formant-filtered noise inhales/exhales with tremble and a creaky glottal rasp; dry, close. | CC0-1.0, original (this project) |
+| `skinwalker.crackle` (+12 profile/muffled events) | 39 x .ogg in `sounds/skinwalker/crackle/` (3 take(s), 2.6 s, mono) | event | Accelerating Poisson cluster (~7/s -> ~50/s) of bone cracks (fracture micro-impulses through damped inharmonic modal bodies + low knock), knuckle ratchets, bright snaps and wet joint pops (gliding cavitation pop + gated squelch noise), stick-slip sinew strain underneath, final heavy crunch (deep knock, dense splinter burst, gritty crush noise, wet tail). No voice. | CC0-1.0, original (this project) |
+| `skinwalker.screech` (+6 profile/muffled events) | 14 x .ogg in `sounds/skinwalker/screech/` (2 take(s), 2.3 s, mono) | event | Pitch-dropping saturated harmonic shriek (period-doubling rasp, inharmonic second voice, high formants) over an espeak-ng pure vowel (phoneme input, no words) glide-resampled down, ring-modulated and saturated, plus a throat growl and chitin mandible click rattles. | CC0-1.0, original (this project) |
+| `skinwalker.chitter` | 1 x .ogg in `sounds/skinwalker/chitter/` (1 take(s), loop 4.0 s, mono) | ambient | Loop-periodic chitin clicks (irregular chitter bursts, fast stridulating trills, lone clicks through short inharmonic shell modes, soft-limited) over a low wet breath (formant-filtered pink noise with loop-periodic inhale/exhale envelope, gated squelch, sub rumble). | CC0-1.0, original (this project) |
+| `skinwalker.scuttle` (+6 profile/muffled events) | 42 x .ogg in `sounds/skinwalker/scuttle/` (6 take(s), 0.5 s, mono) | event | 3-7 hard leg-tip taps 16-45 ms apart (sharp tick, short shell ring, floor knock, occasional flam), flat / crescendo / decrescendo bursts. | CC0-1.0, original (this project) |
 | `radio.static` | 1 x .ogg in `sounds/radio/static/` (1 take(s), loop 8.0 s, mono) | ambient | AM-band hiss with fading, Poisson crackles, faint drifting heterodyne whistle. | CC0-1.0, original (this project) |
 | `speaker.broken` | 3 x .ogg in `sounds/speaker/broken/` (3 take(s), 2.0 s, mono) | event | Hum + noise through intermittent-contact gate, hard clipping, crackles, small-cone EQ. | CC0-1.0, original (this project) |
 | `voice.whisper` (+6 profile/muffled events) | 42 x .ogg in `sounds/voice/whisper/` (6 take(s), 4.0 s, mono) | voice | espeak-ng whisper variants on random nonsense syllables, chunk-shuffled/reversed, breath layer. | CC0-1.0, original (this project) |

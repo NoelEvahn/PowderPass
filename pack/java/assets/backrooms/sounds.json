@@ -791,6 +791,214 @@
       "backrooms:silence/transition/dry_1"
     ]
   },
+  "skinwalker.chitter": {
+    "sounds": [
+      "backrooms:skinwalker/chitter/dry_1"
+    ]
+  },
+  "skinwalker.crackle": {
+    "sounds": [
+      "backrooms:skinwalker/crackle/dry_1",
+      "backrooms:skinwalker/crackle/dry_2",
+      "backrooms:skinwalker/crackle/dry_3"
+    ]
+  },
+  "skinwalker.crackle.carpet": {
+    "sounds": [
+      "backrooms:skinwalker/crackle/carpet_1",
+      "backrooms:skinwalker/crackle/carpet_2",
+      "backrooms:skinwalker/crackle/carpet_3"
+    ]
+  },
+  "skinwalker.crackle.carpet.muffled": {
+    "sounds": [
+      "backrooms:skinwalker/crackle/carpet_muffled_1",
+      "backrooms:skinwalker/crackle/carpet_muffled_2",
+      "backrooms:skinwalker/crackle/carpet_muffled_3"
+    ]
+  },
+  "skinwalker.crackle.concrete": {
+    "sounds": [
+      "backrooms:skinwalker/crackle/concrete_1",
+      "backrooms:skinwalker/crackle/concrete_2",
+      "backrooms:skinwalker/crackle/concrete_3"
+    ]
+  },
+  "skinwalker.crackle.concrete.muffled": {
+    "sounds": [
+      "backrooms:skinwalker/crackle/concrete_muffled_1",
+      "backrooms:skinwalker/crackle/concrete_muffled_2",
+      "backrooms:skinwalker/crackle/concrete_muffled_3"
+    ]
+  },
+  "skinwalker.crackle.corridor": {
+    "sounds": [
+      "backrooms:skinwalker/crackle/corridor_1",
+      "backrooms:skinwalker/crackle/corridor_2",
+      "backrooms:skinwalker/crackle/corridor_3"
+    ]
+  },
+  "skinwalker.crackle.corridor.muffled": {
+    "sounds": [
+      "backrooms:skinwalker/crackle/corridor_muffled_1",
+      "backrooms:skinwalker/crackle/corridor_muffled_2",
+      "backrooms:skinwalker/crackle/corridor_muffled_3"
+    ]
+  },
+  "skinwalker.crackle.office": {
+    "sounds": [
+      "backrooms:skinwalker/crackle/office_1",
+      "backrooms:skinwalker/crackle/office_2",
+      "backrooms:skinwalker/crackle/office_3"
+    ]
+  },
+  "skinwalker.crackle.office.muffled": {
+    "sounds": [
+      "backrooms:skinwalker/crackle/office_muffled_1",
+      "backrooms:skinwalker/crackle/office_muffled_2",
+      "backrooms:skinwalker/crackle/office_muffled_3"
+    ]
+  },
+  "skinwalker.crackle.open": {
+    "sounds": [
+      "backrooms:skinwalker/crackle/open_1",
+      "backrooms:skinwalker/crackle/open_2",
+      "backrooms:skinwalker/crackle/open_3"
+    ]
+  },
+  "skinwalker.crackle.open.muffled": {
+    "sounds": [
+      "backrooms:skinwalker/crackle/open_muffled_1",
+      "backrooms:skinwalker/crackle/open_muffled_2",
+      "backrooms:skinwalker/crackle/open_muffled_3"
+    ]
+  },
+  "skinwalker.crackle.pool": {
+    "sounds": [
+      "backrooms:skinwalker/crackle/pool_1",
+      "backrooms:skinwalker/crackle/pool_2",
+      "backrooms:skinwalker/crackle/pool_3"
+    ]
+  },
+  "skinwalker.crackle.pool.muffled": {
+    "sounds": [
+      "backrooms:skinwalker/crackle/pool_muffled_1",
+      "backrooms:skinwalker/crackle/pool_muffled_2",
+      "backrooms:skinwalker/crackle/pool_muffled_3"
+    ]
+  },
+  "skinwalker.screech": {
+    "sounds": [
+      "backrooms:skinwalker/screech/dry_1",
+      "backrooms:skinwalker/screech/dry_2"
+    ]
+  },
+  "skinwalker.screech.carpet": {
+    "sounds": [
+      "backrooms:skinwalker/screech/carpet_1",
+      "backrooms:skinwalker/screech/carpet_2"
+    ]
+  },
+  "skinwalker.screech.concrete": {
+    "sounds": [
+      "backrooms:skinwalker/screech/concrete_1",
+      "backrooms:skinwalker/screech/concrete_2"
+    ]
+  },
+  "skinwalker.screech.corridor": {
+    "sounds": [
+      "backrooms:skinwalker/screech/corridor_1",
+      "backrooms:skinwalker/screech/corridor_2"
+    ]
+  },
+  "skinwalker.screech.office": {
+    "sounds": [
+      "backrooms:skinwalker/screech/office_1",
+      "backrooms:skinwalker/screech/office_2"
+    ]
+  },
+  "skinwalker.screech.open": {
+    "sounds": [
+      "backrooms:skinwalker/screech/open_1",
+      "backrooms:skinwalker/screech/open_2"
+    ]
+  },
+  "skinwalker.screech.pool": {
+    "sounds": [
+      "backrooms:skinwalker/screech/pool_1",
+      "backrooms:skinwalker/screech/pool_2"
+    ]
+  },
+  "skinwalker.scuttle": {
+    "sounds": [
+      "backrooms:skinwalker/scuttle/dry_1",
+      "backrooms:skinwalker/scuttle/dry_2",
+      "backrooms:skinwalker/scuttle/dry_3",
+      "backrooms:skinwalker/scuttle/dry_4",
+      "backrooms:skinwalker/scuttle/dry_5",
+      "backrooms:skinwalker/scuttle/dry_6"
+    ]
+  },
+  "skinwalker.scuttle.carpet": {
+    "sounds": [
+      "backrooms:skinwalker/scuttle/carpet_1",
+      "backrooms:skinwalker/scuttle/carpet_2",
+      "backrooms:skinwalker/scuttle/carpet_3",
+      "backrooms:skinwalker/scuttle/carpet_4",
+      "backrooms:skinwalker/scuttle/carpet_5",
+      "backrooms:skinwalker/scuttle/carpet_6"
+    ]
+  },
+  "skinwalker.scuttle.concrete": {
+    "sounds": [
+      "backrooms:skinwalker/scuttle/concrete_1",
+      "backrooms:skinwalker/scuttle/concrete_2",
+      "backrooms:skinwalker/scuttle/concrete_3",
+      "backrooms:skinwalker/scuttle/concrete_4",
+      "backrooms:skinwalker/scuttle/concrete_5",
+      "backrooms:skinwalker/scuttle/concrete_6"
+    ]
+  },
+  "skinwalker.scuttle.corridor": {
+    "sounds": [
+      "backrooms:skinwalker/scuttle/corridor_1",
+      "backrooms:skinwalker/scuttle/corridor_2",
+      "backrooms:skinwalker/scuttle/corridor_3",
+      "backrooms:skinwalker/scuttle/corridor_4",
+      "backrooms:skinwalker/scuttle/corridor_5",
+      "backrooms:skinwalker/scuttle/corridor_6"
+    ]
+  },
+  "skinwalker.scuttle.office": {
+    "sounds": [
+      "backrooms:skinwalker/scuttle/office_1",
+      "backrooms:skinwalker/scuttle/office_2",
+      "backrooms:skinwalker/scuttle/office_3",
+      "backrooms:skinwalker/scuttle/office_4",
+      "backrooms:skinwalker/scuttle/office_5",
+      "backrooms:skinwalker/scuttle/office_6"
+    ]
+  },
+  "skinwalker.scuttle.open": {
+    "sounds": [
+      "backrooms:skinwalker/scuttle/open_1",
+      "backrooms:skinwalker/scuttle/open_2",
+      "backrooms:skinwalker/scuttle/open_3",
+      "backrooms:skinwalker/scuttle/open_4",
+      "backrooms:skinwalker/scuttle/open_5",
+      "backrooms:skinwalker/scuttle/open_6"
+    ]
+  },
+  "skinwalker.scuttle.pool": {
+    "sounds": [
+      "backrooms:skinwalker/scuttle/pool_1",
+      "backrooms:skinwalker/scuttle/pool_2",
+      "backrooms:skinwalker/scuttle/pool_3",
+      "backrooms:skinwalker/scuttle/pool_4",
+      "backrooms:skinwalker/scuttle/pool_5",
+      "backrooms:skinwalker/scuttle/pool_6"
+    ]
+  },
   "speaker.broken": {
     "sounds": [
       "backrooms:speaker/broken/dry_1",

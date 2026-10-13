@@ -123,4 +123,46 @@ final class Bodies {
         m.box(black, -0.13, 1.8, -0.12, 0.26, 0.3, 0.24).named("head");
         return m;
     }
+
+    /**
+     * The skinwalker's true form: a low, wide, many-jointed thing on eight long bony legs, a ridged spine and a
+     * split skull. The body of the player it was wearing hangs underneath, held by ribs (the player itself is a
+     * separate mannequin entity the creature carries). Legs are named leg0..leg7 for the scuttle animation.
+     */
+    static Model skinwalker() {
+        Model m = new Model();
+        Material hide = GRAY_TERRACOTTA, bone = BONE_BLOCK, dark = BLACK_CONCRETE, flesh = PINK_TERRACOTTA;
+        // thorax and abdomen
+        m.box(hide, -0.45, 1.05, -0.9, 0.9, 0.42, 1.5).named("body");
+        m.box(hide, -0.35, 0.95, -1.75, 0.7, 0.5, 0.9).named("body");
+        m.box(dark, -0.36, 1.0, -1.76, 0.72, 0.06, 0.91).named("body");
+        // spine ridge
+        for (int i = 0; i < 6; i++) m.boxC(bone, 0, 1.52 + (i % 2) * 0.04, -1.6 + i * 0.36, 0.08, 0.16 + (i % 3) * 0.05, 0.1, 'x', 20).named("body");
+        // ribs closing around the stolen body underneath
+        for (int i = 0; i < 4; i++) {
+            double z = -0.7 + i * 0.38;
+            m.rod(bone, Model.v(-0.42, 1.08, z), Model.v(-0.5, 0.45, z + 0.08), 0.07).named("body");
+            m.rod(bone, Model.v(0.42, 1.08, z), Model.v(0.5, 0.45, z + 0.08), 0.07).named("body");
+        }
+        // the skull: long, split open, teeth along the gap, eyes in a cluster where a face would not be
+        m.box(bone, -0.22, 1.02, 0.55, 0.44, 0.32, 0.72).named("head");
+        m.box(bone, -0.26, 1.3, 0.6, 0.52, 0.08, 0.3).named("head"); // brow ridge
+        m.box(dark, -0.19, 0.95, 0.62, 0.38, 0.07, 0.62).named("jaw");
+        m.box(flesh, -0.15, 1.0, 0.68, 0.3, 0.03, 0.5).named("jaw");
+        for (int i = 0; i < 6; i++) m.box(WHITE_CONCRETE, -0.16 + i * 0.06, 0.96, 1.18, 0.03, 0.08, 0.03).named("jaw");
+        for (int i = 0; i < 5; i++) m.box(WHITE_CONCRETE, -0.15 + i * 0.07, 1.22 + (i % 2) * 0.05, 1.271, 0.035, 0.035, 0.004).glow(6).named("head");
+        // eight legs, each a thick upper and a thin lower segment, knees high, feet splayed wide
+        for (int i = 0; i < 8; i++) {
+            int side = i < 4 ? -1 : 1;
+            int k = i % 4;
+            double hz = 0.45 - k * 0.42;
+            double spread = (k - 1.5);
+            double kneeX = side * (1.0 + 0.1 * Math.abs(spread)), kneeY = 1.85 - Math.abs(spread) * 0.12 + (k % 2) * 0.12;
+            double kneeZ = hz + spread * 0.35;
+            double footX = side * (1.6 + 0.15 * (1.5 - Math.abs(spread))), footZ = hz + spread * 0.95;
+            m.rod(dark, Model.v(side * 0.42, 1.2, hz), Model.v(kneeX, kneeY, kneeZ), 0.12).named("leg" + i);
+            m.rod(bone, Model.v(kneeX, kneeY, kneeZ), Model.v(footX, 0.0, footZ), 0.065).named("leg" + i);
+        }
+        return m;
+    }
 }

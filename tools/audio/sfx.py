@@ -894,3 +894,174 @@ def silence_transition(rng, v):
     x = unit(nz) * env + 0.8 * sub
     ring = np.sin(2 * np.pi * 7200 * t) * env_points(n, [(0, 0), (1.8, 0), (2.3, 1), (3.0, 0)]) * 0.004
     return x + ring * 3
+
+
+# ============================================================================ creature (skinwalker)
+def _bone_crack(rng, size=1.0, bright=1.0):
+    """Bone / cartilage crack: a few fracture micro-impulses through a damped, inharmonic 'bone' body,
+    a crisp broadband snap and a small low knock (weight). size > 1 = bigger, lower, heavier."""
+    n = ns(0.12)
+    exc = np.zeros(n)
+    tp = 0.0
+    for k in range(int(rng.integers(1, 5))):
+        mix_into(exc, burst(rng, 0.0015, 0.0003, 1500, 12000) * rng.uniform(0.4, 1.0) * (1.0 if k == 0 else 0.6),
+                 ns(tp))
+        tp += rng.uniform(0.0004, 0.0035)
+    fb = rng.uniform(700, 1600) / size
+    body = modal(fb * np.array([1.0, 2.31, 3.87, 5.62]) * rng.uniform(0.95, 1.05, 4), [1.0, 0.7, 0.45, 0.25],
+                 np.array([0.012, 0.008, 0.005, 0.0035]) * size ** 0.5, ns(0.06), rng, True)
+    x = signal.fftconvolve(exc, body)[:n] * 6
+    x += bright * hp(white(n, rng), 3000, 2) * env_exp(n, 0.0008, 0.0) * 1.2
+    x += size * pad_to(thump(rng, 190 / size ** 0.5, 85 / size ** 0.5, 0.012 * size, 0.08, 0.3), n) * 0.5
+    return x
+
+
+def _wet_pop(rng, size=1.0):
+    """Joint pop (cavitation): short upward-gliding low pop + a sticky squelch of fast-gated noise."""
+    d = rng.uniform(0.07, 0.16) * size ** 0.5
+    n = ns(d + 0.02)
+    t = taxis(n)
+    f0 = rng.uniform(170, 320) / size ** 0.5
+    f = f0 * (1 + 1.4 * (1 - np.exp(-t / 0.012)))
+    x = np.sin(phase_of(f, n)) * env_exp(n, rng.uniform(0.012, 0.02) * size, 0.0006)
+    x += 0.25 * hp(white(n, rng), 2500, 2) * env_exp(n, 0.0006, 0.0)
+    k = ns(d)
+    g = np.clip(smooth_random(k, rng.uniform(90, 160), rng), 0, None) ** 2
+    sq = bp(pink(k, rng), 350, 2200, 2) * g * env_ar(k, 0.004, d * 0.8, 1.5)
+    mix_into(x, unit(sq) * rng.uniform(0.12, 0.25), ns(rng.uniform(0.0, 0.01)))
+    return x
+
+
+def skinwalker_crackle(rng, v):
+    dur = 2.5
+    n = ns(dur)
+    x = np.zeros(n)
+    t_end = rng.uniform(1.98, 2.1)            # final crunch
+    # accelerating cluster: inhomogeneous Poisson, rate rising ~7/s -> ~50/s, opening on a crack
+    tp = rng.uniform(0.01, 0.04)
+    mix_into(x, _bone_crack(rng, rng.uniform(0.9, 1.2)) * 0.45, ns(tp))
+    while True:
+        u = tp / t_end
+        rate = 7.0 + 43.0 * u ** 2.0
+        tp += rng.exponential(1 / rate)
+        if tp >= t_end - 0.03:
+            break
+        u = tp / t_end
+        amp = 0.35 + 0.5 * u
+        r = rng.random()
+        if r < 0.5:      # crack
+            mix_into(x, _bone_crack(rng, rng.uniform(0.8, 1.4)) * amp * rng.uniform(0.6, 1.0), ns(tp))
+        elif r < 0.7:    # quick knuckle ratchet: 3-6 small cracks a few ms apart
+            q = tp
+            for _ in range(int(rng.integers(3, 7))):
+                mix_into(x, _bone_crack(rng, rng.uniform(0.6, 0.9), 1.3) * amp * rng.uniform(0.3, 0.6), ns(q))
+                q += rng.uniform(0.007, 0.018)
+        elif r < 0.85:   # bright snap
+            mix_into(x, _bone_crack(rng, rng.uniform(0.5, 0.7), 1.8) * amp * rng.uniform(0.5, 0.9), ns(tp))
+        else:            # wet joint pop
+            mix_into(x, _wet_pop(rng, rng.uniform(0.8, 1.3)) * amp * rng.uniform(0.6, 1.0), ns(tp))
+    # sinew / flesh strain underneath, tightening towards the crunch
+    k = ns(t_end + 0.05)
+    amp_env = env_points(k, [(0, 0.0), (0.4, 0.2), (t_end - 0.1, 1.0), (t_end + 0.05, 0.0)])
+    strain = creak(rng, k, [(0, 18), (t_end, 70)], [190, 430, 780, 1300], [0.03, 0.02, 0.012, 0.008], amp_env, 0.35)
+    mix_into(x, unit(strain) * 0.05, 0)
+    # final heavy crunch: deep knock, dense splinter burst, gritty crush noise, wet tail
+    c = ns(t_end)
+    mix_into(x, thump(rng, 140, 42, 0.09, 0.45, 0.7) * 1.1, c)
+    for j in range(int(rng.integers(18, 32))):
+        q = rng.exponential(0.025)
+        if q < 0.12:
+            mix_into(x, _bone_crack(rng, rng.uniform(0.7, 1.8), 1.2) * np.exp(-q / 0.05) * rng.uniform(0.5, 1.0),
+                     c + ns(q))
+    m = ns(0.3)
+    grit = bp(white(m, rng), 250, 4500, 2) * np.clip(smooth_random(m, 220, rng), 0, None) ** 2
+    mix_into(x, unit(grit) * env_exp(m, 0.06, 0.001) * 0.35, c)
+    for _ in range(int(rng.integers(2, 4))):
+        mix_into(x, _wet_pop(rng, rng.uniform(1.0, 1.6)) * rng.uniform(0.3, 0.5), c + ns(rng.uniform(0.05, 0.25)))
+    return room(hp(x, 45, 2), 0.06)
+
+
+def _chitin_click(rng, hi=1.0):
+    """Hard chitin click: tiny broadband impulse through a short, high, inharmonic shell body."""
+    n = ns(0.03)
+    ex = burst(rng, 0.0008, 0.00015, 1500, 14000)
+    fb = rng.uniform(2600, 4800) * hi
+    body = modal([fb, fb * 1.47, fb * 2.13, fb * 0.31], [1.0, 0.55, 0.3, 0.35],
+                 [0.004, 0.0028, 0.0018, 0.006], ns(0.025), rng, True)
+    x = signal.fftconvolve(ex, body)[:n] * 5
+    x[: len(ex)] += ex * 0.8
+    return x
+
+
+def _leg_tap(rng, hard=1.0):
+    """One leg tip striking the floor: sharp tick, short shell ring, small floor knock."""
+    n = ns(0.06)
+    x = hp(white(n, rng), 2200, 2) * env_exp(n, 0.0007, 0.0001) * 1.6 * hard
+    fb = rng.uniform(1800, 3400)
+    x += modal([fb, fb * 1.71, fb * 2.62], [1.0, 0.5, 0.3], [0.005, 0.0035, 0.002], n, rng, True) * 0.35
+    x += pad_to(thump(rng, 170, 80, 0.012, 0.06, 0.25), n) * 0.45
+    if rng.random() < 0.35:       # flam: second tip lands a few ms later
+        mix_into(x, hp(white(ns(0.01), rng), 2500, 2) * env_exp(ns(0.01), 0.0006, 0.0001) * 0.7,
+                 ns(rng.uniform(0.002, 0.006)))
+    return x
+
+
+def skinwalker_scuttle(rng, v):
+    n = ns(0.3)
+    x = np.zeros(n)
+    k = int(rng.integers(3, 8))
+    shape = rng.choice(["flat", "cresc", "decresc"])
+    tp = rng.uniform(0.003, 0.008)
+    for j in range(k):
+        u = j / max(1, k - 1)
+        a = {"flat": 1.0, "cresc": 0.55 + 0.45 * u, "decresc": 1.0 - 0.45 * u}[shape] * rng.uniform(0.7, 1.0)
+        mix_into(x, _leg_tap(rng, rng.uniform(0.8, 1.2)) * a, ns(tp))
+        tp += rng.uniform(0.016, 0.045)
+        if tp > 0.22:
+            break
+    return room(hp(x, 60, 2), 0.05)
+
+
+def skinwalker_chitter(rng, v, n, P):
+    # periodic click layer (mix_wrap into a P-sample buffer -> overlaps reconstruct exactly)
+    buf = np.zeros(P)
+    pd = P / SR
+    tp = rng.uniform(0, 0.2)
+    while tp < pd:
+        kind = rng.random()
+        if kind < 0.6:     # chitter burst: 4-14 irregular clicks
+            q = tp
+            m = int(rng.integers(4, 15))
+            hi = rng.uniform(0.85, 1.15)
+            for j in range(m):
+                a = np.sin(np.pi * (j + 0.5) / m) ** 0.7 * rng.uniform(0.5, 1.0)
+                mix_wrap(buf, _chitin_click(rng, hi * rng.uniform(0.95, 1.05)) * a, ns(q))
+                q += rng.uniform(0.016, 0.042)
+            tp = q
+        elif kind < 0.8:   # fast stridulating trill
+            m = int(rng.uniform(0.12, 0.3) * rng.uniform(50, 70))
+            per = 1 / rng.uniform(50, 70)
+            for j in range(m):
+                a = np.sin(np.pi * (j + 0.5) / m) * 0.45
+                mix_wrap(buf, _chitin_click(rng, 1.25) * a, ns(tp + j * per + rng.uniform(-0.002, 0.002)))
+            tp += m * per
+        else:              # lone click
+            mix_wrap(buf, _chitin_click(rng, rng.uniform(0.8, 1.2)) * rng.uniform(0.4, 0.9), ns(tp))
+        tp += rng.exponential(0.22) + 0.05
+    ir, _, _ = get_profile_ir("carpet")
+    ton = circ_filter(buf, lambda y: hp(y, 500, 2))
+    ton = ton + circ_conv(ton, ir) * 0.15
+    # wet, low breath underneath (loop-periodic envelope, noise part)
+    t = taxis(n)
+    br_f = qf(0.55, P)
+    cyc = 0.5 - 0.5 * np.cos(2 * np.pi * br_f * t)
+    env = 0.3 + 0.7 * cyc ** 1.6
+    src = pink(n, rng)
+    breath = _formants(bp(src, 120, 2400, 2), [(320, 3, 1.0), (850, 4, 0.6), (1900, 5, 0.25)])
+    wet = bp(pink(n, rng), 200, 1100, 2) * np.clip(smooth_random(n, 30, rng), 0, None) ** 2
+    rumble = lp(brown(n, rng), 140, 2)
+    noi = (unit(breath) + 0.6 * unit(wet) + 0.5 * unit(rumble)) * env
+    noi = lp(noi, 2200, 2)
+    ton = unit(ton)
+    ton = 6.0 * np.tanh(ton / 6.0)      # memoryless soft limit of click peaks (keeps the layer periodic)
+    return unit(ton), 0.5 * unit(noi)

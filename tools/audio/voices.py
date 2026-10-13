@@ -245,3 +245,72 @@ def voice_cry(rng, v):
     ir = make_ir(rng, [(0, 400, 3.0), (400, SR / 2, 2.2)], er=[(0.12, 0.35, 1500), (0.29, 0.2, 1200)],
                  predelay=0.04, onset=0.08)
     return apply_ir(y, ir, 0.25, 1.0)
+
+
+# ------------------------------------------------------------------------------------------ creature
+def _glide_resample(x, ratio):
+    """Read x with a per-output-sample speed ratio (pitch + formants follow); stops at the end of x."""
+    pos = np.cumsum(ratio) - ratio[0]
+    pos = pos[pos < len(x) - 1]
+    return np.interp(pos, np.arange(len(x)), x)
+
+
+SCREECH = [  # (espeak voice, pitch, f0 contour points, human-layer speed ratio contour)
+    ("en-us+f3", 85, [(0, 1050), (0.12, 1350), (0.45, 1150), (1.3, 520), (2.0, 300)], [(0, 1.45), (2.0, 0.55)]),
+    ("en+m3", 70, [(0, 900), (0.08, 1500), (0.3, 1250), (0.55, 1380), (1.4, 430), (2.0, 260)], [(0, 1.3), (2.0, 0.5)]),
+]
+
+
+def skinwalker_screech(rng, v):
+    from sfx import _chitin_click  # shared click model
+    dur = 2.0
+    n = ns(dur)
+    t = taxis(n)
+    vo, p, f0pts, rpts = SCREECH[v % 2]
+    amp = env_points(n, [(0, 0), (0.025, 1), (0.25, 0.9), (1.2, 0.8), (1.75, 0.35), (dur, 0)])
+    # 1) inhuman shriek: bright harmonic source, period-doubling roughness, an inharmonic second voice,
+    #    high 'scream' formants, hard saturation
+    f0 = env_points(n, f0pts) * (1 + 0.035 * smooth_random(n, 25, rng) + 0.012 * np.sin(2 * np.pi * 7.5 * t))
+    ph = phase_of(f0, n)
+    H = int(SR / 2 * 0.9 / 1500)
+    src = additive(ph, [k ** -0.9 for k in range(1, H + 1)])
+    src *= 1 + 0.55 * np.sin(ph / 2 + 0.3)                       # sub-harmonic rasp
+    src2 = additive(phase_of(f0 * 1.414 * (1 + 0.006 * smooth_random(n, 3, rng)), n),
+                    [k ** -1.1 for k in range(1, int(H / 1.414) + 1)])
+    src = src + 0.45 * src2 + 0.25 * white(n, rng)
+    shriek = sum(a * reson(src, f, q) for f, q, a in [(1500, 4, 1.0), (2900, 6, 0.8), (4300, 7, 0.45)])
+    shriek = saturate(shriek / max(peak(shriek), 1e-9), 5.0)
+    shriek = bp(shriek, 280, 9000, 2)
+    # 2) almost-human layer: a pure espeak vowel (phoneme input, no words), pitch/formants dragged down,
+    #    ping-ponged to length, ring-modulated a little, saturated
+    vow = speak("[[A:A:A:A:A:]]", vo, p, 70)
+    vow = np.concatenate([fade_edges(vow, 0.01, 0.03), fade_edges(vow[::-1], 0.03, 0.03)])
+    ratio = env_points(n * 2, [(a, b) for a, b in rpts] + [(4.0, rpts[-1][1])])
+    hum = pad_to(_glide_resample(np.tile(vow, 3), ratio), n)
+    hum = hum * (0.7 + 0.3 * np.sin(2 * np.pi * rng.uniform(34, 48) * t))
+    hum = saturate(hum / max(peak(hum), 1e-9), 3.0)
+    hum = bp(hum, 180, 5000, 2)
+    # 3) throat growl under the drop
+    g0 = env_points(n, [(0, 95), (dur, 62)]) * (1 + 0.05 * smooth_random(n, 15, rng))
+    growl = additive(phase_of(g0, n), [k ** -1.2 for k in range(1, 60)])
+    growl = sum(a * reson(growl, f, q) for f, q, a in [(520, 4, 1.0), (950, 5, 0.6), (2300, 6, 0.3)])
+    growl = saturate(growl / max(peak(growl), 1e-9), 4.0) * env_points(n, [(0, 0), (0.3, 0.2), (1.2, 1), (dur, 0.6)])
+    y = (rms_norm(shriek) + 0.55 * rms_norm(hum) + 0.35 * rms_norm(growl)) * amp
+    # 4) mandible clicks: a rattle at the onset, scattered clicks, a rattle as it dies away
+    clk = np.zeros(n)
+    for start, cnt, gap in ((0.0, int(rng.integers(6, 11)), (0.012, 0.025)),
+                            (rng.uniform(1.55, 1.7), int(rng.integers(6, 12)), (0.018, 0.04))):
+        q = start
+        for _ in range(cnt):
+            mix_into(clk, _chitin_click(rng, rng.uniform(0.8, 1.1)) * rng.uniform(0.5, 1.0), ns(q))
+            q += rng.uniform(*gap)
+    for _ in range(int(rng.integers(8, 15))):
+        mix_into(clk, _chitin_click(rng, rng.uniform(0.8, 1.2)) * rng.uniform(0.3, 0.8), ns(rng.uniform(0.2, 1.5)))
+    y = y + 2.2 * clk / max(peak(clk), 1e-9) * peak(y)
+    ir, _, _ = get_profile_ir("office")
+    return apply_ir(y, ir, 1.0, 0.08)
+
+
+def rms_norm(x):
+    r = rms(x)
+    return x / r if r > 0 else x
