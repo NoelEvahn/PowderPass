@@ -112,6 +112,7 @@ Each level uses a **different generation rule**:
   - **Long halls:** parallel 3-wide corridors running the whole region, joined by two cross passages. They carry straight on into the next hall region with the same direction.
   - **Pillar fields:** one open floor with a 1 x 1 column every 4 blocks, floor to ceiling, 4 or 8 blocks high.
   - **Tall halls:** 21 blocks high with 3 x 3 columns. The troffers are far overhead and invisible lights hang in the air below them.
+  - **Empty expanses** (`empty-expanse-chance`, new worlds only): a 320 x 320 block area with no walls at all, only carpet and the drop ceiling stretching away. Every way in is open.
 - **Displays:** rare water stains with drip runs; faded rectangles where something hung.
 - **Sectors:** dead sectors (most panels off), damp sectors, and regions that repeat their neighbour.
 
@@ -125,7 +126,7 @@ Each level uses a **different generation rule**:
 - **Dry tile:** walking areas with raised platforms and free-standing screens.
 - **Bright rooms:** no walls at all, under a 22–28-block ceiling covered in light panels, often with a reflecting pool and a giant Greek head rising out of it.
 - **Long tall hallways:** 22 blocks high and 180 long, with 2×2 holes in the walls into small places: pools, steps down into sunken pools, busts, glowing alcoves.
-- **Massive halls:** 56 blocks high, with a gallery, a grand staircase, a half-sunk 25-block Greek head and a tiled **water slide**. Step into the chute at the gallery to ride it down into the pool.
+- **Massive halls:** 56 blocks high, with a gallery, a grand staircase, a half-sunk 25-block Greek head and a **water slide**. In worlds made with `display-hall-slides: 1` (the default for new worlds) the slide is the same solid, curved display-entity chute as every other slide, standing on legs from the gallery down to the pool; older worlds keep the tiled block chute. Step into the chute at the gallery to ride it down.
 
 **Water slides everywhere** (`slide-chance`, `fun-slide-chance`; worlds made before them have none, see below). Every region and storey may get a slide, each one different (a seeded path of straights, banked turns, helixes and steep drops):
 - **Three kinds of chute**, solid and built from display entities, with walls that curve up and out like a real slide: an **open** slide (a flat bed curving up to a rolled lip), a deep **half-pipe**, or a **fully enclosed** solid tube lit from inside. Most are wet: a film of water over a white bed with foam running down it (an animation that loops seamlessly, see `docs/previews/slides-water-flowing.gif`) and drips. Some run dry, which grips more and rides a little slower.
@@ -143,13 +144,25 @@ Floaties drift and bob on the water: rings, ducks, mattresses, beach balls. The 
 - **Drivable cars:** right-click a parked car to get in. The first seat is the driver; up to 4 riders. W/S accelerate and reverse, A/D steer, Space brakes, Sprint sounds the horn, Sneak gets out. Headlights, taillights and brake/reverse lights follow the controls; an abandoned car turns back into a parked one.
 - **Blackouts** here bring Smilers around you, gone when the lights return.
 
-**Level 4 — Office Towers.** *2000s office towers in an endless night.* No ground, only the dark far below; walking off an edge is death.
+**Level 4 — Office Towers.** *2000s office towers in an endless night.* No ground, only the dark far below (no bedrock floor: the void); walking off an edge is death.
 - Every 64-block plot holds a tower of 3–8 floors around a core with a switchback stairwell and a **lift**. Floors are open plan: cubicle pods with CRT PCs behind partitions, glass-fronted private offices and conference rooms for the more important people, a lobby with reception on the ground floor, glass curtain walls.
 - **Sky bridges** (enclosed or railed) join neighbouring towers at various floors; any group of towers is connected.
 - **Lifts:** press a floor button in the car (or sneak inside it for a menu). The doors close, the motor runs, a ding, and you are on that floor. 10% of rides (`lift-stray-chance`) open the doors in a **random other Backrooms level** instead.
 - Built from its own textured blocks (facades, floor and lobby tiles, partitions, walls, columns, lift steel, roof, ceiling).
 
-**The Plains.** *Empty fields under a sky stuck at sunset.* Mostly grass and moss, no roads and no wires.
+**The Plains.** *Empty fields under a sky stuck at sunset.* No roads, no paths, no wires.
+
+New worlds use **terrain style 2** (`terrain-style: 2`; worlds made before it keep style 1, described after this list, until rebuilt with `/backrooms regen plains`):
+- **Moss and nothing else:** every block of ground is moss, all the way down; no grass, dirt, stone or coarse-dirt patches, only drifts of moss carpet.
+- **Flat or hilly:** big patches of dead-flat ground alternate with hill country of small, steep bumps up to about 20 blocks tall.
+- **Houses everywhere:** most hill cells hold a house (`hill-house-chance`), lone houses stand on the flats (`lone-house-chance`), groups are more common (`hamlet-chance`). Each house has a few random straight **fence lines** around it, some with a post missing.
+- **Terraces:** some 128 x 128 areas (`terrace-chance`) sit **40 blocks lower**, with sheer moss cliffs. Every cliff facing higher ground has a **moss staircase** (five wide, one block per step) climbing along the foot of the cliff to the top, its outer side stepping down like a hillside. Never in the area where the world spawns or one holding an exit.
+- **Craters:** perfect circles about 90 blocks across whose walls follow an **exponential horn** (radius = throat + (rim − throat)·e^(−depth/14)): a smooth flare that steepens into a throat open to the void. Moss all the way down. Lethal.
+- **Spikes** (`spike-chance` of craters): the same horn pointing at the sky, about 130 blocks tall.
+- **Giants are rarer** (`giant-chance` 0.25, no second one) and **three times the size** (`giant-scale`), about 120 blocks tall; nothing is built right next to one.
+- Previews: [`docs/previews/plains2-*.png`](docs/previews).
+
+Style 1 (older worlds): mostly grass and moss, rolling very gently.
 - Lone houses stand in the grass facing nowhere, and now and then a handful sit together at odd angles as if dropped. Some are wrong (no door, a door too high, sunk, floating, a door into a wall).
 - **Giant everyday things**, about 40 blocks tall, stand in the fields: a chair, a lamp, a traffic cone, a rubber duck, a CRT, a telephone, a fan, a shoe, a mug, a teddy, a pencil, a hydrant, a bucket, a light bulb.
 - **Sinkholes:** irregular holes about 100 blocks across that narrow to a few blocks and fall out of the world. Jumping in kills you.
@@ -287,7 +300,7 @@ Spawning is deliberately rare:
 - **Independent roll:** every 20 s, each occupied level has an `events.light-event-chance` (default 0.25) of one of them around a random player.
 - **Level 1 blackouts** bring `events.blackout-smilers` Smilers around each player, gone when the lights return.
 
-**Announcements:** about every 40 s (`audio.announce-seconds`) a PA announcement or a voice plays:
+**Announcements:** about every 25 s (`audio.announce-seconds`) a PA announcement or a voice plays. PA, voices and music play **on the listener**: they follow you and never fade with distance. Ambient events now come every 8–28 s, music about every 2–6 minutes (`audio.music-frequency` scales it) and is three times as likely to be picked:
 - Level 0: announcements, distant phrases, whispers behind you;
 - Poolrooms: announcements, murmurs;
 - Level 1: announcements, radio chatter, voices behind walls;
@@ -313,7 +326,7 @@ Every group has the same shape: `list`, then actions. Wherever a command acts on
 | `/backrooms goto <level> [targets]` | `backrooms.admin.teleport` | Admin spawn point if set, otherwise the safe cell nearest the origin |
 | `/backrooms levels` | `backrooms.use` | The five levels and their status |
 | `/backrooms audio list [filter]` | `backrooms.admin.audio` | Every sound id |
-| `/backrooms audio play <sound> [targets] [volume] [pitch]` | `backrooms.admin.audio` | e.g. `/br audio play knock.distant @a 1 0.8` |
+| `/backrooms audio play <sound> [targets] [direct\|around\|near\|far] [volume] [pitch]` | `backrooms.admin.audio` | `direct` (default) plays on the listener: it follows them and never fades, like PA, music and voices. `around` stays where they stood, so it fades as they walk away. `near` comes from 5–11 blocks away and `far` from 18–30. The words after the sound may come in any order. Example: `/br audio play pa.closing @a direct 1` |
 | `/backrooms audio stop [targets]` | `backrooms.admin.audio` | Stops what the plugin is playing to them |
 | `/backrooms audio status \| reload \| debug` | `backrooms.admin.audio` | Engine and pack state · re-check the pack URL and restart · action-bar overlay |
 | `/backrooms assets list [category \| filter]` | `backrooms.admin.assets` | The catalogue (about 130 assets in 8 categories: pool, slides, lights, office, garage, lobby, plains, creatures) |
@@ -332,6 +345,7 @@ Every group has the same shape: `list`, then actions. Wherever a command acts on
 | `/backrooms status` | `backrooms.admin.debug` | Worlds, players, chunks, threats, displays, placed assets, riders, tick cost |
 | `/backrooms debug [on\|off]` | `backrooms.admin.debug` | Action-bar overlay (level, cell, zone, nearest transition, light, sanity) plus a console log |
 | `/backrooms reload` | `backrooms.admin.reload` | Restarts services without unloading worlds or duplicating schedulers |
+| `/backrooms regen <level>` | `backrooms.admin` | **Deletes** a level's world and builds it fresh with the current `config.yml` settings (players inside are sent home first). Needs `/backrooms confirm`. Use it to get new generation (slides, plains style 2, Level 0 expanses, Level 4 without a floor) in an existing world |
 | `/backrooms confirm` | — | Confirms a pending destructive action |
 
 **Renamed in this version** (the old forms still work, hidden, for one release): `level` → `goto`, `setspawn` → `spawnpoint set`, `entity …` → `creature …`, `skinwalker` → `creature skinwalker`, `audio test <sound> [player]` → `audio play <sound> [targets]`.

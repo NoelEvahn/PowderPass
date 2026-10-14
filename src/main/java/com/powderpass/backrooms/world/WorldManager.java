@@ -198,6 +198,17 @@ public final class WorldManager {
         return worlds.get(l);
     }
 
+    /** Forget a level's world and generator (after its world was unloaded for a rebuild). */
+    public synchronized void forget(Level l) {
+        World w = worlds.remove(l);
+        if (w != null) byWorld.remove(w.getUID());
+        generators.remove(l);
+    }
+
+    public File folder(Level l) {
+        return worldFolder(l);
+    }
+
     public Map<Level, World> worlds() {
         return Collections.unmodifiableMap(worlds);
     }

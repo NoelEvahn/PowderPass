@@ -24,17 +24,17 @@ permissions:
       backrooms.admin.entities: true
       backrooms.admin.events: true
       backrooms.admin.debug: true
-      backrooms.admin.assets:
+      backrooms.admin.reload: true
+      backrooms.admin.audio: true
+      backrooms.admin.assets: true
+      backrooms.admin.slides: true
+      backrooms.bypass.commands: true
+  backrooms.admin.assets:
     description: /backrooms assets list|spawn|remove|info.
     default: op
   backrooms.admin.slides:
     description: /backrooms slide list|info|ride.
     default: op
-  backrooms.admin.reload: true
-      backrooms.admin.audio: true
-      backrooms.admin.assets: true
-      backrooms.admin.slides: true
-      backrooms.bypass.commands: true
   backrooms.admin.teleport:
     description: enter/leave other players, /backrooms goto, /backrooms spawnpoint.
     default: op

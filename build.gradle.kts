@@ -13,8 +13,8 @@ java {
 repositories {
     // Optional local mirror (used when repo.papermc.io is unreachable): -PlocalPaperRepo=/path/to/maven/repo
     (findProperty("localPaperRepo") as String?)?.let { maven { url = uri(it) } }
+    mavenCentral() // first, so only Paper's own artifacts come from the Paper repository
     maven("https://repo.papermc.io/repository/maven-public/")
-    mavenCentral()
 }
 
 dependencies {

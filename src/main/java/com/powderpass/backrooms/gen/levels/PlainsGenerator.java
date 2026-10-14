@@ -33,7 +33,7 @@ public final class PlainsGenerator extends LevelGenerator {
     private static final int FLOOR = 64;
     /** The world's minimum build height (normal overworld): the sinkhole shafts are open below it, into the void. */
     public static final int HOLE_BOTTOM = -64;
-    static final int K_FIELD = 0, K_HOUSE = 1, K_COLOSSAL = 2, K_FEATURE = 3, K_HOLE = 4;
+    static final int K_FIELD = 0, K_HOUSE = 1, K_COLOSSAL = 2, K_FEATURE = 3, K_HOLE = 4, K_STAIR = 5;
     static final int V_NORMAL = 0, V_NO_DOOR = 1, V_HIGH_DOOR = 2, V_SUNK = 3, V_FLOATING = 4, V_MONOLITH = 5, V_DOOR_TO_WALL = 6;
     private static final String[] VARIANTS = {"house", "doorless", "high-door", "sunken", "floating", "monolith", "door-to-wall"};
     /** Relative weights of the variants: most houses look almost right. */
@@ -88,6 +88,8 @@ public final class PlainsGenerator extends LevelGenerator {
         final int[] kind;
         final House[] house;
         Hole hole;
+        /** Style 2: the "hole" is the other way up, a horn of moss pointing at the sky. */
+        boolean spike;
 
         Plan(int n) {
             kind = new int[n];
@@ -96,9 +98,24 @@ public final class PlainsGenerator extends LevelGenerator {
     }
 
     private final Map<Long, Plan> plans = new ConcurrentHashMap<>();
+    private final Map<Long, Boolean> tiers = new ConcurrentHashMap<>();
+    /**
+     * Terrain style 2 ({@code terrain-style: 2}, locked per world like every setting): all moss, flat fields or
+     * small steep hills, terraces a whole region forty blocks down with moss stairs along the cliff, exponential
+     * horn craters (and the rare horn pointing up), far more houses with fence lines round them, rarer giants at
+     * three times the size. Style 1 is the original gently rolling grass.
+     */
+    final boolean v2;
+    /** How far a lower terrace sits below the base floor. */
+    static final int TERRACE_DROP = 40;
 
     public PlainsGenerator(long seed, GenSettings gs) {
-        super(Level.PLAINS, seed, gs, 32, 4, 3, new int[]{FLOOR}, FLOOR - 20, FLOOR + 40, 0.0, 0.0);
+        super(Level.PLAINS, seed, gs, 32, 4, 3, new int[]{FLOOR}, modern(gs) ? FLOOR - TERRACE_DROP - 24 : FLOOR - 20, FLOOR + 40, 0.0, 0.0);
+        this.v2 = modern(gs);
+    }
+
+    private static boolean modern(GenSettings gs) {
+        return gs.get("terrain-style", 1.0) >= 2;
     }
 
     @Override
@@ -130,6 +147,7 @@ public final class PlainsGenerator extends LevelGenerator {
     }
 
     private Plan buildPlan(int rx, int rz) {
+        if (v2) return buildPlan2(rx, rz);
         Plan p = new Plan(R * R);
         long h = Rng.hash(seed ^ 0x9A1A5L, rx, rz);
         boolean anyFeature = false;
@@ -190,6 +208,234 @@ public final class PlainsGenerator extends LevelGenerator {
             }
         }
         return p;
+    }
+
+    /**
+     * Style 2: the stairs off every cliff edge of a lower terrace come first, then a crater (or a spike) in an
+     * upper region with no feature, then a group of houses, a giant now and then (interior cells only, nothing
+     * built right next to it: it is three times the old size), and houses everywhere else, far more on the hills.
+     */
+    private Plan buildPlan2(int rx, int rz) {
+        Plan p = new Plan(R * R);
+        long h = Rng.hash(seed ^ 0x9A1A5L, rx, rz);
+        boolean anyFeature = false;
+        for (Feature f : districtFeatures(Math.floorDiv(rx, D), Math.floorDiv(rz, D))) {
+            if (Math.floorDiv(f.cx(), R) == rx && Math.floorDiv(f.cz(), R) == rz) {
+                p.kind[(f.cx() - rx * R) + (f.cz() - rz * R) * R] = K_FEATURE;
+                anyFeature = true;
+            }
+        }
+        boolean low = low(rx, rz);
+        if (low) {
+            for (int side = 0; side < 4; side++) {
+                int j = stairStart(rx, rz, side);
+                if (j < 0) continue;
+                for (int k = j; k <= j + 2; k++) {
+                    int lu = switch (side) {
+                        case 0, 1 -> k;
+                        case 2 -> 0;
+                        default -> R - 1;
+                    };
+                    int lv = switch (side) {
+                        case 0 -> 0;
+                        case 1 -> R - 1;
+                        default -> k;
+                    };
+                    if (p.kind[lu + lv * R] == K_FIELD) p.kind[lu + lv * R] = K_STAIR;
+                }
+            }
+        }
+        int span = S * R;
+        if (!low && !anyFeature && !(rx == 0 && rz == 0) && Rng.chance(Rng.hash(h, 1), gs.get("sinkhole-chance", 0.08))) {
+            double r = 40 + Rng.unit(Rng.hash(h, 2)) * 6;
+            p.hole = new Hole(rx * span + span / 2.0, rz * span + span / 2.0, r, Rng.hash(h, 5));
+            p.spike = Rng.chance(Rng.hash(h, 6), gs.get("spike-chance", 0.0));
+            double reach = r + 1;
+            for (int i = 0; i < R * R; i++) {
+                int x0 = (rx * R + i % R) * S, z0 = (rz * R + i / R) * S;
+                double nx = Math.max(x0, Math.min(p.hole.x(), x0 + S)), nz = Math.max(z0, Math.min(p.hole.z(), z0 + S));
+                if (Math.hypot(nx - p.hole.x(), nz - p.hole.z()) < reach) p.kind[i] = K_HOLE;
+            }
+            return p;
+        }
+        if (Rng.chance(Rng.hash(h, 10), gs.get("hamlet-chance", 0.15))) {
+            int ccx = 1 + Rng.pick(Rng.hash(h, 11), R - 2), ccz = 1 + Rng.pick(Rng.hash(h, 12), R - 2);
+            int want = 3 + Rng.pick(Rng.hash(h, 13), 5);
+            int[] order = shuffled(Rng.hash(h, 14), 9);
+            for (int k = 0; k < 9 && want > 0; k++) {
+                int i = (ccx - 1 + order[k] % 3) + (ccz - 1 + order[k] / 3) * R;
+                if (p.kind[i] != K_FIELD) continue;
+                p.kind[i] = K_HOUSE;
+                p.house[i] = randomHouse(Rng.hash(h, 20, i));
+                want--;
+            }
+        }
+        double[] giants = {gs.get("giant-chance", 0.8), gs.get("giant-second-chance", 0.4)};
+        int[] order = shuffled(Rng.hash(h, 30), R * R);
+        for (int g = 0; g < giants.length; g++) {
+            if (!Rng.chance(Rng.hash(h, 31, g), giants[g])) continue;
+            for (int i : order) {
+                int lu = i % R, lv = i / R;
+                if (lu == 0 || lv == 0 || lu == R - 1 || lv == R - 1 || p.kind[i] != K_FIELD || nextTo(p, i, K_COLOSSAL)) continue;
+                p.kind[i] = K_COLOSSAL;
+                break;
+            }
+        }
+        double onHills = gs.get("hill-house-chance", 0.5), onFlat = gs.get("lone-house-chance", 0.08);
+        for (int i = 0; i < R * R; i++) {
+            if (p.kind[i] != K_FIELD || nextTo(p, i, K_COLOSSAL)) continue;
+            double x = (rx * R + i % R) * S + S / 2.0, z = (rz * R + i / R) * S + S / 2.0;
+            if (Rng.chance(Rng.hash(h, 40, i), hillMask(x, z) > 0.3 ? onHills : onFlat)) {
+                p.kind[i] = K_HOUSE;
+                p.house[i] = randomHouse(Rng.hash(h, 41, i));
+            }
+        }
+        return p;
+    }
+
+    private boolean nextTo(Plan p, int i, int kind) {
+        int r = R, lu = i % r, lv = i / r;
+        for (int du = -1; du <= 1; du++) {
+            for (int dv = -1; dv <= 1; dv++) {
+                int u = lu + du, v = lv + dv;
+                if ((du != 0 || dv != 0) && u >= 0 && v >= 0 && u < r && v < r && p.kind[u + v * r] == kind) return true;
+            }
+        }
+        return false;
+    }
+
+    // ------------------------------------------------------------------ style 2: terraces and hills
+
+    /** Whether a region is a lower terrace (style 2): never the origin's region, never one holding a feature. */
+    boolean low(int rx, int rz) {
+        if (!v2 || (rx == 0 && rz == 0)) return false;
+        long key = ((long) rx << 32) ^ (rz & 0xffffffffL);
+        Boolean b = tiers.get(key);
+        if (b != null) return b;
+        boolean low = Rng.chance(Rng.hash(seed ^ 0x7E44AL, rx, rz), gs.get("terrace-chance", 0.0));
+        if (low) {
+            for (Feature f : districtFeatures(Math.floorDiv(rx, D), Math.floorDiv(rz, D))) {
+                if (Math.floorDiv(f.cx(), R) == rx && Math.floorDiv(f.cz(), R) == rz) low = false;
+            }
+        }
+        if (tiers.size() > 8192) tiers.clear();
+        tiers.put(key, low);
+        return low;
+    }
+
+    private static final int[][] SIDE = {{0, -1}, {0, 1}, {-1, 0}, {1, 0}}; // north, south, west, east
+
+    /**
+     * First cell (along the edge) of the stairs a lower region has against an upper neighbour on that side, or -1
+     * when the neighbour is low too. The stairs climb along the foot of the cliff, one block up per block, over
+     * forty blocks, and need three cells of the edge row.
+     */
+    int stairStart(int rx, int rz, int side) {
+        if (!low(rx, rz) || low(rx + SIDE[side][0], rz + SIDE[side][1])) return -1;
+        return Rng.pick(Rng.hash(seed ^ 0x57A1L, rx * 4L + side, rz), R - 2);
+    }
+
+    /**
+     * Height (relative to the base floor) of the stairs at a column of a lower region, or NaN: a five-wide flight
+     * hugging the cliff from the terrace floor up to the top, its outer flank and far end stepping down two blocks
+     * at a time like the side of a hill, all moss.
+     */
+    double stairHeight(int x, int z) {
+        int rx = Math.floorDiv(x, S * R), rz = Math.floorDiv(z, S * R);
+        int lx = x - rx * S * R, lz = z - rz * S * R, span = S * R;
+        double best = Double.NaN;
+        for (int side = 0; side < 4; side++) {
+            int j = stairStart(rx, rz, side);
+            if (j < 0) continue;
+            int along = side < 2 ? lx : lz;
+            int e = switch (side) {
+                case 0 -> lz;
+                case 1 -> span - 1 - lz;
+                case 2 -> lx;
+                default -> span - 1 - lx;
+            };
+            int sIdx = along - (j * S + 4);
+            if (sIdx < 0) continue;
+            double hgt = -TERRACE_DROP + Math.min(sIdx, TERRACE_DROP) - 2 * Math.max(0, e - 4) - 2 * Math.max(0, sIdx - 44);
+            if (hgt > -TERRACE_DROP && (Double.isNaN(best) || hgt > best)) best = hgt;
+        }
+        return best;
+    }
+
+    /** 0 on the flats, 1 in hill country: large patches, hard-edged, so ground is one or the other. */
+    double hillMask(double x, double z) {
+        double n = ValueNoise.fractal(seed ^ 0x41115L, x, z, 240);
+        double t = clamp01((n - 0.47) / 0.1);
+        return t * t * (3 - 2 * t);
+    }
+
+    /** Small steep bumps in hill country, up to about twenty blocks. */
+    private double hills(double x, double z) {
+        double m = hillMask(x, z);
+        if (m <= 0) return 0;
+        double n = ValueNoise.fractal(seed ^ 0xB0B5L, x, z, 22);
+        double b = clamp01((n - 0.38) / 0.5);
+        return Math.min(20, m * 21 * b * b * (3 - 2 * b));
+    }
+
+    /** Style 2 ground before anything is flattened: terrace level plus hills, faded out near cliffs and craters. */
+    private double terrain(int x, int z) {
+        int span = S * R, rx = Math.floorDiv(x, span), rz = Math.floorDiv(z, span);
+        boolean low = low(rx, rz);
+        double fade = clamp01((cliffDistance(x, z) - 3) / 10.0);
+        Hole hole = plan(rx, rz).hole;
+        if (hole != null) fade = Math.min(fade, clamp01((Math.hypot(x + 0.5 - hole.x(), z + 0.5 - hole.z()) - hole.r() - 6) / 14.0));
+        return (low ? -TERRACE_DROP : 0) + hills(x, z) * fade;
+    }
+
+    /** Blocks from a column to the nearest cliff edge of its region (a neighbour on the other tier), or 99. */
+    private int cliffDistance(int x, int z) {
+        int span = S * R, rx = Math.floorDiv(x, span), rz = Math.floorDiv(z, span);
+        boolean low = low(rx, rz);
+        int lx = x - rx * span, lz = z - rz * span, edge = 99;
+        if (low(rx, rz - 1) != low) edge = Math.min(edge, lz);
+        if (low(rx, rz + 1) != low) edge = Math.min(edge, span - 1 - lz);
+        if (low(rx - 1, rz) != low) edge = Math.min(edge, lx);
+        if (low(rx + 1, rz) != low) edge = Math.min(edge, span - 1 - lx);
+        return edge;
+    }
+
+    private int lift2(int x, int z) {
+        int cx = cellOf(x), cz = cellOf(z), u = localOf(x), v = localOf(z);
+        double h = terrain(x, z);
+        switch (kind(cx, cz)) {
+            case K_FEATURE -> {
+                int e = Math.min(Math.min(u, v), Math.min(S - 1 - u, S - 1 - v));
+                double base = low(Math.floorDiv(cx, R), Math.floorDiv(cz, R)) ? -TERRACE_DROP : 0;
+                h = base + (h - base) * clamp01((5 - e) / 5.0);
+            }
+            case K_HOUSE -> {
+                House hs = house(cx, cz);
+                int du = Math.max(Math.max(hs.bu() - u, u - (hs.bu() + hs.w() - 1)), 0);
+                int dv = Math.max(Math.max(hs.bv() - v, v - (hs.bv() + hs.d() - 1)), 0);
+                double base = baseLift(cx, cz);
+                h = base + (h - base) * clamp01((Math.max(du, dv) - 1) / 7.0);
+            }
+            case K_COLOSSAL -> {
+                double[] a = colossusAnchor(cx, cz);
+                double base = baseLift(cx, cz);
+                h = base + (h - base) * clamp01((Math.hypot(u + 0.5 - a[0], v + 0.5 - a[1]) - 12) / 4.0);
+            }
+            case K_STAIR -> {
+                double st = stairHeight(x, z);
+                if (!Double.isNaN(st)) return (int) Math.round(Math.max(h, st));
+            }
+            default -> {
+            }
+        }
+        // the last blocks before a cliff lie at the tier's own level, so the cliff is a clean drop and the top of
+        // every flight of stairs meets level ground
+        int edge = cliffDistance(x, z);
+        if (edge < 4) {
+            double base = low(Math.floorDiv(x, S * R), Math.floorDiv(z, S * R)) ? -TERRACE_DROP : 0;
+            h = base + (h - base) * edge / 4.0;
+        }
+        return (int) Math.round(h);
     }
 
     private static int[] shuffled(long h, int n) {
@@ -263,6 +509,7 @@ public final class PlainsGenerator extends LevelGenerator {
      * to the base floor; towards a sinkhole it sags a few blocks, so the hole shows from a distance.
      */
     public int lift(int x, int z) {
+        if (v2) return lift2(x, z);
         int cx = cellOf(x), cz = cellOf(z), u = localOf(x), v = localOf(z);
         int k = kind(cx, cz);
         double h = rawLift(x, z);
@@ -298,6 +545,19 @@ public final class PlainsGenerator extends LevelGenerator {
 
     /** Level a house or giant object stands on (relative to the base floor): the swell at its centre. */
     int baseLift(int cx, int cz) {
+        if (v2) {
+            int x, z;
+            if (kind(cx, cz) == K_HOUSE) {
+                House hs = house(cx, cz);
+                x = cx * S + hs.bu() + hs.w() / 2;
+                z = cz * S + hs.bv() + hs.d() / 2;
+            } else {
+                double[] a = colossusAnchor(cx, cz);
+                x = cx * S + (int) a[0];
+                z = cz * S + (int) a[1];
+            }
+            return (int) Math.round(terrain(x, z));
+        }
         double x, z;
         if (kind(cx, cz) == K_HOUSE) {
             House hs = house(cx, cz);
@@ -355,6 +615,10 @@ public final class PlainsGenerator extends LevelGenerator {
 
     @Override
     protected void paintCell(CellCtx c) {
+        if (v2) {
+            paintCell2(c);
+            return;
+        }
         int k = kind(c.cx, c.cz);
         Hole hole = k == K_HOLE ? planOfCell(c.cx, c.cz).hole : null;
         for (int u = c.u0; u <= c.u1; u++) {
@@ -382,6 +646,126 @@ public final class PlainsGenerator extends LevelGenerator {
                 }
             }
         }
+    }
+
+    /** Style 2: moss all the way down, craters and spikes as exponential horns, fence lines round the houses. */
+    private void paintCell2(CellCtx c) {
+        int k = kind(c.cx, c.cz);
+        Plan plan = planOfCell(c.cx, c.cz);
+        Hole hole = k == K_HOLE ? plan.hole : null;
+        for (int u = c.u0; u <= c.u1; u++) {
+            for (int v = c.v0; v <= c.v1; v++) {
+                int wx = c.wx(u), wz = c.wz(v);
+                int top = c.fy + lift(wx, wz);
+                if (hole != null && hornColumn(c, u, v, hole, plan.spike, top)) continue;
+                c.set(u, bottomY, v, B.BEDROCK);
+                for (int y = bottomY + 1; y <= top; y++) c.set(u, y, v, MOSS);
+                mossCover(c, u, v, top);
+            }
+        }
+        if (k == K_HOUSE) {
+            House hs = house(c.cx, c.cz);
+            house(c, hs, false);
+            fences(c, hs);
+        } else if (k == K_FEATURE) {
+            Feature f = featureAt(0, c.cx, c.cz);
+            switch (f.id()) {
+                case "yellow_house" -> house(c, new House(0, V_NORMAL, 11, 3), true);
+                case "backyard_pool" -> pool(c);
+                case "bunker_hatch" -> bunker(c);
+                default -> {
+                }
+            }
+        }
+    }
+
+    /** Narrowest radius of a crater's throat (open to the void below) and the horns' length scales. */
+    static final double HORN_THROAT = 2.5, HORN_LAMBDA = 14, SPIKE_TIP = 0.8, SPIKE_LAMBDA = 18, SPIKE_MAX = 130;
+
+    /**
+     * Depth below the surface of a crater's moss wall at distance d from its centre: an exponential horn,
+     * radius(depth) = throat + (r - throat) * e^(-depth / lambda), a perfect circle at every height. Infinite
+     * inside the throat.
+     */
+    static double hornDepth(double r, double d) {
+        if (d >= r) return 0;
+        if (d <= HORN_THROAT) return Double.POSITIVE_INFINITY;
+        return HORN_LAMBDA * Math.log((r - HORN_THROAT) / (d - HORN_THROAT));
+    }
+
+    /** Height above the surface of a spike (the same horn pointing at the sky) at distance d from its centre. */
+    static double spikeHeight(double r, double d) {
+        if (d >= r) return 0;
+        if (d <= SPIKE_TIP) return SPIKE_MAX;
+        return Math.min(SPIKE_MAX, SPIKE_LAMBDA * Math.log((r - SPIKE_TIP) / (d - SPIKE_TIP)));
+    }
+
+    /** One column of a style-2 crater or spike; false outside its circle (ordinary ground). */
+    private boolean hornColumn(CellCtx c, int u, int v, Hole h, boolean spike, int top) {
+        double d = Math.hypot(c.wx(u) + 0.5 - h.x(), c.wz(v) + 0.5 - h.z());
+        if (d >= h.r()) return false;
+        if (spike) {
+            int peak = top + (int) Math.round(spikeHeight(h.r(), d));
+            c.set(u, bottomY, v, B.BEDROCK);
+            for (int y = bottomY + 1; y <= peak; y++) c.set(u, y, v, MOSS);
+            return true;
+        }
+        double depth = hornDepth(h.r(), d);
+        if (top - depth < HOLE_BOTTOM) return true; // the throat: nothing at all, straight into the void
+        int floor = (int) Math.round(top - depth);
+        for (int y = Math.min(bottomY, floor - 4); y <= floor; y++) c.set(u, y, v, MOSS);
+        return true;
+    }
+
+    /** A scatter of moss carpet in loose drifts: the only thing growing. */
+    private void mossCover(CellCtx c, int u, int v, int top) {
+        int wx = c.wx(u), wz = c.wz(v);
+        if (ValueNoise.sample(seed ^ 0x6A55L, wx / 5.0, wz / 5.0) < 0.86) return;
+        if (Rng.chance(c.h(u, 0, v, 0x6A5), 0.5)) c.set(u, top + 1, v, B.of(Material.MOSS_CARPET));
+    }
+
+    private static final Material[] FENCES = {Material.OAK_FENCE, Material.SPRUCE_FENCE, Material.DARK_OAK_FENCE, Material.BIRCH_FENCE};
+
+    /**
+     * Random straight runs of fence round a house: two to five lines a few blocks out from it, some with a post
+     * missing, following the ground. Arms join only neighbours at the same height.
+     */
+    private void fences(CellCtx c, House hs) {
+        long h = ch(0, c.cx, c.cz, 0xFE7C);
+        Material mat = FENCES[Rng.pick(h, FENCES.length)];
+        int lines = 2 + Rng.pick(Rng.hash(h, 1), 4);
+        int u0 = hs.bu(), v0 = hs.bv(), u1 = hs.bu() + hs.w() - 1, v1 = hs.bv() + hs.d() - 1;
+        for (int i = 0; i < lines; i++) {
+            long hi = Rng.hash(h, 10, i);
+            int side = Rng.pick(hi, 4), off = 1 + Rng.pick(Rng.hash(hi, 1), 4);
+            boolean alongU = side < 2;
+            int fixed = switch (side) {
+                case 0 -> v0 - off;
+                case 1 -> v1 + off;
+                case 2 -> u0 - off;
+                default -> u1 + off;
+            };
+            int lo = (alongU ? u0 : v0) - 4, hi2 = (alongU ? u1 : v1) + 4;
+            int len = 4 + Rng.pick(Rng.hash(hi, 2), 10);
+            int start = lo + Rng.pick(Rng.hash(hi, 3), Math.max(1, hi2 - lo - len + 1));
+            if (fixed < 1 || fixed > S - 2) continue;
+            int a = Math.max(1, start), b = Math.min(S - 2, start + len - 1);
+            for (int t = a; t <= b; t++) {
+                if (Rng.chance(Rng.hash(hi, 20, t), 0.12)) continue; // a missing post
+                int u = alongU ? t : fixed, v = alongU ? fixed : t;
+                int y = c.fy + lift(c.cx * S + u, c.cz * S + v) + 1;
+                boolean prev = t > a && fenceAt(c, hi, alongU, fixed, t - 1, y), next = t < b && fenceAt(c, hi, alongU, fixed, t + 1, y);
+                String st = alongU ? "[west=" + prev + ",east=" + next + "]" : "[north=" + prev + ",south=" + next + "]";
+                c.set(u, y, v, B.of(mat, st));
+            }
+        }
+    }
+
+    /** Whether a run has a post at position t standing at height y (so the arm between them joins). */
+    private boolean fenceAt(CellCtx c, long hi, boolean alongU, int fixed, int t, int y) {
+        if (Rng.chance(Rng.hash(hi, 20, t), 0.12)) return false;
+        int u = alongU ? t : fixed, v = alongU ? fixed : t;
+        return c.fy + lift(c.cx * S + u, c.cz * S + v) + 1 == y;
     }
 
     /**
@@ -652,7 +1036,8 @@ public final class PlainsGenerator extends LevelGenerator {
             case K_HOUSE -> VARIANTS[house(cx, cz).variant()];
             case K_COLOSSAL -> colossusModel(cx, cz);
             case K_FEATURE -> featureAt(0, cx, cz).id();
-            case K_HOLE -> "sinkhole";
+            case K_HOLE -> planOfCell(cx, cz).spike ? "spike" : "sinkhole";
+            case K_STAIR -> "terrace stairs";
             default -> "field";
         };
     }
@@ -684,7 +1069,9 @@ public final class PlainsGenerator extends LevelGenerator {
                 String model = colossusModel(cx, cz);
                 double[] a = colossusAnchor(cx, cz);
                 int gy = fy + baseLift(cx, cz);
-                out.add(new DecorSpec(model, cx * S + a[0], model.equals("floating_panel") ? gy + 60 : gy, cz * S + a[1],
+                double k = v2 ? gs.get("giant-scale", 1.0) : 1;
+                String id = k == 1 ? model : model + "@" + k;
+                out.add(new DecorSpec(id, cx * S + a[0], model.equals("floating_panel") ? gy + 60 * k : gy, cz * S + a[1],
                         (float) Rng.pick(h, 360), 0f, 0f, h));
             }
             case K_FEATURE -> {
@@ -743,7 +1130,7 @@ public final class PlainsGenerator extends LevelGenerator {
 
     @Override
     protected void cellDetails(int floor, int cx, int cz, List<DecorSpec> out) {
-        if (kind(cx, cz) != K_FIELD) return;
+        if (v2 || kind(cx, cz) != K_FIELD) return; // style 2: nothing but moss
         long h = ch(floor, cx, cz, 0xD7A5);
         int fy = FLOOR + 1;
         // a few thin grass-blade clumps per field, now and then a pale dry one; nothing else

@@ -183,6 +183,42 @@ public class BackroomsPlugin extends JavaPlugin {
         startServices();
     }
 
+    /**
+     * Rebuild one level from scratch with the current config.yml: everyone inside is sent back where they came from,
+     * the world is unloaded and its folder deleted, and it is created again (new generation settings are snapshotted).
+     * Returns null on success, else why it could not.
+     */
+    public String regenerate(Level l) {
+        org.bukkit.World w = worlds.world(l);
+        org.bukkit.World fallback = getServer().getWorlds().get(0);
+        if (w != null) {
+            for (Player p : new java.util.ArrayList<>(w.getPlayers())) {
+                sessions.leave(p, null);
+                if (p.getWorld() == w) p.teleport(fallback.getSpawnLocation());
+            }
+            if (!w.getPlayers().isEmpty()) return "players are still inside";
+        }
+        stopServices();
+        try {
+            if (w != null && !getServer().unloadWorld(w, false)) return "the server refused to unload the world";
+            worlds.forget(l);
+            java.io.File dir = worlds.folder(l);
+            if (dir != null && dir.exists()) {
+                try (var files = java.nio.file.Files.walk(dir.toPath())) {
+                    files.sorted(java.util.Comparator.reverseOrder()).forEach(path -> path.toFile().delete());
+                }
+            }
+            if (dir != null && dir.exists()) return "could not delete " + dir;
+            worlds.loadAll();
+            return null;
+        } catch (java.io.IOException | RuntimeException ex) {
+            getLogger().warning("Rebuilding " + l.displayName() + " failed: " + ex);
+            return ex.toString();
+        } finally {
+            startServices();
+        }
+    }
+
     /** Lets server owners reference the generator directly, e.g. bukkit.yml: generator: Backrooms:level0 */
     @Override
     public ChunkGenerator getDefaultWorldGenerator(String worldName, String id) {

@@ -8,7 +8,6 @@ import com.powderpass.backrooms.display.Keys;
 import com.powderpass.backrooms.gen.DecorSpec;
 import com.powderpass.backrooms.gen.LevelGenerator;
 import com.powderpass.backrooms.gen.levels.HabitableGenerator;
-import io.papermc.paper.entity.TeleportFlag;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.sound.SoundStop;
 import org.bukkit.Input;
@@ -400,15 +399,20 @@ public final class VehicleManager implements Listener {
 
     /** Turn the driver's view with the car (a relative rotation, so their own mouse movement is kept). */
     @SuppressWarnings("removal") // relative flags: deprecated since 1.21.10 but still the only relative rotation
+    /**
+     * Turn the driver's view with the car. Never by teleporting: on Paper 1.21.11 any player teleport drops them out
+     * of their seat (the old "retain vehicle" flag is ignored), which is what made A/D throw drivers out. lookAt only
+     * rotates the camera.
+     */
     private void followCamera(Player p, double dYaw) {
         if (Math.abs(dYaw) < 0.05 || Math.abs(dYaw) > 90) return;
-        Location l = p.getLocation();
-        l.setYaw((float) (l.getYaw() + dYaw));
+        Location eye = p.getEyeLocation();
+        double yaw = Math.toRadians(eye.getYaw() + dYaw), pitch = Math.toRadians(eye.getPitch());
+        double x = -Math.sin(yaw) * Math.cos(pitch), y = -Math.sin(pitch), z = Math.cos(yaw) * Math.cos(pitch);
         try {
-            p.teleport(l, TeleportFlag.EntityState.RETAIN_VEHICLE, TeleportFlag.Relative.X, TeleportFlag.Relative.Y,
-                    TeleportFlag.Relative.Z, TeleportFlag.Relative.YAW, TeleportFlag.Relative.PITCH);
+            p.lookAt(eye.getX() + x * 10, eye.getY() + y * 10, eye.getZ() + z * 10, io.papermc.paper.entity.LookAnchor.EYES);
         } catch (RuntimeException ignored) {
-            // the view just does not follow on servers that refuse it
+            // the view just does not follow
         }
     }
 

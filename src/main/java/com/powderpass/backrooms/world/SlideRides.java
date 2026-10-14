@@ -11,7 +11,6 @@ import com.powderpass.backrooms.gen.DecorSpec;
 import com.powderpass.backrooms.gen.LevelGenerator;
 import com.powderpass.backrooms.gen.SlidePath;
 import com.powderpass.backrooms.gen.levels.PoolroomsGenerator;
-import io.papermc.paper.entity.TeleportFlag;
 import net.kyori.adventure.key.Key;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -298,7 +297,7 @@ public final class SlideRides implements Listener {
             r.locate();
             double[] q = r.at();
             Location to = new Location(r.track.world(), q[0], q[1] + r.track.seat(), q[2], r.yaw(), 0);
-            r.seat.teleport(to, TeleportFlag.EntityState.RETAIN_PASSENGERS);
+            r.seat.teleport(to); // Paper keeps passengers on entity teleports
             p.setFallDistance(0);
             if (r.track.wet() && r.ticks % 2 == 0) {
                 r.track.world().spawnParticle(Particle.SPLASH, to.clone().add(0, 0.1, 0), (int) (3 + r.v * 8), 0.25, 0.05, 0.25, 0.05);

@@ -101,6 +101,11 @@ public final class PoolroomsGenerator extends LevelGenerator {
         return FLOORS[f];
     }
 
+    /** Height of the main floor's walking surface (massive hall slides stand on legs down to it). */
+    public static int mainFloorSurface() {
+        return FLOORS[MID] + 1;
+    }
+
     int bottom() {
         return BOTTOM;
     }
@@ -328,7 +333,20 @@ public final class PoolroomsGenerator extends LevelGenerator {
             int ex = px[N - 1] - px[N - 2], ez = pz[N - 1] - pz[N - 2];
             pts[N] = new double[]{px[N - 1] + 0.5 + ex * 1.5, feet(N - 1) - 0.6, pz[N - 1] + 0.5 + ez * 1.5};
             pts[N + 1] = new double[]{px[N - 1] + 0.5 + ex * 3.0, feet(N - 1) - 1.8, pz[N - 1] + 0.5 + ez * 3.0};
-            slide = new Slide(pts, new int[][]{{px[0], BED0 + 1, pz[0]}, {px[1], BED0 + 1, pz[1]}}, new double[]{ex, 0, ez}, FLOORS[MID]);
+            if (displayHallSlides()) {
+                double[][] bedLine = hallSlidePath(rot).pts;
+                int m = bedLine.length;
+                double[][] ride = new double[m + 2][];
+                for (int i = 0; i < m; i++) ride[i] = new double[]{x0 + bedLine[i][0], bedLine[i][1], z0 + bedLine[i][2]};
+                double dx = ride[m - 1][0] - ride[m - 2][0], dz = ride[m - 1][2] - ride[m - 2][2], dl = Math.hypot(dx, dz);
+                ride[m] = new double[]{ride[m - 1][0] + dx / dl * 1.5, ride[m - 1][1] - 0.6, ride[m - 1][2] + dz / dl * 1.5};
+                ride[m + 1] = new double[]{ride[m - 1][0] + dx / dl * 3.0, ride[m - 1][1] - 1.8, ride[m - 1][2] + dz / dl * 3.0};
+                int[][] start = {{(int) Math.floor(ride[0][0]), BED0 + 1, (int) Math.floor(ride[0][2])},
+                        {(int) Math.floor(ride[1][0]), BED0 + 1, (int) Math.floor(ride[1][2])}};
+                slide = new Slide(ride, start, new double[]{dx / dl, 0, dz / dl}, FLOORS[MID], true, "open");
+            } else {
+                slide = new Slide(pts, new int[][]{{px[0], BED0 + 1, pz[0]}, {px[1], BED0 + 1, pz[1]}}, new double[]{ex, 0, ez}, FLOORS[MID]);
+            }
             int[] s = l2w(46, 20, rot);
             statueX = x0 + s[0];
             statueZ = z0 + s[1];
@@ -340,6 +358,63 @@ public final class PoolroomsGenerator extends LevelGenerator {
         double feet(int i) {
             return BED0 + 1 - (i + 0.5) / 2.0 + 1.0;
         }
+    }
+
+    /**
+     * New worlds ({@code display-hall-slides}) build the massive halls' slides like every other slide: a display chute
+     * with curved walls and running water, along a smooth path (straight, a banked bend, straight) instead of the old
+     * tiled stair-step chute. Older worlds keep their tiled chutes.
+     */
+    boolean displayHallSlides() {
+        return gs.get("display-hall-slides", 0.0) > 0;
+    }
+
+    /** The hall slide's bed line in region-local x, z (absolute y), for a hall turned by {@code rot}. */
+    public static com.powderpass.backrooms.gen.SlidePath hallSlidePath(int rot) {
+        List<double[]> ab = new ArrayList<>();
+        List<Double> lean = new ArrayList<>();
+        for (int i = 0; i <= 26; i++) {
+            ab.add(new double[]{3.5 + i, 14.5});
+            lean.add(0.0);
+        }
+        int arc = 5;
+        for (int k = 1; k <= arc; k++) {
+            double t = Math.PI / 2 * k / arc;
+            ab.add(new double[]{29.5 + 3 * Math.sin(t), 17.5 - 3 * Math.cos(t)});
+            lean.add(-25.0); // into the bend: its inner side (+b) is lower
+        }
+        for (int i = 1; i <= 27; i++) {
+            ab.add(new double[]{32.5, 17.5 + i});
+            lean.add(0.0);
+        }
+        double total = 0;
+        double[] cum = new double[ab.size()];
+        for (int i = 1; i < ab.size(); i++) {
+            total += Math.hypot(ab.get(i)[0] - ab.get(i - 1)[0], ab.get(i)[1] - ab.get(i - 1)[1]);
+            cum[i] = total;
+        }
+        double top = Hall.BED0 + 1, bottom = FLOORS[MID] + 3.5;
+        double[][] pts = new double[ab.size()][];
+        double[] bank = new double[ab.size()];
+        for (int i = 0; i < pts.length; i++) {
+            double a = ab.get(i)[0], b = ab.get(i)[1];
+            double x, z;
+            switch (rot) {
+                case 0 -> { x = a; z = b; }
+                case 1 -> { x = REG - b; z = a; }
+                case 2 -> { x = REG - a; z = REG - b; }
+                default -> { x = b; z = REG - a; }
+            }
+            pts[i] = new double[]{x, top - (top - bottom) * cum[i] / total, z};
+            double sum = 0;
+            int n = 0;
+            for (int k = Math.max(0, i - 2); k <= Math.min(pts.length - 1, i + 2); k++) {
+                sum += lean.get(k);
+                n++;
+            }
+            bank[i] = sum / n;
+        }
+        return com.powderpass.backrooms.gen.SlidePath.of(7L + rot, com.powderpass.backrooms.gen.SlidePath.Style.OPEN, true, pts, bank);
     }
 
     /** The slide whose start the feet block (x,y,z) is in, or null. */
@@ -959,15 +1034,16 @@ public final class PoolroomsGenerator extends LevelGenerator {
             for (int yy = fy + 1; yy <= FLOORS[HIGH] + 1; yy++) set(col, yy, yy == FLOORS[HIGH] + 1 ? POOL : TILE);
             set(col, FLOORS[HIGH] + 2, B.of(Material.WHITE_STAINED_GLASS_PANE));
         }
-        // the slide: stepped bed, blue rims, piers every six blocks
-        Integer i = hl.path.get(key(x, z));
+        // the slide: stepped bed, blue rims, piers every six blocks (older worlds; new ones use the display chute)
+        boolean tiled = !displayHallSlides();
+        Integer i = tiled ? hl.path.get(key(x, z)) : null;
         if (i != null) {
             if (i % 6 == 3 && i > 3) for (int yy = fy + 1; yy < hl.py[i]; yy++) set(col, yy, TILE);
             if (i % 6 == 3 && i > 3 && (p1 || p2)) for (int yy = fy - 6; yy <= fy; yy++) if (get(col, yy) == B.WATER) set(col, yy, TILE);
             set(col, hl.py[i], hl.bed[i]);
             for (int yy = hl.py[i] + 1; yy <= hl.py[i] + 4; yy++) set(col, yy, B.AIR);
         }
-        Integer r = hl.rim.get(key(x, z));
+        Integer r = tiled ? hl.rim.get(key(x, z)) : null;
         if (r != null) {
             set(col, r, POOL);
             set(col, r + 1, POOL);
@@ -1235,8 +1311,15 @@ public final class PoolroomsGenerator extends LevelGenerator {
         List<DecorSpec> out = new ArrayList<>();
         long h = Rng.hash(seed ^ 0x4A11DL, p.rx, p.rz);
         int fy = FLOORS[MID] + 1;
-        // the water sheet running down each straight run of the chute
-        for (int[] seg : new int[][]{{0, 29}, {30, Hall.N - 1}}) {
+        if (displayHallSlides()) {
+            double[][] bed = hallSlidePath(hl.rot).pts;
+            for (int i = 0; i < bed.length - 1; i += 3) {
+                int j = Math.min(i + 3, bed.length - 1);
+                out.add(new DecorSpec("slide_hall:" + hl.rot + ":" + i + ":" + j, hl.x0 + bed[i][0], bed[i][1], hl.z0 + bed[i][2], 0f, 0, 0, 7L + hl.rot));
+            }
+        }
+        // the water sheet running down each straight run of the tiled chute
+        for (int[] seg : displayHallSlides() ? new int[0][] : new int[][]{{0, 29}, {30, Hall.N - 1}}) {
             int i0 = seg[0];
             int dx = hl.px[i0 + 1] - hl.px[i0], dz = hl.pz[i0 + 1] - hl.pz[i0];
             double x = hl.px[i0] + 0.5 - dx * 0.5, z = hl.pz[i0] + 0.5 - dz * 0.5;

@@ -28,6 +28,8 @@ import java.util.List;
  *   <li><b>Long halls</b>: parallel 3-wide corridors running the whole region (and on into the next hall region),
  *   joined by two cross passages.</li>
  *   <li><b>Pillar fields</b>: one open floor with a 1 x 1 column every four blocks, floor to ceiling.</li>
+ *   <li><b>Empty expanses</b> ({@code empty-expanse-chance}): 320 x 320 blocks with no walls at all, just carpet,
+ *   ceiling and lights stretching away.</li>
  *   <li><b>Tall halls</b>: the same carpet and wallpaper, 21 blocks high, with 3 x 3 columns; its lights are far
  *   overhead and invisible lights hang in the air below them.</li>
  * </ul>
@@ -39,7 +41,7 @@ public final class Level0Generator extends RoomLevel {
     private static final int CEIL = FLOOR + 5, CEIL_TALL_PILLARS = FLOOR + 9, CEIL_TALL = FLOOR + 22;
     private static final int DOOR_H = 3;
 
-    public enum Zone { ROOMS, HALLS, PILLARS, TALL }
+    public enum Zone { ROOMS, HALLS, PILLARS, TALL, EXPANSE }
 
     static final int K_PLAIN = 0, K_FINS = 1, K_THICK = 2, K_PILLAR = 3;
     private static final String[] KINDS = {"room", "room/fins", "room/thick-wall", "room/pillar"};
@@ -76,7 +78,16 @@ public final class Level0Generator extends RoomLevel {
 
     // ================================================================== zones
 
+    /** Empty expanses span 5 x 5 regions (320 blocks): nothing but carpet, ceiling and lights. Absent from older worlds. */
+    private static final int EXPANSE_REGIONS = 5;
+
+    private boolean expanse(int rx, int rz) {
+        double c = gs.get("empty-expanse-chance", 0.0);
+        return c > 0 && Rng.chance(Rng.hash(seed ^ 0xE4BA5EL, Math.floorDiv(rx, EXPANSE_REGIONS), Math.floorDiv(rz, EXPANSE_REGIONS)), c);
+    }
+
     Zone zoneOf(int rx, int rz) {
+        if (expanse(rx, rz)) return Zone.EXPANSE;
         double r = Rng.unit(Rng.hash(seed ^ 0x2071L, rx, rz));
         double halls = gs.get("hallway-chance", 0.14), pillars = gs.get("pillar-field-chance", 0.13), tall = gs.get("tall-hall-chance", 0.08);
         if (r < halls) return Zone.HALLS;
@@ -103,7 +114,12 @@ public final class Level0Generator extends RoomLevel {
     @Override
     protected boolean mergedRegion(int floor, int rx, int rz) {
         Zone z = zoneOf(rx, rz);
-        return z == Zone.PILLARS || z == Zone.TALL;
+        return z == Zone.PILLARS || z == Zone.TALL || z == Zone.EXPANSE;
+    }
+
+    /** Both cells lie in an empty expanse: no wall between them at all, even across region borders. */
+    private boolean expanseLink(int ax, int az, int bx, int bz) {
+        return zoneOfCell(ax, az) == Zone.EXPANSE && zoneOfCell(bx, bz) == Zone.EXPANSE;
     }
 
     private boolean hallLink(int ax, int az, int bx, int bz) {
@@ -113,6 +129,7 @@ public final class Level0Generator extends RoomLevel {
     @Override
     public boolean edgeOpen(int floor, int cx, int cz, boolean east) {
         int bx = east ? cx + 1 : cx, bz = east ? cz : cz + 1;
+        if (expanseLink(cx, cz, bx, bz)) return true;
         if (hallLink(cx, cz, bx, bz)) {
             int rax = Math.floorDiv(cx, R), raz = Math.floorDiv(cz, R), rbx = Math.floorDiv(bx, R), rbz = Math.floorDiv(bz, R);
             boolean ax = hallsAlongX(rax, raz);
@@ -129,6 +146,7 @@ public final class Level0Generator extends RoomLevel {
     @Override
     public Door door(int floor, int cx, int cz, boolean east) {
         int bx = east ? cx + 1 : cx, bz = east ? cz : cz + 1;
+        if (expanseLink(cx, cz, bx, bz)) return new Door(true, 1, S - 1, true);
         if (hallLink(cx, cz, bx, bz)) return edgeOpen(floor, cx, cz, east) ? new Door(true, 3, 3, false) : Door.CLOSED;
         return super.door(floor, cx, cz, east);
     }

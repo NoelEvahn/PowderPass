@@ -42,7 +42,8 @@ import java.util.stream.IntStream;
 class PlainsRenderTest {
     private static final long SEED = 0x5EEDBACCL;
     private static final int W = 1280, H = 720;
-    private static final int Y0 = PlainsGenerator.HOLE_BOTTOM - 8, Y1 = 150;
+    private static final int Y0 = PlainsGenerator.HOLE_BOTTOM - 8;
+    private static int Y1 = 150; // raised for style 2, whose spikes stand ~130 tall
     private static final double MAX_T = 330;
     private static final Map<Material, int[]> RGB = new EnumMap<>(Material.class);
     /** Direction towards the low evening sun (west, slightly south). */
@@ -65,6 +66,8 @@ class PlainsRenderTest {
         c(Material.QUARTZ_STAIRS, 0xEBE5DE); c(Material.STRIPPED_SPRUCE_LOG, 0x73593A); c(Material.GRAY_WOOL, 0x3E4447);
         c(Material.LIGHT_GRAY_WOOL, 0x8E8E86); c(Material.YELLOW_WOOL, 0xF8C527); c(Material.TERRACOTTA, 0x985E43);
         c(Material.BROWN_TERRACOTTA, 0x4D3323); c(Material.OAK_PLANKS, 0xA2834F);
+        c(Material.MOSS_CARPET, 0x5C7230); c(Material.OAK_FENCE, 0xA2834F); c(Material.SPRUCE_FENCE, 0x73552F);
+        c(Material.DARK_OAK_FENCE, 0x42301A); c(Material.BIRCH_FENCE, 0xC9B77E);
     }
 
     private static void c(Material m, int rgb) {
@@ -164,6 +167,109 @@ class PlainsRenderTest {
             double ex3 = hole.x() + Math.cos(ang) * (rim + 70), ez3 = hole.z() + Math.sin(ang) * (rim + 70);
             int top3 = 64 + g.lift((int) Math.floor(ex3), (int) Math.floor(ez3));
             write(dir, "plains-sinkhole-approach.png", new View(w, ex3, top3 + 1 + 1.62, ez3, yawIn, Math.toRadians(-2), "Walking up to a sinkhole"));
+        }
+    }
+
+    /** Terrain style 2 with the shipped config values. */
+    static GenSettings style2() {
+        return new GenSettings(Map.ofEntries(Map.entry("terrain-style", 2.0), Map.entry("lone-house-chance", 0.15),
+                Map.entry("hill-house-chance", 0.5), Map.entry("hamlet-chance", 0.35), Map.entry("giant-chance", 0.25),
+                Map.entry("giant-second-chance", 0.0), Map.entry("giant-scale", 3.0), Map.entry("sinkhole-chance", 0.08),
+                Map.entry("spike-chance", 0.15), Map.entry("terrace-chance", 0.3)));
+    }
+
+    @Test
+    void renderPlainsStyle2Views() throws Exception {
+        String out = System.getenv("RENDER_VIEWS");
+        Assumptions.assumeTrue(out != null && !out.isBlank(), "set RENDER_VIEWS=<dir>");
+        int oldY1 = Y1;
+        Y1 = 200;
+        try {
+            renderStyle2(new File(out));
+        } finally {
+            Y1 = oldY1;
+        }
+    }
+
+    private void renderStyle2(File dir) throws Exception {
+        dir.mkdirs();
+        GenSettings gs = style2();
+        PlainsGenerator g = (PlainsGenerator) Generators.create(Level.PLAINS, SEED, gs);
+        World w = new World(g);
+        int span = g.S * g.R;
+        // houses on the hills and a lone one on the flat
+        int[] hill = null, flat = null;
+        for (int r = 0; r < 40 && (hill == null || flat == null); r++) {
+            for (int cx = -r; cx <= r; cx++) for (int cz = -r; cz <= r; cz++) {
+                if (Math.max(Math.abs(cx), Math.abs(cz)) != r || g.kind(cx, cz) != PlainsGenerator.K_HOUSE) continue;
+                double m = g.hillMask(cx * g.S + 16, cz * g.S + 16);
+                if (m > 0.9 && hill == null) hill = new int[]{cx, cz};
+                if (m == 0 && flat == null && !g.low(Math.floorDiv(cx, g.R), Math.floorDiv(cz, g.R))) flat = new int[]{cx, cz};
+            }
+        }
+        if (hill != null) {
+            PlainsGenerator.House hs = g.house(hill[0], hill[1]);
+            double hx = hill[0] * g.S + hs.bu() + 5.5, hz = hill[1] * g.S + hs.bv() + 6;
+            double ex = hx + 55, ez = hz + 40;
+            int top = 64 + g.lift((int) ex, (int) ez);
+            write(dir, "plains2-hills.png", new View(w, ex, Math.max(top, 64 + g.baseLift(hill[0], hill[1])) + 12, ez,
+                    Math.atan2(-(hx - ex), hz - ez), Math.toRadians(-8), "Style 2: moss hills (up to ~20) crowded with houses"));
+        }
+        if (flat != null) write(dir, "plains2-flat-house.png", houseView(g, w, flat[0], flat[1], 22, "Style 2: a lone house on the flat, fence lines round it"));
+        // a crater and a spike
+        PlainsGenerator.Hole crater = null, spike = null;
+        int[] spikeRegion = null;
+        for (int r = 0; r < 40 && (crater == null || spike == null); r++) {
+            for (int rx = -r; rx <= r; rx++) for (int rz = -r; rz <= r; rz++) {
+                if (Math.max(Math.abs(rx), Math.abs(rz)) != r) continue;
+                PlainsGenerator.Hole h = g.regionHole(rx, rz);
+                if (h == null) continue;
+                boolean up = g.kind(rx * g.R + 1, rz * g.R + 1) == PlainsGenerator.K_HOLE && g.zoneName(0, rx * g.R + 1, rz * g.R + 1).equals("spike");
+                if (up && spike == null) spike = h;
+                if (!up && crater == null) crater = h;
+            }
+        }
+        if (crater != null) {
+            double ex = crater.x() - crater.r() - 4, ez = crater.z() + 6;
+            double yaw = Math.atan2(-(crater.x() - ex), crater.z() - ez);
+            write(dir, "plains2-crater-rim.png", new View(w, ex, 64 + 1 + 1.62, ez, yaw, Math.toRadians(-20), "Style 2: a crater, an exponential horn of moss, ~" + Math.round(2 * crater.r()) + " across"));
+            write(dir, "plains2-crater-down.png", new View(w, crater.x() - crater.r() * 0.55, 64 + 8, crater.z(), yaw, Math.toRadians(-70), "Looking down the horn's throat into the void"));
+        }
+        if (spike != null) {
+            double ex = spike.x() - 190, ez = spike.z() - 70;
+            write(dir, "plains2-spike.png", new View(w, ex, 64 + 40, ez, Math.atan2(-(spike.x() - ex), spike.z() - ez), Math.toRadians(12), "Style 2: rarely, the horn points at the sky (~130 tall)"));
+        }
+        // a terrace cliff with its stairs, from the terrace floor
+        outer:
+        for (int r = 1; r < 30; r++) {
+            for (int rx = -r; rx <= r; rx++) for (int rz = -r; rz <= r; rz++) {
+                if (Math.max(Math.abs(rx), Math.abs(rz)) != r) continue;
+                for (int side = 0; side < 4; side++) {
+                    int j = g.stairStart(rx, rz, side);
+                    if (j < 0 || side != 0) continue;
+                    double sx = rx * span + j * g.S + 4 + 22, sz = rz * span;
+                    double ex = sx - 20, ez = sz + 62;
+                    int top = 64 + g.lift((int) ex, (int) ez);
+                    write(dir, "plains2-terrace-stairs.png", new View(w, ex, top + 1 + 1.62, ez, Math.atan2(-(sx - ex), sz - ez), Math.toRadians(16),
+                            "Style 2: a terrace 40 blocks down, moss stairs climbing the cliff"));
+                    write(dir, "plains2-terrace-above.png", new View(w, sx + 30, 64 + 30, sz - 40, Math.atan2(-(sx - (sx + 30)), (sz + 40) - (sz - 40)), Math.toRadians(-28),
+                            "From above: the drop and the stairs"));
+                    break outer;
+                }
+            }
+        }
+        // a giant, three times the size, from a distance
+        for (int r = 0; r < 40; r++) {
+            boolean done = false;
+            for (int cx = -r; cx <= r && !done; cx++) for (int cz = -r; cz <= r && !done; cz++) {
+                if (Math.max(Math.abs(cx), Math.abs(cz)) != r || g.kind(cx, cz) != PlainsGenerator.K_COLOSSAL) continue;
+                double gx = cx * g.S + 16, gz = cz * g.S + 16, ex = gx + 170, ez = gz - 40;
+                int top = 64 + g.lift((int) ex, (int) ez);
+                write(dir, "plains2-giant.png", new View(w, ex, top + 1 + 1.62, ez, Math.atan2(-(gx - ex), gz - ez), Math.toRadians(16),
+                        "Style 2: " + g.colossusModel(cx, cz) + " at three times the size"));
+                done = true;
+            }
+            if (done) break;
         }
     }
 

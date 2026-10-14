@@ -77,7 +77,9 @@ class ModelCoverageTest {
         for (String id : com.powderpass.backrooms.display.AssetCatalog.all()) {
             Model m = ModelLibrary.build(id, 4242L);
             assertNotNull(m, "asset " + id + " does not build");
-            assertTrue(m.entityCount() > 0, "asset " + id + " is empty");
+            // some assets are deliberately entity-free: block-built panels (panel_light) and pure particle/sound emitters
+            boolean blockBuilt = id.equals("panel_light") || id.startsWith("panel_light:");
+            assertTrue(m.entityCount() > 0 || !m.emitters.isEmpty() || blockBuilt, "asset " + id + " is empty");
         }
         LevelGenerator g = new com.powderpass.backrooms.gen.levels.PoolroomsGenerator(99,
                 new GenSettings(Map.of("slide-chance", 0.6, "fun-slide-chance", 0.5)));

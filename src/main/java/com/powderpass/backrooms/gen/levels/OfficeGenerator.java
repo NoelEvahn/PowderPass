@@ -772,7 +772,6 @@ public final class OfficeGenerator extends LevelGenerator {
         for (int u = c.u0; u <= c.u1; u++) {
             for (int v = c.v0; v <= c.v1; v++) {
                 int x = c.ox + u, z = c.oz + v;
-                c.set(u, bottomY, v, B.BEDROCK);
                 if (t.inside(x, z)) {
                     int i = x - t.x0, j = z - t.z0;
                     int top = BASE + FH * t.floors + 6;

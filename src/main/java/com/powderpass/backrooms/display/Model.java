@@ -67,6 +67,27 @@ public final class Model {
         return this;
     }
 
+    /**
+     * Scales the finished model about its origin by {@code k}: every part, emitter offset and animation pivot, and
+     * the view range with it (a model three times the size has to be seen from three times as far).
+     */
+    public Model scaleAll(double k) {
+        Matrix4f sc = new Matrix4f().scaling((float) k);
+        for (Part p : parts) p.local.set(new Matrix4f(sc).mul(p.local));
+        emitters.replaceAll(e -> new Emitter(e.particle(), e.data(), e.ox() * (float) k, e.oy() * (float) k, e.oz() * (float) k,
+                e.count(), e.spread() * (float) k, e.speed(), e.interval(), e.chance(), e.sound(), e.volume(), e.pitch()));
+        anims.replaceAll(a -> {
+            boolean blocks = switch (a.type()) {
+                case BOB, JITTER, SLIDE, ORBIT, FLOW -> true;
+                default -> false;
+            };
+            return new Anim(a.group(), a.type(), a.axis(), new org.joml.Vector3f(a.pivot()).mul((float) k),
+                    blocks ? a.amp() * (float) k : a.amp(), a.period(), a.phase());
+        });
+        viewRange = (viewRange > 0 ? viewRange : 1f) * (float) k;
+        return this;
+    }
+
     public Model group(int g) {
         this.group = g;
         return this;

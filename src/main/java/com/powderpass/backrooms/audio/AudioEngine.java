@@ -139,9 +139,9 @@ public final class AudioEngine implements Listener {
                     silence(p);
                     s.loops.clear();
                     s.level = e.getKey();
-                    s.nextEvent = now + 200 + ThreadLocalRandom.current().nextInt(400);
-                    s.nextMusic = now + 20L * 60 * 4;
-                    s.nextVoice = now + 20L * 90;
+                    s.nextEvent = now + 100 + ThreadLocalRandom.current().nextInt(200);
+                    s.nextMusic = now + 20L * 60;
+                    s.nextVoice = now + 20L * 45;
                     s.nextAnnounce = now + 20L * Math.max(10, cfg().announceSeconds) / 2;
                 }
                 try {
@@ -299,14 +299,14 @@ public final class AudioEngine implements Listener {
         for (int i = 0; i < table.size(); i++) {
             Soundscape.Ev ev = table.get(i);
             if (!allowed(s, ev)) continue;
-            double wt = ev.weight() * (ev.rare() ? cfg().audioRare : 1.0);
+            double wt = ev.weight() * (ev.rare() ? cfg().audioRare : 1.0) * (ev.kind() == Soundscape.Kind.MUSIC ? 3.0 : 1.0);
             if (s.recent.contains(ev.id())) wt *= 0.15;
             w[i] = wt;
             total += wt;
         }
-        // silence is part of the design: a gap after every event, now and then a long one
-        long base = (long) ((20 * 14 + r.nextInt(20 * 40)) / density);
-        if (r.nextDouble() < 0.12) base += 20L * (120 + r.nextInt(180));
+        // silence is still part of the design: a gap after every event, now and then a longer one
+        long base = (long) ((20 * 8 + r.nextInt(20 * 20)) / density);
+        if (r.nextDouble() < 0.05) base += 20L * (60 + r.nextInt(60));
         s.nextEvent = now + base;
         if (total <= 0) return;
         double pick = r.nextDouble() * total;
@@ -314,7 +314,7 @@ public final class AudioEngine implements Listener {
             if (w[i] <= 0) continue;
             pick -= w[i];
             if (pick <= 0) {
-                fire(p, s, table.get(i));
+                fire(p, s, table.get(i), false);
                 return;
             }
         }
@@ -336,7 +336,7 @@ public final class AudioEngine implements Listener {
             pick -= ev.weight();
             if (pick <= 0) {
                 long keepVoice = s.nextVoice;
-                fire(p, s, ev);
+                fire(p, s, ev, true);
                 s.nextVoice = keepVoice; // announcements do not hold back the rarer voice events
                 return;
             }
@@ -353,14 +353,18 @@ public final class AudioEngine implements Listener {
         return def != null;
     }
 
-    private void fire(Player p, State s, Soundscape.Ev ev) {
+    /**
+     * Play one event. PA announcements ({@code announcement}), voices and music are attached to the listener: they
+     * follow the player and never fade with distance. Everything else comes from a place around them.
+     */
+    private void fire(Player p, State s, Soundscape.Ev ev, boolean announcement) {
         ThreadLocalRandom r = ThreadLocalRandom.current();
         s.cooldown.put(ev.id(), now + 20L * ev.cooldownSeconds());
         s.recent.addLast(ev.id());
         while (s.recent.size() > 6) s.recent.removeFirst();
         s.lastEvent = ev.id();
-        if (ev.kind() == Soundscape.Kind.VOICE) s.nextVoice = now + 20L * (120 + r.nextInt(240));
-        if (ev.kind() == Soundscape.Kind.MUSIC) s.nextMusic = now + (long) (20L * (600 + r.nextInt(900)) / Math.max(0.05, cfg().audioMusicFrequency));
+        if (ev.kind() == Soundscape.Kind.VOICE) s.nextVoice = now + 20L * (60 + r.nextInt(120));
+        if (ev.kind() == Soundscape.Kind.MUSIC) s.nextMusic = now + (long) (20L * (120 + r.nextInt(240)) / Math.max(0.05, cfg().audioMusicFrequency));
         Location at = place(p, ev, r);
         float vol = (float) (ev.volume() * intensity(s.level));
         switch (ev.kind()) {
@@ -373,6 +377,12 @@ public final class AudioEngine implements Listener {
                 if (event != null) playOnListener(p, event, net.kyori.adventure.sound.Sound.Source.MUSIC, vol, def.durationTicks());
             }
             default -> {
+                if (announcement || ev.kind() == Soundscape.Kind.VOICE) {
+                    String event = index.resolve(ev.sound(), s.profile, s.underwater);
+                    if (event == null) return;
+                    playOnListener(p, event, net.kyori.adventure.sound.Sound.Source.VOICE, vol, index.def(ev.sound()).durationTicks());
+                    return;
+                }
                 boolean muffled = ev.placement() != Soundscape.Place.LISTENER && cfg().audioQuality > 0
                         && Acoustics.obstruction(p.getEyeLocation(), at.clone().add(0, 1, 0), 32) >= 1;
                 String event = index.resolve(ev.sound(), s.profile, muffled || s.underwater);
@@ -541,8 +551,55 @@ public final class AudioEngine implements Listener {
     // ------------------------------------------------------------------ admin
 
     /** Play one sound id to a player now (test command). Returns a description of what was sent. */
+    /** How {@code /backrooms audio play} places a sound. */
+    public enum Mode {
+        /** attached to the listener: follows them, never fades (PA, music, voices) */
+        DIRECT,
+        /** where the listener stands now: fades as they walk away */
+        AROUND,
+        /** a few blocks away in a random direction */
+        NEAR,
+        /** far off in a random direction */
+        FAR;
+
+        public static Mode parse(String s) {
+            try {
+                return s == null ? null : valueOf(s.toUpperCase(java.util.Locale.ROOT));
+            } catch (IllegalArgumentException e) {
+                return null;
+            }
+        }
+    }
+
     public String test(Player p, String id) {
         return play(p, id, 1f, 1f);
+    }
+
+    /** Play one sound id to a player, placed by {@code mode}. Returns what was played or why not. */
+    public String play(Player p, String id, Mode mode, float volume, float pitch) {
+        SoundIndex.Def def = index.def(id);
+        String event = def != null ? index.resolve(id, states.containsKey(p.getUniqueId()) ? states.get(p.getUniqueId()).profile : null, false)
+                : index.has(id) ? id : null;
+        if (event == null) return "unknown sound id '" + id + "'";
+        int ticks = def == null ? 40 : def.durationTicks();
+        boolean music = def != null && def.category().equals("music");
+        if (mode == Mode.DIRECT) {
+            p.playSound(net.kyori.adventure.sound.Sound.sound(Key.key("backrooms", event),
+                    music ? net.kyori.adventure.sound.Sound.Source.MUSIC : net.kyori.adventure.sound.Sound.Source.VOICE, Math.max(0.01f, volume), pitch),
+                    net.kyori.adventure.sound.Sound.Emitter.self());
+            State s = states.get(p.getUniqueId());
+            if (s != null) s.playing.put(event, now + index.ticks(event, ticks));
+        } else {
+            Location at = p.getLocation().add(0, 1, 0);
+            if (mode != Mode.AROUND) {
+                ThreadLocalRandom r = ThreadLocalRandom.current();
+                double a = r.nextDouble(Math.PI * 2), d = mode == Mode.NEAR ? 5 + r.nextDouble(6) : 18 + r.nextDouble(12);
+                at.add(Math.sin(a) * d, 0, Math.cos(a) * d);
+            }
+            play(p, at, event, music ? SoundCategory.RECORDS : SoundCategory.AMBIENT, volume, pitch, ticks);
+        }
+        return "backrooms:" + event + " (" + mode.name().toLowerCase(java.util.Locale.ROOT) + ")"
+                + (pack.loaded(p) ? "" : " (your client has not loaded the pack, so you will hear nothing)");
     }
 
     /** Play one sound id to a player (positional ones a few blocks in front of them). Returns what was played or why not. */

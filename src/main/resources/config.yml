@@ -27,6 +27,7 @@ levels:
       landmark-chance: 0.6
       decor-density: 1.0
       loop-chance: 0.16        # extra connections beyond the spanning maze
+      empty-expanse-chance: 0.15 # per 320 x 320 block area: nothing at all, no walls, just carpet and lights
   poolrooms:           # three storeys of tile: bays, dry tile, bright rooms, tall hallways, massive halls with slides
     enabled: true
     biome: "minecraft:warm_ocean"
@@ -38,6 +39,7 @@ levels:
       canal-chance: 0.10       # per region: a canal court, a railed promenade round a canal with bridges to an arched pavilion
       slide-chance: 0.25       # per region and storey: a water slide that bores down to the floor below (some land in a hidden pocket room)
       fun-slide-chance: 0.2    # per region and storey: a shorter slide from a tall platform into a pool on the same floor
+      display-hall-slides: 1   # 1 = the massive halls' slides are display chutes like the others (0 = the old tiled chute)
       screen-chance: 0.2       # free-standing tile screens (always with an opening)
       back-chance: 0.4         # per district: the drain back down to Level 0
       landmark-chance: 0.5
@@ -65,11 +67,19 @@ levels:
     enabled: true
     biome: "minecraft:pale_garden"
     generation:
-      lone-house-chance: 0.08  # per eligible cell: a house alone in the grass (no roads)
-      hamlet-chance: 0.15      # per 128x128 area: a handful of houses dropped together at odd angles
-      giant-chance: 0.8        # per 128x128 area: a 40-block-tall everyday object
-      giant-second-chance: 0.4
-      sinkhole-chance: 0.08    # per 128x128 area without features: a ~100-wide funnel into the void (lethal)
+      # 2 = moss everywhere, flat fields or small hills (up to ~20), terraces 40 blocks down with moss stairs,
+      # exponential-horn craters (and rare horns pointing up), fence lines round houses, 3x giants.
+      # 1 = the original rolling grass. Locked per world: run /backrooms regen plains to rebuild an old one.
+      terrain-style: 2
+      lone-house-chance: 0.15  # per flat cell: a house alone on the moss (no roads, no paths)
+      hill-house-chance: 0.5   # per hill cell: houses crowd the hills
+      hamlet-chance: 0.35      # per 128x128 area: a handful of houses dropped together at odd angles
+      giant-chance: 0.25       # per 128x128 area: an everyday object (style 2: scaled up by giant-scale)
+      giant-second-chance: 0.0
+      giant-scale: 3
+      sinkhole-chance: 0.08    # per 128x128 area without features: a ~90-wide horn-shaped crater into the void (lethal)
+      spike-chance: 0.15       # style 2: share of craters that are the other way up, a moss horn ~130 tall
+      terrace-chance: 0.3      # style 2: per 128x128 area: the whole area sits 40 blocks lower, stairs up each cliff
       back-chance: 0.4         # per district: the bunker hatch back to the Office
       landmark-chance: 0.6
       decor-density: 1.0
@@ -160,7 +170,7 @@ audio:
   level0-bed: recording          # recording (the supplied fluorescent recording) | synth (original synthesised buzz)
   ambient: true                  # looping physical sources near you: fixture hum, vents, water, machinery
   music: true                    # rare music; it plays on the player, not at a place
-  announce-seconds: 40           # a PA announcement or a voice about this often in Level 0, Poolrooms, Level 1 and 4 (0 = off)
+  announce-seconds: 25           # a PA announcement or a voice about this often in Level 0, Poolrooms, Level 1 and 4 (0 = off)
   voices: true                   # whispers, distant conversations, announcements
   event-density: 1.0             # 0..4, how often one-shot events happen (silence is part of the design)
   rare-frequency: 1.0            # 0..4, scales the rare events

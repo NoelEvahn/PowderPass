@@ -61,6 +61,11 @@ public final class SlidePath {
         this.reach = r;
     }
 
+    /** A slide along given points (a fixed layout such as a massive hall's), with its own lean per point. */
+    public static SlidePath of(long seed, Style style, boolean wet, double[][] pts, double[] bank) {
+        return new SlidePath(seed, style, wet, pts[0][1] - pts[pts.length - 1][1], pts, bank);
+    }
+
     /** Footprint radius for a drop: short fun slides stay tight, storey-high ones may wander further. */
     public static double footprint(double drop) {
         return Math.max(7, Math.min(22, 5 + drop * 0.5));

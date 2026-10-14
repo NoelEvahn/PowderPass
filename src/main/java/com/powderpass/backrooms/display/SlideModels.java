@@ -36,6 +36,7 @@ public final class SlideModels {
             case "slide" -> whole(suffix.isEmpty() ? "slide" : "slide:" + suffix, seed);
             case "slide_seg" -> segment(suffix, seed);
             case "slide_ride" -> ride(seed);
+            case "slide_hall" -> hall(suffix);
             default -> null;
         };
     }
@@ -91,6 +92,27 @@ public final class SlideModels {
         m.viewRange = 1.6f;
         m.translate(-p.pts[i0][0], -p.pts[i0][1], -p.pts[i0][2]);
         chute(m, p, i0, i1, Double.NaN);
+        return m;
+    }
+
+    /** {@code <rot>:<i0>:<i1>}: a piece of a massive hall's slide, standing on legs down to the main floor. */
+    static Model hall(String suffix) {
+        String[] a = suffix.split(":");
+        if (a.length != 3) return null;
+        int rot, i0, i1;
+        try {
+            rot = Integer.parseInt(a[0]);
+            i0 = Integer.parseInt(a[1]);
+            i1 = Integer.parseInt(a[2]);
+        } catch (NumberFormatException e) {
+            return null;
+        }
+        SlidePath p = com.powderpass.backrooms.gen.levels.PoolroomsGenerator.hallSlidePath(Math.floorMod(rot, 4));
+        if (i0 < 0 || i1 >= p.pts.length || i1 <= i0) return null;
+        Model m = new Model();
+        m.viewRange = 2.0f;
+        m.translate(-p.pts[i0][0], -p.pts[i0][1], -p.pts[i0][2]);
+        chute(m, p, i0, i1, com.powderpass.backrooms.gen.levels.PoolroomsGenerator.mainFloorSurface());
         return m;
     }
 

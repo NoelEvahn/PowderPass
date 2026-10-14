@@ -30,6 +30,19 @@ public final class ModelLibrary {
     private static final String[] STENCILS = {"SECTOR 7-G", "AISLE 41", "BAY C", "LOAD ZONE", "STORAGE 1-1", "NO RETURN"};
 
     public static Model build(String id, long seed) {
+        // "<model>@<k>": the same model scaled k times (the plains' giants come three times their size)
+        int at = id.lastIndexOf('@');
+        if (at > 0) {
+            double k;
+            try {
+                k = Double.parseDouble(id.substring(at + 1));
+            } catch (NumberFormatException e) {
+                return null;
+            }
+            if (!(k > 0 && k <= 8)) return null;
+            Model inner = build(id.substring(0, at), seed);
+            return inner == null ? null : inner.scaleAll(k);
+        }
         String base = id;
         String suffix = "";
         int param = 0;

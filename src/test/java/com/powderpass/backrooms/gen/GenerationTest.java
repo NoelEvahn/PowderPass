@@ -173,7 +173,9 @@ class GenerationTest {
         Area area = regionWindow(g, 0, 0, 1);
         for (int x = area.minX; x < area.maxX; x += 3) {
             for (int z = area.minZ; z < area.maxZ; z += 3) {
-                assertEquals(Material.BEDROCK, area.type(x, g.bottomY, z), level + " missing bedrock floor");
+                // Level 4's towers stand in the void: no floor under the world
+                if (level == Level.LEVEL_4) assertNotEquals(Material.BEDROCK, area.type(x, g.bottomY, z), "Level 4 has no bedrock floor");
+                else assertEquals(Material.BEDROCK, area.type(x, g.bottomY, z), level + " missing bedrock floor");
                 if (!level.openSky()) assertEquals(Material.BEDROCK, area.type(x, g.roofY, z), level + " missing bedrock roof at " + x + "," + z);
             }
         }

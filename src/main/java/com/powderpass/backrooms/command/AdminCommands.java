@@ -54,7 +54,23 @@ final class AdminCommands {
                     c.plugin.reload();
                     c.msg("reloaded");
                 });
+        root.sub("regen").perm("backrooms.admin").usage("<level>").desc("rebuild a level from scratch with the current config.yml")
+                .run(AdminCommands::regen).complete((c, i) -> i == 0 ? Ctx.LEVEL_ARGS : List.of());
         root.sub("confirm").desc("confirm the last destructive command (15 s)").run(Ctx::confirm);
+    }
+
+    private static void regen(Ctx c) {
+        if (!c.has(0)) {
+            c.usage();
+            return;
+        }
+        Level l = c.level(0);
+        if (l == null) return;
+        c.ask("DELETE and rebuild " + l.displayName() + " (everyone inside is sent home; everything built there is lost)", () -> {
+            c.send("<gray>Rebuilding " + l.displayName() + "...");
+            String problem = c.plugin.regenerate(l);
+            c.send(problem == null ? "<green>" + l.displayName() + " was rebuilt with the current settings." : "<red>Could not rebuild: " + problem);
+        });
     }
 
     // ------------------------------------------------------------------ events
