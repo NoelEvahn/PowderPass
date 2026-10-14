@@ -67,12 +67,14 @@ levels:
     enabled: true
     biome: "minecraft:pale_garden"
     generation:
+      # 3 = as 2, but broad smooth rolling hills and houses spread evenly one by one (house-chance), no groups.
       # 2 = moss everywhere, flat fields or small hills (up to ~20), terraces 40 blocks down with moss stairs,
       # exponential-horn craters (and rare horns pointing up), fence lines round houses, 3x giants.
       # 1 = the original rolling grass. Locked per world: run /backrooms regen plains to rebuild an old one.
-      terrain-style: 2
+      terrain-style: 3
       lone-house-chance: 0.15  # per flat cell: a house alone on the moss (no roads, no paths)
-      hill-house-chance: 0.5   # per hill cell: houses crowd the hills
+      hill-house-chance: 0.5   # style 2, per hill cell: houses crowd the hills
+      house-chance: 0.9        # style 3: share of cells put forward for a house; houses keep 40+ blocks apart
       hamlet-chance: 0.35      # per 128x128 area: a handful of houses dropped together at odd angles
       giant-chance: 0.25       # per 128x128 area: an everyday object (style 2: scaled up by giant-scale)
       giant-second-chance: 0.0

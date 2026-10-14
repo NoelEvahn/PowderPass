@@ -228,6 +228,41 @@ class PlainsStyle2Test {
         assertEquals(3.0, height(big) / height(small), 0.01, one.model);
     }
 
+    @Test
+    void style3RollsSmoothlyAndSpreadsHousesEvenly() {
+        PlainsGenerator g3 = (PlainsGenerator) Generators.create(Level.PLAINS, SEED, PlainsRenderTest.style3());
+        int steep = 0, n = 0, max = 0, houses = 0, cells = 0;
+        for (int x = -1200; x < 1200; x += 5) {
+            for (int z = -1200; z < 1200; z += 5) {
+                if (g3.kind(g3.cellOf(x), g3.cellOf(z)) != PlainsGenerator.K_FIELD || g3.kind(g3.cellOf(x + 1), g3.cellOf(z)) != PlainsGenerator.K_FIELD) continue;
+                if (g3.low(Math.floorDiv(x, 128), Math.floorDiv(z, 128)) != g3.low(Math.floorDiv(x + 1, 128), Math.floorDiv(z, 128))) continue;
+                int a = g3.lift(x, z), b = g3.lift(x + 1, z);
+                boolean low = g3.low(Math.floorDiv(x, 128), Math.floorDiv(z, 128));
+                max = Math.max(max, a + (low ? PlainsGenerator.TERRACE_DROP : 0));
+                n++;
+                if (Math.abs(a - b) > 1) steep++;
+            }
+        }
+        assertTrue(steep < n / 500, "gentle slopes: " + steep + " steep steps of " + n);
+        assertTrue(max >= 14 && max <= 20, "tallest swell " + max);
+        for (int cx = -40; cx < 40; cx++) {
+            for (int cz = -40; cz < 40; cz++) {
+                cells++;
+                if (g3.kind(cx, cz) != PlainsGenerator.K_HOUSE) continue;
+                houses++;
+                PlainsGenerator.House a = g3.house(cx, cz);
+                for (int dx = -2; dx <= 2; dx++) for (int dz = -2; dz <= 2; dz++) {
+                    if ((dx == 0 && dz == 0) || g3.kind(cx + dx, cz + dz) != PlainsGenerator.K_HOUSE) continue;
+                    PlainsGenerator.House b = g3.house(cx + dx, cz + dz);
+                    double d = Math.hypot((cx + dx) * 32 + b.bu() + b.w() / 2.0 - cx * 32 - a.bu() - a.w() / 2.0,
+                            (cz + dz) * 32 + b.bv() + b.d() / 2.0 - cz * 32 - a.bv() - a.d() / 2.0);
+                    assertTrue(d >= PlainsGenerator.HOUSE_GAP, "houses " + d + " apart at cell " + cx + "," + cz);
+                }
+            }
+        }
+        assertTrue(houses > cells / 10 && houses < cells / 4, houses + " houses in " + cells + " cells");
+    }
+
     private static double height(Model m) {
         double lo = Double.MAX_VALUE, hi = -Double.MAX_VALUE;
         for (var p : m.parts) {

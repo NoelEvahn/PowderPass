@@ -178,6 +178,52 @@ class PlainsRenderTest {
                 Map.entry("spike-chance", 0.15), Map.entry("terrace-chance", 0.3)));
     }
 
+    /** Terrain style 3 (the shipped default): style 2 with rolling hills and evenly spread houses. */
+    static GenSettings style3() {
+        Map<String, Double> m = new java.util.HashMap<>(style2().asMap());
+        m.put("terrain-style", 3.0);
+        m.put("house-chance", 0.9);
+        return new GenSettings(m);
+    }
+
+    @Test
+    void renderPlainsStyle3Views() throws Exception {
+        String out = System.getenv("RENDER_VIEWS");
+        Assumptions.assumeTrue(out != null && !out.isBlank(), "set RENDER_VIEWS=<dir>");
+        File dir = new File(out);
+        dir.mkdirs();
+        PlainsGenerator g = (PlainsGenerator) Generators.create(Level.PLAINS, SEED, style3());
+        World w = new World(g);
+        // stand on high rolling ground with many houses in view, like a landscape painting
+        int n = 0;
+        for (int r = 0; r < 30 && n < 3; r++) {
+            for (int cx = -r; cx <= r && n < 3; cx++) for (int cz = -r; cz <= r && n < 3; cz++) {
+                if (Math.max(Math.abs(cx), Math.abs(cz)) != r || g.kind(cx, cz) != PlainsGenerator.K_FIELD) continue;
+                int x = cx * g.S + 16, z = cz * g.S + 16;
+                int h = g.lift(x, z);
+                if (h < 12 || g.low(Math.floorDiv(cx, g.R), Math.floorDiv(cz, g.R))) continue;
+                double bestYaw = 0;
+                int best = -1;
+                for (int i = 0; i < 16; i++) {
+                    double yaw = i * Math.PI / 8;
+                    int houses = 0;
+                    for (int dx = -9; dx <= 9; dx++) for (int dz = -9; dz <= 9; dz++) {
+                        if (g.kind(cx + dx, cz + dz) != PlainsGenerator.K_HOUSE) continue;
+                        double ang = Math.atan2(-(dx * 32.0), dz * 32.0);
+                        if (Math.abs(Math.atan2(Math.sin(ang - yaw), Math.cos(ang - yaw))) < Math.toRadians(35)) houses++;
+                    }
+                    if (houses > best) {
+                        best = houses;
+                        bestYaw = yaw;
+                    }
+                }
+                write(dir, "plains3-rolling-" + (++n) + ".png", new View(w, x + 0.5, 64 + h + 1 + 9, z + 0.5, bestYaw, Math.toRadians(-3),
+                        "Style 3: rolling moss hills, houses spread out evenly"));
+                cx += 6;
+            }
+        }
+    }
+
     @Test
     void renderPlainsStyle2Views() throws Exception {
         String out = System.getenv("RENDER_VIEWS");

@@ -152,7 +152,9 @@ Floaties drift and bob on the water: rings, ducks, mattresses, beach balls. The 
 
 **The Plains.** *Empty fields under a sky stuck at sunset.* No roads, no paths, no wires.
 
-New worlds use **terrain style 2** (`terrain-style: 2`; worlds made before it keep style 1, described after this list, until rebuilt with `/backrooms regen plains`):
+New worlds use **terrain style 3** (`terrain-style: 3`): everything in style 2 below, but the hills are **broad, smooth rolling swells** (60–120 blocks across, up to 20 tall, never more than a 1-block step) and houses are **spread evenly one by one**: a share of cells (`house-chance`) is put forward, and a house stays only if no stronger neighbouring house stands within 40 blocks, so they sit roughly 40–90 blocks apart across hilltops and slopes, never in groups. Preview: [`docs/previews/plains3-rolling.png`](docs/previews/plains3-rolling.png).
+
+Worlds already made with style 2 keep it (and style 1 worlds keep style 1) until rebuilt with `/backrooms regen plains`. **Terrain style 2:**
 - **Moss and nothing else:** every block of ground is moss, all the way down; no grass, dirt, stone or coarse-dirt patches, only drifts of moss carpet.
 - **Flat or hilly:** big patches of dead-flat ground alternate with hill country of small, steep bumps up to about 20 blocks tall.
 - **Houses everywhere:** most hill cells hold a house (`hill-house-chance`), lone houses stand on the flats (`lone-house-chance`), groups are more common (`hamlet-chance`). Each house has a few random straight **fence lines** around it, some with a post missing.

@@ -106,12 +106,18 @@ public final class PlainsGenerator extends LevelGenerator {
      * three times the size. Style 1 is the original gently rolling grass.
      */
     final boolean v2;
+    /**
+     * Terrain style 3: style 2 with broad, smooth rolling hills (swells 60 to 120 blocks across, up to twenty tall)
+     * instead of small steep bumps, and houses spread out evenly one by one, never in groups.
+     */
+    final boolean rolling;
     /** How far a lower terrace sits below the base floor. */
     static final int TERRACE_DROP = 40;
 
     public PlainsGenerator(long seed, GenSettings gs) {
         super(Level.PLAINS, seed, gs, 32, 4, 3, new int[]{FLOOR}, modern(gs) ? FLOOR - TERRACE_DROP - 24 : FLOOR - 20, FLOOR + 40, 0.0, 0.0);
         this.v2 = modern(gs);
+        this.rolling = gs.get("terrain-style", 1.0) >= 3;
     }
 
     private static boolean modern(GenSettings gs) {
@@ -258,7 +264,7 @@ public final class PlainsGenerator extends LevelGenerator {
             }
             return p;
         }
-        if (Rng.chance(Rng.hash(h, 10), gs.get("hamlet-chance", 0.15))) {
+        if (!rolling && Rng.chance(Rng.hash(h, 10), gs.get("hamlet-chance", 0.15))) {
             int ccx = 1 + Rng.pick(Rng.hash(h, 11), R - 2), ccz = 1 + Rng.pick(Rng.hash(h, 12), R - 2);
             int want = 3 + Rng.pick(Rng.hash(h, 13), 5);
             int[] order = shuffled(Rng.hash(h, 14), 9);
@@ -281,6 +287,19 @@ public final class PlainsGenerator extends LevelGenerator {
                 break;
             }
         }
+        if (rolling) {
+            // evenly spread: a cell is a candidate now and then; a candidate keeps its house unless a stronger
+            // neighbouring candidate's house stands within HOUSE_GAP blocks (decided from the hashes alone, so the
+            // same answer comes out on both sides of a region edge)
+            for (int i = 0; i < R * R; i++) {
+                if (p.kind[i] != K_FIELD || nextTo(p, i, K_COLOSSAL)) continue;
+                int cx = rx * R + i % R, cz = rz * R + i / R;
+                if (!spacedHouse(cx, cz)) continue;
+                p.kind[i] = K_HOUSE;
+                p.house[i] = randomHouse(Rng.hash(h, 41, i));
+            }
+            return p;
+        }
         double onHills = gs.get("hill-house-chance", 0.5), onFlat = gs.get("lone-house-chance", 0.08);
         for (int i = 0; i < R * R; i++) {
             if (p.kind[i] != K_FIELD || nextTo(p, i, K_COLOSSAL)) continue;
@@ -291,6 +310,40 @@ public final class PlainsGenerator extends LevelGenerator {
             }
         }
         return p;
+    }
+
+    /** Style 3: least distance between two houses' centres. */
+    static final double HOUSE_GAP = 40;
+
+    /** Style 3: whether a cell is put forward for a house, and its strength against neighbouring candidates. */
+    private boolean houseCandidate(int cx, int cz) {
+        return Rng.chance(Rng.hash(seed ^ 0x40C5E1L, cx, cz), gs.get("house-chance", 0.9));
+    }
+
+    private double housePriority(int cx, int cz) {
+        return Rng.unit(Rng.hash(seed ^ 0x40C5EL, cx, cz));
+    }
+
+    /** Centre (world x, z) of the house a cell would hold: the same draw {@link #buildPlan2} uses. */
+    private double[] houseCentre(int cx, int cz) {
+        int rx = Math.floorDiv(cx, R), rz = Math.floorDiv(cz, R), i = Math.floorMod(cx, R) + Math.floorMod(cz, R) * R;
+        House hs = randomHouse(Rng.hash(Rng.hash(seed ^ 0x9A1A5L, rx, rz), 41, i));
+        return new double[]{cx * S + hs.bu() + hs.w() / 2.0, cz * S + hs.bv() + hs.d() / 2.0};
+    }
+
+    /** Style 3: a candidate cell with no stronger candidate's house closer than {@link #HOUSE_GAP}. */
+    private boolean spacedHouse(int cx, int cz) {
+        if (!houseCandidate(cx, cz)) return false;
+        double me = housePriority(cx, cz);
+        double[] c = houseCentre(cx, cz);
+        for (int dx = -2; dx <= 2; dx++) {
+            for (int dz = -2; dz <= 2; dz++) {
+                if ((dx == 0 && dz == 0) || !houseCandidate(cx + dx, cz + dz) || housePriority(cx + dx, cz + dz) < me) continue;
+                double[] o = houseCentre(cx + dx, cz + dz);
+                if (Math.hypot(o[0] - c[0], o[1] - c[1]) < HOUSE_GAP) return false;
+            }
+        }
+        return true;
     }
 
     private boolean nextTo(Plan p, int i, int kind) {
@@ -364,6 +417,12 @@ public final class PlainsGenerator extends LevelGenerator {
 
     /** 0 on the flats, 1 in hill country: large patches, hard-edged, so ground is one or the other. */
     double hillMask(double x, double z) {
+        if (rolling) {
+            // mostly rolling country, with wide dead-flat stretches between
+            double n = ValueNoise.fractal(seed ^ 0x41115L, x, z, 320);
+            double t = clamp01((n - 0.28) / 0.2);
+            return t * t * (3 - 2 * t);
+        }
         double n = ValueNoise.fractal(seed ^ 0x41115L, x, z, 240);
         double t = clamp01((n - 0.47) / 0.1);
         return t * t * (3 - 2 * t);
@@ -373,6 +432,13 @@ public final class PlainsGenerator extends LevelGenerator {
     private double hills(double x, double z) {
         double m = hillMask(x, z);
         if (m <= 0) return 0;
+        if (rolling) {
+            // broad swells: two smooth octaves, the second on a rotated grid so no lattice shows
+            double a = ValueNoise.sample(seed ^ 0xB0B5L, x / 95.0, z / 95.0);
+            double b = ValueNoise.sample(seed ^ 0xB0B6L, (x * 0.8 - z * 0.6) / 64.0, (x * 0.6 + z * 0.8) / 64.0);
+            double n = clamp01((a * 0.7 + b * 0.3 - 0.2) / 0.66);
+            return Math.min(20, m * 20 * n * n * (3 - 2 * n));
+        }
         double n = ValueNoise.fractal(seed ^ 0xB0B5L, x, z, 22);
         double b = clamp01((n - 0.38) / 0.5);
         return Math.min(20, m * 21 * b * b * (3 - 2 * b));
@@ -382,7 +448,7 @@ public final class PlainsGenerator extends LevelGenerator {
     private double terrain(int x, int z) {
         int span = S * R, rx = Math.floorDiv(x, span), rz = Math.floorDiv(z, span);
         boolean low = low(rx, rz);
-        double fade = clamp01((cliffDistance(x, z) - 3) / 10.0);
+        double fade = clamp01((cliffDistance(x, z) - 3) / (rolling ? 26.0 : 10.0));
         Hole hole = plan(rx, rz).hole;
         if (hole != null) fade = Math.min(fade, clamp01((Math.hypot(x + 0.5 - hole.x(), z + 0.5 - hole.z()) - hole.r() - 6) / 14.0));
         return (low ? -TERRACE_DROP : 0) + hills(x, z) * fade;
