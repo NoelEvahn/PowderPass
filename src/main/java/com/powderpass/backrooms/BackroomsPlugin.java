@@ -56,7 +56,8 @@ public class BackroomsPlugin extends JavaPlugin {
     private com.powderpass.backrooms.audio.AudioEngine audio;
     private com.powderpass.backrooms.vehicle.VehicleManager vehicles;
     private com.powderpass.backrooms.world.LiftService lifts;
-    private com.powderpass.backrooms.world.PoolSlides slides;
+    private com.powderpass.backrooms.world.SlideRides slides;
+    private com.powderpass.backrooms.display.AssetStore assets;
     private BukkitTask debugTask;
     private boolean consoleDebug;
 
@@ -94,7 +95,9 @@ public class BackroomsPlugin extends JavaPlugin {
         audio = new com.powderpass.backrooms.audio.AudioEngine(this, pack);
         vehicles = new com.powderpass.backrooms.vehicle.VehicleManager(this);
         lifts = new com.powderpass.backrooms.world.LiftService(this);
-        slides = new com.powderpass.backrooms.world.PoolSlides(this);
+        slides = new com.powderpass.backrooms.world.SlideRides(this);
+        assets = new com.powderpass.backrooms.display.AssetStore(this);
+        assets.load();
 
         var pm = getServer().getPluginManager();
         pm.registerEvents(new PlayerListener(this), this);
@@ -266,8 +269,12 @@ public class BackroomsPlugin extends JavaPlugin {
         return lifts;
     }
 
-    public com.powderpass.backrooms.world.PoolSlides slides() {
+    public com.powderpass.backrooms.world.SlideRides slides() {
         return slides;
+    }
+
+    public com.powderpass.backrooms.display.AssetStore assets() {
+        return assets;
     }
 
     public com.powderpass.backrooms.audio.AudioEngine audio() {

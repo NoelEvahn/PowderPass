@@ -26,11 +26,19 @@ public record Anim(int group, Type type, Vector3f axis, Vector3f pivot, float am
         /** randomly swap block with alt; amp = probability per update */
         BLINK,
         /** brightness flicker; amp = probability of dropping to dim */
-        FLICKER
+        FLICKER,
+        /** one-way translation along axis, amp blocks per period, then a jump back that is not interpolated (running water) */
+        FLOW
     }
 
     public boolean transforms() {
         return type != Type.BLINK && type != Type.FLICKER;
+    }
+
+    /** A FLOW animation that started a new cycle since the previous update: its jump back must not be interpolated. */
+    public boolean wrapped(long t, int interval) {
+        if (type != Type.FLOW) return false;
+        return Math.floor((t - interval) / (double) period + phase) != Math.floor(t / (double) period + phase);
     }
 
     /** Pose matrix at time t (ticks). Steps must stay under 180 degrees per update for clean interpolation. */
@@ -53,6 +61,10 @@ public record Anim(int group, Type type, Vector3f axis, Vector3f pivot, float am
             case SLIDE -> {
                 double tri = Math.abs(((t / (double) period + phase) % 1.0) * 2 - 1); // 1..0..1
                 float d = (float) (amp * (1 - tri));
+                m.translate(axis.x * d, axis.y * d, axis.z * d);
+            }
+            case FLOW -> {
+                float d = (float) (amp * (((t / (double) period + phase) % 1.0 + 1.0) % 1.0));
                 m.translate(axis.x * d, axis.y * d, axis.z * d);
             }
             case JITTER -> {

@@ -45,6 +45,9 @@ public final class ModelLibrary {
         }
         Model m = new Model();
         if (base.equals("d")) return Details.build(suffix, seed, m) ? m : null;
+        if (base.equals("creature")) return com.powderpass.backrooms.creature.CreatureModels.build(suffix);
+        Model slide = SlideModels.build(base, suffix, seed);
+        if (slide != null) return slide;
         switch (base) {
             // ---------------------------------------------------------------- Level 0
             case "chair" -> Shapes.chair(m, BIRCH_PLANKS, BROWN_WOOL);

@@ -125,7 +125,14 @@ Each level uses a **different generation rule**:
 - **Dry tile:** walking areas with raised platforms and free-standing screens.
 - **Bright rooms:** no walls at all, under a 22–28-block ceiling covered in light panels, often with a reflecting pool and a giant Greek head rising out of it.
 - **Long tall hallways:** 22 blocks high and 180 long, with 2×2 holes in the walls into small places: pools, steps down into sunken pools, busts, glowing alcoves.
-- **Massive halls:** 56 blocks high, with a gallery, a grand staircase, a half-sunk 25-block Greek head and a **water slide**. Step into the chute at the gallery to ride it down into the pool (the ride is steered; no fall damage).
+- **Massive halls:** 56 blocks high, with a gallery, a grand staircase, a half-sunk 25-block Greek head and a tiled **water slide**. Step into the chute at the gallery to ride it down into the pool.
+
+**Water slides everywhere** (`slide-chance`, `fun-slide-chance`; worlds made before them have none, see below). Every region and storey may get a slide, each one different (a seeded path of straights, banked turns, helixes and steep drops):
+- **Three kinds of chute**, built from display entities: an **open** half-pipe, a **half-covered** one under arched ribs, or a **fully enclosed** tube of tinted glass you can see out of. Most are wet, with water glints running down the chute (an animation that loops seamlessly) and drips; some run dry, which grips more and rides a little slower.
+- **Storey slides** start on a railed platform with a stair and **bore through walls and the floor slab** down to the storey below, landing in a pool cut into the floor with steps out. Some land in a **pocket**: a small walled pool room with one door, a place you only find by riding there. **Fun slides** start on a taller platform and land in a pool on the same floor.
+- Tunnels are dug only where they cannot let any water out, never through stair towers, transitions or massive halls; open stretches stand on quartz pillars; bored stretches are lit.
+- **The ride:** walk onto the top of the platform and you sit down in an inflatable ring that follows the chute exactly. Speed comes from the slope (gravity, less friction when wet or in a tube, air drag): drops and helixes speed you up, the runout slows you, and you are thrown out over the pool. Rides take about 4 s (fun slides) to 12 s (storey slides) and peak around 10-15 m/s. No fall, suffocation or wall damage while riding or for a few seconds after. A ride ends cleanly if you quit, die, change world or are teleported. Massive-hall slides use the same ride.
+- Previews: [`docs/previews/slides-*.png`](docs/previews).
 
 - **Canal courts** (`canal-chance`; new worlds only, see below): a promenade with an iron railing round a sunken canal, four 6-wide bridges to a two-storey pavilion in the middle. The pavilion has stepped arches (the bridges lead into them) and window slits, so you see the other sections across the water and can walk to every one of them. Inside: a cloister, a pool court with the Greek head, and a stair up to a roof terrace that looks down into the court. Flights of steps climb out of the canal, so falling in is never a trap. Previews: [`docs/previews/canal-*.png`](docs/previews).
 
@@ -296,38 +303,45 @@ All light effects are **client-side only** (`sendBlockChange` on the invisible `
 
 ## Commands
 
+Every group has the same shape: `list`, then actions. Wherever a command acts on players, `[targets]` is a name or a vanilla selector (`@a`, `@s`, `@p`, `@r`, with filters such as `@a[distance=..20]`); left out, it means you. `/br` is an alias, and `/backrooms help <group>` shows one group in full. Everything that names a player or level also works from the console.
+
 | Command | Permission | Notes |
 |---|---|---|
-| `/backrooms help` | `backrooms.use` | Player and admin help |
-| `/backrooms enter [player]` | `backrooms.use` (self, if `entry.allow-self-enter`) · `backrooms.admin.teleport` (others) | Safe entry into Level 0; saves the return point |
-| `/backrooms leave [player]` | `backrooms.admin.teleport` (or self, if `entry.allow-self-leave`) | Back to the saved return point or the fallback |
-| `/backrooms level <0\|1\|poolrooms\|4\|plains> [player]` | `backrooms.admin.teleport` | Admin spawn if set, otherwise the safe cell nearest the origin |
+| `/backrooms help [group]` | — | Generated from the command tree, showing only what you may use |
+| `/backrooms enter [targets]` | `backrooms.use` (self, if `entry.allow-self-enter`) · `backrooms.admin.teleport` (others) | Safe entry into Level 0; saves the return point |
+| `/backrooms leave [targets]` | `backrooms.admin.teleport` (or self, if `entry.allow-self-leave`) | Back to the saved return point or the fallback |
+| `/backrooms goto <level> [targets]` | `backrooms.admin.teleport` | Admin spawn point if set, otherwise the safe cell nearest the origin |
 | `/backrooms levels` | `backrooms.use` | The five levels and their status |
-| `/backrooms setspawn [level]` | `backrooms.admin.teleport` | Stand in the level; the spot is validated as safe |
-| `/backrooms status` | `backrooms.admin.debug` | Worlds, players, loaded chunks, threats per type, display counts, generator info, average tick cost |
-| `/backrooms entity list` | `backrooms.admin.entities` | Creature catalogue |
-| `/backrooms entity spawn <type> [amount]` | `backrooms.admin.entities` | Uses the natural placement rules, with a fallback in front of you |
-| `/backrooms entity clear [radius\|level [level]]` | `backrooms.admin.entities` | Clearing a whole level needs `/backrooms confirm` within 15 s |
-| `/backrooms skinwalker <player>` | `backrooms.admin.entities` | A skinwalker takes that player now, with or without company (alone, it drops the disguise at once and carries the body under its true form). Kill it to free them; the player must be inside the Backrooms |
-| `/backrooms event list` | `backrooms.admin.events` | |
-| `/backrooms event trigger <event> [level]` | `backrooms.admin.events` | For yourself, or for every player in the named level |
+| `/backrooms audio list [filter]` | `backrooms.admin.audio` | Every sound id |
+| `/backrooms audio play <sound> [targets] [volume] [pitch]` | `backrooms.admin.audio` | e.g. `/br audio play knock.distant @a 1 0.8` |
+| `/backrooms audio stop [targets]` | `backrooms.admin.audio` | Stops what the plugin is playing to them |
+| `/backrooms audio status \| reload \| debug` | `backrooms.admin.audio` | Engine and pack state · re-check the pack URL and restart · action-bar overlay |
+| `/backrooms assets list [category \| filter]` | `backrooms.admin.assets` | The catalogue (about 130 assets in 8 categories: pool, slides, lights, office, garage, lobby, plains, creatures) |
+| `/backrooms assets spawn <asset> [x y z] [yaw] [seed]` | `backrooms.admin.assets` | Where you look, or at coordinates (`~` allowed). Saved in `data/assets.yml`, works in any world. Suffixes: `panel_light:flicker`, `floatie_ring:2`, `slide:enclosed:dry:12`, `creature:smiler` |
+| `/backrooms assets remove [radius \| all]` | `backrooms.admin.assets` | Placed assets near you (default 3 blocks); `all` asks for `/backrooms confirm` |
+| `/backrooms assets info` | `backrooms.admin.assets` | What is near you, with the command that spawns a copy of it |
+| `/backrooms slide list [radius] \| info` | `backrooms.admin.slides` | Slides starting near you: generated, massive-hall and placed ones |
+| `/backrooms slide ride [targets] [number]` | `backrooms.admin.slides` | Puts players on the nearest slide (or number n of the list) |
+| `/backrooms creature list` | `backrooms.admin.entities` | Creature catalogue |
+| `/backrooms creature spawn <type> [amount] [targets]` | `backrooms.admin.entities` | Natural placement rules near each target, with a fallback in front of them |
+| `/backrooms creature clear [radius \| level [level]]` | `backrooms.admin.entities` | Clearing a whole level needs `/backrooms confirm` within 15 s |
+| `/backrooms creature skinwalker <targets>` | `backrooms.admin.entities` | A skinwalker takes them now, with or without company (alone, it drops the disguise at once and carries the body under its true form). Kill it to free them |
+| `/backrooms event list` · `event trigger <event> [targets \| level]` | `backrooms.admin.events` | For players, or for everyone in a level |
+| `/backrooms spawnpoint set [level] \| clear <level> \| show [level]` | `backrooms.admin.teleport` | Where `goto` lands; `set` checks the spot is safe |
+| `/backrooms give <item> [targets] [amount]` | `backrooms.admin` | `almond_water`, `flashlight`, `battery`, `ration`, `note` |
+| `/backrooms status` | `backrooms.admin.debug` | Worlds, players, chunks, threats, displays, placed assets, riders, tick cost |
+| `/backrooms debug [on\|off]` | `backrooms.admin.debug` | Action-bar overlay (level, cell, zone, nearest transition, light, sanity) plus a console log |
 | `/backrooms reload` | `backrooms.admin.reload` | Restarts services without unloading worlds or duplicating schedulers |
-| `/backrooms debug <on\|off>` | `backrooms.admin.debug` | Action-bar overlay (level, cell, zone, nearest transition, light, sanity) plus a console log |
-| `/backrooms give <almond_water\|flashlight\|battery\|ration\|note> [player]` | `backrooms.admin` | For testing |
-| `/backrooms audio status` | `backrooms.admin.audio` | Engine state, sound count, pack validity, SHA-1, URL and whether it answers, players with the pack loaded, your own pack status |
-| `/backrooms audio reload` | `backrooms.admin.audio` | Re-extracts and re-validates the pack if needed, re-checks the URL, restarts the engine |
-| `/backrooms audio test <sound> [player]` | `backrooms.admin.audio` | Plays one sound id (tab-completes every id) in front of the player, in their current room profile |
-| `/backrooms audio debug` | `backrooms.admin.audio` | Action-bar overlay: acoustic profile, underwater, active loops, seconds to the next event, last event |
 | `/backrooms confirm` | — | Confirms a pending destructive action |
 
-Commands work from the console wherever a target player or level is given. Alias: `/br`.
+**Renamed in this version** (the old forms still work, hidden, for one release): `level` → `goto`, `setspawn` → `spawnpoint set`, `entity …` → `creature …`, `skinwalker` → `creature skinwalker`, `audio test <sound> [player]` → `audio play <sound> [targets]`.
 
 **Permission defaults:**
 
 | Permission | Default |
 |---|---|
 | `backrooms.use` | everyone |
-| `backrooms.admin` and its children (`.teleport`, `.entities`, `.events`, `.debug`, `.reload`, `.audio`, plus `backrooms.bypass.commands`) | op |
+| `backrooms.admin` and its children (`.teleport`, `.entities`, `.events`, `.debug`, `.reload`, `.audio`, `.assets`, `.slides`, plus `backrooms.bypass.commands`) | op |
 | `backrooms.bypass.protection` | nobody (build inside the Backrooms) |
 | `backrooms.bypass.skinwalker` | op (can still run commands while being worn) |
 
@@ -341,7 +355,7 @@ Commands work from the console wherever a target player or level is given. Alias
 | `world-prefix` | World folder prefix |
 | `levels.<level>.enabled` | Load this level's world. A disabled level's transitions show "the way is sealed". Players left in a disabled level are sent home when they join |
 | `levels.<level>.biome` | Biome key for ambient particles, sounds and water colour |
-| `levels.<level>.generation.*` | **Locked** per level when its world is created. Each level has its own keys: Level 0 has hall, thick-wall, repeat and loop chances plus `poolrooms-chance` (how rare the seam onward is); the Habitable Zone has `supply-room-chance`; the Poolrooms have water ratio, screens and the massive-hall, hallway, bright-room and `canal-chance` chances (`canal-chance` is absent from the locked settings of worlds made before it existed, which counts as 0, so their layout never changes; delete the world to get canal courts); Level 4 has bridge, dark-floor and `lift-stray-chance` (default 0.10); the Plains have lone-house, hamlet, giant and sinkhole chances. Every level past Level 0 also has `back-chance` (the way back), plus landmark chance and decoration density |
+| `levels.<level>.generation.*` | **Locked** per level when its world is created. Each level has its own keys: Level 0 has hall, thick-wall, repeat and loop chances plus `poolrooms-chance` (how rare the seam onward is); the Habitable Zone has `supply-room-chance`; the Poolrooms have water ratio, screens and the massive-hall, hallway, bright-room, `canal-chance`, `slide-chance` and `fun-slide-chance` chances (the last three are absent from the locked settings of worlds made before they existed, which counts as 0, so their layout never changes; delete the world to get them); Level 4 has bridge, dark-floor and `lift-stray-chance` (default 0.10); the Plains have lone-house, hamlet, giant and sinkhole chances. Every level past Level 0 also has `back-chance` (the way back), plus landmark chance and decoration density |
 | `entry.allow-self-enter` / `allow-self-leave` / `allowed-worlds` / `spread-radius` / `title` | Entry rules |
 | `entry.fall.enabled` / `entry.fall.height` | Enter by falling from this many blocks above the roof (default 90); off = instant teleport |
 | `entry.suffocation.enabled` / `entry.suffocation.seconds` | The sand/gravel suffocation trigger and how long it takes (default 2 s). It honours `allowed-worlds` and needs `backrooms.use` |

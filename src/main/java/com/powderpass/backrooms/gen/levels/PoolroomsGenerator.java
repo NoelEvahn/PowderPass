@@ -34,7 +34,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *   2 x 2 holes leading into small places (alcoves, pools, steps down into sunken pools, busts, glowing niches).</li>
  *   <li><b>Massive halls</b> (main + upper storey): a 56-block-high hall with a gallery at the upper floor, a grand
  *   staircase up to it, a giant Greek head in its own pool and a working water slide from the gallery down into
- *   the big pool ({@link #slideStartingAt}, ridden by {@code world.PoolSlides}).</li>
+ *   the big pool ({@link #slideStartingAt}, ridden with {@code world.SlideRides}).</li>
  *   <li><b>Canal courts</b> (off in worlds made before they existed, see {@code canal-chance}): a railed promenade
  *   round a sunken canal, four bridges to a two-storey pavilion in the middle with arched passages and window slits
  *   to look through, a cloister, a statue court and a roof terrace up a stair, so you see the other sections across
@@ -73,6 +73,7 @@ public final class PoolroomsGenerator extends LevelGenerator {
     private static final B BARS = B.of(Material.IRON_BARS);
 
     private final Map<Long, Plan> plans = new ConcurrentHashMap<>();
+    private final PoolSlidePlanner slides = new PoolSlidePlanner(this);
 
     public PoolroomsGenerator(long seed, GenSettings gs) {
         super(Level.POOLROOMS, seed, gs, 12, 5, 3, FLOORS.clone(), BOTTOM, ROOF, 0.0, 0.0);
@@ -90,6 +91,22 @@ public final class PoolroomsGenerator extends LevelGenerator {
     @Override
     public String biomeKey() {
         return "minecraft:warm_ocean";
+    }
+
+    GenSettings gs() {
+        return gs;
+    }
+
+    static int floorY(int f) {
+        return FLOORS[f];
+    }
+
+    int bottom() {
+        return BOTTOM;
+    }
+
+    int roof() {
+        return ROOF;
     }
 
     private static int y(int y) {
@@ -249,7 +266,12 @@ public final class PoolroomsGenerator extends LevelGenerator {
      * A water slide: the deterministic path a rider follows (feet positions, one per chute block, then two exit
      * points over the landing pool) and the two chute blocks whose feet space starts the ride.
      */
-    public record Slide(double[][] points, int[][] start, double[] exitDir, int landingWaterY) {
+    public record Slide(double[][] points, int[][] start, double[] exitDir, int landingWaterY, boolean wet, String style) {
+        /** A massive hall's block-built chute: always wet, no display style. */
+        public Slide(double[][] points, int[][] start, double[] exitDir, int landingWaterY) {
+            this(points, start, exitDir, landingWaterY, true, null);
+        }
+
         public double length() {
             double l = 0;
             for (int i = 1; i < points.length; i++) {
@@ -323,11 +345,19 @@ public final class PoolroomsGenerator extends LevelGenerator {
     /** The slide whose start the feet block (x,y,z) is in, or null. */
     public Slide slideStartingAt(int x, int y, int z) {
         Plan p = planAt(x, z);
-        if (p.hall == null) return null;
-        for (int[] s : p.hall.slide.start()) {
-            if (s[0] == x && s[2] == z && y >= s[1] && y <= s[1] + 1) return p.hall.slide;
+        if (p.hall != null) {
+            for (int[] s : p.hall.slide.start()) {
+                if (s[0] == x && s[2] == z && y >= s[1] && y <= s[1] + 1) return p.hall.slide;
+            }
         }
-        return null;
+        return slides.startingAt(x, y, z);
+    }
+
+    /** Every generated slide of a region (not the massive hall's), for previews, tests and /backrooms slide. */
+    public List<Slide> generatedSlides(int rx, int rz) {
+        List<Slide> out = new ArrayList<>();
+        for (PoolSlidePlanner.Placed p : slides.region(rx, rz)) out.add(p.slide);
+        return out;
     }
 
     /** The slide of a region, or null (one per massive hall). */
@@ -408,6 +438,13 @@ public final class PoolroomsGenerator extends LevelGenerator {
 
     /** The whole column at (x,z), bottom to roof: index y - bottomY. */
     public B[] column(int x, int z) {
+        B[] col = rawColumn(x, z);
+        slides.apply(x, z, col);
+        return col;
+    }
+
+    /** The column before any slide is bored through it (slides are placed against this). */
+    B[] rawColumn(int x, int z) {
         int cx = cellOf(x), cz = cellOf(z);
         Cell[] cells = {cell(LOW, cx, cz), cell(MID, cx, cz), cell(HIGH, cx, cz)};
         B[] col = new B[H];
@@ -1054,6 +1091,7 @@ public final class PoolroomsGenerator extends LevelGenerator {
         for (int u = c.u0; u <= c.u1; u++) {
             for (int v = c.v0; v <= c.v1; v++) {
                 column(c.wx(u), c.wz(v), col, p, cells);
+                slides.apply(c.wx(u), c.wz(v), col);
                 for (int i = 0; i < H; i++) c.set(u, BOTTOM + i, v, col[i]);
             }
         }
@@ -1110,6 +1148,7 @@ public final class PoolroomsGenerator extends LevelGenerator {
 
     @Override
     protected void cellDecor(int floor, int cx, int cz, List<DecorSpec> out) {
+        if (floor == LOW) slides.decor(cx, cz, out); // slides span storeys: their pieces are listed once per cell
         Plan p = plan(Math.floorDiv(cx, R), Math.floorDiv(cz, R));
         Zone zn = p.zone[floor];
         long h = ch(floor, cx, cz, 0xDEC1);

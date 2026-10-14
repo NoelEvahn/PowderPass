@@ -71,6 +71,31 @@ class ModelCoverageTest {
         System.out.println("decoration models in use: " + seen.size() + " largest=" + biggest + "(" + maxParts + ")");
     }
 
+    /** Everything /backrooms assets offers builds, and so does every piece of a generated slide. */
+    @Test
+    void everyAssetAndSlidePieceBuilds() {
+        for (String id : com.powderpass.backrooms.display.AssetCatalog.all()) {
+            Model m = ModelLibrary.build(id, 4242L);
+            assertNotNull(m, "asset " + id + " does not build");
+            assertTrue(m.entityCount() > 0, "asset " + id + " is empty");
+        }
+        LevelGenerator g = new com.powderpass.backrooms.gen.levels.PoolroomsGenerator(99,
+                new GenSettings(Map.of("slide-chance", 0.6, "fun-slide-chance", 0.5)));
+        int pieces = 0;
+        for (int cx = -15; cx < 15; cx++) {
+            for (int cz = -15; cz < 15; cz++) {
+                for (DecorSpec d : g.decorations(cx, cz)) {
+                    if (!d.model.startsWith("slide_seg")) continue;
+                    Model m = ModelLibrary.build(d.model, d.seed);
+                    assertNotNull(m, d.model);
+                    assertTrue(m.entityCount() <= 40, d.model + " uses " + m.entityCount() + " entities");
+                    pieces++;
+                }
+            }
+        }
+        assertTrue(pieces > 20, "expected slide pieces near the origin, found " + pieces);
+    }
+
     /** Paint real chunks and resolve every block key through the server's block-data parser. */
     @Test
     void everyGeneratorBlockStateParses() {

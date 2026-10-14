@@ -36,6 +36,8 @@ levels:
       hallway-chance: 0.06     # per region: a long tall hallway with 2x2 holes into small rooms
       bright-room-chance: 0.12 # per region: a wall-less room under a ceiling of light panels
       canal-chance: 0.10       # per region: a canal court, a railed promenade round a canal with bridges to an arched pavilion
+      slide-chance: 0.25       # per region and storey: a water slide that bores down to the floor below (some land in a hidden pocket room)
+      fun-slide-chance: 0.2    # per region and storey: a shorter slide from a tall platform into a pool on the same floor
       screen-chance: 0.2       # free-standing tile screens (always with an opening)
       back-chance: 0.4         # per district: the drain back down to Level 0
       landmark-chance: 0.5

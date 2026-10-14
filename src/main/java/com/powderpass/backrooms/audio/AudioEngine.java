@@ -542,14 +542,25 @@ public final class AudioEngine implements Listener {
 
     /** Play one sound id to a player now (test command). Returns a description of what was sent. */
     public String test(Player p, String id) {
+        return play(p, id, 1f, 1f);
+    }
+
+    /** Play one sound id to a player (positional ones a few blocks in front of them). Returns what was played or why not. */
+    public String play(Player p, String id, float volume, float pitch) {
         SoundIndex.Def def = index.def(id);
         String event = def != null ? index.resolve(id, states.containsKey(p.getUniqueId()) ? states.get(p.getUniqueId()).profile : null, false)
                 : index.has(id) ? id : null;
         if (event == null) return "unknown sound id '" + id + "'";
         Location at = def != null && def.positional() ? p.getLocation().add(p.getLocation().getDirection().multiply(4)).add(0, 1, 0) : p.getLocation();
-        play(p, at, event, def != null && def.category().equals("music") ? SoundCategory.RECORDS : SoundCategory.AMBIENT, 1f, 1f,
+        play(p, at, event, def != null && def.category().equals("music") ? SoundCategory.RECORDS : SoundCategory.AMBIENT, volume, pitch,
                 def == null ? 40 : def.durationTicks());
         return "backrooms:" + event + (pack.loaded(p) ? "" : " (your client has not loaded the pack, so you will hear nothing)");
+    }
+
+    /** Stop everything this plugin is playing to a player (they keep hearing it again as the soundscape moves on). */
+    public void stop(Player p) {
+        silence(p);
+        p.stopAllSounds();
     }
 
     public boolean toggleDebug(Player p) {

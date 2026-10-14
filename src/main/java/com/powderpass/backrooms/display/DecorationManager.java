@@ -58,6 +58,7 @@ public final class DecorationManager implements Listener {
 
     private static final class WorldState {
         final World world;
+        /** null for an ordinary world that only holds placed assets */
         final Level level;
         final LevelGenerator gen;
         final Map<Long, List<Instance>> active = new HashMap<>();
@@ -98,6 +99,10 @@ public final class DecorationManager implements Listener {
         public Location anchor() {
             return anchor;
         }
+
+        public DecorSpec spec() {
+            return spec;
+        }
     }
 
     public DecorationManager(BackroomsPlugin plugin) {
@@ -113,6 +118,12 @@ public final class DecorationManager implements Listener {
         worlds.clear();
         for (Map.Entry<Level, World> e : plugin.worlds().worlds().entrySet()) {
             worlds.put(e.getValue().getUID(), new WorldState(e.getValue(), e.getKey(), plugin.worlds().generator(e.getKey())));
+        }
+        if (plugin.assets() != null) {
+            for (String name : plugin.assets().worlds()) {
+                World w = plugin.getServer().getWorld(name);
+                if (w != null) ensure(w);
+            }
         }
         if (!cfg().displaysEnabled) {
             return;
@@ -135,6 +146,11 @@ public final class DecorationManager implements Listener {
         interactions.clear();
     }
 
+    /** Watch a world (an ordinary one holds only placed assets). */
+    private WorldState ensure(World w) {
+        return worlds.computeIfAbsent(w.getUID(), k -> new WorldState(w, null, null));
+    }
+
     // ------------------------------------------------------------------ activation
 
     private static long key(int cx, int cz) {
@@ -143,7 +159,7 @@ public final class DecorationManager implements Listener {
 
     private void activationPass() {
         for (WorldState ws : worlds.values()) {
-            int r = ws.level.outdoor() ? cfg().outdoorActivationRadius : cfg().activationRadius;
+            int r = ws.level != null && ws.level.outdoor() ? cfg().outdoorActivationRadius : cfg().activationRadius;
             Set<Long> desired = new HashSet<>();
             Set<Long> keep = new HashSet<>();
             for (Player p : ws.world.getPlayers()) {
@@ -196,7 +212,21 @@ public final class DecorationManager implements Listener {
         List<Instance> out = new ArrayList<>();
         int used = 0, details = 0;
         float view = cfg().viewRange;
+        // placed assets first: an admin put them there, so only the world budget applies
+        if (plugin.assets() != null) {
+            for (DecorSpec spec : plugin.assets().specs(ws.world, cx, cz)) {
+                Instance inst = spawnSpec(ws, spec, view);
+                if (inst != null) out.add(inst);
+            }
+        }
+        if (ws.gen == null) return out;
         for (DecorSpec spec : ws.gen.decorations(cx, cz)) {
+            if (spec.model.startsWith("slide_seg")) {
+                // a slide must never be missing pieces, so its chute ignores the per-chunk budget
+                Instance inst = spawnSpec(ws, spec, view);
+                if (inst != null) out.add(inst);
+                continue;
+            }
             if (spec.tier > 0 && (!keepDetail(ws.gen.level, spec) || details >= cfg().detailMaxPerChunk)) continue;
             if (!hidden.isEmpty() && hidden.contains(hiddenKey(ws.world, spec.key()))) continue;
             Model model;
@@ -222,6 +252,66 @@ public final class DecorationManager implements Listener {
             out.add(inst);
         }
         return out;
+    }
+
+    /** Build and spawn one spec within the world budget only. */
+    private Instance spawnSpec(WorldState ws, DecorSpec spec, float view) {
+        Model model;
+        try {
+            model = ModelLibrary.build(spec.model, spec.seed);
+        } catch (RuntimeException ex) {
+            plugin.debug("model " + spec.model + " failed: " + ex);
+            return null;
+        }
+        if (model == null || ws.entities + model.entityCount() > cfg().maxPerWorld) return null;
+        Instance inst = spawnInstance(ws, spec, model, new Location(ws.world, spec.x, spec.y, spec.z, 0, 0), model.viewRange > 0 ? model.viewRange : view);
+        ws.entities += model.entityCount();
+        return inst;
+    }
+
+    /** A just-placed asset: spawned now if its chunk is active (otherwise it comes with the chunk). */
+    public void placed(World w, DecorSpec spec) {
+        WorldState ws = ensure(w);
+        if (tasks.isEmpty()) return;
+        List<Instance> list = ws.active.get(key(Math.floorDiv((int) Math.floor(spec.x), 16), Math.floorDiv((int) Math.floor(spec.z), 16)));
+        if (list == null) return;
+        Instance inst = spawnSpec(ws, spec, cfg().viewRange);
+        if (inst != null) list.add(inst);
+    }
+
+    /** A removed asset: its entities go now. */
+    public void unplaced(World w, DecorSpec spec) {
+        WorldState ws = worlds.get(w.getUID());
+        if (ws == null) return;
+        List<Instance> list = ws.active.get(key(Math.floorDiv((int) Math.floor(spec.x), 16), Math.floorDiv((int) Math.floor(spec.z), 16)));
+        if (list == null) return;
+        Iterator<Instance> it = list.iterator();
+        while (it.hasNext()) {
+            Instance i = it.next();
+            if (i.spec.key().equals(spec.key()) && i.spec.seed == spec.seed) {
+                ws.entities -= remove(i);
+                it.remove();
+                return;
+            }
+        }
+    }
+
+    /** The decoration (generated or placed) whose anchor is nearest to a point, within {@code radius}, or null. */
+    public Instance nearest(Location l, double radius) {
+        WorldState ws = worlds.get(l.getWorld().getUID());
+        if (ws == null) return null;
+        Instance best = null;
+        double bd = radius * radius;
+        for (List<Instance> list : ws.active.values()) {
+            for (Instance i : list) {
+                double d = i.anchor.distanceSquared(l);
+                if (d < bd) {
+                    bd = d;
+                    best = i;
+                }
+            }
+        }
+        return best;
     }
 
     private Instance spawnInstance(WorldState ws, DecorSpec spec, Model model, Location anchor, float range) {
@@ -383,8 +473,10 @@ public final class DecorationManager implements Listener {
                 Matrix4f full = new Matrix4f(inst.base);
                 if (pose != null) full.mul(pose);
                 full.mul(p.local);
+                boolean jump = false;
+                for (Anim a : m.anims) if (a.group() == p.group && a.wrapped(tick, interval)) jump = true;
                 d.setInterpolationDelay(0);
-                d.setInterpolationDuration(interval);
+                d.setInterpolationDuration(jump ? 0 : interval);
                 d.setTransformationMatrix(full);
             }
             for (Anim a : m.anims) {
@@ -578,6 +670,7 @@ public final class DecorationManager implements Listener {
                         "<gray><italic>\"...almond water. Find the water...\""};
                 p.sendMessage(BackroomsConfig.mm(lines[ThreadLocalRandom.current().nextInt(lines.length)]));
             }
+            case "slide" -> plugin.slides().rideAsset(p, inst.spec, w);
             case "vending" -> {
                 w.playSound(inst.anchor, Sound.BLOCK_CHEST_LOCKED, SoundCategory.BLOCKS, 0.8f, 0.6f);
                 if (plugin.sessions().tryVend(p)) {

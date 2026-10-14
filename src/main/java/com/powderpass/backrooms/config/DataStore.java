@@ -116,6 +116,10 @@ public final class DataStore {
         return new double[]{yaml.getDouble(p + ".x"), yaml.getDouble(p + ".y"), yaml.getDouble(p + ".z"), yaml.getDouble(p + ".yaw"), yaml.getDouble(p + ".pitch")};
     }
 
+    public void clearSpawn(Level l) {
+        yaml.set("spawns." + l.key(), null);
+    }
+
     public void setSpawn(Level l, double x, double y, double z, float yaw, float pitch) {
         String p = "spawns." + l.key();
         yaml.set(p + ".x", x);
