@@ -1,10 +1,12 @@
 package com.powderpass.backrooms.display;
 
+import com.powderpass.backrooms.gen.SlideGeometry;
 import com.powderpass.backrooms.gen.SlidePath;
 import com.powderpass.backrooms.util.Rng;
 import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
+import org.joml.Matrix4f;
 import org.joml.Vector3f;
 
 import java.util.Locale;
@@ -20,16 +22,10 @@ import static org.bukkit.Material.*;
  *   cuts long slides into pieces that each live in one chunk), origin at point i0;</li>
  *   <li>{@code slide_ride}: the inflatable ring a rider sits in.</li>
  * </ul>
- * Cross-section, in a piece's frame (+Z downhill, +Y up): a bed 1.1 wide, two side walls leaning out (open, half),
- * arched ribs every third block (half), or upright tinted glass walls and a roof (enclosed). Wet slides carry
- * glints that run downhill ({@link Anim.Type#FLOW}) and drip and splash.
+ * The shape comes from {@link SlideGeometry}: solid walls that curve up and out (open, half-pipe) or a solid tube
+ * lit from inside (enclosed). Wet slides carry a film of water and foam that runs downhill ({@link Anim.Type#FLOW}).
  */
 public final class SlideModels {
-    private static final Material[] SHELL = {LIGHT_BLUE_CONCRETE, YELLOW_CONCRETE, ORANGE_CONCRETE, LIME_CONCRETE, MAGENTA_CONCRETE, CYAN_CONCRETE};
-    private static final Material[] GLASS = {LIGHT_BLUE_STAINED_GLASS, YELLOW_STAINED_GLASS, ORANGE_STAINED_GLASS, LIME_STAINED_GLASS,
-            MAGENTA_STAINED_GLASS, CYAN_STAINED_GLASS};
-    /** Water glints travel this far per cycle and sit this far apart, so the jump back is invisible. */
-    private static final double FLOW_STEP = 2.0;
     private static final int FLOW_TICKS = 8;
 
     private SlideModels() {
@@ -101,91 +97,47 @@ public final class SlideModels {
     // ------------------------------------------------------------------ the chute
 
     /**
-     * Pieces from point i0 to i1 in the slide's own space. Straight, evenly sloped stretches become one long piece.
-     * {@code ground} = local height of the floor for support legs (NaN = no legs; the generator builds real ones).
+     * Points i0..i1 as display parts, from {@link SlideGeometry} (the same shapes the previews draw). Foam of each
+     * straight piece is one animation group that flows along that piece.
      */
     private static void chute(Model m, SlidePath p, int i0, int i1, double ground) {
-        int colour = Rng.pick(Rng.hash(p.seed, 77), SHELL.length);
-        int group = 1;
-        int i = i0;
-        while (i < i1) {
-            int j = i + 1;
-            while (j < i1 && j - i < 8 && same(p, i, j)) j++;
-            group = piece(m, p, i, j, colour, group);
-            i = j;
-        }
-        if (!Double.isNaN(ground)) {
-            for (int k = Math.max(i0, 2); k <= i1; k += 6) {
-                double[] q = p.pts[k];
-                double h = q[1] - 0.1 - ground;
-                if (h > 1.2) m.box(WHITE_CONCRETE, q[0] - 0.09, ground, q[2] - 0.09, 0.18, h, 0.18);
+        Material shell = Material.valueOf(SlideGeometry.colour(p).toUpperCase(java.util.Locale.ROOT) + "_CONCRETE");
+        boolean tube = p.style == SlidePath.Style.ENCLOSED;
+        java.util.Map<Integer, double[]> flows = new java.util.TreeMap<>();
+        for (SlideGeometry.Box b : SlideGeometry.build(p, i0, i1, ground)) {
+            Material mat = switch (b.role()) {
+                case SHELL -> shell;
+                case BED -> p.wet ? WHITE_CONCRETE : shell;
+                case WATER -> LIGHT_BLUE_STAINED_GLASS;
+                default -> WHITE_CONCRETE;
+            };
+            m.group(b.role() == SlideGeometry.Role.FOAM ? b.piece() + 1 : 0);
+            Part part = m.boxM(mat, matrix(b));
+            if (tube && (b.role() == SlideGeometry.Role.SHELL || b.role() == SlideGeometry.Role.BED)) part.glow(11); // lit inside, so riders can see the tube
+            if (b.role() == SlideGeometry.Role.FOAM) {
+                part.glow(13);
+                flows.put(b.piece() + 1, b.f());
             }
         }
-    }
-
-    /** Does the step from k to k+1 run the same way as the step from i to i+1 (and lean the same)? */
-    private static boolean same(SlidePath p, int i, int k) {
-        double[] a = dir(p, i), b = dir(p, k);
-        return a[0] * b[0] + a[1] * b[1] + a[2] * b[2] > 0.9995 && Math.abs(p.bank[i] - p.bank[k]) < 1;
-    }
-
-    private static double[] dir(SlidePath p, int i) {
-        double[] a = p.pts[i], b = p.pts[i + 1];
-        double dx = b[0] - a[0], dy = b[1] - a[1], dz = b[2] - a[2], l = Math.sqrt(dx * dx + dy * dy + dz * dz);
-        return new double[]{dx / l, dy / l, dz / l};
-    }
-
-    private static int piece(Model m, SlidePath p, int a, int b, int colour, int group) {
-        double[] s = p.pts[a], e = p.pts[b];
-        double dx = e[0] - s[0], dy = e[1] - s[1], dz = e[2] - s[2];
-        double len = Math.sqrt(dx * dx + dy * dy + dz * dz);
-        double yaw = Math.toDegrees(Math.atan2(dx, dz)), pitch = Math.toDegrees(Math.asin(-dy / len));
-        Material shell = SHELL[colour], glass = GLASS[colour];
-        m.push().translate(s[0], s[1], s[2]).rotate('y', yaw).rotate('x', pitch).rotate('z', -p.bank[a]);
-        double l = len + 0.04; // a hair of overlap hides the joints
         m.group(0);
-        m.box(p.wet ? shell : WHITE_CONCRETE, -0.55, -0.1, -0.02, 1.1, 0.1, l);
-        switch (p.style) {
-            case ENCLOSED -> {
-                m.box(glass, -0.63, -0.1, -0.02, 0.08, 1.65, l);
-                m.box(glass, 0.55, -0.1, -0.02, 0.08, 1.65, l);
-                m.box(glass, -0.63, 1.55, -0.02, 1.26, 0.08, l);
-            }
-            case HALF, OPEN -> {
-                m.push().translate(-0.55, -0.05, 0).rotate('z', 24);
-                m.box(shell, -0.08, 0, -0.02, 0.08, 0.62, l);
-                m.pop();
-                m.push().translate(0.55, -0.05, 0).rotate('z', -24);
-                m.box(shell, 0, 0, -0.02, 0.08, 0.62, l);
-                m.pop();
-                if (p.style == SlidePath.Style.HALF) {
-                    for (int k = a; k < b; k++) {
-                        if (k % 3 != 0) continue;
-                        double z = (k - a) * len / (b - a);
-                        m.box(WHITE_CONCRETE, -0.8, 0, z, 0.08, 1.7, 0.12);
-                        m.box(WHITE_CONCRETE, 0.72, 0, z, 0.08, 1.7, 0.12);
-                        m.box(WHITE_CONCRETE, -0.8, 1.7, z, 1.6, 0.1, 0.12);
-                    }
-                }
-            }
+        for (java.util.Map.Entry<Integer, double[]> e : flows.entrySet()) {
+            double[] f = e.getValue();
+            m.anim(Anim.Type.FLOW, e.getKey(), new Vector3f((float) f[0], (float) f[1], (float) f[2]), Model.v(0, 0, 0),
+                    SlideGeometry.FOAM_STEP, FLOW_TICKS);
         }
-        if (p.wet) {
-            // glints running downhill: FLOW moves them FLOW_STEP along the piece, then they jump back unseen
-            int n = Math.max(1, (int) Math.round(len / FLOW_STEP));
-            m.group(group);
-            for (int k = 0; k < n; k++) {
-                double x = ((Rng.pick(Rng.hash(p.seed, a, k), 5)) - 2) * 0.16;
-                m.box(WHITE_STAINED_GLASS, x - 0.05, 0.005, k * FLOW_STEP, 0.1, 0.012, 0.45).glow(12);
-            }
-            m.group(0);
-            m.pop();
-            m.anim(Anim.Type.FLOW, group, new Vector3f((float) (dx / len), (float) (dy / len), (float) (dz / len)), Model.v(0, 0, 0),
-                    FLOW_STEP, FLOW_TICKS);
-            if (len > 2 && (a & 3) == 0) m.emit(Particle.FALLING_WATER, null, s[0] + dx / 2, s[1] + dy / 2 - 0.2, s[2] + dz / 2, 1, 0.3, 0, 12, 0.5);
-            return group + 1;
+        if (p.wet && i1 - i0 >= 3) {
+            double[] mid = p.pts[(i0 + i1) / 2];
+            m.emit(Particle.FALLING_WATER, null, mid[0], mid[1] - 0.2, mid[2], 1, 0.3, 0, 12, 0.5);
         }
-        m.pop();
-        return group;
+    }
+
+    /** The unit block stretched and turned into a geometry box. */
+    private static Matrix4f matrix(SlideGeometry.Box b) {
+        double[] r = b.r(), u = b.u(), f = b.f(), o = b.o(), lo = b.lo(), hi = b.hi();
+        return new Matrix4f((float) r[0], (float) r[1], (float) r[2], 0, (float) u[0], (float) u[1], (float) u[2], 0,
+                (float) f[0], (float) f[1], (float) f[2], 0, (float) o[0], (float) o[1], (float) o[2], 1)
+                .translate((float) lo[0], (float) lo[1], (float) lo[2])
+                .scale((float) (hi[0] - lo[0]), (float) (hi[1] - lo[1]), (float) (hi[2] - lo[2]));
     }
 
     // ------------------------------------------------------------------ the ring a rider sits in

@@ -353,6 +353,16 @@ public final class PoolroomsGenerator extends LevelGenerator {
         return slides.startingAt(x, y, z);
     }
 
+    /** A generated slide's shape: its path, anchored at the top (x, y, z) and turned by {@code yaw}, and its ride. */
+    public record SlideShape(com.powderpass.backrooms.gen.SlidePath path, double x, double y, double z, double yaw, Slide slide) {
+    }
+
+    public List<SlideShape> generatedSlideShapes(int rx, int rz) {
+        List<SlideShape> out = new ArrayList<>();
+        for (PoolSlidePlanner.Placed p : slides.region(rx, rz)) out.add(new SlideShape(p.path, p.pts[0][0], p.pts[0][1], p.pts[0][2], p.yaw, p.slide));
+        return out;
+    }
+
     /** Every generated slide of a region (not the massive hall's), for previews, tests and /backrooms slide. */
     public List<Slide> generatedSlides(int rx, int rz) {
         List<Slide> out = new ArrayList<>();

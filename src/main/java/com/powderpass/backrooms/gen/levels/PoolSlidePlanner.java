@@ -165,7 +165,7 @@ final class PoolSlidePlanner {
                     continue;
                 }
                 int j = i + 1;
-                while (j < n - 1 && j - i < 5 && g.cellOf((int) Math.floor(p.pts[j][0])) == cx && g.cellOf((int) Math.floor(p.pts[j][2])) == cz) j++;
+                while (j < n - 1 && j - i < 3 && g.cellOf((int) Math.floor(p.pts[j][0])) == cx && g.cellOf((int) Math.floor(p.pts[j][2])) == cz) j++;
                 out.add(new DecorSpec(p.segmentId(i, j), p.pts[i][0], p.pts[i][1], p.pts[i][2], (float) p.yaw, 0, 0, p.seed));
                 i = j;
             }
