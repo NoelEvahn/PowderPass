@@ -54,7 +54,7 @@ final class Creatures {
         }
 
         Smiler(BackroomsPlugin p, CreatureManager m, BackroomsConfig.CreatureSettings s) {
-            super(p, m, CreatureType.SMILER, 10);
+            super(p, m, CreatureType.SMILER, s.health());
             this.damage = s.damage();
         }
 
@@ -180,7 +180,7 @@ final class Creatures {
         private double tilt, mouth, curl;
 
         Faceling(BackroomsPlugin p, CreatureManager m) {
-            super(p, m, CreatureType.FACELING, 1);
+            super(p, m, CreatureType.FACELING, p.cfg().creature("faceling").health());
         }
 
         @Override

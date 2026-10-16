@@ -376,6 +376,7 @@ public final class VehicleManager implements Listener {
             }
             if (y0 - c.phys.y > 0.6 && c.phys.onGround) c.world.playSound(c.location(), Sound.BLOCK_ANVIL_PLACE, SoundCategory.BLOCKS, 0.5f, 0.6f);
             roadSounds(c, in);
+            runOver(c, driver);
             c.sync();
             c.lights();
             if (driver != null) {
@@ -554,6 +555,37 @@ public final class VehicleManager implements Listener {
             } else if (tick % 40 < 20) {
                 p.playSound(c.location(), Sound.BLOCK_BEACON_AMBIENT, SoundCategory.NEUTRAL, 0.25f, 0.55f);
             }
+        }
+    }
+
+    /**
+     * Anything in front of a moving car is hit: Backrooms creatures (through their hitbox) and any living entity
+     * that is not riding it. Damage grows with speed; a hit at full speed kills most things.
+     */
+    private void runOver(Car c, Player driver) {
+        double v = Math.abs(c.phys.speed);
+        if (v < 3) return;
+        double[] nose = c.phys.toWorld(0, 0.6, Math.signum(c.phys.speed) * 1.6);
+        org.bukkit.Location at = new org.bukkit.Location(c.world, nose[0], nose[1], nose[2]);
+        for (Entity e : c.world.getNearbyEntities(at, 1.6, 1.2, 1.6)) {
+            if (c.owns(e) || e.isInsideVehicle() && byRider.containsKey(e.getUniqueId())) continue;
+            if (e instanceof Player pl && byRider.containsKey(pl.getUniqueId())) continue;
+            double dmg = v * v * 0.4; // 3 b/s: 3.6, 6 b/s: 14, 10 b/s: 40
+            com.powderpass.backrooms.creature.Creature cr = plugin.creatures().byHitbox(e);
+            if (cr != null) {
+                if (cr.dead() || cr.hallucination()) continue;
+                cr.hurt(driver, dmg * 3); // creatures are tough; a car is tougher
+            } else if (e instanceof org.bukkit.entity.LivingEntity le && !(e instanceof org.bukkit.entity.ArmorStand)) {
+                if (le.getNoDamageTicks() > 0) continue;
+                if (driver != null) le.damage(dmg, driver);
+                else le.damage(dmg);
+            } else {
+                continue;
+            }
+            org.bukkit.util.Vector push = e.getLocation().toVector().subtract(c.location().toVector()).setY(0);
+            if (push.lengthSquared() > 1e-4) e.setVelocity(push.normalize().multiply(0.3 + v * 0.08).setY(0.35));
+            sound(c, e.getLocation(), null, "metal.clank", Sound.ENTITY_PLAYER_HURT_SWEET_BERRY_BUSH, 1f, 0.6f);
+            c.phys.speed *= 0.8; // the impact costs speed
         }
     }
 

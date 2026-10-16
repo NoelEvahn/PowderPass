@@ -107,13 +107,13 @@ public final class BackroomsConfig {
      */
     static final int CREATURE_TABLE_VERSION = 2;
     private static final Map<String, CreatureSettings> DEFAULT_CREATURES = Map.of(
-            "bacteria", new CreatureSettings(true, 12, 120, Map.of(Level.LEVEL_0, 4.0)),
-            "smiler", new CreatureSettings(true, 6, 20, Map.of(Level.LEVEL_1, 3.0, Level.PLAINS, 3.0)),
-            "faceling", new CreatureSettings(true, 0, 1, Map.of(Level.LEVEL_4, 6.0)),
-            "hound", new CreatureSettings(true, 5, 30, Map.of(Level.LEVEL_1, 6.0, Level.LEVEL_4, 4.0)),
-            "drifter", new CreatureSettings(true, 2, 20, Map.of(Level.POOLROOMS, 8.0)),
-            "watcher", new CreatureSettings(true, 4, 20, Map.of(Level.LEVEL_0, 4.0, Level.POOLROOMS, 3.0, Level.LEVEL_1, 2.0, Level.PLAINS, 5.0)),
-            "skinwalker", new CreatureSettings(true, 9, 80, Map.of(Level.LEVEL_0, 1.0, Level.LEVEL_1, 1.5, Level.LEVEL_4, 1.5, Level.POOLROOMS, 0.8, Level.PLAINS, 0.8)));
+            "bacteria", new CreatureSettings(true, 12, 300, Map.of(Level.LEVEL_0, 4.0)),
+            "smiler", new CreatureSettings(true, 6, 40, Map.of(Level.LEVEL_1, 3.0, Level.PLAINS, 3.0)),
+            "faceling", new CreatureSettings(true, 0, 60, Map.of(Level.LEVEL_4, 6.0)),
+            "hound", new CreatureSettings(true, 5, 40, Map.of(Level.LEVEL_1, 6.0, Level.LEVEL_4, 4.0)),
+            "drifter", new CreatureSettings(true, 2, 50, Map.of(Level.POOLROOMS, 8.0)),
+            "watcher", new CreatureSettings(true, 4, 45, Map.of(Level.LEVEL_0, 4.0, Level.POOLROOMS, 3.0, Level.LEVEL_1, 2.0, Level.PLAINS, 5.0)),
+            "skinwalker", new CreatureSettings(true, 9, 500, Map.of(Level.LEVEL_0, 1.0, Level.LEVEL_1, 1.5, Level.LEVEL_4, 1.5, Level.POOLROOMS, 0.8, Level.PLAINS, 0.8)));
 
     /** True when an old config.yml's creature weights were replaced by the current per-level table. */
     public boolean creatureTableMigrated;
@@ -215,8 +215,8 @@ public final class BackroomsConfig {
         serverPackManage = c.getBoolean("resource-pack.server-properties.manage", true);
         serverPackUrl = c.getString("resource-pack.server-properties.url", "https://download.mc-packs.net/pack/244562d602b3ba2fad64da326d1eaaf553051601.zip");
         serverPackSha1 = c.getString("resource-pack.server-properties.sha1", "244562d602b3ba2fad64da326d1eaaf553051601").trim().toLowerCase(Locale.ROOT);
-        serverPackId = c.getString("resource-pack.server-properties.id", "b8fef2f6-9333-4c1d-bd91-eeebb1ac684a").trim();
-        serverPackPrompt = c.getString("resource-pack.server-properties.prompt", "{\"text\":\"Our server uses a custom pack!\", \"color\":\"gold\"}");
+        serverPackId = c.getString("resource-pack.server-properties.id", "60927d6f-06a0-4960-9979-058f0c101843").trim();
+        serverPackPrompt = c.getString("resource-pack.server-properties.prompt", "{\"text\":\"Our server uses a custom resource pack!\", \"color\":\"gold\"}");
         serverPackRequired = c.getBoolean("resource-pack.server-properties.required", true);
         bedrockCustomSounds = c.getBoolean("bedrock.custom-sounds", false);
         customBlocks = c.getBoolean("resource-pack.custom-blocks", true);

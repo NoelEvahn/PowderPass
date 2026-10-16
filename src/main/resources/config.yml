@@ -239,8 +239,8 @@ resource-pack:
     manage: true
     url: "https://download.mc-packs.net/pack/244562d602b3ba2fad64da326d1eaaf553051601.zip"
     sha1: "244562d602b3ba2fad64da326d1eaaf553051601"
-    id: "b8fef2f6-9333-4c1d-bd91-eeebb1ac684a"
-    prompt: '{"text":"Our server uses a custom pack!", "color":"gold"}'
+    id: "60927d6f-06a0-4960-9979-058f0c101843"
+    prompt: '{"text":"Our server uses a custom resource pack!", "color":"gold"}'
     required: true               # players who decline are kicked (require-resource-pack)
   host:
     # Optional: serve the pack from this server. Only if your host exposes this port publicly.
@@ -303,13 +303,13 @@ creatures:
   # but takes these level weights.
   table-version: 2
   types:
-    bacteria:  {enabled: true, damage: 12.0, health: 120.0, weight: {level0: 4}}
-    smiler:    {enabled: true, damage: 6.0, weight: {level1: 3, plains: 3}}
-    faceling:  {enabled: true, weight: {level4: 6}}
-    hound:     {enabled: true, damage: 5.0, health: 30.0, weight: {level1: 6, level4: 4}}
-    drifter:   {enabled: true, damage: 2.0, health: 20.0, weight: {poolrooms: 8}}
-    watcher:   {enabled: true, damage: 4.0, weight: {level0: 4, poolrooms: 3, level1: 2, plains: 5}}
-    skinwalker: {enabled: true, damage: 9.0, health: 80.0, weight: {level0: 1, level1: 1.5, level4: 1.5, poolrooms: 0.8, plains: 0.8}}
+    bacteria:  {enabled: true, damage: 12.0, health: 300.0, weight: {level0: 4}}
+    smiler:    {enabled: true, damage: 6.0, health: 40.0, weight: {level1: 3, plains: 3}}
+    faceling:  {enabled: true, health: 60.0, weight: {level4: 6}}
+    hound:     {enabled: true, damage: 5.0, health: 40.0, weight: {level1: 6, level4: 4}}
+    drifter:   {enabled: true, damage: 2.0, health: 50.0, weight: {poolrooms: 8}}
+    watcher:   {enabled: true, damage: 4.0, health: 45.0, weight: {level0: 4, poolrooms: 3, level1: 2, plains: 5}}
+    skinwalker: {enabled: true, damage: 9.0, health: 500.0, weight: {level0: 1, level1: 1.5, level4: 1.5, poolrooms: 0.8, plains: 0.8}}
 
 events:
   enabled: true

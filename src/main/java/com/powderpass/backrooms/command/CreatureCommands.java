@@ -31,6 +31,9 @@ final class CreatureCommands {
                 .complete((c, i) -> i == 0 ? List.of("16", "32", "64", "level") : i == 1 && "level".equalsIgnoreCase(c.arg(0)) ? Ctx.LEVEL_ARGS : List.of());
         Node sw = g.sub("skinwalker").usage("<targets>").desc("a skinwalker takes these players now").run(CreatureCommands::skinwalker)
                 .complete((c, i) -> i == 0 ? Ctx.targetSuggestions() : List.of());
+        sw.sub("remove").usage("<targets>").desc("free these players from a skinwalker (it lets go and is gone)")
+                .run(CreatureCommands::skinwalkerRemove)
+                .complete((c, i) -> i == 0 ? Ctx.targetSuggestions() : List.of());
         root.link("entity", g); // old name
         root.link("skinwalker", sw); // old name
     }
@@ -116,6 +119,23 @@ final class CreatureCommands {
             } else {
                 c.send("<green>A skinwalker has taken " + p.getName() + ". <gray>Kill it to free them (or /" + c.label + " creature clear).");
             }
+        }
+    }
+
+    private static void skinwalkerRemove(Ctx c) {
+        if (!c.has(0)) {
+            c.usage();
+            return;
+        }
+        List<Player> ts = c.targets(0, null);
+        if (ts == null) return;
+        for (Player p : ts) {
+            if (!c.plugin.possessions().isVictim(p)) {
+                c.send("<gray>" + p.getName() + " is not being worn by a skinwalker.");
+                continue;
+            }
+            c.plugin.possessions().forget(p);
+            c.send("<green>Freed " + p.getName() + " from the skinwalker.");
         }
     }
 }

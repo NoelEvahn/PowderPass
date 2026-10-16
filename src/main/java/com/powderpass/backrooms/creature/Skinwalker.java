@@ -235,7 +235,7 @@ final class Skinwalker extends Creature {
         if (pos == null) return false;
         possession = pos;
         phase = Phase.TRANSFORMING;
-        health = settings.health() > 0 ? settings.health() : 80;
+        health = settings.health() > 0 ? settings.health() : 500;
         // the disguise collapses into black smoke that pours into them
         world.spawnParticle(Particle.SQUID_INK, from.clone().add(0, 1, 0), 40, 0.3, 0.8, 0.3, 0.04);
         reshape(null);

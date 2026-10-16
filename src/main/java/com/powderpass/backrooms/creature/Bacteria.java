@@ -302,7 +302,7 @@ final class Bacteria extends Creature {
     protected void onHurt(Player by, double amount) {
         sound(loc().add(0, 2.6, 0), "bacteria.screech", Sound.ENTITY_ENDERMAN_HURT, 1f, 0.5f, 48);
         world.spawnParticle(Particle.SQUID_INK, loc().add(0, 1.8, 0), 10, 0.2, 0.6, 0.2, 0.01);
-        if (health < 30 && state != State.FLEE) {
+        if (health < plugin.cfg().creature("bacteria").health() * 0.15 && state != State.FLEE) {
             Vector away = loc().toVector().subtract(by.getLocation().toVector()).setY(0);
             goal = loc().add(away.lengthSquared() > 0.01 ? away.normalize().multiply(24) : new Vector(24, 0, 0));
             set(State.FLEE);

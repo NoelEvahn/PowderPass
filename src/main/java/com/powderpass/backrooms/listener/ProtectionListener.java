@@ -41,7 +41,7 @@ public final class ProtectionListener implements Listener {
     }
 
     private boolean protect(Player p) {
-        return plugin.cfg().protectBlocks && !p.hasPermission("backrooms.bypass.protection");
+        return plugin.cfg().protectBlocks && p.getGameMode() != org.bukkit.GameMode.CREATIVE && !p.hasPermission("backrooms.bypass.protection");
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.LOW)
