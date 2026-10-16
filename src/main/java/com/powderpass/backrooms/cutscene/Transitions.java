@@ -176,7 +176,7 @@ public final class Transitions {
 
     // ------------------------------------------------------------------ to the Office (the lift)
 
-    static Cutscene elevator(BackroomsPlugin plugin, Player p, Location dest, Level to) {
+    public static Cutscene elevator(BackroomsPlugin plugin, Player p, Location dest, Level to) {
         Location eye = p.getEyeLocation();
         float yaw = p.getLocation().getYaw();
         Cutscene c = new Cutscene("elevator_up")

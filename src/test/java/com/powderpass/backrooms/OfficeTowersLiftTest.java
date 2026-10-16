@@ -91,7 +91,7 @@ class OfficeTowersLiftTest {
         }
         plugin.lifts().setRoll(() -> 0.0); // the 10% roll comes up
         assertTrue(plugin.lifts().press(p, p.getLocation(), 0));
-        server.getScheduler().performTicks(80);
+        server.getScheduler().performTicks(80 + 130); // the ride, then the elevator cutscene into the other level
         Level now = plugin.worlds().levelOf(p.getWorld());
         assertNotNull(now, "still inside the Backrooms");
         assertNotEquals(Level.LEVEL_4, now, "the doors opened somewhere else entirely");
@@ -103,6 +103,88 @@ class OfficeTowersLiftTest {
         assertTrue(plugin.sessions().get(p).cooldownUntil > plugin.sessions().now(), "normal arrival cooldown");
         assertTrue(plugin.sessions().insideFlag(p));
         assertEquals(ret, plugin.sessions().getReturn(p), "the return point is untouched");
+    }
+
+    private void prepareLanding(OfficeGenerator.Lift lift, int floor) {
+        World w = plugin.worlds().world(Level.LEVEL_4);
+        int y = lift.feetY(floor);
+        for (int x = lift.carX() - 2; x <= lift.carX() + 4; x++) {
+            for (int z = lift.doorZ() - 4; z <= lift.carZ() + 2; z++) {
+                w.getBlockAt(x, y - 1, z).setType(Material.STONE);
+                w.getBlockAt(x, y, z).setType(Material.AIR);
+                w.getBlockAt(x, y + 1, z).setType(Material.AIR);
+            }
+        }
+    }
+
+    private org.bukkit.entity.Interaction callButton(World w, OfficeGenerator.Lift lift, int floor) {
+        for (var e : w.getEntitiesByClass(Interaction.class)) {
+            if (("liftcall:" + floor).equals(e.getPersistentDataContainer().get(Keys.ACTION, PersistentDataType.STRING))
+                    && Math.abs(e.getLocation().getY() - lift.feetY(floor) - 0.8) < 0.5) return e;
+        }
+        return null;
+    }
+
+    /** A call button brings the car; the doors are barriers while shut and open when it arrives; everyone inside rides. */
+    @Test
+    void callButtonsDoorsAndPassengers() {
+        OfficeGenerator.Lift lift = lift();
+        World w = plugin.worlds().world(Level.LEVEL_4);
+        plugin.lifts().setRoll(() -> 0.99);
+        int top = Math.min(3, lift.floors() - 1);
+        prepareLanding(lift, 0);
+        prepareLanding(lift, top);
+        // someone waiting on the top landing, in front of the doors
+        PlayerMock waiter = new TestPlayer(server, "Waiter");
+        server.addPlayer(waiter);
+        waiter.teleport(new Location(w, lift.doorX() + 0.5, lift.feetY(top), lift.doorZ() - 2.5, 180f, 0f));
+        server.getScheduler().performTicks(60); // the landing near them is built
+        assertEquals(0, plugin.lifts().carFloor(lift), "cars start at the lobby");
+        assertEquals(Material.BARRIER, w.getBlockAt(lift.doorX(), lift.feetY(top), lift.doorZ()).getType(), "shut doors are solid");
+        Interaction call = callButton(w, lift, top);
+        assertNotNull(call, "a call button beside the landing door");
+        server.getPluginManager().callEvent(new PlayerInteractEntityEvent(waiter, call));
+        server.getScheduler().performTicks(40 + 10 * top + 15);
+        assertEquals(top, plugin.lifts().carFloor(lift), "the car came up");
+        assertTrue(plugin.lifts().doorsOpen(lift));
+        assertEquals(Material.AIR, w.getBlockAt(lift.doorX(), lift.feetY(top), lift.doorZ()).getType(), "open doors let you in");
+        // two passengers step in and ride down together
+        PlayerMock second = new TestPlayer(server, "Second");
+        server.addPlayer(second);
+        waiter.teleport(new Location(w, lift.carX() + 0.5, lift.feetY(top), lift.carZ() + 1.5, 10f, 0f));
+        second.teleport(new Location(w, lift.carX() + 2.5, lift.feetY(top), lift.carZ() + 2.5, 200f, 0f));
+        assertTrue(plugin.lifts().press(waiter, waiter.getLocation(), 0));
+        server.getScheduler().performTicks(12 + 40 + 10 * top);
+        assertEquals(lift.feetY(0), waiter.getLocation().getY(), 1e-6);
+        assertEquals(lift.feetY(0), second.getLocation().getY(), 1e-6, "everyone inside rides");
+        assertEquals(200f, second.getLocation().getYaw(), 1e-3, "their look is untouched");
+        assertEquals(0, plugin.lifts().carFloor(lift));
+        server.getScheduler().performTicks(20);
+        assertEquals(Material.BARRIER, w.getBlockAt(lift.doorX(), lift.feetY(top), lift.doorZ()).getType(), "the top landing is shut again");
+    }
+
+    /** The doors will not close on someone standing in the doorway. */
+    @Test
+    void doorsDoNotCloseOnSomeoneInTheDoorway() {
+        OfficeGenerator.Lift lift = lift();
+        World w = plugin.worlds().world(Level.LEVEL_4);
+        plugin.lifts().setRoll(() -> 0.99);
+        prepareLanding(lift, 0);
+        PlayerMock rider = riderInCar(lift, 0);
+        server.getScheduler().performTicks(60);
+        // open the doors at the lobby (pressing the floor you are on opens them)
+        plugin.lifts().press(rider, rider.getLocation(), 0);
+        assertTrue(plugin.lifts().doorsOpen(lift));
+        PlayerMock blocker = new TestPlayer(server, "Blocker");
+        server.addPlayer(blocker);
+        blocker.teleport(new Location(w, lift.doorX() + 0.5, lift.feetY(0), lift.doorZ() + 0.5));
+        assertFalse(plugin.lifts().press(rider, rider.getLocation(), 2), "blocked doorway: no ride");
+        assertTrue(plugin.lifts().doorsOpen(lift), "the doors stay open");
+        server.getScheduler().performTicks(com.powderpass.backrooms.world.LiftService.DWELL + 40);
+        assertTrue(plugin.lifts().doorsOpen(lift), "and do not shut on them by themselves either");
+        blocker.teleport(new Location(w, lift.doorX() + 0.5, lift.feetY(0), lift.doorZ() - 2.5));
+        server.getScheduler().performTicks(60);
+        assertFalse(plugin.lifts().doorsOpen(lift), "once the doorway clears they shut");
     }
 
     @Test

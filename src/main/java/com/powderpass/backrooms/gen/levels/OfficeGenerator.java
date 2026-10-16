@@ -338,6 +338,11 @@ public final class OfficeGenerator extends LevelGenerator {
     }
 
     /** The lift whose car contains this position (any floor), or null. */
+    /** The lift of the tower whose plot contains (x, z). */
+    public Lift liftNear(double x, double z) {
+        return lift(cellOf((int) Math.floor(x)), cellOf((int) Math.floor(z)));
+    }
+
     public Lift liftAt(double x, double y, double z) {
         Lift l = lift(cellOf((int) Math.floor(x)), cellOf((int) Math.floor(z)));
         return l.inCar(x, z) && l.floorAt(y) >= 0 ? l : null;
