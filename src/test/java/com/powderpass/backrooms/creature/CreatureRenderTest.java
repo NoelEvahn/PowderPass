@@ -263,7 +263,7 @@ class CreatureRenderTest {
         record Spec(String name, Model model, double look, double dist, String actionName, Map<String, Matrix4f> action, double actionYaw) {
         }
         Spec[] specs = {
-                new Spec("smiler", Bodies.smiler(), 1.5, 3.4, "lunging: mouth open, arms out of the dark, more eyes", Poses.smiler(1, 1.25, 1, 1, 12, false, 1), 20),
+                new Spec("smiler", Bodies.smiler(), 1.5, 3.4, "lunging: the grin opens, the eyes narrow", Poses.smiler(1, 1.25, 1, 1, 12, false, 1), 20),
                 new Spec("faceling", Bodies.faceling(), 1.6, 3.6, "stared at too long", Poses.faceling(-38, 1, 1, 0), 10),
                 new Spec("hound", Bodies.hound(), 0.55, 3.4, "rearing before the lunge", Poses.hound(0, 0, 1, 1, 0, 0.15), 60),
                 new Spec("drifter", Bodies.drifter(), 0.4, 3.2, "reaching, mid-stroke", Poses.drifter(1.2, 0.4, 1, 1), 35),

@@ -85,41 +85,20 @@ final class Bodies {
     // ===================================================================== Smiler
 
     /**
-     * Entity 3: a shapeless dark mass you only ever see as reflective eyes and a grin of needle teeth. Up close the
-     * dark has arms, long and black, that reach for you; more eyes open as it comes.
-     * Bones: {@code eye} (blinks), {@code eyes2} (hidden in the mass, slide out), {@code grin} (upper teeth),
-     * {@code grin.low} (lower teeth, drops to open the mouth), {@code arm_l/arm_r} with {@code .fore}, {@code mass}.
+     * Entity 3: nothing but two glowing eyes and a grin of needle teeth hanging in the dark.
+     * Bones: {@code eye} (blinks), {@code grin} (upper teeth), {@code grin.low} (lower teeth, drops to open the mouth).
      */
     static Model smiler() {
         Model m = new Model();
         Material dark = BLACK_CONCRETE, haze = BLACK_STAINED_GLASS, tooth = WHITE_CONCRETE;
         double my = SMILER_MOUTH;
-        // the mass: a lumpy dark core with smoky edges and wisps trailing to the floor
-        m.boxC(dark, 0, 1.62, -0.34, 0.8, 0.82, 0.56, 'z', 8).named("mass");
-        m.boxC(dark, -0.06, 1.66, -0.36, 0.7, 0.9, 0.5, 'z', -27).named("mass");
-        m.boxC(dark, 0.08, 2.0, -0.4, 0.5, 0.3, 0.42, 'z', 19).named("mass");
-        m.boxC(dark, 0.02, 1.2, -0.38, 0.55, 0.3, 0.4, 'z', -12).named("mass");
-        m.boxC(haze, 0, 1.62, -0.42, 1.25, 1.15, 0.7, 'z', 14).named("mass");
-        m.boxC(haze, 0.05, 1.55, -0.45, 1.05, 1.35, 0.62, 'z', -21).named("mass");
-        m.boxC(haze, -0.05, 2.15, -0.5, 0.7, 0.35, 0.5, 'z', 33).named("mass");
-        for (int i = 0; i < 5; i++) {
-            double wx = -0.26 + i * 0.13 + ((i * 37) % 5) * 0.012;
-            double len = 0.45 + ((i * 53) % 7) * 0.1;
-            Material w = i % 2 == 0 ? haze : dark;
-            m.rod(w, v(wx, 1.15, -0.35 - (i % 3) * 0.06), v(wx * 1.6 + 0.05, 1.15 - len, -0.5 - (i % 2) * 0.25), i % 2 == 0 ? 0.09 : 0.035).named("mass");
-        }
+        // nothing else: in the dark there is only a pair of eyes and a smile. No body, no shape to fix on.
         // eyes: slanted almonds that catch the light, with a slit of a pupil, not quite level
         double[][] eyes = {{-0.22, SMILER_EYES, -14}, {0.22, SMILER_EYES + 0.03, 11}};
         for (double[] e : eyes) {
             m.boxC(WHITE_CONCRETE, e[0], e[1], 0.0, 0.24, 0.075, 0.02, 'z', e[2]).glow(15).named("eye");
             m.boxC(WHITE_CONCRETE, e[0] + Math.signum(e[0]) * 0.05, e[1] + 0.018, 0.0, 0.14, 0.05, 0.022, 'z', e[2] * 1.8).glow(15).named("eye");
             m.boxC(dark, e[0] - Math.signum(e[0]) * 0.02, e[1], 0.016, 0.024, 0.085, 0.01, 'z', e[2] * 0.3).named("eye");
-        }
-        // more eyes, hidden inside the mass until it is close
-        double[][] more = {{-0.08, 2.08, 0.07}, {0.34, 1.72, 0.05}, {-0.36, 1.66, 0.06}, {0.12, 2.0, 0.045}};
-        for (double[] e : more) {
-            m.boxC(WHITE_CONCRETE, e[0], e[1], -0.38, e[2] * 1.6, e[2] * 0.6, 0.02, 'z', (e[0] * 40)).glow(13).named("eyes2");
-            m.boxC(dark, e[0], e[1], -0.365, 0.016, e[2] * 0.7, 0.01, 'z', 0).named("eyes2");
         }
         // a grin far too wide: interlocking rows of needle teeth along one arc
         int n = 9;
@@ -133,17 +112,6 @@ final class Bodies {
                 double x2 = Math.sin(a2) * 0.55, y2 = my + (1 - Math.cos(a2)) * 0.5;
                 fang(m, tooth, x2, y2 - 0.035, 0.0, 0.046, h * 0.9, 0.02, (i + 0.5) * 7.2).glow(12).named("grin.low");
             }
-        }
-        // two long black arms with too many joints, reaching down out of the dark
-        for (int s = -1; s <= 1; s += 2) {
-            String arm = s < 0 ? "arm_l" : "arm_r";
-            Vector3f sh = v(s * SMILER_SHOULDER_X, SMILER_SHOULDER_Y, -0.3);
-            Vector3f el = v(s * 0.92, 1.16, -0.05);
-            Vector3f wr = v(s * 0.78, 0.5, 0.22);
-            m.rod(dark, sh, el, 0.075).named(arm);
-            m.rod(dark, el, wr, 0.06).named(arm + ".fore");
-            m.boxC(dark, wr.x, wr.y - 0.02, wr.z, 0.1, 0.06, 0.12, 'z', s * 15).named(arm + ".fore");
-            fingers(m, dark, dark, arm + ".fore", v(wr.x, wr.y - 0.04, wr.z), v(s * 0.15, -1, 0.35), v(0, 0, 1), 4, 0.42, 0.13, 0.55, 0.026);
         }
         return m;
     }

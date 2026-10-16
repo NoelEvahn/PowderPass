@@ -89,9 +89,11 @@ class CreaturesPerLevelTest {
     void bacteriaHuntsWhatMovesAndLosesWhatKeepsStill() {
         TestPlayer p = player(l0, 0.5, 0.5);
         Creature b = plugin.creatures().spawn(CreatureType.BACTERIA, new Location(l0, 5.5, 65, 0.5), null);
-        warm();
-        // walking about near it: it is on you
-        for (int i = 0; i < 12; i++) {
+        assertEquals("bacteria:emerge", b.state(), "with someone near, it comes up out of the floor first");
+        server.getScheduler().performTicks(com.powderpass.backrooms.creature.BacteriaAccess.EMERGE_TICKS + 50); // + the manager's start delay
+        assertNotEquals("bacteria:emerge", b.state(), "and then it is here");
+        // walking about near it: it stops to listen, then it is on you
+        for (int i = 0; i < 40 && !b.state().equals("bacteria:hunt"); i++) {
             p.teleport(new Location(l0, 0.5, 65, 0.5 + (i % 2) * 0.6));
             server.getScheduler().performTicks(2);
         }

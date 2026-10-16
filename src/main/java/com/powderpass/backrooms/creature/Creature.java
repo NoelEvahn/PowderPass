@@ -328,4 +328,43 @@ public abstract class Creature {
     /** A sound was heard at a location (hunters override). */
     public void hear(Location where, double loudness) {
     }
+
+    /** The player who most likely made a noise at {@code where} (standing within 2.5 blocks of it), or null. */
+    protected Player sourceOf(Location where) {
+        Player best = null;
+        double bd = 2.5 * 2.5;
+        for (Player p : world.getPlayers()) {
+            if (!present(p)) continue;
+            double d = p.getLocation().distanceSquared(where);
+            if (d < bd) {
+                bd = d;
+                best = p;
+            }
+        }
+        return best;
+    }
+
+    /** The world queries {@link Awareness} needs, answered from this creature's head. */
+    protected Awareness.Senses senses() {
+        Location h = head();
+        return new Awareness.Senses() {
+            @Override
+            public boolean lineOfSight(Player p) {
+                try {
+                    return p.hasLineOfSight(h);
+                } catch (RuntimeException e) {
+                    return false;
+                }
+            }
+
+            @Override
+            public int lightAt(Player p) {
+                return p.getLocation().getBlock().getLightFromBlocks();
+            }
+        };
+    }
+
+    protected int memoryTicks() {
+        return plugin.cfg().creatureMemorySeconds * 20;
+    }
 }

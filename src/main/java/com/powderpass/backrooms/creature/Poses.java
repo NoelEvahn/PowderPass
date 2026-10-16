@@ -46,16 +46,10 @@ final class Poses {
         double fy = (Bodies.SMILER_MOUTH + Bodies.SMILER_EYES) / 2;
         Matrix4f face = about(0, fy, 0, rz(Math.toRadians(tilt)));
         p.put("eye", new Matrix4f(face).mul(about(0, Bodies.SMILER_EYES, 0, new Matrix4f().scale(1f, blink ? 0.12f : 1f, 1f))));
-        p.put("eyes2", new Matrix4f(face).translate(0, 0, (float) (0.4 * emerge)));
         p.put("grin", new Matrix4f(face).mul(about(0, Bodies.SMILER_MOUTH, 0, new Matrix4f().scale((float) wide, 1f, 1f))));
         p.put("grin.low", new Matrix4f().translate(0, (float) (-0.26 * open), (float) (0.02 * open)));
-        p.put("mass", about(0, 1.55, -0.3, new Matrix4f().scale((float) (1 + 0.04 * breath), (float) (1 + 0.03 * breath), 1f)));
-        for (int s = -1; s <= 1; s += 2) {
-            String arm = s < 0 ? "arm_l" : "arm_r";
-            double sx = s * Bodies.SMILER_SHOULDER_X;
-            p.put(arm, about(sx, Bodies.SMILER_SHOULDER_Y, -0.3, new Matrix4f().rotateX((float) (-0.95 * reach)).rotateZ((float) (-s * 0.12 * reach))));
-            p.put(arm + ".fore", about(s * 0.92, 1.16, -0.05, rx(-0.3 * reach)));
-        }
+        // reach, emerge and breath no longer move anything: there is no body, only the face drifting a little
+        p.compute("eye", (k, m) -> m.translate(0, (float) (0.015 * breath), 0));
         return p;
     }
 

@@ -28,7 +28,7 @@ import java.util.concurrent.ThreadLocalRandom;
  * badly, it flees and is gone.
  */
 final class Bacteria extends Creature {
-    enum State { ROAM, LISTEN, SEARCH, HUNT, LOOM, FLEE }
+    enum State { EMERGE, ROAM, LISTEN, SEARCH, HUNT, LOOM, FLEE }
 
     private final double damage;
     State state = State.ROAM;
@@ -40,10 +40,29 @@ final class Bacteria extends Creature {
     private final java.util.Map<java.util.UUID, Location> lastPos = new java.util.HashMap<>();
     private int stillTicks, attackCooldown, screechCooldown, mimicIn = 400;
     private double tilt;
+    /** It does not see: it feels movement through the floor and hears, all round, out to 32 blocks. */
+    final Awareness aware;
+    /** How long the emergence takes (ticks). */
+    static final int EMERGE_TICKS = 70;
 
     Bacteria(BackroomsPlugin p, CreatureManager m, BackroomsConfig.CreatureSettings s) {
         super(p, m, CreatureType.BACTERIA, s.health());
         this.damage = s.damage();
+        this.aware = new Awareness(180, 0.0, p.cfg().creatureMemorySeconds * 20);
+    }
+
+    /**
+     * Spawned with someone within range: it does not simply appear. The lights around it stutter and die, something
+     * says a word in a voice it borrowed, and it unfolds up out of the floor, joint by joint, before it moves.
+     */
+    @Override
+    protected void onSpawn() {
+        Player near = nearestPlayer(Awareness.RANGE);
+        if (near == null || hallucination()) return;
+        set(State.EMERGE);
+        body.move(new Location(world, x, y - 3.4, z, yaw, 0));
+        if (plugin.decorations() != null) plugin.decorations().dimLamps(loc(), 14, EMERGE_TICKS + 60, true);
+        sound(loc().add(0, 1.6, 0), "voice.phrase", Sound.ENTITY_VILLAGER_AMBIENT, 0.5f, 0.6f, 24);
     }
 
     @Override
@@ -79,6 +98,7 @@ final class Bacteria extends Creature {
     @Override
     public void hear(Location where, double loudness) {
         if (state == State.FLEE || where.getWorld() != world) return;
+        aware.hear(loc(), where, loudness, sourceOf(where));
         heard = where.clone();
         heardAt = age;
         if (state == State.ROAM) set(State.LISTEN);
@@ -105,7 +125,32 @@ final class Bacteria extends Creature {
         }
         boolean moving = false;
         double amp = 0, lean = 0;
+        if (state != State.EMERGE) aware.update(world, head(), yaw, dt, senses());
+        if (state == State.SEARCH && aware.mode() == Awareness.Mode.ALERT && aware.target() != null) {
+            // sure of someone while searching: it stops searching
+            Player t = plugin.getServer().getPlayer(aware.target());
+            if (t != null && targetable(t) && t.getWorld() == world && dist(t) < Awareness.RANGE) hunt(t);
+        }
         switch (state) {
+            case EMERGE -> {
+                // up out of the floor, in jerks: still for a beat, then a lurch, never smooth
+                double t = Math.min(1, stateTicks / (double) EMERGE_TICKS);
+                double jerk = Math.floor(t * 9) / 9.0;
+                double depth = 3.4 * (1 - (t < 0.85 ? jerk : t));
+                body.move(new Location(world, x, y - depth, z, yaw, 0));
+                if (stateTicks % 8 < dt) {
+                    sound(loc(), "bacteria.skitter", Sound.BLOCK_SCULK_SPREAD, 0.9f, 0.5f, 32);
+                    world.spawnParticle(Particle.SQUID_INK, loc().add(0, 0.1, 0), 8, 0.4, 0.05, 0.4, 0.01);
+                }
+                lean = 1 - t;
+                tilt = r.nextGaussian() * 0.4 * (1 - t);
+                if (stateTicks >= EMERGE_TICKS) {
+                    place(x, y, z, yaw);
+                    sound(loc().add(0, 2.6, 0), "bacteria.breath", Sound.ENTITY_WARDEN_SNIFF, 1f, 0.5f, 24);
+                    set(State.LISTEN);
+                    heard = null;
+                }
+            }
             case ROAM -> {
                 if (goal == null || stateTicks > 200 || moveToward(goal, 0.11, 1.5)) {
                     goal = loc().add(r.nextInt(-20, 21), 0, r.nextInt(-20, 21));
@@ -113,12 +158,19 @@ final class Bacteria extends Creature {
                 }
                 moving = r.nextDouble() > 0.08; // it stops for no reason, then carries on
                 amp = moving ? 0.5 : 0;
-                // anyone moving close by is felt through the floor
-                for (Player p : world.getPlayers()) {
-                    if (targetable(p) && dist(p) < 7 && (moved(p) || p.isSprinting())) {
-                        hunt(p);
-                        break;
-                    }
+                // movement felt through the floor, sounds heard: a hint stops it to listen (the warning: it clicks
+                // and goes still), certainty sends it straight for them
+                Player t = aware.target() == null ? null : plugin.getServer().getPlayer(aware.target());
+                if (aware.mode() == Awareness.Mode.ALERT && t != null && targetable(t) && t.getWorld() == world) {
+                    hunt(t);
+                    break;
+                }
+                if (aware.mode() != Awareness.Mode.CALM && aware.lastKnown() != null) {
+                    heard = aware.lastKnown();
+                    heardAt = age;
+                    sound(loc().add(0, 2.6, 0), "bacteria.skitter", Sound.ENTITY_SPIDER_STEP, 0.7f, 0.4f, 28);
+                    set(State.LISTEN);
+                    break;
                 }
                 if ((mimicIn -= dt) <= 0) {
                     mimicIn = 500 + r.nextInt(900);
@@ -129,9 +181,13 @@ final class Bacteria extends Creature {
                 if (heard != null) face(heard);
                 place(x, y, z, yaw);
                 tilt = (stateTicks / 4 % 2 == 0 ? 0.35 : -0.25);
-                if (stateTicks > 16) {
-                    goal = heard;
-                    set(State.SEARCH);
+                Player t = aware.target() == null ? null : plugin.getServer().getPlayer(aware.target());
+                if (aware.mode() == Awareness.Mode.ALERT && t != null && targetable(t) && t.getWorld() == world) {
+                    hunt(t);
+                } else if (stateTicks > 16) {
+                    goal = heard != null ? heard : aware.lastKnown();
+                    if (goal == null) set(State.ROAM);
+                    else set(State.SEARCH);
                 }
             }
             case SEARCH -> {
@@ -146,7 +202,11 @@ final class Bacteria extends Creature {
                         if (moved(p) || noisy) found = p;
                     }
                     if (found != null) hunt(found);
-                    else if (stateTicks > 60 || goal == null) set(State.ROAM);
+                    else if (aware.mode() != Awareness.Mode.CALM && aware.searchPoint() != null && stateTicks > 30) {
+                        // nothing here: keep sweeping round the last place it heard anything, until it forgets
+                        goal = aware.searchPoint();
+                        stateTicks = 0;
+                    } else if (stateTicks > 60 || goal == null) set(State.ROAM);
                     moving = false;
                     amp = 0;
                 }

@@ -111,7 +111,7 @@ final class Creatures {
             if ((giggleIn -= dt) <= 0) {
                 giggleIn = 50 + rnd().nextInt(80);
                 float vol = d < 10 ? 0.7f : 0.35f;
-                world.playSound(head(), Sound.ENTITY_ALLAY_AMBIENT_WITHOUT_ITEM, SoundCategory.HOSTILE, vol, 0.5f);
+                sound(head(), null, Sound.ENTITY_ALLAY_AMBIENT_WITHOUT_ITEM, vol, 0.5f, 24);
             }
             if (playerLight >= 11) {
                 // light keeps it at bay; it backs into the dark
@@ -129,7 +129,7 @@ final class Creatures {
                 p.damage(damage);
                 mgr.noteAttack(p, type);
                 p.addPotionEffect(new PotionEffect(PotionEffectType.BLINDNESS, 60, 0, false, false));
-                world.playSound(p.getLocation(), Sound.ENTITY_PHANTOM_BITE, SoundCategory.HOSTILE, 1f, 0.5f);
+                sound(p.getLocation(), null, Sound.ENTITY_PHANTOM_BITE, 1f, 0.5f, 32);
                 vanish(false);
                 return;
             }
@@ -157,7 +157,7 @@ final class Creatures {
 
         private void vanish(boolean stared) {
             if (stared) {
-                world.playSound(head(), Sound.ENTITY_ALLAY_HURT, SoundCategory.HOSTILE, 0.5f, 0.4f);
+                sound(head(), null, Sound.ENTITY_ALLAY_HURT, 0.5f, 0.4f, 32);
                 world.spawnParticle(Particle.SQUID_INK, head(), 8, 0.2, 0.2, 0.2, 0.01);
             }
             remove();
@@ -165,7 +165,7 @@ final class Creatures {
 
         @Override
         protected void onHurt(Player by, double amount) {
-            world.playSound(head(), Sound.ENTITY_ALLAY_HURT, SoundCategory.HOSTILE, 0.8f, 0.3f);
+            sound(head(), null, Sound.ENTITY_ALLAY_HURT, 0.8f, 0.3f, 32);
             remove();
         }
     }
@@ -232,7 +232,7 @@ final class Creatures {
                 Vector away = loc().toVector().subtract(p.getLocation().toVector()).setY(0);
                 if (away.lengthSquared() < 0.01) away = new Vector(1, 0, 0);
                 leaveTo = loc().add(away.normalize().multiply(14));
-                world.playSound(loc(), Sound.ENTITY_WARDEN_STEP, SoundCategory.HOSTILE, 0.25f, 1.6f);
+                sound(loc(), null, Sound.ENTITY_WARDEN_STEP, 0.25f, 1.6f, 20);
             }
             if (leaving) {
                 boolean done = moveToward(leaveTo, 0.16, 1.0);
@@ -279,7 +279,7 @@ final class Creatures {
                 unseen += dt;
             }
             if (watchedTicks > 100 || d < 18) {
-                world.playSound(loc(), Sound.ITEM_ELYTRA_FLYING, SoundCategory.AMBIENT, 0.3f, 0.5f);
+                sound(loc(), null, Sound.ITEM_ELYTRA_FLYING, 0.3f, 0.5f, 20);
                 remove();
                 return;
             }
@@ -306,7 +306,7 @@ final class Creatures {
 
         @Override
         protected void onHurt(Player by, double amount) {
-            world.playSound(loc(), Sound.ENTITY_ENDERMAN_TELEPORT, SoundCategory.HOSTILE, 0.6f, 0.4f);
+            sound(loc(), null, Sound.ENTITY_ENDERMAN_TELEPORT, 0.6f, 0.4f, 32);
             remove();
         }
     }
@@ -324,10 +324,19 @@ final class Creatures {
         private int lostTicks;
         private Vector lungeDir;
         private double headTilt;
+        /** Sight (a wide dog's field of view) and hearing out to 32 blocks, with memory. */
+        final Awareness aware;
+        private int cueCooldown;
 
         Hound(BackroomsPlugin p, CreatureManager m, BackroomsConfig.CreatureSettings s) {
             super(p, m, CreatureType.HOUND, s.health());
             this.damage = s.damage();
+            this.aware = new Awareness(75, 1.0, p.cfg().creatureMemorySeconds * 20);
+        }
+
+        @Override
+        public String state() {
+            return "hound:" + state.name().toLowerCase(java.util.Locale.ROOT) + ":" + aware.mode().name().toLowerCase(java.util.Locale.ROOT);
         }
 
         @Override
@@ -357,16 +366,33 @@ final class Creatures {
 
         @Override
         public void hear(Location where, double loudness) {
+            if (where.getWorld() != world || state == State.FLEE) return;
+            aware.hear(loc(), where, loudness, sourceOf(where));
             if (state == State.WANDER || state == State.INVESTIGATE) {
                 goal = where.clone();
-                if (state == State.WANDER) world.playSound(loc(), Sound.ENTITY_WOLF_GROWL, SoundCategory.HOSTILE, 0.6f, 0.6f);
+                if (state == State.WANDER) cue(false);
                 set(State.INVESTIGATE);
+            }
+        }
+
+        /**
+         * The warning a player gets: a low growl when it starts to suspect (it is coming to look), a snarl and a
+         * bark when it is sure (it is coming for you).
+         */
+        private void cue(boolean sure) {
+            if (cueCooldown > 0 && !sure) return;
+            cueCooldown = 80;
+            if (sure) {
+                sound(loc(), null, Sound.ENTITY_WOLF_GROWL, 1.2f, 0.5f, 48);
+                sound(loc(), null, Sound.ENTITY_WOLF_AMBIENT, 1f, 0.45f, 48);
+            } else {
+                sound(loc(), null, Sound.ENTITY_WOLF_GROWL, 0.6f, 0.65f, 28);
             }
         }
 
         private boolean sees(Player p) {
             double d = dist(p);
-            if (d > 14) return false;
+            if (d > Awareness.RANGE) return false;
             if (p.isSneaking() && d > 5 && p.getLocation().getBlock().getLightFromBlocks() < 8) return false;
             return p.hasLineOfSight(head());
         }
@@ -379,11 +405,19 @@ final class Creatures {
                 remove();
                 return;
             }
-            Player near = nearestPlayer(32);
-            if (near != null && state != State.FLEE && state != State.HUNT && state != State.TELEGRAPH && state != State.LUNGE && sees(near)) {
-                prey = near;
-                world.playSound(loc(), Sound.ENTITY_WOLF_GROWL, SoundCategory.HOSTILE, 1f, 0.5f);
-                set(State.HUNT);
+            cueCooldown = Math.max(0, cueCooldown - dt);
+            boolean changed = aware.update(world, head(), yaw, dt, senses());
+            if (state == State.WANDER || state == State.INVESTIGATE) {
+                Player t = aware.target() == null ? null : plugin.getServer().getPlayer(aware.target());
+                if (aware.mode() == Awareness.Mode.ALERT && t != null && present(t) && t.getWorld() == world) {
+                    prey = t;
+                    cue(true);
+                    set(State.HUNT);
+                } else if (aware.mode() != Awareness.Mode.CALM && state == State.WANDER && aware.lastKnown() != null) {
+                    goal = aware.lastKnown();
+                    if (changed) cue(false);
+                    set(State.INVESTIGATE);
+                }
             }
             boolean moving = true;
             switch (state) {
@@ -395,9 +429,17 @@ final class Creatures {
                 }
                 case INVESTIGATE -> {
                     if (goal == null || moveToward(goal, 0.17, 1.5) || stateTicks > 200) {
-                        world.playSound(loc(), Sound.ENTITY_WOLF_SHAKE, SoundCategory.HOSTILE, 0.5f, 0.6f);
-                        goal = null;
-                        set(State.WANDER);
+                        // there: sniff around the last place it knew of until it forgets
+                        Location next = aware.mode() == Awareness.Mode.CALM ? null : aware.searchPoint();
+                        if (next != null) {
+                            goal = next;
+                            stateTicks = 0;
+                            if (rnd().nextInt(3) == 0) sound(loc(), null, Sound.ENTITY_WOLF_SHAKE, 0.4f, 0.6f, 20);
+                        } else {
+                            sound(loc(), null, Sound.ENTITY_WOLF_SHAKE, 0.5f, 0.6f, 32);
+                            goal = null;
+                            set(State.WANDER);
+                        }
                     }
                 }
                 case HUNT -> {
@@ -407,14 +449,15 @@ final class Creatures {
                     }
                     lostTicks = sees(prey) ? 0 : lostTicks + dt;
                     if (lostTicks > 160) {
-                        goal = prey.getLocation();
+                        // lost them: go to where they were last seen and search from there
+                        goal = aware.lastKnown() != null ? aware.lastKnown() : prey.getLocation();
                         set(State.INVESTIGATE);
                         break;
                     }
                     double d = dist(prey);
                     if (d < 4.2 && targetable(prey) && prey.hasLineOfSight(head())) {
                         face(prey.getLocation());
-                        world.playSound(loc(), Sound.ENTITY_WOLF_GROWL, SoundCategory.HOSTILE, 1.2f, 0.4f);
+                        sound(loc(), null, Sound.ENTITY_WOLF_GROWL, 1.2f, 0.4f, 48);
                         set(State.TELEGRAPH);
                         break;
                     }
@@ -427,7 +470,7 @@ final class Creatures {
                     place(x, y, z, yaw);
                     if (stateTicks >= 22) {
                         lungeDir = prey == null ? new Vector(0, 0, 1) : prey.getLocation().toVector().subtract(loc().toVector()).setY(0).normalize();
-                        world.playSound(loc(), Sound.ENTITY_WOLF_HURT, SoundCategory.HOSTILE, 1f, 0.4f);
+                        sound(loc(), null, Sound.ENTITY_WOLF_HURT, 1f, 0.4f, 32);
                         body.brightness("body.head.eyes", 10);
                         set(State.LUNGE);
                     }
@@ -442,7 +485,7 @@ final class Creatures {
                         prey.damage(damage);
                         mgr.noteAttack(prey, type);
                         prey.setVelocity(lungeDir.clone().multiply(0.6).setY(0.25));
-                        world.playSound(loc(), Sound.ENTITY_WOLF_GROWL, SoundCategory.HOSTILE, 1f, 1.2f);
+                        sound(loc(), null, Sound.ENTITY_WOLF_GROWL, 1f, 1.2f, 32);
                         set(State.RECOVER);
                     } else if (stateTicks > 10) {
                         set(State.RECOVER);
@@ -475,7 +518,7 @@ final class Creatures {
 
         @Override
         protected void onHurt(Player by, double amount) {
-            world.playSound(loc(), Sound.ENTITY_WOLF_HURT, SoundCategory.HOSTILE, 1f, 0.5f);
+            sound(loc(), null, Sound.ENTITY_WOLF_HURT, 1f, 0.5f, 32);
             world.spawnParticle(Particle.SMOKE, head(), 6, 0.2, 0.2, 0.2, 0.02);
             prey = by;
             if (health < 10 && state != State.FLEE) {
@@ -489,7 +532,7 @@ final class Creatures {
 
         @Override
         protected void onDeath(Player by) {
-            world.playSound(loc(), Sound.ENTITY_WOLF_DEATH, SoundCategory.HOSTILE, 1f, 0.4f);
+            sound(loc(), null, Sound.ENTITY_WOLF_DEATH, 1f, 0.4f, 32);
             world.spawnParticle(Particle.SQUID_INK, loc().add(0, 0.6, 0), 20, 0.3, 0.3, 0.3, 0.02);
             if (rnd().nextDouble() < 0.35) world.dropItemNaturally(loc().add(0, 0.5, 0), plugin.items().ration());
         }
@@ -567,7 +610,7 @@ final class Creatures {
                 if (d < 6) {
                     nearTicks += dt;
                     world.spawnParticle(Particle.BUBBLE, loc().add(0, 0.5, 0), 6, 0.3, 0.2, 0.3, 0.05);
-                    if (nearTicks % 16 < dt) world.playSound(loc(), Sound.BLOCK_BUBBLE_COLUMN_UPWARDS_AMBIENT, SoundCategory.HOSTILE, 1f, 0.6f);
+                    if (nearTicks % 16 < dt) sound(loc(), null, Sound.BLOCK_BUBBLE_COLUMN_UPWARDS_AMBIENT, 1f, 0.6f, 32);
                 } else {
                     nearTicks = 0;
                 }
@@ -575,7 +618,7 @@ final class Creatures {
                     held = p;
                     holdTicks = 0;
                     p.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 60, 1, false, false));
-                    world.playSound(p.getLocation(), Sound.ENTITY_ELDER_GUARDIAN_CURSE, SoundCategory.HOSTILE, 0.3f, 1.6f);
+                    sound(p.getLocation(), null, Sound.ENTITY_ELDER_GUARDIAN_CURSE, 0.3f, 1.6f, 20);
                     return;
                 }
                 moveToward(p.getLocation(), nearTicks > 0 ? 0.16 : 0.1, 1.0);
@@ -607,7 +650,7 @@ final class Creatures {
         @Override
         protected void onHurt(Player by, double amount) {
             release();
-            world.playSound(loc(), Sound.ENTITY_GUARDIAN_HURT, SoundCategory.HOSTILE, 0.8f, 0.5f);
+            sound(loc(), null, Sound.ENTITY_GUARDIAN_HURT, 0.8f, 0.5f, 32);
             Vector away = loc().toVector().subtract(by.getLocation().toVector());
             goal = loc().add(away.lengthSquared() > 0.01 ? away.normalize().multiply(8) : new Vector(0, -2, 0));
             nearTicks = -60;
@@ -667,7 +710,7 @@ final class Creatures {
                 watchedTicks += dt;
                 if (watchedTicks % 20 < dt) mgr.sanityHit(p, 1.5);
                 if (watchedTicks > 20 * 7) {
-                    world.playSound(head(), Sound.BLOCK_SCULK_SHRIEKER_SHRIEK, SoundCategory.HOSTILE, 0.15f, 0.5f);
+                    sound(head(), null, Sound.BLOCK_SCULK_SHRIEKER_SHRIEK, 0.15f, 0.5f, 20);
                     remove();
                 }
                 return;
@@ -683,12 +726,12 @@ final class Creatures {
                     p.addPotionEffect(new PotionEffect(PotionEffectType.BLINDNESS, 30, 0, false, false));
                     mgr.flickerAround(p.getLocation(), 10);
                 }
-                world.playSound(p.getLocation(), Sound.ENTITY_WARDEN_NEARBY_CLOSEST, SoundCategory.HOSTILE, 0.8f, 0.6f);
+                sound(p.getLocation(), null, Sound.ENTITY_WARDEN_NEARBY_CLOSEST, 0.8f, 0.6f, 32);
                 remove();
                 return;
             }
             if (d < 14 && unseenTicks % 30 < dt) {
-                world.playSound(head(), Sound.AMBIENT_CAVE, SoundCategory.HOSTILE, 0.25f, 0.6f);
+                sound(head(), null, Sound.AMBIENT_CAVE, 0.25f, 0.6f, 20);
             }
             moveToward(p.getLocation(), 0.42, 1.0);
             animateWalk(Bodies.WATCHER_HIP, Bodies.WATCHER_SHOULDER, 0.25, true);
@@ -702,7 +745,7 @@ final class Creatures {
 
         @Override
         protected void onHurt(Player by, double amount) {
-            world.playSound(head(), Sound.ENTITY_ENDERMAN_TELEPORT, SoundCategory.HOSTILE, 0.5f, 0.3f);
+            sound(head(), null, Sound.ENTITY_ENDERMAN_TELEPORT, 0.5f, 0.3f, 32);
             world.spawnParticle(Particle.SQUID_INK, head(), 12, 0.2, 0.6, 0.2, 0.01);
             remove();
         }
