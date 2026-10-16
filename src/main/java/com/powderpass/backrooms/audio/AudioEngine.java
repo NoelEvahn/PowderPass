@@ -140,7 +140,7 @@ public final class AudioEngine implements Listener {
                     s.loops.clear();
                     s.level = e.getKey();
                     s.nextEvent = now + 100 + ThreadLocalRandom.current().nextInt(200);
-                    s.nextMusic = now + 20L * 60;
+                    s.nextMusic = now + 20L * (45 + ThreadLocalRandom.current().nextInt(45));
                     s.nextVoice = now + 20L * 45;
                     s.nextAnnounce = now + 20L * Math.max(10, cfg().announceSeconds) / 2;
                 }
@@ -149,6 +149,7 @@ public final class AudioEngine implements Listener {
                     if (cfg().audioAmbient) loops(p, s);
                     events(p, s);
                     announce(p, s);
+                    music(p, s);
                     if (s.debug) debugBar(p, s);
                 } catch (RuntimeException ex) {
                     plugin.getLogger().warning("[Audio] " + p.getName() + ": " + ex);
@@ -347,7 +348,7 @@ public final class AudioEngine implements Listener {
         Long cd = s.cooldown.get(ev.id());
         if (cd != null && cd > now) return false;
         if (ev.kind() == Soundscape.Kind.VOICE && (!cfg().audioVoices || now < s.nextVoice)) return false;
-        if (ev.kind() == Soundscape.Kind.MUSIC && (!cfg().audioMusic || now < s.nextMusic)) return false;
+        if (ev.kind() == Soundscape.Kind.MUSIC) return false; // music has its own schedule (see music())
         if (ev.underwaterOnly() && !s.underwater) return false;
         SoundIndex.Def def = index.def(ev.sound());
         return def != null;
@@ -377,10 +378,20 @@ public final class AudioEngine implements Listener {
                 if (event != null) playOnListener(p, event, net.kyori.adventure.sound.Sound.Source.MUSIC, vol, def.durationTicks());
             }
             default -> {
+                if (announcement && ev.sound().equals("voice.announce")) {
+                    pa(p, s, ev);
+                    return;
+                }
                 if (announcement || ev.kind() == Soundscape.Kind.VOICE) {
                     String event = index.resolve(ev.sound(), s.profile, s.underwater);
                     if (event == null) return;
-                    playOnListener(p, event, net.kyori.adventure.sound.Sound.Source.VOICE, vol, index.def(ev.sound()).durationTicks());
+                    if (ev.placement() == Soundscape.Place.LISTENER) {
+                        playOnListener(p, event, net.kyori.adventure.sound.Sound.Source.VOICE, vol, index.def(ev.sound()).durationTicks());
+                    } else {
+                        // a voice from somewhere: positional, and loud enough to be heard from where it is
+                        play(p, at, event, SoundCategory.VOICE, Audibility.volumeFor(Math.min(1, vol * 1.4), at.distance(p.getEyeLocation())), 1f,
+                                index.def(ev.sound()).durationTicks());
+                    }
                     return;
                 }
                 boolean muffled = ev.placement() != Soundscape.Place.LISTENER && cfg().audioQuality > 0
@@ -390,15 +401,113 @@ public final class AudioEngine implements Listener {
                 SoundIndex.Def def = index.def(ev.sound());
                 SoundCategory cat = ev.kind() == Soundscape.Kind.VOICE ? SoundCategory.VOICE : SoundCategory.AMBIENT;
                 float pitch = 0.94f + r.nextFloat() * 0.12f;
-                play(p, at, event, cat, vol, pitch, def.durationTicks());
+                // the volume that makes it heard at the wanted level from where it is (vanilla falls to 0 at 16 blocks)
+                float sent = Audibility.volumeFor(vol, at.distance(p.getEyeLocation()));
+                play(p, at, event, cat, sent, pitch, def.durationTicks());
                 // one early reflection for hard rooms, never for voices or quiet things
                 if (ev.reflect() && cfg().audioQuality > 0 && (s.profile.equals("concrete") || s.profile.equals("pool") || s.profile.equals("corridor"))) {
                     long delay = s.profile.equals("pool") ? 9 : s.profile.equals("concrete") ? 6 : 4;
                     Location mirror = p.getLocation().add(p.getLocation().toVector().subtract(at.toVector()).multiply(0.6));
                     plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
-                        if (p.isOnline() && p.getWorld() == at.getWorld()) play(p, mirror, event, cat, vol * 0.28f, pitch * 0.98f, def.durationTicks());
+                        if (p.isOnline() && p.getWorld() == at.getWorld())
+                            play(p, mirror, event, cat, Audibility.volumeFor(vol * 0.3f, mirror.distance(p.getEyeLocation())), pitch * 0.98f, def.durationTicks());
                     }, delay);
                 }
+            }
+        }
+    }
+
+    /**
+     * A PA announcement: clearly audible on the listener (it is the building talking, everywhere at once), with
+     * two quieter, later copies from ceiling speakers further along, which is what makes it sound like a PA in a
+     * big room rather than a voice in your head. Harder rooms echo longer.
+     */
+    private void pa(Player p, State s, Soundscape.Ev ev) {
+        SoundIndex.Def def = index.def(ev.sound());
+        if (def == null) return;
+        String event = index.resolve(ev.sound(), s.profile, s.underwater);
+        if (event == null) return;
+        float vol = (float) (cfg().audioAnnounceVolume * Math.min(1.0, intensity(s.level)));
+        playOnListener(p, event, net.kyori.adventure.sound.Sound.Source.VOICE, vol, def.durationTicks());
+        if (s.underwater || cfg().audioQuality == 0) return;
+        boolean hard = s.profile.equals("pool") || s.profile.equals("concrete") || s.profile.equals("corridor");
+        ThreadLocalRandom r = ThreadLocalRandom.current();
+        Location base = p.getLocation();
+        double yaw = r.nextDouble(Math.PI * 2);
+        int[] delays = hard ? new int[]{4, 9} : new int[]{3, 6};
+        float[] gains = hard ? new float[]{0.45f, 0.25f} : new float[]{0.35f, 0.15f};
+        for (int i = 0; i < 2; i++) {
+            double a = yaw + i * 2.4, d = 9 + i * 6;
+            Location spk = base.clone().add(Math.cos(a) * d, 3.5, Math.sin(a) * d);
+            float g = gains[i] * vol;
+            plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+                if (p.isOnline() && p.getWorld() == spk.getWorld())
+                    play(p, spk, event, SoundCategory.VOICE, Audibility.volumeFor(g, spk.distance(p.getEyeLocation())), 0.995f, def.durationTicks());
+            }, delays[i]);
+        }
+    }
+
+    /**
+     * Music on its own schedule (it used to compete with every other event and was almost never picked): the first
+     * track 45-90 s after arriving, then one about every {@code audio.music-interval-seconds}, never two at once.
+     * It plays on the listener in the Jukebox category by default ({@code audio.music-category}), because many
+     * players turn the Music slider down for the vanilla soundtrack.
+     */
+    private void music(Player p, State s) {
+        if (!cfg().audioMusic || now < s.nextMusic) return;
+        ThreadLocalRandom r = ThreadLocalRandom.current();
+        List<Soundscape.Ev> tracks = new ArrayList<>();
+        for (Soundscape.Ev ev : Soundscape.events(s.level)) {
+            if (ev.kind() == Soundscape.Kind.MUSIC && index.def(ev.sound()) != null && !s.recent.contains(ev.id())) tracks.add(ev);
+        }
+        if (tracks.isEmpty()) for (Soundscape.Ev ev : Soundscape.events(s.level)) if (ev.kind() == Soundscape.Kind.MUSIC && index.def(ev.sound()) != null) tracks.add(ev);
+        double gap = cfg().audioMusicInterval * (0.6 + r.nextDouble() * 0.8) / Math.max(0.05, cfg().audioMusicFrequency);
+        if (tracks.isEmpty() || s.underwater) {
+            s.nextMusic = now + 20L * 30;
+            return;
+        }
+        Soundscape.Ev ev = tracks.get(r.nextInt(tracks.size()));
+        SoundIndex.Def def = index.def(ev.sound());
+        String event = index.resolve(ev.sound() + ".ambient", null, false);
+        if (event == null) event = index.resolve(ev.sound(), null, false);
+        if (event == null) return;
+        float vol = (float) Math.min(1.0, Math.max(0.6, ev.volume() * 2.0) * intensity(s.level));
+        playOnListener(p, event, cfg().audioMusicRecords ? net.kyori.adventure.sound.Sound.Source.RECORD : net.kyori.adventure.sound.Sound.Source.MUSIC,
+                vol, def.durationTicks());
+        s.recent.addLast(ev.id());
+        while (s.recent.size() > 6) s.recent.removeFirst();
+        s.lastEvent = ev.id();
+        s.nextMusic = now + def.durationTicks() + (long) (20 * gap);
+    }
+
+    /**
+     * A sound from a place in the world, for everyone near it: the pack's version (with the listener's room profile
+     * and a muffled take behind walls) for players who loaded the pack, a vanilla stand-in for everyone else. It
+     * falls off naturally to silence at {@code range} blocks, and is never cut short by the vanilla 16-block limit.
+     * Creatures, lifts, cars and cutscenes use this so their sounds are actually heard.
+     */
+    public void broadcast(Location at, String id, org.bukkit.Sound fallback, double gain, float pitch, double range, SoundCategory cat) {
+        if (at.getWorld() == null) return;
+        boolean has = cfg().audioEnabled && id != null && index.has(id);
+        SoundIndex.Def def = id == null ? null : index.def(id);
+        for (Player p : at.getWorld().getPlayers()) {
+            double d = p.getEyeLocation().distance(at);
+            if (d > range) continue;
+            double heard = gain * (1 - d / range);
+            if (heard < 0.01) continue;
+            float vol = Audibility.volumeFor(heard, d);
+            if (has && custom(p)) {
+                String event = id;
+                if (def != null) {
+                    State s = states.get(p.getUniqueId());
+                    boolean muffled = def.muffled() && cfg().audioQuality > 0 && d > 3 && Acoustics.obstruction(p.getEyeLocation(), at, 32) >= 1;
+                    String r = index.resolve(id, s == null ? null : s.profile, muffled || (s != null && s.underwater));
+                    if (r != null) event = r;
+                }
+                // pack sounds are authored at their pitch; only small variations are passed on
+                p.playSound(at, "backrooms:" + event, cat, vol, pitch >= 0.8f && pitch <= 1.25f ? pitch : 1f);
+            } else if (fallback != null) {
+                p.playSound(at, fallback, cat, vol, pitch);
             }
         }
     }
@@ -452,7 +561,7 @@ public final class AudioEngine implements Listener {
                 if (!p.isOnline() || p.getWorld() != at.getWorld()) return;
                 boolean muffled = cfg().audioQuality > 0 && Acoustics.obstruction(p.getEyeLocation(), at.clone().add(0, 1, 0), 24) >= 1;
                 String event = index.resolve(surface, s.profile, muffled);
-                if (event != null) play(p, at, event, SoundCategory.AMBIENT, vol, 0.95f + r.nextFloat() * 0.1f, def.durationTicks());
+                if (event != null) play(p, at, event, SoundCategory.AMBIENT, Audibility.volumeFor(vol, at.distance(p.getEyeLocation())), 0.95f + r.nextFloat() * 0.1f, def.durationTicks());
             }, (long) i * interval);
         }
     }

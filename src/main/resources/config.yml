@@ -171,7 +171,7 @@ audio:
   # A constant bed that follows each player and never stops: Level 0 fluorescent buzz, Poolrooms pumps and water,
   # Level 1 ventilation, steam and metal, Level 4 air conditioning and ballast hum, Plains wind.
   bed: true
-  bed-volume: 1.0                # 0..2
+  bed-volume: 1.0                # 0..2 (the bed sits under the PA, music and events)
   level0-bed: recording          # recording (the supplied fluorescent recording) | synth (original synthesised buzz)
   ambient: true                  # looping physical sources near you: fixture hum, vents, water, machinery
   music: true                    # rare music; it plays on the player, not at a place
@@ -179,7 +179,12 @@ audio:
   voices: true                   # whispers, distant conversations, announcements
   event-density: 1.0             # 0..4, how often one-shot events happen (silence is part of the design)
   rare-frequency: 1.0            # 0..4, scales the rare events
-  music-frequency: 1.0           # 0.05..4
+  music-frequency: 1.0           # 0.05..4, scales how often music plays
+  music-interval-seconds: 200    # average gap between music tracks (randomised +-40%), the first 45-90 s after arriving
+  music-category: records        # records (Jukebox slider, rarely turned down) | music (Music slider)
+  announce-volume: 1.0           # PA announcements, 0..1 (played on the player, with echoes from the ceiling)
+  monster-volume: 1.0            # 0..2, creature footsteps, breathing, voices and attacks
+  footsteps: true                # surface footsteps (carpet, tile, concrete, water) and splashes for players with the pack
   max-sources: 6                 # simultaneous looping sources per player
   distance-scale: 1.0            # 0.25..3, scales hearing radii and event distances
   acoustic-quality: medium       # low (no obstruction tests or reflections) | medium | high (recalculated more often)

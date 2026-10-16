@@ -268,6 +268,50 @@ class PluginIntegrationTest {
         assertEquals(0, l4.getEntities().stream().filter(e -> e.getPersistentDataContainer().has(Keys.DECOR, PersistentDataType.STRING)).count());
     }
 
+    /**
+     * Large slides used to render in pieces: their segments were cut by the per-chunk entity cap and only existed
+     * within the ordinary activation radius. Structural pieces now spawn whole, out to the structural radius.
+     */
+    @Test
+    void slidesSpawnWholeFarBeyondTheOrdinaryRadius() {
+        World pool = plugin.worlds().world(Level.POOLROOMS);
+        LevelGenerator gen = plugin.worlds().generator(Level.POOLROOMS);
+        int r = plugin.cfg().activationRadius, sr = plugin.cfg().structuralRadius;
+        assertTrue(sr > r);
+        // find a chunk with slide pieces near the origin
+        int found = Integer.MIN_VALUE, fz = 0;
+        java.util.List<com.powderpass.backrooms.gen.DecorSpec> slide = null;
+        search:
+        for (int cx = -30; cx <= 30; cx++) {
+            for (int cz = -30; cz <= 30; cz++) {
+                var specs = gen.decorations(cx, cz).stream().filter(com.powderpass.backrooms.gen.DecorSpec::isStructural).toList();
+                if (!specs.isEmpty()) {
+                    found = cx;
+                    fz = cz;
+                    slide = specs;
+                    break search;
+                }
+            }
+        }
+        assertNotNull(slide, "some slide near the origin");
+        // stand sr chunks away: outside the ordinary radius, inside the structural one
+        int pcx = found - sr, pcz = fz;
+        PlayerMock p = playerAt(0, 70, 0);
+        p.teleport(new Location(pool, pcx * 16 + 8.5, 120, pcz * 16 + 8.5));
+        for (int cx = pcx - sr - 1; cx <= pcx + sr + 1; cx++) for (int cz = pcz - sr - 1; cz <= pcz + sr + 1; cz++) pool.getChunkAt(cx, cz).load();
+        server.getScheduler().performTicks(400);
+        java.util.Set<String> keys = new java.util.HashSet<>();
+        for (Entity e : pool.getEntities()) {
+            String k = e.getPersistentDataContainer().get(Keys.DECOR, PersistentDataType.STRING);
+            if (k != null) keys.add(k);
+        }
+        for (var spec : slide) assertTrue(keys.contains(spec.key()), "structural piece " + spec.model + " spawned " + sr + " chunks away");
+        // and nothing ordinary spawned that far out
+        int ordinary = 0;
+        for (var spec : gen.decorations(found, fz)) if (!spec.isStructural() && keys.contains(spec.key())) ordinary++;
+        assertEquals(0, ordinary, "props stay within the ordinary radius");
+    }
+
     @Test
     void disableRemovesAllRuntimeEntities() {
         World l3 = plugin.worlds().world(Level.LEVEL_1);

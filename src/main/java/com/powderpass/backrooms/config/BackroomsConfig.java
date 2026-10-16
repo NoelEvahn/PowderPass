@@ -54,6 +54,9 @@ public final class BackroomsConfig {
     public final double audioDensity, audioRare, audioMusicFrequency, audioDistanceScale;
     public final int audioMaxSources, audioQuality;
     public final Map<Level, Double> audioLevelIntensity = new EnumMap<>(Level.class);
+    public final int audioMusicInterval;
+    public final boolean audioMusicRecords, audioFootsteps;
+    public final double audioAnnounceVolume, audioMonsterVolume;
     // resource pack delivery
     public final boolean packEnabled, packRequired, packHostEnabled, bedrockCustomSounds, customBlocks, packRequiredForEntry, bedrockEntry;
     public final String packUrl, packPrompt, packHostBind, packHostPublicAddress;
@@ -172,6 +175,11 @@ public final class BackroomsConfig {
         audioMusicFrequency = Math.max(0.05, Math.min(4, c.getDouble("audio.music-frequency", 1.0)));
         audioDistanceScale = Math.max(0.25, Math.min(3, c.getDouble("audio.distance-scale", 1.0)));
         audioMaxSources = clamp(c.getInt("audio.max-sources", 6), 1, 24);
+        audioMusicInterval = clamp(c.getInt("audio.music-interval-seconds", 200), 30, 3600);
+        audioMusicRecords = !"music".equalsIgnoreCase(c.getString("audio.music-category", "records"));
+        audioAnnounceVolume = Math.max(0, Math.min(1, c.getDouble("audio.announce-volume", 1.0)));
+        audioFootsteps = c.getBoolean("audio.footsteps", true);
+        audioMonsterVolume = Math.max(0, Math.min(2, c.getDouble("audio.monster-volume", 1.0)));
         audioQuality = switch (c.getString("audio.acoustic-quality", "medium").toLowerCase(Locale.ROOT)) {
             case "low" -> 0;
             case "high" -> 2;

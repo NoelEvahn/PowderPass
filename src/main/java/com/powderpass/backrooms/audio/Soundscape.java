@@ -99,17 +99,18 @@ final class Soundscape {
     private static final Map<Level, List<Bed>> BEDS = new EnumMap<>(Level.class);
 
     static {
-        BEDS.put(Level.LEVEL_0, List.of(new Bed("bed.level0", 0.75f)));
-        BEDS.put(Level.POOLROOMS, List.of(new Bed("bed.poolrooms", 0.8f)));
-        BEDS.put(Level.LEVEL_1, List.of(new Bed("bed.garage", 0.85f)));
-        BEDS.put(Level.LEVEL_4, List.of(new Bed("bed.office", 0.75f)));
-        BEDS.put(Level.PLAINS, List.of(new Bed("bed.plains", 0.7f)));
+        BEDS.put(Level.LEVEL_0, List.of(new Bed("bed.level0", 0.5f)));
+        BEDS.put(Level.POOLROOMS, List.of(new Bed("bed.poolrooms", 0.55f)));
+        BEDS.put(Level.LEVEL_1, List.of(new Bed("bed.garage", 0.55f)));
+        BEDS.put(Level.LEVEL_4, List.of(new Bed("bed.office", 0.5f)));
+        BEDS.put(Level.PLAINS, List.of(new Bed("bed.plains", 0.55f)));
     }
 
     private static final Map<Level, List<Ev>> ANNOUNCE = new EnumMap<>(Level.class);
 
     static {
-        // roughly every 40 s (audio.announce-seconds): the building talks, or someone does
+        // roughly every 25 s (audio.announce-seconds): the building talks (PA, on the listener with ceiling echoes),
+        // or someone does (positional, from where they are)
         ANNOUNCE.put(Level.LEVEL_0, List.of(
                 Ev.one("voice.announce", Place.FAR, 4, 0, 0.55f).as(Kind.VOICE).named("announce"),
                 Ev.one("voice.phrase", Place.FAR, 2, 0, 0.4f).as(Kind.VOICE).named("announce.phrase"),

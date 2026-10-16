@@ -414,15 +414,11 @@ final class Skinwalker extends Creature {
 
     /**
      * Custom pack sound for players who have it, a vanilla stand-in for everyone else. Monster sounds carry far
-     * (48 blocks) and play in the HOSTILE category so they are never drowned by the ambience.
+     * (48 blocks, louder ones further) and play in the HOSTILE category so they are never drowned by the ambience.
      */
     void sfx(Location at, String custom, Sound fallback, float volume, float pitch) {
-        boolean has = plugin.audio().index().has(custom);
-        for (Player p : at.getWorld().getPlayers()) {
-            if (p.getLocation().distanceSquared(at) > 48 * 48) continue;
-            if (has && plugin.audio().custom(p)) p.playSound(at, "backrooms:" + custom, SoundCategory.HOSTILE, volume, pitch < 0.8f ? 1f : pitch);
-            else p.playSound(at, fallback, SoundCategory.HOSTILE, volume, pitch);
-        }
+        double range = 32 + 16 * Math.min(2, volume);
+        plugin.audio().broadcast(at, custom, fallback, Math.min(1.0, volume) * plugin.cfg().audioMonsterVolume, pitch, range, SoundCategory.HOSTILE);
     }
 
     BackroomsPlugin plugin() {

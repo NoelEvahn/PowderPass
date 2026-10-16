@@ -57,6 +57,9 @@ import java.util.zip.ZipFile;
 public final class PackManager implements Listener {
     public enum UrlState { UNCHECKED, CHECKING, REACHABLE, UNREACHABLE, DISABLED }
 
+    /** Incremented by every URL check; results of superseded checks are ignored. */
+    private int checkGeneration;
+
     public static final String EMBEDDED = "backrooms-pack.zip";
     /** Bedrock manifest, icon and sound definitions; the audio itself is taken from the Java pack. */
     public static final String EMBEDDED_BEDROCK = "bedrock-skeleton.zip";
@@ -300,9 +303,12 @@ public final class PackManager implements Listener {
             return;
         }
         urlState = UrlState.CHECKING;
+        int gen = ++checkGeneration;
         plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
             String problem = probe(u);
             plugin.getServer().getScheduler().runTask(plugin, () -> {
+                // a probe of an older URL (before a reload) must never decide the state of the current one
+                if (gen != checkGeneration || !u.equals(url())) return;
                 if (problem == null) {
                     urlState = UrlState.REACHABLE;
                     urlProblem = "";

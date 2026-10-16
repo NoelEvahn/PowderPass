@@ -316,14 +316,13 @@ public abstract class Creature {
         return viewer != null;
     }
 
-    /** A custom pack sound for listeners who have the pack, a vanilla stand-in for everyone else, within {@code range}. */
+    /**
+     * A creature sound: the pack's version for listeners who have the pack, a vanilla stand-in for everyone else,
+     * falling off to silence at {@code range} blocks (and really reaching that far, see {@code Audibility}).
+     */
     protected void sound(Location at, String custom, org.bukkit.Sound fallback, float volume, float pitch, double range) {
-        boolean has = plugin.audio().index().has(custom);
-        for (Player p : at.getWorld().getPlayers()) {
-            if (p.getLocation().distanceSquared(at) > range * range) continue;
-            if (has && plugin.audio().custom(p)) p.playSound(at, "backrooms:" + custom, org.bukkit.SoundCategory.HOSTILE, volume, 1f);
-            else p.playSound(at, fallback, org.bukkit.SoundCategory.HOSTILE, volume, pitch);
-        }
+        plugin.audio().broadcast(at, custom, fallback, Math.min(1.0, volume) * plugin.cfg().audioMonsterVolume, pitch, range,
+                org.bukkit.SoundCategory.HOSTILE);
     }
 
     /** A sound was heard at a location (hunters override). */

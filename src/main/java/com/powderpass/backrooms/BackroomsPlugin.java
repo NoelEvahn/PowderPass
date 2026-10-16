@@ -109,6 +109,7 @@ public class BackroomsPlugin extends JavaPlugin {
         pm.registerEvents(possessions, this);
         pm.registerEvents(pack, this);
         pm.registerEvents(audio, this);
+        pm.registerEvents(new com.powderpass.backrooms.audio.Footsteps(this), this);
         pm.registerEvents(new com.powderpass.backrooms.listener.CustomBlockGuard(this), this);
         pm.registerEvents(vehicles, this);
         pm.registerEvents(lifts, this);
