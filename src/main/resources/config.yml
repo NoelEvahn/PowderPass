@@ -19,6 +19,8 @@ levels:
     enabled: true
     biome: "minecraft:swamp"
     generation:            # [locked]
+      floor-holes-chance: 0.4  # open areas of the upper floor with a grid of holes you can fall through to the lower floor
+      loop-shaft-chance: 0.35  # open areas of the lower floor with dark shafts that drop you back out of the upper floor's ceiling
       hall-chance: 0.08        # share of regions that become pillar halls
       dark-zone-chance: 0.20   # sectors where the fixtures have died
       thick-wall-chance: 0.12  # abnormal wall thickness

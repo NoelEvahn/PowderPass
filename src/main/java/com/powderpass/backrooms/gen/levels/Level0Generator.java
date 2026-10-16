@@ -37,8 +37,15 @@ import java.util.List;
  * few panels stutter. The only way on is a rare cold seam into the Poolrooms; there is no exit here.
  */
 public final class Level0Generator extends RoomLevel {
-    private static final int FLOOR = 64;
-    private static final int CEIL = FLOOR + 5, CEIL_TALL_PILLARS = FLOOR + 9, CEIL_TALL = FLOOR + 22;
+    /** The upper floor (where everyone arrives) and the lower floor 24 blocks under it. */
+    private static final int FLOOR = 64, LOWER = 40;
+    public static final int DOWN = 0, UP = 1;
+    /** Ceiling heights above a floor. */
+    private static final int CEIL = 5, CEIL_TALL_PILLARS = 9, CEIL_TALL = 22;
+    /** The lower floor's shafts reach down to here; below {@link #LOOP_Y} a faller is carried back up. */
+    public static final int BOTTOM = 10, LOOP_Y = 22;
+    /** Top of the dark shafts above the upper floor's ceiling that fallers re-enter through. */
+    public static final int CEILING_SHAFT_TOP = FLOOR + 27;
     private static final int DOOR_H = 3;
 
     public enum Zone { ROOMS, HALLS, PILLARS, TALL, EXPANSE }
@@ -59,16 +66,16 @@ public final class Level0Generator extends RoomLevel {
     private static final B UNDER = B.of(Material.STONE);
 
     public Level0Generator(long seed, GenSettings gs) {
-        super(Level.LEVEL_0, seed, gs, 8, 8, 3, new int[]{FLOOR}, FLOOR - 8, FLOOR + 30, 0.16, gs.get("repeat-chance", 0.06));
+        super(Level.LEVEL_0, seed, gs, 8, 8, 3, new int[]{LOWER, FLOOR}, BOTTOM, FLOOR + 30, 0.16, gs.get("repeat-chance", 0.06));
     }
 
     @Override
     protected List<FeatureDef> featureDefs() {
         return List.of(
                 // rare on purpose: roughly one cold seam per 550 blocks, and nothing else leads out
-                FeatureDef.transition("seam", Dest.to(Level.POOLROOMS), gs.get("poolrooms-chance", 0.35)).withEffect("intent"),
-                FeatureDef.landmark("phone_desk", gs.get("landmark-chance", 0.6)),
-                FeatureDef.landmark("chair_circle", gs.get("landmark-chance", 0.6) * 0.6));
+                FeatureDef.transition("seam", Dest.to(Level.POOLROOMS), gs.get("poolrooms-chance", 0.35)).withEffect("intent").onFloor(UP),
+                FeatureDef.landmark("phone_desk", gs.get("landmark-chance", 0.6)).onFloor(UP),
+                FeatureDef.landmark("chair_circle", gs.get("landmark-chance", 0.6) * 0.6).onFloor(UP));
     }
 
     @Override
@@ -81,64 +88,78 @@ public final class Level0Generator extends RoomLevel {
     /** Empty expanses span 5 x 5 regions (320 blocks): nothing but carpet, ceiling and lights. Absent from older worlds. */
     private static final int EXPANSE_REGIONS = 5;
 
-    private boolean expanse(int rx, int rz) {
-        double c = gs.get("empty-expanse-chance", 0.0);
-        return c > 0 && Rng.chance(Rng.hash(seed ^ 0xE4BA5EL, Math.floorDiv(rx, EXPANSE_REGIONS), Math.floorDiv(rz, EXPANSE_REGIONS)), c);
+    private boolean expanse(int floor, int rx, int rz) {
+        double c = gs.get("empty-expanse-chance", 0.0) * (floor == DOWN ? 0.6 : 1);
+        return c > 0 && Rng.chance(Rng.hash(seed ^ 0xE4BA5EL ^ floor * 0x77L, Math.floorDiv(rx, EXPANSE_REGIONS), Math.floorDiv(rz, EXPANSE_REGIONS)), c);
     }
 
-    Zone zoneOf(int rx, int rz) {
-        if (expanse(rx, rz)) return Zone.EXPANSE;
-        double r = Rng.unit(Rng.hash(seed ^ 0x2071L, rx, rz));
+    /**
+     * The kind of space of a region on a floor. The lower floor has its own layout: no tall halls (the upper floor
+     * is right above), more long halls and pillar fields, and it is darker.
+     */
+    Zone zoneOf(int floor, int rx, int rz) {
+        if (expanse(floor, rx, rz)) return Zone.EXPANSE;
+        double r = Rng.unit(Rng.hash(seed ^ 0x2071L ^ floor * 0x5151L, rx, rz));
         double halls = gs.get("hallway-chance", 0.14), pillars = gs.get("pillar-field-chance", 0.13), tall = gs.get("tall-hall-chance", 0.08);
+        if (floor == DOWN) {
+            halls *= 1.5;
+            pillars *= 1.4;
+            tall = 0;
+        }
         if (r < halls) return Zone.HALLS;
         if (r < halls + pillars) return Zone.PILLARS;
         if (r < halls + pillars + tall) return Zone.TALL;
         return Zone.ROOMS;
     }
 
+    /** Zone of a cell on the upper floor (where everyone is most of the time). */
     public Zone zoneOfCell(int cx, int cz) {
-        return zoneOf(Math.floorDiv(cx, R), Math.floorDiv(cz, R));
+        return zoneOfCell(UP, cx, cz);
+    }
+
+    public Zone zoneOfCell(int floor, int cx, int cz) {
+        return zoneOf(floor, Math.floorDiv(cx, R), Math.floorDiv(cz, R));
     }
 
     /** Hall regions run along X (true) or Z. */
-    private boolean hallsAlongX(int rx, int rz) {
-        return Rng.chance(Rng.hash(seed ^ 0x4A11EL, rx, rz), 0.5);
+    private boolean hallsAlongX(int floor, int rx, int rz) {
+        return Rng.chance(Rng.hash(seed ^ 0x4A11EL ^ floor * 0x31L, rx, rz), 0.5);
     }
 
     /** Cross passages between parallel halls, at two positions along the hall axis. */
-    private boolean spine(int rx, int rz, int along) {
-        int s = Rng.pick(Rng.hash(seed ^ 0x5B1EL, rx, rz), R / 2);
+    private boolean spine(int floor, int rx, int rz, int along) {
+        int s = Rng.pick(Rng.hash(seed ^ 0x5B1EL ^ floor * 0x31L, rx, rz), R / 2);
         return along == s || along == s + R / 2;
     }
 
     @Override
     protected boolean mergedRegion(int floor, int rx, int rz) {
-        Zone z = zoneOf(rx, rz);
+        Zone z = zoneOf(floor, rx, rz);
         return z == Zone.PILLARS || z == Zone.TALL || z == Zone.EXPANSE;
     }
 
     /** Both cells lie in an empty expanse: no wall between them at all, even across region borders. */
-    private boolean expanseLink(int ax, int az, int bx, int bz) {
-        return zoneOfCell(ax, az) == Zone.EXPANSE && zoneOfCell(bx, bz) == Zone.EXPANSE;
+    private boolean expanseLink(int floor, int ax, int az, int bx, int bz) {
+        return zoneOfCell(floor, ax, az) == Zone.EXPANSE && zoneOfCell(floor, bx, bz) == Zone.EXPANSE;
     }
 
-    private boolean hallLink(int ax, int az, int bx, int bz) {
-        return zoneOfCell(ax, az) == Zone.HALLS && zoneOfCell(bx, bz) == Zone.HALLS;
+    private boolean hallLink(int floor, int ax, int az, int bx, int bz) {
+        return zoneOfCell(floor, ax, az) == Zone.HALLS && zoneOfCell(floor, bx, bz) == Zone.HALLS;
     }
 
     @Override
     public boolean edgeOpen(int floor, int cx, int cz, boolean east) {
         int bx = east ? cx + 1 : cx, bz = east ? cz : cz + 1;
-        if (expanseLink(cx, cz, bx, bz)) return true;
-        if (hallLink(cx, cz, bx, bz)) {
+        if (expanseLink(floor, cx, cz, bx, bz)) return true;
+        if (hallLink(floor, cx, cz, bx, bz)) {
             int rax = Math.floorDiv(cx, R), raz = Math.floorDiv(cz, R), rbx = Math.floorDiv(bx, R), rbz = Math.floorDiv(bz, R);
-            boolean ax = hallsAlongX(rax, raz);
+            boolean ax = hallsAlongX(floor, rax, raz);
             if (rax == rbx && raz == rbz) {
                 if (east == ax) return true; // along a hall
-                return spine(rax, raz, ax ? Math.floorMod(cx, R) : Math.floorMod(cz, R)); // a cross passage
+                return spine(floor, rax, raz, ax ? Math.floorMod(cx, R) : Math.floorMod(cz, R)); // a cross passage
             }
             // the next region is halls running the same way: the halls carry straight on
-            if (ax == hallsAlongX(rbx, rbz) && east == ax) return true;
+            if (ax == hallsAlongX(floor, rbx, rbz) && east == ax) return true;
         }
         return super.edgeOpen(floor, cx, cz, east);
     }
@@ -146,8 +167,8 @@ public final class Level0Generator extends RoomLevel {
     @Override
     public Door door(int floor, int cx, int cz, boolean east) {
         int bx = east ? cx + 1 : cx, bz = east ? cz : cz + 1;
-        if (expanseLink(cx, cz, bx, bz)) return new Door(true, 1, S - 1, true);
-        if (hallLink(cx, cz, bx, bz)) return edgeOpen(floor, cx, cz, east) ? new Door(true, 3, 3, false) : Door.CLOSED;
+        if (expanseLink(floor, cx, cz, bx, bz)) return new Door(true, 1, S - 1, true);
+        if (hallLink(floor, cx, cz, bx, bz)) return edgeOpen(floor, cx, cz, east) ? new Door(true, 3, 3, false) : Door.CLOSED;
         return super.door(floor, cx, cz, east);
     }
 
@@ -156,15 +177,18 @@ public final class Level0Generator extends RoomLevel {
         return new double[]{0.28, 1, 4};
     }
 
-    int ceilY(int cx, int cz) {
-        Zone z = zoneOfCell(cx, cz);
-        if (z == Zone.TALL) return CEIL_TALL;
-        if (z == Zone.PILLARS && Rng.chance(Rng.hash(seed ^ 0x7A11L, Math.floorDiv(cx, R), Math.floorDiv(cz, R)), 0.35)) return CEIL_TALL_PILLARS;
-        return CEIL;
+    int ceilY(int floor, int cx, int cz) {
+        int fy = floorY[floor];
+        Zone z = zoneOfCell(floor, cx, cz);
+        if (z == Zone.TALL) return fy + CEIL_TALL;
+        if (z == Zone.PILLARS && Rng.chance(Rng.hash(seed ^ 0x7A11L ^ floor, Math.floorDiv(cx, R), Math.floorDiv(cz, R)), 0.35)) return fy + CEIL_TALL_PILLARS;
+        return fy + CEIL;
     }
 
-    private boolean dark(int cx, int cz) {
-        return zone(cx, cz, 0xDA4CL, 90) > 1.0 - gs.get("dark-zone-chance", 0.2) * 0.6;
+    /** Dead sectors: most panels have failed. The lower floor has far more of them. */
+    private boolean dark(int floor, int cx, int cz) {
+        double chance = gs.get("dark-zone-chance", 0.2) * (floor == DOWN ? 1.8 : 1.0);
+        return zone(cx, cz, 0xDA4CL ^ floor * 0x1D1L, 90) > 1.0 - chance * 0.6;
     }
 
     private boolean damp(int cx, int cz) {
@@ -177,7 +201,7 @@ public final class Level0Generator extends RoomLevel {
     }
 
     int kind(int floor, int cx, int cz) {
-        if (zoneOfCell(cx, cz) != Zone.ROOMS) return K_PLAIN;
+        if (zoneOfCell(floor, cx, cz) != Zone.ROOMS) return K_PLAIN;
         double r = Rng.unit(ch(floor, cx, cz, 0x4B1D));
         if (r < gs.get("thick-wall-chance", 0.1)) return K_THICK;
         if (r < 0.16) return K_PILLAR;
@@ -194,7 +218,7 @@ public final class Level0Generator extends RoomLevel {
     boolean[] layout(int floor, int cx, int cz) {
         boolean[] s = new boolean[S * S];
         if (featureAt(floor, cx, cz) != null) return s;
-        switch (zoneOfCell(cx, cz)) {
+        switch (zoneOfCell(floor, cx, cz)) {
             case ROOMS -> rooms(floor, cx, cz, s);
             case HALLS -> halls(floor, cx, cz, s);
             case PILLARS -> {
@@ -299,26 +323,32 @@ public final class Level0Generator extends RoomLevel {
     @Override
     protected Style style(int floor, int cx, int cz) {
         Style st = new Style();
-        st.name = zoneOfCell(cx, cz).name().toLowerCase(java.util.Locale.ROOT) + (dark(cx, cz) ? "/dead-sector" : damp(cx, cz) ? "/damp" : "");
+        st.name = zoneOfCell(floor, cx, cz).name().toLowerCase(java.util.Locale.ROOT) + (dark(floor, cx, cz) ? "/dead-sector" : damp(cx, cz) ? "/damp" : "");
         st.under = UNDER;
         st.above = UNDER;
         st.wall = WALL;
         st.floor = CARPET;
         st.ceil = TILES;
-        st.ceilY = ceilY(cx, cz);
+        st.ceilY = ceilY(floor, cx, cz);
         st.doorH = DOOR_H;
         return st;
     }
 
     @Override
     public String zoneName(int floor, int cx, int cz) {
-        Zone z = zoneOfCell(cx, cz);
+        Zone z = zoneOfCell(floor, cx, cz);
         return style(floor, cx, cz).name + (z == Zone.ROOMS ? " " + KINDS[kind(floor, cx, cz)] : "");
     }
 
     @Override
     public int[] safeLocal(int floor, int cx, int cz) {
-        return zoneOfCell(cx, cz) == Zone.PILLARS ? new int[]{2, 2} : new int[]{S / 2, S / 2};
+        return zoneOfCell(floor, cx, cz) == Zone.PILLARS ? new int[]{2, 2} : new int[]{S / 2, S / 2};
+    }
+
+    /** Everyone arrives on the upper floor. */
+    @Override
+    public int[] safeSpot(int x, int z, int preferredFloor) {
+        return super.safeSpot(x, z, UP);
     }
 
     @Override
@@ -331,34 +361,40 @@ public final class Level0Generator extends RoomLevel {
     protected void paintCell(CellCtx c) {
         Style st = style(c.floor, c.cx, c.cz);
         int ceil = st.ceilY;
-        int top = roofY;
-        boolean damp = damp(c.cx, c.cz);
+        int top;
+        boolean damp = damp(c.cx, c.cz) && !hasHoles(c.floor, c.cx, c.cz) && !hasShaft(c.floor, c.cx, c.cz);
         boolean warm = zone(c.cx, c.cz, 0x7E11L, 48) > 0.68;
         B wall = warm ? WALL_B : WALL;
-        // ---- shell: floor, air, ceiling, filler
+        // ---- shell: each floor fills its own band (the lower floor from the bedrock up to just under the upper
+        // floor's carpet, the upper floor from its carpet to the roof): floor, air, ceiling, filler
+        boolean lower = c.floor == DOWN;
+        if (!lower) top = roofY;
+        else top = floorY[UP];
         for (int u = c.u0; u <= c.u1; u++) {
             for (int v = c.v0; v <= c.v1; v++) {
-                c.set(u, bottomY, v, B.BEDROCK);
-                for (int y = bottomY + 1; y < c.fy; y++) c.set(u, y, v, UNDER);
+                if (lower) {
+                    c.set(u, bottomY, v, B.BEDROCK);
+                    for (int y = bottomY + 1; y < c.fy; y++) c.set(u, y, v, UNDER);
+                }
                 boolean wet = damp && ValueNoise.sample(seed ^ 0xC4E7, c.wx(u) / 5.0, c.wz(v) / 5.0) > 0.62;
                 c.set(u, c.fy, v, wet ? CARPET_WET : CARPET);
                 for (int y = c.fy + 1; y < ceil; y++) c.set(u, y, v, B.AIR);
                 boolean stained = Rng.chance(c.h(u, ceil, v, 0x7113), damp ? 0.06 : 0.008);
                 c.set(u, ceil, v, stained ? TILES_STAIN : TILES);
                 for (int y = ceil + 1; y < top; y++) c.set(u, y, v, UNDER);
-                c.set(u, top, v, B.BEDROCK);
+                if (!lower) c.set(u, top, v, B.BEDROCK);
             }
         }
         // ---- wall lines (west and north), as tall as the taller side, doorways as low as the lower side
         Door west = west(c.floor, c.cx, c.cz), north = north(c.floor, c.cx, c.cz);
-        int ceilW = ceilY(c.cx - 1, c.cz), ceilN = ceilY(c.cx, c.cz - 1);
-        boolean linkW = hallLink(c.cx - 1, c.cz, c.cx, c.cz), linkN = hallLink(c.cx, c.cz - 1, c.cx, c.cz);
+        int ceilW = ceilY(c.floor, c.cx - 1, c.cz), ceilN = ceilY(c.floor, c.cx, c.cz - 1);
+        boolean linkW = hallLink(c.floor, c.cx - 1, c.cz, c.cx, c.cz), linkN = hallLink(c.floor, c.cx, c.cz - 1, c.cx, c.cz);
         for (int v = 1; v < S; v++) line(c, 0, v, v, west, ceil, ceilW, linkW, wall, damp);
         for (int u = 1; u < S; u++) line(c, u, 0, u, north, ceil, ceilN, linkN, wall, damp);
         boolean[] lay = layout(c.floor, c.cx, c.cz);
         boolean openCorner = merged(c.floor, c.cx, c.cz) && cornerOpen(c.floor, c.cx, c.cz);
         if (!openCorner || lay[0]) {
-            int ct = Math.max(Math.max(ceil, ceilW), Math.max(ceilN, ceilY(c.cx - 1, c.cz - 1)));
+            int ct = Math.max(Math.max(ceil, ceilW), Math.max(ceilN, ceilY(c.floor, c.cx - 1, c.cz - 1)));
             if (c.in(0, 0)) {
                 for (int y = c.fy + 1; y < ct; y++) c.set(0, y, 0, wallBlock(c, 0, y, 0, wall, damp, ceil));
                 c.set(0, ct, 0, TILES);
@@ -395,7 +431,7 @@ public final class Level0Generator extends RoomLevel {
                 if (state != 2) c.set(u, ceil - 1, v, B.light(15));
             }
         }
-        if (zoneOfCell(c.cx, c.cz) == Zone.TALL && !dark(c.cx, c.cz)) {
+        if (zoneOfCell(c.floor, c.cx, c.cz) == Zone.TALL && !dark(c.floor, c.cx, c.cz)) {
             // the ceiling is far up: light hangs in the air below it, invisible, in an even grid
             for (int u = 2; u < S; u += 4) {
                 for (int v = 2; v < S; v += 4) {
@@ -406,6 +442,86 @@ public final class Level0Generator extends RoomLevel {
             }
         }
         if (f != null) feature(c, st, f);
+        // ---- the vertical loop: holes down to the lower floor, shafts from it, and where fallers come back in
+        for (int u = c.u0; u <= c.u1; u++) {
+            for (int v = c.v0; v <= c.v1; v++) {
+                int x = c.wx(u), z = c.wz(v);
+                if (c.floor == UP && holeAt(x, z)) {
+                    int lowCeil = ceilY(DOWN, c.cx, c.cz);
+                    for (int y = c.fy; y >= lowCeil; y--) c.set(u, y, v, B.AIR);
+                }
+                if (c.floor == DOWN && shaftAt(x, z)) {
+                    for (int y = c.fy; y > bottomY; y--) c.set(u, y, v, B.AIR);
+                }
+                if (c.floor == UP && shaftAt(x, z)) {
+                    for (int y = ceil; y <= CEILING_SHAFT_TOP; y++) c.set(u, y, v, B.AIR);
+                }
+            }
+        }
+    }
+
+    // ================================================================== the vertical loop
+
+    /**
+     * Regions of the upper floor's open spaces (pillar fields, empty expanses) where the floor has a grid of holes,
+     * one 2 x 2 hole per cell between the columns, dropping onto the lower floor.
+     */
+    private boolean holeRegion(int rx, int rz) {
+        Zone z = zoneOf(UP, rx, rz);
+        if (z != Zone.PILLARS && z != Zone.EXPANSE) return false;
+        return Rng.chance(Rng.hash(seed ^ 0x401E5L, rx, rz), gs.get("floor-holes-chance", 0.4));
+    }
+
+    /** Regions of the lower floor's open spaces with shafts that drop away into the dark (and back to the top). */
+    private boolean shaftRegion(int rx, int rz) {
+        Zone z = zoneOf(DOWN, rx, rz);
+        if (z != Zone.PILLARS && z != Zone.EXPANSE && z != Zone.HALLS) return false;
+        return Rng.chance(Rng.hash(seed ^ 0x54AF7L, rx, rz), gs.get("loop-shaft-chance", 0.35));
+    }
+
+    boolean hasHoles(int floor, int cx, int cz) {
+        if (floor != UP) return false;
+        int x = cx * S + 5, z = cz * S + 5;
+        return holeAt(x, z);
+    }
+
+    boolean hasShaft(int floor, int cx, int cz) {
+        int x = cx * S + 1, z = cz * S + 5;
+        return shaftAt(x, z);
+    }
+
+    /** A column of a floor hole in the upper floor: the 2 x 2 at (5..6, 5..6) of a cell, if the floor below is free there. */
+    public boolean holeAt(int x, int z) {
+        int u = localOf(x), v = localOf(z);
+        if (u < 5 || u > 6 || v < 5 || v > 6) return false;
+        int cx = cellOf(x), cz = cellOf(z);
+        if (!holeRegion(Math.floorDiv(cx, R), Math.floorDiv(cz, R))) return false;
+        if (featureAt(UP, cx, cz) != null || featureAt(DOWN, cx, cz) != null) return false;
+        boolean[] lay = layout(DOWN, cx, cz);
+        for (int a = 5; a <= 6; a++) for (int b = 5; b <= 6; b++) if (lay[a * S + b]) return false;
+        // and somewhere to land: the lower floor's room around it is not a solid hall
+        return !lay[4 * S + 4] || !lay[7 * S + 7];
+    }
+
+    /**
+     * A column of a loop shaft: the 2 x 2 at (1..2, 5..6) of a lower-floor cell, about every other cell of a shaft
+     * region, where the upper floor above is free too (fallers come back in through its ceiling there).
+     */
+    public boolean shaftAt(int x, int z) {
+        int u = localOf(x), v = localOf(z);
+        if (u < 1 || u > 2 || v < 5 || v > 6) return false;
+        int cx = cellOf(x), cz = cellOf(z);
+        if (!shaftRegion(Math.floorDiv(cx, R), Math.floorDiv(cz, R))) return false;
+        if (!Rng.chance(Rng.hash(seed ^ 0x5AF7L, cx, cz), 0.5)) return false;
+        if (featureAt(UP, cx, cz) != null || featureAt(DOWN, cx, cz) != null) return false;
+        boolean[] down = layout(DOWN, cx, cz), up = layout(UP, cx, cz);
+        for (int a = 1; a <= 2; a++) for (int b = 5; b <= 6; b++) if (down[a * S + b] || up[a * S + b]) return false;
+        return true;
+    }
+
+    /** Where a faller in a loop shaft at {@code y} comes back in: the same depth into the shaft over the upper floor. */
+    public static double loopTarget(double y) {
+        return CEILING_SHAFT_TOP - 2.5 - (LOOP_Y - y);
     }
 
     private void line(CellCtx c, int u, int v, int along, Door door, int ceil, int other, boolean link, B wall, boolean damp) {
@@ -430,17 +546,17 @@ public final class Level0Generator extends RoomLevel {
      */
     List<int[]> troffers(int floor, int cx, int cz, boolean[] lay) {
         List<int[]> out = new java.util.ArrayList<>();
-        Zone z = zoneOfCell(cx, cz);
+        Zone z = zoneOfCell(floor, cx, cz);
         int[][] spots;
         switch (z) {
             case HALLS -> {
-                boolean ax = hallsAlongX(Math.floorDiv(cx, R), Math.floorDiv(cz, R));
+                boolean ax = hallsAlongX(floor, Math.floorDiv(cx, R), Math.floorDiv(cz, R));
                 spots = ax ? new int[][]{{1, 4, 2}, {5, 4, 2}} : new int[][]{{4, 2, 1}, {4, 6, 1}};
             }
             case PILLARS, TALL -> spots = new int[][]{{1, 2, 2}, {5, 2, 2}, {1, 6, 2}, {5, 6, 2}};
             default -> spots = featureAt(floor, cx, cz) != null ? new int[][]{{3, 2, 2}, {3, 6, 2}} : new int[][]{{2, 2, 2}, {5, 6, 2}};
         }
-        double lit = dark(cx, cz) ? 0.06 : z == Zone.PILLARS ? 0.88 : 0.93;
+        double lit = dark(floor, cx, cz) ? 0.06 : z == Zone.PILLARS ? 0.88 : 0.93;
         for (int[] sp : spots) {
             boolean free = true;
             for (int i = 0; i < sp[2]; i++) free &= !lay[(sp[0] + i) * S + sp[1]];
@@ -476,11 +592,11 @@ public final class Level0Generator extends RoomLevel {
     @Override
     protected void cellDecor(int floor, int cx, int cz, List<DecorSpec> out) {
         Feature f = featureAt(floor, cx, cz);
-        int ceil = ceilY(cx, cz);
+        int ceil = ceilY(floor, cx, cz);
         int fy = floorY[floor] + 1;
         long h = ch(floor, cx, cz, 0xDEC0);
         boolean[] lay = layout(floor, cx, cz);
-        Zone z = zoneOfCell(cx, cz);
+        Zone z = zoneOfCell(floor, cx, cz);
         // light fixtures are blocks; specs only for the hum and the ones that stutter
         boolean hum = false;
         for (int[] t : troffers(floor, cx, cz, lay)) {
@@ -564,8 +680,8 @@ public final class Level0Generator extends RoomLevel {
 
     @Override
     protected void cellDetails(int floor, int cx, int cz, List<DecorSpec> out) {
-        if (zoneOfCell(cx, cz) != Zone.ROOMS || kind(floor, cx, cz) == K_THICK || featureAt(floor, cx, cz) != null) return;
-        int ceil = ceilY(cx, cz);
+        if (zoneOfCell(floor, cx, cz) != Zone.ROOMS || kind(floor, cx, cz) == K_THICK || featureAt(floor, cx, cz) != null) return;
+        int ceil = ceilY(floor, cx, cz);
         int fy = floorY[floor] + 1;
         long h = ch(floor, cx, cz, 0xD7A1);
         boolean[] lay = layout(floor, cx, cz);

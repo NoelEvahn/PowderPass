@@ -256,6 +256,32 @@ class FirstPersonRenderTest {
         }
     }
 
+    /** Level 0's floor holes (looking across the grid) and a loop shaft seen from the lower floor. */
+    @Test
+    void renderLevel0Holes() throws Exception {
+        String out = System.getenv("RENDER_VIEWS");
+        Assumptions.assumeTrue(out != null && !out.isBlank(), "set RENDER_VIEWS=<dir>");
+        var g = (com.powderpass.backrooms.gen.levels.Level0Generator) Generators.create(Level.LEVEL_0, SEED, GenSettings.defaults());
+        int[] hole = null, shaft = null;
+        for (int x = -500; x < 500 && (hole == null || shaft == null); x++) for (int z = -500; z < 500; z++) {
+            if (hole == null && g.holeAt(x, z)) hole = new int[]{x, z};
+            if (shaft == null && g.shaftAt(x, z)) shaft = new int[]{x, z};
+        }
+        int up = g.floorY[1] + 1, down = g.floorY[0] + 1;
+        java.util.Map<String, double[]> views = new java.util.LinkedHashMap<>();
+        views.put("level0-floor-holes", new double[]{hole[0] - 9.5, up, hole[1] - 9.5, -45, -28, 26});
+        views.put("level0-hole-from-below", new double[]{hole[0] + 3.5, down, hole[1] + 3.5, 135, 48, 30});
+        views.put("level0-loop-shaft", new double[]{shaft[0] + 4.5, down, shaft[1] + 0.5, 90, -40, 20});
+        for (var e : views.entrySet()) {
+            double[] v = e.getValue();
+            Scene sc = new Scene(g, v[0], v[1] + 1.62, v[2], v[3], v[4], (int) v[5], 12, 90, false);
+            sc.label = "Level 0 (" + e.getKey() + ")";
+            File f = new File(out, e.getKey() + ".png");
+            f.getParentFile().mkdirs();
+            ImageIO.write(sc.render(), "png", f);
+        }
+    }
+
     /** Named viewpoints in the Poolrooms: the main floor, each kind of space, the slide and a stair tower. */
     @Test
     void renderPoolroomsViews() throws Exception {

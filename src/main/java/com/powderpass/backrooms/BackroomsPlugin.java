@@ -116,6 +116,7 @@ public class BackroomsPlugin extends JavaPlugin {
         pm.registerEvents(lifts, this);
         pm.registerEvents(slides, this);
         pm.registerEvents(cutscenes, this);
+        pm.registerEvents(new com.powderpass.backrooms.world.Level0Loop(this), this);
 
         startServices();
         pack.bootCheck();

@@ -100,6 +100,14 @@ class GenerationTest {
             assertNotNull(start, "no safe cell in window");
             Walker w = new Walker(area, g.bottomY, g.roofY);
             w.run(start[0], start[1], start[2]);
+            if (level == Level.LEVEL_0) {
+                // Level 0's floors are joined by falling: holes go down, and the loop shafts carry fallers back up
+                // (a teleport no walker follows), so walk the upper floor from its own start too
+                for (int[] p : safe) if (p[1] == g.floorY[1] + 1 && area.standable(p[0], p[1], p[2])) {
+                    w.run(p[0], p[1], p[2]);
+                    break;
+                }
+            }
             int unreachable = 0;
             StringBuilder sb = new StringBuilder();
             for (int[] p : safe) {
