@@ -12,6 +12,34 @@ Backrooms adds a separate alternate reality to a Paper 1.21.11 server. It is bui
 
 ---
 
+## Overhaul changes (this release)
+
+| Area | What changed | New config |
+|---|---|---|
+| Skinwalker | Possession keeps the victim in their game mode, carried by a tentacled organism (88 display parts, tripod gait, collision-aware controller); 5.5 s transformation; stalking AI that punishes standing still ~10 s | `skinwalker.possession-seconds`, `skinwalker.patience-seconds` |
+| Large slides | Root cause: hall pieces hit the per-chunk prop cap and despawned past 3 chunks. Architecture now spawns in its own structural tier | `displays.structural-radius-chunks` |
+| Poolrooms | 6 new zone kinds, sky openings with sun, rare dark storeys, wall faces instead of busts; canal court removed | `long-pool-chance`, `architecture-chance`, `dark-chance`, `sky-chance`, `statue-chance` |
+| Level 0 | Second (lower) floor, grids of floor holes, endless shaft loop, no fall damage; fixtures 2 light levels dimmer | `floor-holes-chance`, `loop-shaft-chance`, `brightness` |
+| Office | Up to 14 floors, larger plots, 9 floor kinds incl. atriums, enclosed sky bridges with display trusses | — |
+| Elevators | Car has a position; sliding doors (barrier while shut), call buttons, hall/car indicators, door safety, seamless multi-passenger rides, stray rides as a cutscene | — |
+| Supplies | Right-click pickups: almond water, rations, batteries, flashlights, crates; remembered in `data/supplies.yml` | `supplies.per-player`, `supplies.respawn-minutes`, `supply-chance` |
+| Cars | Body rides the driver seat (no drift between entities), smoothed step-ups, wall sliding, brake/scrape/road sounds, more detail | `vehicles.camera-follow` |
+| Plains | Massif octave: high ground and wide basins (hills to 38) | — |
+| Atmosphere | Per-level ambient particles | `fog.ambient-particles` |
+| Audio | Distance-correct volumes, spatial PA with echoes, scheduled music, footsteps, 5 new SFX | `audio.music-*`, `audio.announce-volume`, `audio.monster-volume`, `audio.footsteps` |
+| Cutscenes | Camera-ride level transitions, skippable, protected | `cutscenes.*` |
+| Creatures | 32-block awareness (sight, hearing, suspicion, memory, search) with warning cues; Bacteria emerges from the floor; Smiler is only eyes and a grin | `creatures.memory-seconds` |
+
+**Client limits:** a server cannot change a player's brightness/gamma setting, real fog colour or a true screen fade. Level 0's "−2" is done with light levels; fades use blindness; fog uses per-player view distance.
+
+### Updating the resource pack
+
+The pack changed (new sounds). SHA-1 `df1ce33cb3463dd260de801b57662d293def1e44`.
+1. Start the server once: the plugin extracts `plugins/Backrooms/resourcepack/Backrooms-pack.zip`.
+2. Upload that zip to your host (with the default URL, to mc-packs.net, which serves it at `https://download.mc-packs.net/pack/<sha1>.zip`).
+3. `resource-pack.url` uses `{sha1}`, so it follows automatically. Put a fixed URL there instead if you host elsewhere.
+4. `resource-pack.server-properties.url`/`sha1` already point at the new hash. The plugin writes them to `server.properties`, which is read at startup, so **restart once** after uploading. If your config.yml is from an earlier version, update these two keys by hand: existing config files are not overwritten.
+
 ## Installation
 
 1. Put `Backrooms.jar` in `plugins/` and start the server once. The five worlds are created on first start; each takes a few hundred milliseconds. The resource pack is extracted to `plugins/Backrooms/resourcepack/Backrooms-pack.zip`, and the Bedrock pack is assembled next to it, reusing the same audio.
