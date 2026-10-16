@@ -34,9 +34,9 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class OfficeGenerator extends LevelGenerator {
     public static final int BASE = 80;
     public static final int FH = 5;
-    public static final int MAX_FLOORS = 8;
-    public static final int CELL = 68;
-    private static final int[] SIZES = {37, 41, 45};
+    public static final int MAX_FLOORS = 14;
+    public static final int CELL = 84;
+    private static final int[] SIZES = {45, 53, 61, 69};
 
     // ------------------------------------------------------------------ palette
     private static final B FACADE = CustomBlocks.get("tower_facade");
@@ -83,8 +83,14 @@ public final class OfficeGenerator extends LevelGenerator {
 
     // ------------------------------------------------------------------ plan codes
     static final byte FREE = 0, FACADE_C = 1, CORE = 2, PART = 3, DESK_C = 4, EXEC_C = 5, WALL_C = 6, GLASSW = 7, DOOR = 8,
-            SHELF_C = 9, PLANTER_C = 10, COUNTER_C = 11, RECEPTION_C = 12, OPENING = 13, TABLE_C = 14, BRIGHT = 15, BARREL_C = 16;
-    static final byte FM_CARPET = 0, FM_LOBBY = 1, FM_EXEC = 2, FM_CONF = 3, FM_GRASS = 4;
+            SHELF_C = 9, PLANTER_C = 10, COUNTER_C = 11, RECEPTION_C = 12, OPENING = 13, TABLE_C = 14, BRIGHT = 15, BARREL_C = 16,
+            RACK_C = 17, MACHINE_C = 18, COLUMN_C = 19, VOID_C = 20, ATRIUM_C = 21;
+    static final byte FM_CARPET = 0, FM_LOBBY = 1, FM_EXEC = 2, FM_CONF = 3, FM_GRASS = 4, FM_CONCRETE = 5;
+    private static final B CONCRETE_FLOOR = B.of(Material.LIGHT_GRAY_CONCRETE);
+    private static final B MACHINE = B.of(Material.GRAY_CONCRETE);
+    private static final B MACHINE_TOP = B.of(Material.IRON_BLOCK);
+    private static final B RACK = B.of(Material.SPRUCE_PLANKS);
+    private static final B RACK_SHELF = B.slab(Material.SPRUCE_SLAB, true);
     private static final String[] DOOR_FACING = {"east", "south", "west", "north"}; // facing +d for bands W, N, E, S
 
     /** A sky bridge. {@code ew}: runs along X (walkway z = lo..lo+2) else along Z (walkway x = lo..lo+2). */
@@ -180,6 +186,10 @@ public final class OfficeGenerator extends LevelGenerator {
         String kind = "open plan";
         int[] pit; // lobby feature pit {i0, j0}: steps j0..j0+2, landing j0+3..j0+4, i0..i0+2
         int[] window; // bright window {side, along0}
+        /** A double-height atrium starting on this floor: tower-local {i0, j0, i1, j1} of the void, or null. */
+        int[] atrium;
+        /** Share of ceiling tiles that have fallen (abandoned floors). */
+        double missingCeiling;
 
         Plan(int w, int l) {
             this.w = w;
@@ -250,12 +260,12 @@ public final class OfficeGenerator extends LevelGenerator {
         long h = ch(0, cx, cz, 0x70E3);
         int w = SIZES[Rng.pick(Rng.hash(h, 1), SIZES.length)];
         int l = SIZES[Rng.pick(Rng.hash(h, 2), SIZES.length)];
-        int ox = (CELL - w) / 2 + Rng.range(Rng.hash(h, 3), -5, 5);
-        int oz = (CELL - l) / 2 + Rng.range(Rng.hash(h, 4), -5, 5);
+        int ox = (CELL - w) / 2 + Rng.range(Rng.hash(h, 3), -(CELL - w) / 2 + 3, (CELL - w) / 2 - 3);
+        int oz = (CELL - l) / 2 + Rng.range(Rng.hash(h, 4), -(CELL - l) / 2 + 3, (CELL - l) / 2 - 3);
         // a skyline: broad swells of taller towers, with per-tower jitter
         double sky = zone(cx, cz, 0x5C1E, 260);
-        int floors = 3 + (int) Math.round(Math.max(0, Math.min(1, (sky - 0.25) / 0.5)) * 2.8 + Rng.unit(Rng.hash(h, 5)) * 2.2);
-        floors = Math.max(3, Math.min(MAX_FLOORS, floors));
+        int floors = 5 + (int) Math.round(Math.max(0, Math.min(1, (sky - 0.25) / 0.5)) * 6 + Rng.unit(Rng.hash(h, 5)) * 3.5);
+        floors = Math.max(4, Math.min(MAX_FLOORS, floors));
         int ci0 = (w - 10) / 2 + Rng.range(Rng.hash(h, 6), -1, 1);
         int cj0 = (l - 10) / 2 + Rng.range(Rng.hash(h, 7), -1, 1);
         return new Tower(cx, cz, cx * CELL + ox, cz * CELL + oz, w, l, floors, ci0, cj0, Rng.chance(Rng.hash(h, 8), 0.45), h);
@@ -307,10 +317,11 @@ public final class OfficeGenerator extends LevelGenerator {
             to = b.z0 - 1;
         }
         int f1 = 1 + Rng.pick(Rng.hash(h, 1), minF - 1);
-        out.add(new Bridge(ew, f1, Rng.range(Rng.hash(h, 2), lo0, lo1), from, to, Rng.chance(Rng.hash(h, 3), 0.55)));
-        if (minF >= 5 && Rng.chance(Rng.hash(h, 4), 0.3)) {
-            int f2 = f1 + 2 <= minF - 1 ? f1 + 2 : f1 - 2;
-            if (f2 >= 1) out.add(new Bridge(ew, f2, Rng.range(Rng.hash(h, 5), lo0, lo1), from, to, Rng.chance(Rng.hash(h, 6), 0.55)));
+        // every bridge is a fully enclosed glass corridor (see paintBridge and the skybridge display models)
+        out.add(new Bridge(ew, f1, Rng.range(Rng.hash(h, 2), lo0, lo1), from, to, true));
+        if (minF >= 5 && Rng.chance(Rng.hash(h, 4), 0.45)) {
+            int f2 = f1 + 3 <= minF - 1 ? f1 + 3 : f1 - 3;
+            if (f2 >= 1) out.add(new Bridge(ew, f2, Rng.range(Rng.hash(h, 5), lo0, lo1), from, to, true));
         }
         return out;
     }
@@ -464,20 +475,199 @@ public final class OfficeGenerator extends LevelGenerator {
             lobby(t, p, bands, h);
         } else {
             boolean top = f == t.floors - 1;
+            // the upper floor of an atrium: its floor is open over the void below, behind a low wall
+            Plan below = f >= 2 ? plan(t, f - 1) : null;
+            if (below != null && below.atrium != null) {
+                int[] a = below.atrium;
+                for (int i = a[0]; i <= a[2]; i++) for (int j = a[1]; j <= a[3]; j++) p.set(i, j, VOID_C);
+                for (int i = a[0] - 1; i <= a[2] + 1; i++) for (int j = a[1] - 1; j <= a[3] + 1; j++) {
+                    boolean ring = i == a[0] - 1 || i == a[2] + 1 || j == a[1] - 1 || j == a[3] + 1;
+                    if (ring && p.at(i, j) == FREE && !p.res(i, j)) p.set(i, j, PART);
+                }
+                p.reserve(a[0] - 1, a[1] - 1, a[2] + 1, a[3] + 1);
+            }
             double r = Rng.unit(Rng.hash(h, 1));
-            if (!top && r < gs.get("dark-floor-chance", 0.12)) {
+            String kind = top ? "executive" : r < 0.34 ? "open" : r < 0.46 ? "offices" : r < 0.56 ? "meeting" : r < 0.63 ? "storage"
+                    : r < 0.69 ? "maintenance" : r < 0.75 ? "abandoned" : r < 0.81 ? "empty" : r < 0.88 ? "warren" : r < 0.94 ? "atrium" : "open";
+            if (kind.equals("atrium") && (f >= t.floors - 2 || below != null && below.atrium != null)) kind = "open";
+            if (!top && Rng.chance(Rng.hash(h, 9), gs.get("dark-floor-chance", 0.12))) {
                 p.lit = 0.12;
                 p.kind = "dark floor";
             }
             int execBand = Rng.chance(Rng.hash(h, 2), 0.65) ? Rng.pick(Rng.hash(h, 3), 4) : -1;
-            for (Band b : bands) {
-                boolean exec = top ? Rng.chance(Rng.hash(h, 10 + b.side), 0.75) : b.side == execBand;
-                if (exec && b.depth >= 8) execRow(t, p, b, Rng.hash(h, 20 + b.side));
-                else openBand(t, p, b, Rng.hash(h, 30 + b.side));
+            switch (kind) {
+                case "executive" -> {
+                    for (Band b : bands) {
+                        if (Rng.chance(Rng.hash(h, 10 + b.side), 0.75) && b.depth >= 8) execRow(t, p, b, Rng.hash(h, 20 + b.side));
+                        else openBand(t, p, b, Rng.hash(h, 30 + b.side));
+                    }
+                    p.kind = "executive floor";
+                }
+                case "offices" -> {
+                    for (Band b : bands) {
+                        if (b.depth >= 8 && (b.side == execBand || Rng.chance(Rng.hash(h, 40 + b.side), 0.6))) execRow(t, p, b, Rng.hash(h, 20 + b.side));
+                        else openBand(t, p, b, Rng.hash(h, 30 + b.side));
+                    }
+                    p.kind = "private offices";
+                }
+                case "meeting" -> {
+                    for (Band b : bands) {
+                        if (b.depth >= 8) meetingRow(t, p, b, Rng.hash(h, 50 + b.side));
+                        else openBand(t, p, b, Rng.hash(h, 30 + b.side));
+                    }
+                    p.kind = "meeting rooms";
+                }
+                case "storage" -> {
+                    for (Band b : bands) storageBand(t, p, b, Rng.hash(h, 60 + b.side));
+                    p.kind = "storage";
+                    p.lit = Math.min(p.lit, 0.6);
+                }
+                case "maintenance" -> {
+                    for (Band b : bands) maintenanceBand(t, p, b, Rng.hash(h, 70 + b.side));
+                    p.kind = "maintenance";
+                    p.lit = Math.min(p.lit, 0.35);
+                }
+                case "abandoned" -> {
+                    for (Band b : bands) openBand(t, p, b, Rng.hash(h, 30 + b.side));
+                    abandon(t, p, Rng.hash(h, 80));
+                    p.kind = "abandoned floor";
+                    p.lit = Math.min(p.lit, 0.22);
+                    p.missingCeiling = 0.18;
+                }
+                case "empty" -> {
+                    // nothing: a whole floor of carpet and columns stretching to the glass
+                    for (int i = 4; i < t.w - 3; i += 8) for (int j = 4; j < t.l - 3; j += 8) {
+                        if (!p.res(i, j) && p.at(i, j) == FREE) p.set(i, j, COLUMN_C);
+                    }
+                    p.kind = "empty floor";
+                }
+                case "warren" -> {
+                    for (Band b : bands) warrenBand(t, p, b, Rng.hash(h, 90 + b.side));
+                    p.kind = "corridors";
+                    p.lit = Math.min(p.lit, 0.7);
+                }
+                case "atrium" -> {
+                    Band best = bands[0];
+                    for (Band b : bands) if (b.depth > best.depth) best = b;
+                    if (!atrium(t, p, best, Rng.hash(h, 100))) {
+                        for (Band b : bands) openBand(t, p, b, Rng.hash(h, 30 + b.side));
+                    } else {
+                        for (Band b : bands) if (b != best) openBand(t, p, b, Rng.hash(h, 30 + b.side));
+                        p.kind = "atrium";
+                    }
+                }
+                default -> {
+                    for (Band b : bands) {
+                        if (b.side == execBand && b.depth >= 8) execRow(t, p, b, Rng.hash(h, 20 + b.side));
+                        else openBand(t, p, b, Rng.hash(h, 30 + b.side));
+                    }
+                }
             }
-            if (top) p.kind = "executive floor";
         }
         return p;
+    }
+
+    // ------------------------------------------------------------------ more kinds of floor
+
+    /** A row of glass meeting rooms (each a conference room with its table and chairs). */
+    private void meetingRow(Tower t, Plan p, Band b, long h) {
+        boolean ns = b.side == 1 || b.side == 3;
+        int start = ns ? 0 : b.a0, end = ns ? t.w - 1 : b.a1;
+        int cur = start, idx = 0;
+        while (cur + 10 <= end) {
+            long hh = Rng.hash(h, idx++);
+            int width = 10 + Rng.pick(hh, 3);
+            int next = Math.min(end, cur + width);
+            if (end - next < 10) next = end;
+            office(t, p, b, cur, next, next - cur >= 10, hh);
+            cur = next;
+        }
+    }
+
+    /** Storage: rows of tall shelving racks parallel to the glass with narrow aisles, barrels between them. */
+    private void storageBand(Tower t, Plan p, Band b, long h) {
+        boolean ns = b.side == 1 || b.side == 3;
+        int a0 = ns ? 2 : b.a0, a1 = ns ? t.w - 3 : b.a1;
+        for (int d = 1; d <= b.depth - 2; d += 3) {
+            for (int a = a0; a <= a1; a++) {
+                if (Math.floorMod(a - a0, 9) == 8) continue; // a gap to cross between aisles
+                if (!free(p, b, a, d, a, d)) continue;
+                put(p, b, a, d, Rng.chance(Rng.hash(h, a, d), 0.08) ? BARREL_C : RACK_C);
+            }
+        }
+    }
+
+    /** Maintenance: bare concrete, banks of humming machinery, a few barrels; dim. */
+    private void maintenanceBand(Tower t, Plan p, Band b, long h) {
+        boolean ns = b.side == 1 || b.side == 3;
+        int a0 = ns ? 2 : b.a0, a1 = ns ? t.w - 3 : b.a1;
+        for (int a = a0; a <= a1; a++) for (int d = 0; d <= b.depth; d++) {
+            int i = b.i(a, d), j = b.j(a, d);
+            if (i > 0 && j > 0 && i < p.w - 1 && j < p.l - 1 && p.at(i, j) != CORE) p.fm[j * p.w + i] = FM_CONCRETE;
+        }
+        for (int a = a0 + 1; a + 3 <= a1; a += 7) {
+            if (!Rng.chance(Rng.hash(h, a), 0.7)) continue;
+            int depth = Math.min(b.depth - 3, 2 + Rng.pick(Rng.hash(h, a, 1), 3));
+            if (depth < 1 || !free(p, b, a, 1, a + 3, depth)) continue;
+            for (int x = a; x <= a + 3; x++) for (int d = 1; d <= depth; d++) put(p, b, x, d, MACHINE_C);
+        }
+        for (int a = a0; a <= a1; a += 5) if (free(p, b, a, b.depth - 1, a, b.depth - 1) && Rng.chance(Rng.hash(h, a, 2), 0.3)) put(p, b, a, b.depth - 1, BARREL_C);
+    }
+
+    /** An abandoned floor: partitions fallen, desks gone, chairs scattered and knocked over. */
+    private void abandon(Tower t, Plan p, long h) {
+        for (int i = 1; i < p.w - 1; i++) for (int j = 1; j < p.l - 1; j++) {
+            byte c = p.at(i, j);
+            if ((c == PART || c == DESK_C) && Rng.chance(Rng.hash(h, i, j), 0.45)) p.set(i, j, FREE);
+        }
+        p.props.removeIf(pr -> !pr.model().equals("task_chair") && Rng.chance(Rng.hash(h, (long) (pr.i() * 7), (long) (pr.j() * 7)), 0.6));
+        List<Prop> fallen = new ArrayList<>();
+        for (Prop pr : p.props) {
+            if (pr.model().equals("task_chair")) fallen.add(new Prop("fallen_chair", pr.i(), 0, pr.j(), pr.yaw() + 70f, pr.seed(), null));
+            else fallen.add(pr);
+        }
+        p.props.clear();
+        p.props.addAll(fallen);
+    }
+
+    /** A warren: the band filled with plasterboard except narrow corridors every four rows, doors through. */
+    private void warrenBand(Tower t, Plan p, Band b, long h) {
+        boolean ns = b.side == 1 || b.side == 3;
+        int a0 = ns ? 1 : b.a0, a1 = ns ? t.w - 2 : b.a1;
+        for (int a = a0; a <= a1; a++) {
+            for (int d = 0; d <= b.depth; d++) {
+                int i = b.i(a, d), j = b.j(a, d);
+                if (p.res(i, j) || p.at(i, j) != FREE) continue;
+                boolean corridor = Math.floorMod(d, 4) == 1 || Math.floorMod(a - a0, 6) == 2;
+                if (!corridor) put(p, b, a, d, WALL_C);
+            }
+        }
+        // the odd dead end: some cross corridors walled shut
+        for (int a = a0 + 2; a <= a1; a += 6) {
+            if (!Rng.chance(Rng.hash(h, a), 0.3)) continue;
+            int d = 2 + 4 * Rng.pick(Rng.hash(h, a, 1), Math.max(1, b.depth / 4));
+            if (d < b.depth && free(p, b, a, d, a, d)) put(p, b, a, d, WALL_C);
+        }
+    }
+
+    /** A double-height atrium in a band: a void through the floor above, with a planter at its middle. */
+    private boolean atrium(Tower t, Plan p, Band b, long h) {
+        if (b.depth < 10) return false;
+        boolean ns = b.side == 1 || b.side == 3;
+        int a0 = ns ? 4 : b.a0 + 1, a1 = ns ? t.w - 5 : b.a1 - 1;
+        int len = Math.min(a1 - a0, 12 + Rng.pick(h, 8));
+        if (len < 8) return false;
+        int s = a0 + Rng.pick(Rng.hash(h, 1), Math.max(1, a1 - a0 - len));
+        int d0 = 2, d1 = b.depth - 3;
+        if (!free(p, b, s, d0, s + len, d1)) return false;
+        int[] c0 = ij(b, s, d0), c1 = ij(b, s + len, d1);
+        p.atrium = new int[]{Math.min(c0[0], c1[0]), Math.min(c0[1], c1[1]), Math.max(c0[0], c1[0]), Math.max(c0[1], c1[1])};
+        for (int a = s; a <= s + len; a++) for (int d = d0; d <= d1; d++) put(p, b, a, d, ATRIUM_C);
+        p.reserve(p.atrium[0], p.atrium[1], p.atrium[2], p.atrium[3]);
+        int mi = (p.atrium[0] + p.atrium[2]) / 2, mj = (p.atrium[1] + p.atrium[3]) / 2;
+        p.set(mi, mj, PLANTER_C);
+        p.props.add(new Prop("lobby_sofa", mi + 2.5, 0, mj + 0.5, 90f, h, null));
+        return true;
     }
 
     /** Tower-local facade cell at {@code along} on a side. */
@@ -617,8 +807,8 @@ public final class OfficeGenerator extends LevelGenerator {
     private void workstation(Plan p, Band b, int a, int deskD, int chairD, float monitorYaw, float chairYaw, long h) {
         double r = Rng.unit(h);
         if (r < 0.035) p.props.add(prop(b, "crt_monitor", a, deskD, 1.0, monitorYaw, h, false, 0));
-        else if (r < 0.42) p.props.add(prop(b, "pc_monitor", a, deskD, 1.0, monitorYaw + (float) (Rng.unit(Rng.hash(h, 1)) * 16 - 8), h, false, 0));
-        if (Rng.chance(Rng.hash(h, 2), 0.28)) {
+        else if (r < 0.32) p.props.add(prop(b, "pc_monitor", a, deskD, 1.0, monitorYaw + (float) (Rng.unit(Rng.hash(h, 1)) * 16 - 8), h, false, 0));
+        if (Rng.chance(Rng.hash(h, 2), 0.21)) {
             p.props.add(prop(b, "task_chair", a, chairD, 0, chairYaw + (float) (Rng.unit(Rng.hash(h, 3)) * 50 - 25), Rng.hash(h, 4), false, 0));
         }
         if (Rng.chance(Rng.hash(h, 5), 0.3)) p.props.add(prop(b, "paper_stack", a + 1, deskD, 1.0, (float) Rng.pick(Rng.hash(h, 6), 360), h, false, 0));
@@ -788,26 +978,31 @@ public final class OfficeGenerator extends LevelGenerator {
         }
     }
 
+    /**
+     * A sky bridge: a fully enclosed glass corridor. Dark steel floor beam and edges, a tiled walkway with a darker
+     * trim either side, a knee-high solid base, two courses of glass between steel mullions every four blocks, and a
+     * tiled ceiling with light panels. Its trusses, window frames, ceiling beams and floor trims are display models
+     * ({@code skybridge}, see the decorations); the blocks give it its walls and its collision.
+     */
     private void paintBridge(CellCtx c, int u, int v, int x, int z, Bridge b) {
         int y = BASE + FH * b.floor;
         int cross = (b.ew ? z : x) - b.lo, along = b.ew ? x : z;
         boolean edge = cross == -1 || cross == 3;
-        boolean lamp = Math.floorMod(along, 6) == 3;
+        boolean mull = Math.floorMod(along, 4) == 0 || along == b.from || along == b.to;
+        boolean lamp = Math.floorMod(along, 4) == 2;
         c.set(u, y - 1, v, FACADE_DARK);
-        c.set(u, y, v, edge ? FACADE_DARK : LOBBY);
-        if (edge) c.set(u, y + 1, v, lamp ? PANEL : FACADE_DARK);
-        if (b.enclosed) {
-            if (edge) {
-                c.set(u, y + 2, v, GLASS);
-                c.set(u, y + 3, v, GLASS);
-            } else if (cross == 1 && lamp) {
-                c.set(u, y + 3, v, B.light(12));
-            }
-            c.set(u, y + 4, v, edge ? FACADE_DARK : cross == 1 && lamp ? PANEL : GLASS);
-        } else {
-            if (edge) c.set(u, y + 2, v, b.ew ? BARS_EW : BARS_NS);
-            else if (cross == 1 && lamp) c.set(u, y + 2, v, B.light(11));
+        if (edge) {
+            c.set(u, y, v, FACADE_DARK);
+            c.set(u, y + 1, v, FACADE_DARK);
+            c.set(u, y + 2, v, mull ? COLUMN : GLASS);
+            c.set(u, y + 3, v, mull ? COLUMN : GLASS);
+            c.set(u, y + 4, v, FACADE_DARK);
+            return;
         }
+        c.set(u, y, v, cross == 1 ? LOBBY : CARPET);
+        for (int k = 1; k <= 3; k++) c.set(u, y + k, v, B.AIR);
+        c.set(u, y + 4, v, cross == 1 && lamp ? PANEL : CEIL);
+        if (cross == 1 && lamp) c.set(u, y + 3, v, B.light(13));
     }
 
     private static boolean mullion(Tower t, int i, int j) {
@@ -858,6 +1053,8 @@ public final class OfficeGenerator extends LevelGenerator {
             int[] mid = inward(t, p.window[0], p.window[1] + 1, 1);
             if (mid[0] == i && mid[1] == j) return B.light(15);
         }
+        if (code == VOID_C && r < 4) return null; // open over the atrium below
+        if (code == ATRIUM_C && r == 4) return null; // the ceiling opens into the floor above
         switch (r) {
             case 0 -> {
                 return switch (p.fm[j * p.w + i]) {
@@ -865,11 +1062,13 @@ public final class OfficeGenerator extends LevelGenerator {
                     case FM_EXEC -> EXEC_FLOOR;
                     case FM_CONF -> CONF_FLOOR;
                     case FM_GRASS -> GRASS;
+                    case FM_CONCRETE -> CONCRETE_FLOOR;
                     default -> CARPET;
                 };
             }
             case 4 -> {
                 if (lightSpot) return lit ? PANEL : PANEL_OFF;
+                if (tileMissing(t, p, i, j, f)) return null;
                 return CEIL;
             }
             default -> {
@@ -899,7 +1098,7 @@ public final class OfficeGenerator extends LevelGenerator {
     }
 
     private static boolean airAtHead(byte code) {
-        return code != WALL_C && code != GLASSW && code != DOOR;
+        return code != WALL_C && code != GLASSW && code != DOOR && code != RACK_C && code != MACHINE_C && code != COLUMN_C;
     }
 
     private B codeBlock(Plan p, byte code, int i, int j, int r) {
@@ -938,6 +1137,15 @@ public final class OfficeGenerator extends LevelGenerator {
             }
             case BARREL_C -> {
                 return r == 1 ? BARREL : null;
+            }
+            case RACK_C -> {
+                return r == 1 || r == 3 ? RACK : r == 2 ? RACK_SHELF : null;
+            }
+            case MACHINE_C -> {
+                return r == 1 ? MACHINE : r == 2 ? MACHINE_TOP : null;
+            }
+            case COLUMN_C -> {
+                return COLUMN;
             }
             default -> {
                 return null;
@@ -1111,10 +1319,38 @@ public final class OfficeGenerator extends LevelGenerator {
                 out.add(new DecorSpec("panel_light", t.x0 + i + 0.5, feet + 3, t.z0 + j + 0.5, 0, 0, 0, Rng.hash(h, i, j)));
             }
         }
+        // the sky bridges leaving this tower to the east and south (each bridge is listed by its west/north tower only)
+        for (Bridge b : t.own) {
+            if (b.floor != floor) continue;
+            boolean mine = b.ew ? b.from == t.x0 + t.w : b.from == t.z0 + t.l;
+            if (!mine) continue;
+            int y = BASE + FH * b.floor;
+            double mid = b.lo + 1.5;
+            for (int a = b.from; a <= b.to; a += 8) {
+                int len = Math.min(8, b.to + 1 - a);
+                if (len <= 0) break;
+                out.add(b.ew ? new DecorSpec("skybridge:" + len, a, y, mid, -90f, 0, 0, Rng.hash(h, a)).structural()
+                        : new DecorSpec("skybridge:" + len, mid, y, a, 0f, 0, 0, Rng.hash(h, a)).structural());
+            }
+            // door frames where it meets each facade
+            if (b.ew) {
+                out.add(new DecorSpec("skybridge_door", b.from + 0.02, y + 1, mid, -90f, 0, 0, h).structural());
+                out.add(new DecorSpec("skybridge_door", b.to + 0.98, y + 1, mid, 90f, 0, 0, h).structural());
+            } else {
+                out.add(new DecorSpec("skybridge_door", mid, y + 1, b.from + 0.02, 0f, 0, 0, h).structural());
+                out.add(new DecorSpec("skybridge_door", mid, y + 1, b.to + 0.98, 180f, 0, 0, h).structural());
+            }
+        }
         if (floor == t.floors - 1) {
             int roof = BASE + FH * t.floors + 1;
             if (t.floors >= 6) out.add(new DecorSpec("roof_beacon", t.x0 + t.ci0 + 7.5, roof + 4, t.z0 + t.cj0 + 2.5, 0, 0, 0, h));
         }
+    }
+
+    /** A ceiling tile fallen out on an abandoned floor (nothing hangs from it). */
+    private boolean tileMissing(Tower t, Plan p, int i, int j, int f) {
+        if (p.at(i, j) == ATRIUM_C) return true;   // open to the floor above
+        return p.missingCeiling > 0 && Rng.chance(Rng.hash(seed ^ 0xCE1L, t.x0 + i, t.z0 + j, f), p.missingCeiling);
     }
 
     @Override
@@ -1128,7 +1364,7 @@ public final class OfficeGenerator extends LevelGenerator {
             for (int j = 4; j < t.l - 2; j += 8) {
                 if (p.at(i, j) == CORE || !airAtHead(p.at(i, j)) || p.at(i, j) == FACADE_C) continue;
                 long hh = Rng.hash(h, i, j);
-                if (!Rng.chance(hh, 0.2)) continue;
+                if (!Rng.chance(hh, 0.2) || tileMissing(t, p, i, j, floor)) continue;
                 out.add(detail(DecorSpec.TIER_ARCH, hh, "d:vent:0.9", t.x0 + i + 0.05, ceil, t.z0 + j + 0.05, 0f, 0f));
             }
         }
@@ -1139,7 +1375,8 @@ public final class OfficeGenerator extends LevelGenerator {
                 if (p.at(i, j) == CORE || !airAtHead(p.at(i, j)) || p.at(i, j) == FACADE_C || i % 4 == 2 && j % 4 == 2) continue;
                 if (p.at(i + 1, j) == CORE || p.at(i, j + 1) == CORE) continue;
                 long hh = Rng.hash(h, i, j, 7);
-                if (!Rng.chance(hh, 0.01 + 0.12 * wr)) continue;
+                if (!Rng.chance(hh, 0.01 + 0.12 * wr) || tileMissing(t, p, i, j, floor) || tileMissing(t, p, i + 1, j, floor)
+                        || tileMissing(t, p, i, j + 1, floor) || tileMissing(t, p, i + 1, j + 1, floor)) continue;
                 out.add(detail(DecorSpec.TIER_AGING, hh, "d:cpatch:terracotta:1.1:0.9", t.x0 + i + 0.1, ceil, t.z0 + j + 0.1, 0f, 0f));
             }
         }

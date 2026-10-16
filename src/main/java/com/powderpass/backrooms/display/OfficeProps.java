@@ -22,6 +22,38 @@ final class OfficeProps {
     private static final String[] COMPANIES = {"Halvorsen & Pryce", "Meridian Data Systems", "Q3 Solutions", "Northgate Holdings",
             "Ellery Insurance Group", "Brightline Consulting", "Unit 7 (vacant)", "—", "Records", "Accounts Payable", "Human Resources"};
 
+    /**
+     * One stretch ({@code len} blocks, along +Z) of an enclosed sky bridge, origin at the middle of its walkway at
+     * the level of the floor block: the steel truss underneath (bottom chords, diagonals, posts), frames round the
+     * glass inside and out, beams across the ceiling, trims along the walkway and a cap along the roof. The bridge's
+     * blocks are its walls and floor (and its collision); this is what makes it look built.
+     */
+    private static void skybridge(Model m, int len) {
+        Material steel = BLACK_CONCRETE, frame = GRAY_CONCRETE;
+        for (int s = -1; s <= 1; s += 2) {
+            double x = s * 2.6;   // just outside the wall blocks (their outer face is at 2.5)
+            m.box(steel, x - 0.09, -1.75, 0, 0.18, 0.18, len);                        // bottom chord
+            m.box(steel, x - 0.09, 0.85, 0, 0.18, 0.16, len);                         // top chord
+            for (double z = 0; z < len; z += 2) {
+                boolean up = ((int) z / 2) % 2 == 0;
+                double z0 = z, z1 = Math.min(len, z + 2);
+                m.rod(steel, v(x, up ? -1.66 : 0.88, z0), v(x, up ? 0.88 : -1.66, z1), 0.12); // diagonals
+            }
+            for (double z = 0; z <= len; z += 4) m.box(steel, x - 0.08, -1.66, Math.min(len - 0.16, z), 0.16, 2.6, 0.16); // posts
+            // window frames: outside and inside, under and over the two courses of glass
+            double ox = s * 2.52 - (s > 0 ? 0.04 : 0);
+            m.box(frame, ox, 1.98, 0, 0.04, 0.09, len);
+            m.box(frame, ox, 3.93, 0, 0.04, 0.09, len);
+            double ix = s * 1.48 - (s > 0 ? 0 : 0.04);
+            m.box(frame, ix, 1.98, 0, 0.04, 0.07, len);
+            m.box(STRIPPED_DARK_OAK_WOOD, ix - (s > 0 ? 0 : 0.05), 1.2, 0, 0.09, 0.07, len);  // handrail
+            m.box(SMOOTH_STONE, s * 1.44 - 0.03, 1.0, 0, 0.06, 0.04, len);           // floor trim
+        }
+        for (double z = 1.5; z < len; z += 3) m.box(frame, -1.5, 3.86, z - 0.1, 3.0, 0.14, 0.2); // ceiling beams
+        m.box(steel, -2.7, 5.0, 0, 5.4, 0.08, len);                                   // roof cap
+        m.viewRange = 2.2f;
+    }
+
     /** Floor label as the lift and the stairwell show it: L for the lobby. */
     static String label(int floor) {
         return floor == 0 ? "L" : String.valueOf(floor);
@@ -65,6 +97,30 @@ final class OfficeProps {
                 m.box(leather, -0.26, 0.0, -0.06, 0.52, 0.8, 0.12);
                 m.pop();
                 m.box(BLACK_CONCRETE, -0.34, 0.56, -0.2, 0.68, 0.05, 0.08);
+            }
+            case "fallen_chair" -> {
+                // a task chair knocked over on its side
+                m.push().translate(0, 0.25, 0).rotate('z', 88);
+                m.box(BLACK_CONCRETE, -0.04, -0.2, -0.04, 0.08, 0.42, 0.08);
+                m.box(GRAY_WOOL, -0.24, 0.22, -0.24, 0.48, 0.09, 0.48);
+                m.push().translate(0, 0.32, -0.27).rotate('x', -8);
+                m.box(GRAY_WOOL, -0.22, 0.0, -0.04, 0.44, 0.48, 0.07);
+                m.pop();
+                m.pop();
+            }
+            case "skybridge" -> skybridge(m, suffix.isEmpty() ? 8 : Math.max(1, Math.min(16, Integer.parseInt(suffix))));
+            case "skybridge_door" -> {
+                // the bridge's doorway in the facade: a steel frame, two glass leaves standing open, push bars
+                m.box(BLACK_CONCRETE, -1.62, 0.0, -0.08, 0.12, 3.0, 0.16);
+                m.box(BLACK_CONCRETE, 1.5, 0.0, -0.08, 0.12, 3.0, 0.16);
+                m.box(BLACK_CONCRETE, -1.62, 3.0, -0.1, 3.24, 0.16, 0.2);
+                m.box(LIGHT_GRAY_STAINED_GLASS, -1.5, 3.02, -0.04, 3.0, 0.12, 0.08);
+                for (int s = -1; s <= 1; s += 2) {
+                    m.push().translate(s * 1.48, 0.02, 0).rotate('y', s * 82);
+                    m.box(LIGHT_GRAY_STAINED_GLASS, s < 0 ? 0 : -1.42, 0.0, -0.025, 1.42, 2.9, 0.05);
+                    m.box(IRON_BLOCK, s < 0 ? 0.3 : -1.12, 1.05, 0.03, 0.82, 0.05, 0.05);
+                    m.pop();
+                }
             }
             case "paper_stack" -> m.box(WHITE_CONCRETE, -0.11, 0.0, -0.15, 0.22, 0.05 + Rng.unit(seed) * 0.08, 0.3);
             case "desk_lamp" -> {

@@ -197,6 +197,43 @@ class CreatureRenderTest {
         write(sheet, new File(out, "statue-faces.png"));
     }
 
+    /** An Office sky bridge: its blocks (walls, glass, floor, roof) with the display truss, frames and door. */
+    @Test
+    void renderSkybridge() throws Exception {
+        String out = System.getenv("RENDER_CREATURES");
+        Assumptions.assumeTrue(out != null && !out.isBlank(), "set RENDER_CREATURES=<dir>");
+        new File(out).mkdirs();
+        int len = 16;
+        Model shell = new Model();
+        shell.box(Material.GRAY_CONCRETE, -2.5, -1, 0, 5, 1, len);                 // underside
+        shell.box(Material.LIGHT_GRAY_CARPET, -1.5, 0, 0, 3, 1, len);              // walkway
+        shell.box(Material.GRAY_CONCRETE, -2.5, 4, 0, 5, 1, len);                  // roof
+        for (int s = -1; s <= 1; s += 2) {
+            double x0 = s < 0 ? -2.5 : 1.5;
+            shell.box(Material.GRAY_CONCRETE, x0, 0, 0, 1, 2, len);
+            for (int z = 0; z < len; z++) {
+                boolean mull = z % 4 == 0;
+                shell.box(mull ? Material.GRAY_CONCRETE : Material.LIGHT_BLUE_STAINED_GLASS, x0, 2, z, 1, 2, 1);
+            }
+        }
+        List<Box> b = new ArrayList<>(boxes(shell, new Matrix4f().translate(0, 0, -len / 2f)));
+        for (int a = 0; a < len; a += 8) {
+            b.addAll(boxes(com.powderpass.backrooms.display.ModelLibrary.build("skybridge:8", 1L), new Matrix4f().translate(0, 0, a - len / 2f)));
+        }
+        b.addAll(boxes(com.powderpass.backrooms.display.ModelLibrary.build("skybridge_door", 1L), new Matrix4f().translate(0, 1, 0.02f - len / 2f)));
+        int parts = com.powderpass.backrooms.display.ModelLibrary.build("skybridge:8", 1L).parts.size();
+        BufferedImage sheet = new BufferedImage(W, H / 2 + 60, BufferedImage.TYPE_INT_RGB);
+        Graphics2D g = sheet.createGraphics();
+        g.drawImage(render(b, 35, 12, 15, 1.5, "outside, below", "").img, 0, 60, W / 2, H / 2, null);
+        // an eye inside, looking down the walkway at the far door (camera looks at the model's centre)
+        g.drawImage(render(b, 180, 2, 6, 2.0, "down the walkway", "").img, W / 2, 60, W / 2, H / 2, null);
+        g.setColor(new Color(230, 225, 205));
+        g.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 28));
+        g.drawString("Sky bridge (" + parts + " display parts per 8 blocks)", 20, 42);
+        g.dispose();
+        write(sheet, new File(out, "skybridge.png"));
+    }
+
     /** One sheet per creature: front three-quarter, side, and an action pose from {@link Poses}. */
     @Test
     void renderAll() throws Exception {
