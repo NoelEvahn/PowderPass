@@ -49,7 +49,7 @@ final class Car {
     int lightState = -1;
     double lastSpin, lastSteer;
     double sentX, sentY, sentZ, sentYaw;
-    long nextEngineSound;
+    long nextEngineSound, nextBrakeSound;
     float enginePitch;
     boolean hornWas;
     final List<Location> fakeLights = new ArrayList<>();
@@ -60,29 +60,32 @@ final class Car {
         this.world = world;
         this.phys = new CarPhysics(spec.x, spec.y, spec.z, spec.yaw);
         this.model = GarageProps.car(new Model(), spec.seed, true);
-        Location at = location();
-        for (Part p : model.parts) {
-            if (p.kind != Part.Kind.BLOCK) continue;
-            BlockDisplay d = world.spawn(at, BlockDisplay.class, e -> {
-                e.setPersistent(false);
-                e.setBlock(p.block);
-                e.setTransformationMatrix(new Matrix4f(p.local));
-                e.setTeleportDuration(TELEPORT_TICKS);
-                e.setInterpolationDuration(1);
-                e.setViewRange(0.9f);
-                e.setShadowRadius(0);
-                if (p.brightness != null) e.setBrightness(new Display.Brightness(p.brightness, 15));
-                e.getPersistentDataContainer().set(tag, PersistentDataType.STRING, spec.key());
-            });
-            body.add(d);
-            bodyParts.add(p);
-        }
+        visY = phys.y;
         for (int i = 0; i < 4; i++) {
             seats[i] = world.spawn(seatLocation(i), ItemDisplay.class, e -> {
                 e.setPersistent(false);
                 e.setTeleportDuration(TELEPORT_TICKS);
                 e.getPersistentDataContainer().set(tag, PersistentDataType.STRING, spec.key());
             });
+        }
+        // the body rides the driver's seat: the client then moves body, seat and driver as one (no drift between
+        // separately interpolated entities), and the car's heading lives in each part's transformation
+        Location root = new Location(world, seats[0].getLocation().getX(), seats[0].getLocation().getY(), seats[0].getLocation().getZ(), 0f, 0f);
+        for (Part p : model.parts) {
+            if (p.kind != Part.Kind.BLOCK) continue;
+            BlockDisplay d = world.spawn(root, BlockDisplay.class, e -> {
+                e.setPersistent(false);
+                e.setBlock(p.block);
+                e.setTransformationMatrix(pose(p.local));
+                e.setInterpolationDuration(TELEPORT_TICKS);
+                e.setViewRange(0.9f);
+                e.setShadowRadius(0);
+                if (p.brightness != null) e.setBrightness(new Display.Brightness(p.brightness, 15));
+                e.getPersistentDataContainer().set(tag, PersistentDataType.STRING, spec.key());
+            });
+            seats[0].addPassenger(d);
+            body.add(d);
+            bodyParts.add(p);
         }
         for (int i = 0; i < 2; i++) {
             int k = i;
@@ -106,7 +109,25 @@ final class Car {
 
     Location seatLocation(int i) {
         double[] w = phys.toWorld(SEATS[i][0], SEATS[i][1], SEATS[i][2]);
-        return new Location(world, w[0], w[1], w[2], (float) phys.yaw, 0);
+        return new Location(world, w[0], w[1] - phys.y + visY, w[2], (float) phys.yaw, 0);
+    }
+
+    /**
+     * The visual height: the physics snaps up a step in one tick; the body glides up it instead (and follows a
+     * fall at once), so kerbs and half slabs do not jolt the camera.
+     */
+    double visY;
+
+    /** A part's transformation relative to the driver's seat (the body's mount), turned to the car's heading. */
+    Matrix4f pose(Matrix4f local) {
+        return poseFor(phys.yaw, local);
+    }
+
+    static Matrix4f poseFor(double yawDeg, Matrix4f local) {
+        double[] s0 = SEATS[0];
+        return new Matrix4f().rotateY((float) -Math.toRadians(yawDeg))
+                .translate((float) -s0[0], (float) -s0[1], (float) -s0[2])
+                .mul(local);
     }
 
     Location hitboxLocation(int i) {
@@ -147,39 +168,44 @@ final class Car {
     /** Move every entity to the current pose (only when it changed). */
     @SuppressWarnings("removal") // EntityState is deprecated since 1.21.10 but still honoured; keeps riders seated
     void sync() {
-        boolean moved = Math.abs(phys.x - sentX) > 1e-4 || Math.abs(phys.y - sentY) > 1e-4 || Math.abs(phys.z - sentZ) > 1e-4
-                || Math.abs(phys.yaw - sentYaw) > 1e-3;
-        if (moved) {
-            Location at = location();
-            for (Entity e : body) if (e.isValid()) e.teleport(at);
+        double dyVis = phys.y - visY;
+        visY = dyVis < 0 ? phys.y : visY + Math.min(dyVis, 0.14);
+        boolean moved = Math.abs(phys.x - sentX) > 1e-4 || Math.abs(visY - sentY) > 1e-4 || Math.abs(phys.z - sentZ) > 1e-4;
+        boolean turned = Math.abs(phys.yaw - sentYaw) > 1e-3;
+        if (moved || turned) {
             for (int i = 0; i < 4; i++) {
                 if (seats[i] != null && seats[i].isValid()) seats[i].teleport(seatLocation(i), TeleportFlag.EntityState.RETAIN_PASSENGERS);
             }
             for (int i = 0; i < 2; i++) if (hitboxes[i] != null && hitboxes[i].isValid()) hitboxes[i].teleport(hitboxLocation(i));
             sentX = phys.x;
-            sentY = phys.y;
+            sentY = visY;
             sentZ = phys.z;
-            sentYaw = phys.yaw;
         }
-        // wheels: spin (capped so the strobing never reverses them) and front-wheel steering
         double spinStep = Math.max(-0.6, Math.min(0.6, phys.wheelSpin - lastSpin));
-        if (Math.abs(phys.wheelSpin - lastSpin) > 1e-3 || Math.abs(phys.steer - lastSteer) > 1e-3) {
-            lastSpin = phys.wheelSpin;
-            lastSteer = phys.steer;
-            visualSpin += spinStep;
-            double steerDeg = -phys.steer * Math.toDegrees(CarPhysics.MAX_STEER);
-            for (int i = 0; i < body.size(); i++) {
-                Part p = bodyParts.get(i);
-                if (p.group < GarageProps.G_WHEEL_FL || p.group > GarageProps.G_WHEEL_RR) continue;
+        boolean wheels = Math.abs(phys.wheelSpin - lastSpin) > 1e-3 || Math.abs(phys.steer - lastSteer) > 1e-3;
+        if (!turned && !wheels) return;
+        sentYaw = phys.yaw;
+        lastSpin = phys.wheelSpin;
+        lastSteer = phys.steer;
+        visualSpin += spinStep;
+        // wheels: spin (capped so the strobing never reverses them) and front-wheel steering; on a turn every part
+        // takes the new heading, interpolated over the same ticks as the seat's move
+        double steerDeg = -phys.steer * Math.toDegrees(CarPhysics.MAX_STEER);
+        for (int i = 0; i < body.size(); i++) {
+            Part p = bodyParts.get(i);
+            boolean wheel = p.group >= GarageProps.G_WHEEL_FL && p.group <= GarageProps.G_WHEEL_RR;
+            if (!turned && !wheel) continue;
+            Matrix4f local = p.local;
+            if (wheel) {
                 Vector3f c = GarageProps.wheelCentre(p.group);
                 Matrix4f m = new Matrix4f().translate(c);
                 if (p.group <= GarageProps.G_WHEEL_FR) m.rotateY((float) Math.toRadians(steerDeg));
-                m.rotateX((float) visualSpin).translate(-c.x, -c.y, -c.z).mul(p.local);
-                if (body.get(i) instanceof Display d && d.isValid()) {
-                    d.setInterpolationDelay(0);
-                    d.setInterpolationDuration(1);
-                    d.setTransformationMatrix(m);
-                }
+                local = m.rotateX((float) visualSpin).translate(-c.x, -c.y, -c.z).mul(p.local);
+            }
+            if (body.get(i) instanceof Display d && d.isValid()) {
+                d.setInterpolationDelay(0);
+                d.setInterpolationDuration(TELEPORT_TICKS);
+                d.setTransformationMatrix(pose(local));
             }
         }
     }

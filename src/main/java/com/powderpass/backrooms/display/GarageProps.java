@@ -122,6 +122,22 @@ public final class GarageProps {
             m.push().translate(0.4, 0.98, 0.42).rotate('x', -30);
             m.box(BLACK_CONCRETE, -0.17, -0.17, 0, 0.34, 0.34, 0.03);
             m.pop();
+            // exterior detail: wheel arches, door shut lines and handles, mirrors, plates, exhaust, A-pillars
+            for (int s = -1; s <= 1; s += 2) {
+                double sx = s * 0.865;
+                for (double az : new double[]{WHEEL_ZF, WHEEL_ZR}) m.box(BLACK_CONCRETE, sx - 0.02, 0.62, az - 0.42, 0.04, 0.07, 0.84);
+                m.box(GRAY_CONCRETE, sx - 0.006, 0.36, 0.42, 0.012, 0.44, 0.02);
+                m.box(GRAY_CONCRETE, sx - 0.006, 0.36, -0.62, 0.012, 0.44, 0.02);
+                m.box(GRAY_CONCRETE, sx + s * 0.01 - 0.01, 0.7, 0.1, 0.02, 0.04, 0.14);
+                m.box(GRAY_CONCRETE, sx + s * 0.01 - 0.01, 0.7, -0.88, 0.02, 0.04, 0.14);
+                m.box(BLACK_CONCRETE, s * 0.84 + (s > 0 ? 0 : -0.16), 0.9, 0.62, 0.16, 0.11, 0.05); // mirror
+                m.push().translate(s * 0.77, 0.84, 1.06).rotate('x', -54);
+                m.box(paint, -0.035, 0, -0.03, 0.07, 0.86, 0.06);                                 // A-pillar
+                m.pop();
+            }
+            m.box(WHITE_CONCRETE, -0.26, 0.3, 2.055, 0.52, 0.12, 0.02);                            // front plate
+            m.box(YELLOW_CONCRETE, -0.26, 0.42, -2.075, 0.52, 0.12, 0.02);                         // rear plate
+            m.box(BLACK_CONCRETE, 0.5, 0.2, -2.18, 0.08, 0.08, 0.14);                              // exhaust
             // high-level brake light and reversing lights
             m.group(G_BRAKE).box(RED_CONCRETE, -0.2, 1.3, -1.02, 0.4, 0.04, 0.03);
             m.group(G_REVERSE).box(LIGHT_GRAY_CONCRETE, -0.48, 0.58, -2.065, 0.12, 0.1, 0.03);

@@ -42,6 +42,8 @@ public final class CarPhysics {
     public boolean braking, reversing, onGround = true;
     /** Speed at the last impact (0 when the last step did not hit anything). */
     public double impact;
+    /** The last step slid along a wall. */
+    public boolean scraping;
 
     public CarPhysics(double x, double y, double z, double yaw) {
         this.x = x;
@@ -52,6 +54,7 @@ public final class CarPhysics {
 
     public void step(Input in, double dt, Terrain t) {
         impact = 0;
+        scraping = false;
         // ---------------------------------------------------------------- longitudinal
         braking = in.brake() || (in.forward() && speed < -0.1) || (in.back() && speed > 0.1);
         double target;
@@ -85,9 +88,19 @@ public final class CarPhysics {
             x = nx;
             z = nz;
             yaw = nyaw;
+        } else if (Math.abs(speed) > 0.5 && !collides(nx, y, z, yaw, t) && Math.abs(nx - x) > Math.abs(nz - z) * 0.35) {
+            // a glancing blow: slide along the wall on the free axis, scrubbing speed, heading held
+            x = nx;
+            scraping = true;
+            speed *= 0.82;
+        } else if (Math.abs(speed) > 0.5 && !collides(x, y, nz, yaw, t) && Math.abs(nz - z) > Math.abs(nx - x) * 0.35) {
+            z = nz;
+            scraping = true;
+            speed *= 0.82;
         } else {
             impact = Math.abs(speed);
-            speed = -speed * 0.15;
+            // a head-on hit: a small rebound only from real speed, so pushing against a wall does not shudder
+            speed = Math.abs(speed) > 1.5 ? -speed * 0.15 : 0;
             if (!collides(x, y, z, nyaw, t)) yaw = nyaw;
         }
         yaw = wrap(yaw);

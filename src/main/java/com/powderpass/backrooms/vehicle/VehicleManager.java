@@ -370,10 +370,11 @@ public final class VehicleManager implements Listener {
                 if (c.phys.impact > 6) sound(c, c.location(), null, "metal.groan", Sound.ENTITY_IRON_GOLEM_DAMAGE, vol, 0.5f);
             }
             if (y0 - c.phys.y > 0.6 && c.phys.onGround) c.world.playSound(c.location(), Sound.BLOCK_ANVIL_PLACE, SoundCategory.BLOCKS, 0.5f, 0.6f);
+            roadSounds(c, in);
             c.sync();
             c.lights();
             if (driver != null) {
-                followCamera(driver, c.phys.yaw - yawBefore);
+                if (plugin.cfg().carCameraFollow) followCamera(driver, c.phys.yaw - yawBefore);
                 if (tick % 10 == 0) {
                     driver.sendActionBar(BackroomsConfig.mm(String.format(java.util.Locale.ROOT, "<gray>%s<white>%d</white> km/h",
                             c.phys.speed < -0.05 ? "R  " : "", Math.round(c.phys.kmh()))));
@@ -548,6 +549,21 @@ public final class VehicleManager implements Listener {
             } else if (tick % 40 < 20) {
                 p.playSound(c.location(), Sound.BLOCK_BEACON_AMBIENT, SoundCategory.NEUTRAL, 0.25f, 0.55f);
             }
+        }
+    }
+
+    /** Brakes squealing at speed, the body scraping along a wall, tyres on the floor. */
+    private void roadSounds(Car c, CarPhysics.Input in) {
+        double v = Math.abs(c.phys.speed);
+        if (c.phys.braking && v > 4 && c.phys.onGround && tick >= c.nextBrakeSound) {
+            c.nextBrakeSound = tick + 14;
+            sound(c, c.location(), null, "car.brake", Sound.BLOCK_GRINDSTONE_USE, (float) Math.min(1.0, v / 8), 1.6f);
+        }
+        if (c.phys.scraping && tick % 5 == 0) sound(c, c.location(), null, "metal.scrape", Sound.BLOCK_CHAIN_STEP, 1.0f, 0.6f);
+        if (v > 2 && c.phys.onGround && tick % 8 == 0) {
+            Material under = c.location().add(0, -0.5, 0).getBlock().getType();
+            if (under != Material.WATER) c.world.playSound(c.location(), under.createBlockData().getSoundGroup().getStepSound(), SoundCategory.NEUTRAL,
+                    (float) Math.min(0.6, 0.15 + v / 25), 0.55f);
         }
     }
 

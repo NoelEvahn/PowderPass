@@ -90,6 +90,7 @@ public final class BackroomsConfig {
     public final boolean sanityEnabled, sanityActionbar;
     public final int flashlightSeconds, batterySeconds;
     public final boolean suppliesPerPlayer;
+    public final boolean carCameraFollow;
     public final int supplyRespawnMinutes;
     public final boolean debug;
 
@@ -289,6 +290,7 @@ public final class BackroomsConfig {
         sanityActionbar = c.getBoolean("sanity.show-actionbar", false);
         flashlightSeconds = clamp(c.getInt("items.flashlight-battery-seconds", 300), 10, 100000);
         suppliesPerPlayer = c.getBoolean("supplies.per-player", false);
+        carCameraFollow = c.getBoolean("vehicles.camera-follow", false);
         supplyRespawnMinutes = clamp(c.getInt("supplies.respawn-minutes", 0), 0, 100000);
         batterySeconds = clamp(c.getInt("items.battery-seconds", 240), 10, 100000);
         debug = c.getBoolean("debug", false);

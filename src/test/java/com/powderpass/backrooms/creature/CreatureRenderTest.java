@@ -197,6 +197,25 @@ class CreatureRenderTest {
         write(sheet, new File(out, "statue-faces.png"));
     }
 
+    /** The drivable car (live model, with its interior and exterior detail). */
+    @Test
+    void renderCar() throws Exception {
+        String out = System.getenv("RENDER_CREATURES");
+        Assumptions.assumeTrue(out != null && !out.isBlank(), "set RENDER_CREATURES=<dir>");
+        new File(out).mkdirs();
+        Model car = com.powderpass.backrooms.display.GarageProps.car(new Model(), 3L, true);
+        List<Box> b = boxes(car, new Matrix4f());
+        BufferedImage sheet = new BufferedImage(W, H / 2 + 60, BufferedImage.TYPE_INT_RGB);
+        Graphics2D g = sheet.createGraphics();
+        g.drawImage(render(b, 40, 18, 7, 0.6, "front three-quarter", "").img, 0, 60, W / 2, H / 2, null);
+        g.drawImage(render(b, 210, 14, 7, 0.6, "rear three-quarter", "").img, W / 2, 60, W / 2, H / 2, null);
+        g.setColor(new Color(230, 225, 205));
+        g.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 28));
+        g.drawString("Level 1 car (" + car.parts.size() + " display parts)", 20, 42);
+        g.dispose();
+        write(sheet, new File(out, "car.png"));
+    }
+
     /** An Office sky bridge: its blocks (walls, glass, floor, roof) with the display truss, frames and door. */
     @Test
     void renderSkybridge() throws Exception {

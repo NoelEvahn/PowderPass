@@ -146,4 +146,43 @@ class CarPhysicsTest {
         run(c, FWD, 40, w);
         assertEquals((c.z - 0.5) / 0.33, c.wheelSpin, 0.05);
     }
+
+    /** The body rides the driver's seat: seat position + part pose must land every point where the physics puts it. */
+    @org.junit.jupiter.api.Test
+    void bodyPoseOnTheSeatMatchesTheCarAtAnyHeading() {
+        for (double yaw : new double[]{0, 37, 90, -135, 179}) {
+            CarPhysics ph = new CarPhysics(10.3, 64, -4.7, yaw);
+            double[] seat = ph.toWorld(Car.SEATS[0][0], Car.SEATS[0][1], Car.SEATS[0][2]);
+            org.joml.Matrix4f m = Car.poseFor(yaw, new org.joml.Matrix4f());
+            for (double[] pt : new double[][]{{0.86, 0.3, 2.05}, {-0.8, 1.4, -2.1}, {0, 0, 0}}) {
+                org.joml.Vector3f v = m.transformPosition(new org.joml.Vector3f((float) pt[0], (float) pt[1], (float) pt[2]));
+                double[] want = ph.toWorld(pt[0], pt[1], pt[2]);
+                org.junit.jupiter.api.Assertions.assertEquals(want[0], seat[0] + v.x, 1e-4, "x at yaw " + yaw);
+                org.junit.jupiter.api.Assertions.assertEquals(want[1], seat[1] + v.y, 1e-4, "y at yaw " + yaw);
+                org.junit.jupiter.api.Assertions.assertEquals(want[2], seat[2] + v.z, 1e-4, "z at yaw " + yaw);
+            }
+        }
+    }
+
+    /** Driving into a wall at an angle slides along it instead of stopping dead or bouncing. */
+    @org.junit.jupiter.api.Test
+    void aGlancingHitSlidesAlongTheWall() {
+        CarPhysics.Terrain t = new CarPhysics.Terrain() {
+            public boolean blocked(double x, double y, double z) {
+                return x < 0 || y < 64; // a wall along x = 0
+            }
+
+            public double top(int x, int y, int z) {
+                return y == 63 ? 1.0 : -1;
+            }
+        };
+        CarPhysics ph = new CarPhysics(1.9, 64, 0, 0);
+        ph.yaw = 20; // heading +Z, nosing toward -X (the wall)
+        org.junit.jupiter.api.Assertions.assertFalse(ph.collides(ph.x, ph.y, ph.z, ph.yaw, t), "starts clear of the wall");
+        ph.speed = 8;
+        double z0 = ph.z;
+        for (int i = 0; i < 40; i++) ph.step(new CarPhysics.Input(true, false, false, false, false), 0.05, t);
+        org.junit.jupiter.api.Assertions.assertTrue(ph.z > z0 + 4, "it kept going along the wall: " + (ph.z - z0));
+        org.junit.jupiter.api.Assertions.assertFalse(ph.collides(ph.x, ph.y, ph.z, ph.yaw, t), "never inside the wall");
+    }
 }
