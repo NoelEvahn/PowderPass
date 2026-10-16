@@ -57,6 +57,8 @@ public class BackroomsPlugin extends JavaPlugin {
     private com.powderpass.backrooms.vehicle.VehicleManager vehicles;
     private com.powderpass.backrooms.world.LiftService lifts;
     private com.powderpass.backrooms.item.SupplyService supplies;
+    private com.powderpass.backrooms.player.DeathScreen deaths;
+    private com.powderpass.backrooms.player.VhsOverlay vhs;
     private com.powderpass.backrooms.world.SlideRides slides;
     private com.powderpass.backrooms.display.AssetStore assets;
     private BukkitTask debugTask;
@@ -84,6 +86,8 @@ public class BackroomsPlugin extends JavaPlugin {
         items = new Items(this);
         loot = new LootService(this);
         supplies = new com.powderpass.backrooms.item.SupplyService(this);
+        deaths = new com.powderpass.backrooms.player.DeathScreen(this);
+        vhs = new com.powderpass.backrooms.player.VhsOverlay(this);
         sessions = new SessionManager(this);
         transitions = new TransitionService(this);
         decorations = new DecorationManager(this);
@@ -103,6 +107,8 @@ public class BackroomsPlugin extends JavaPlugin {
         assets.load();
 
         var pm = getServer().getPluginManager();
+        pm.registerEvents(deaths, this);
+        pm.registerEvents(vhs, this);
         pm.registerEvents(new PlayerListener(this), this);
         pm.registerEvents(new ProtectionListener(this), this);
         pm.registerEvents(new CombatListener(this), this);
@@ -148,6 +154,7 @@ public class BackroomsPlugin extends JavaPlugin {
         vehicles.start();
         lifts.start();
         supplies.start();
+        vhs.start();
         slides.start();
         cutscenes.start();
         if (debugTask != null) debugTask.cancel();
@@ -159,6 +166,8 @@ public class BackroomsPlugin extends JavaPlugin {
         if (vehicles != null) vehicles.stop();
         if (lifts != null) lifts.stop();
         if (supplies != null) supplies.stop();
+        if (deaths != null) deaths.stop();
+        if (vhs != null) vhs.stop();
         if (slides != null) slides.stop();
         if (cutscenes != null) cutscenes.stop();
         debugTask = null;
@@ -309,6 +318,14 @@ public class BackroomsPlugin extends JavaPlugin {
 
     public com.powderpass.backrooms.vehicle.VehicleManager vehicles() {
         return vehicles;
+    }
+
+    public com.powderpass.backrooms.player.VhsOverlay vhs() {
+        return vhs;
+    }
+
+    public com.powderpass.backrooms.player.DeathScreen deaths() {
+        return deaths;
     }
 
     public com.powderpass.backrooms.item.SupplyService supplies() {

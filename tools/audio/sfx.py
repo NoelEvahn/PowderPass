@@ -1766,3 +1766,49 @@ def metal_scrape(rng, v):
     x = unit(x) * 0.8 + unit(exc) * 0.35
     x *= env_points(n, [(0, 0.0), (0.04, 1.0), (0.75, 0.85), (dur, 0.0)])
     return room(hp(x, 80, 2), 0.1, "concrete")
+
+
+# ============================================================================ glitch (death screen)
+def glitch_death(rng, v):
+    """The tape tearing: a hard digital crunch, buffer stutters (the same 30-90 ms grain repeated), bit-crushed
+    buzz bursts, a tape-stop pitch dive into a low boom, and hiss decaying into dead air."""
+    dur = 3.0
+    n = ns(dur)
+    t = taxis(n)
+    x = np.zeros(n)
+    # an electrical hum with harmonics: the material the stutters chop up
+    f0 = rng.uniform(55, 70)
+    hum = sum(np.sin(2 * np.pi * f0 * k * t + rng.uniform(0, 6.3)) / k for k in range(1, 14))
+    hum = saturate(hum * 1.4, 3.0)
+    noise = bp(white(n, rng), 800, 9000, 2)
+    src = unit(hum) * 0.7 + unit(noise) * 0.4
+    # 1. the crunch
+    mix_into(x, burst(rng, 0.12, 0.03, 200, 12000) * 1.4, 0)
+    mix_into(x, pad_to(thump(rng, 90, 35, 0.12, 0.4, 0.8), ns(0.4)) * 1.2, 0)
+    # 2. stutters: grains of the source repeated, getting shorter
+    tp = 0.08
+    while tp < 1.3:
+        g = ns(rng.uniform(0.025, 0.09))
+        start = int(rng.integers(0, n - g))
+        grain = src[start:start + g] * np.hanning(g) ** 0.3
+        if rng.random() < 0.5:   # bit-crush it
+            levels = rng.choice([4, 6, 8])
+            grain = np.round(grain * levels) / levels
+        for _ in range(int(rng.integers(2, 6))):
+            if tp >= 1.3:
+                break
+            mix_into(x, grain * rng.uniform(0.5, 1.0), ns(tp))
+            tp += g / SR
+        tp += rng.uniform(0.0, 0.06)
+    # 3. tape stop: the hum dives in pitch and slows to nothing
+    k = ns(1.1)
+    tk = taxis(k)
+    rate = (1 - tk / 1.1) ** 2.2
+    phase = np.cumsum(f0 * 2 * rate) / SR * 2 * np.pi
+    dive = saturate(sum(np.sin(phase * h) / h for h in range(1, 8)) * 1.2, 2.0) * (1 - tk / 1.1) ** 0.6
+    mix_into(x, unit(dive) * 0.9, ns(1.3))
+    mix_into(x, pad_to(thump(rng, 60, 28, 0.35, 1.0, 0.6), ns(1.0)) * 1.1, ns(2.25))
+    # 4. hiss into dead air
+    hiss = hp(white(n, rng), 3000, 2) * env_points(n, [(0, 0.0), (0.1, 0.25), (1.3, 0.2), (2.4, 0.08), (dur, 0.0)])
+    x += hiss * 0.5
+    return x

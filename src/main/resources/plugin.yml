@@ -4,7 +4,7 @@ main: com.powderpass.backrooms.BackroomsPlugin
 api-version: '1.21.11'
 load: POSTWORLD
 softdepend: [voicechat]
-author: PowderPass
+author: NoelCicolini
 description: A five-level Backrooms dimension built from custom worlds and display-entity models.
 commands:
   backrooms:

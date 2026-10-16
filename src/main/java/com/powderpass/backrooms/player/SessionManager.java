@@ -177,8 +177,19 @@ public final class SessionManager {
         p.addPotionEffect(new PotionEffect(PotionEffectType.DARKNESS, 50, 0, false, false));
         p.playSound(p.getLocation(), Sound.BLOCK_SAND_FALL, SoundCategory.MASTER, 1f, 0.5f);
         if (cfg().fallEnabled) plugin.falls().begin(p, target);
-        else plugin.teleports().teleportSafe(p, target, l -> arrived(p, Level.LEVEL_0));
+        else plugin.teleports().teleportSafe(p, target, l -> {
+            if (!wakeUp(p, Level.LEVEL_0)) arrived(p, Level.LEVEL_0);
+        });
         return true;
+    }
+
+    /**
+     * Coming into Level 0 from outside: the wake-up sequence (lying on the carpet, getting up, the title). Returns
+     * false when it does not play (cutscenes off, another level, already in one); the caller then arrives normally.
+     */
+    public boolean wakeUp(Player p, Level level) {
+        if (level != Level.LEVEL_0 || plugin.cutscenes() == null) return false;
+        return plugin.cutscenes().play(p, com.powderpass.backrooms.cutscene.Transitions.wakeUp(plugin, p));
     }
 
     /**

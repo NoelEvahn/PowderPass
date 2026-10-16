@@ -303,7 +303,7 @@ def main():
                              else f"{catalog.NAMESPACE}:{r}" for r in rels]}
     write_json(os.path.join(JAVA, "assets", "backrooms", "sounds.json"), sj)
     write_json(os.path.join(JAVA, "pack.mcmeta"), {"pack": {
-        "description": "PowderPass Backrooms - ambience and textured blocks",
+        "description": "Backrooms by NoelCicolini - ambience, blocks, camera",
         "pack_format": 75, "min_format": 69, "max_format": 75}})
     icon = make_icon()
     write_png(os.path.join(JAVA, "pack.png"), icon)
@@ -331,7 +331,7 @@ def main():
                {"format_version": "1.14.0", "sound_definitions": dict(sorted(defs.items()))})
     write_json(os.path.join(BEDROCK, "manifest.json"), {
         "format_version": 2,
-        "header": {"name": "PowderPass Backrooms Sounds", "description": "Original CC0 Backrooms ambience",
+        "header": {"name": "NoelCicolini Backrooms Sounds", "description": "Original CC0 Backrooms ambience",
                    "uuid": BEDROCK_HEADER_UUID, "version": [1, 0, 0], "min_engine_version": [1, 20, 0]},
         "modules": [{"type": "resources", "uuid": BEDROCK_MODULE_UUID, "version": [1, 0, 0]}]})
     write_png(os.path.join(BEDROCK, "pack_icon.png"), icon)

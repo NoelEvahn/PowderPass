@@ -291,7 +291,7 @@ class SkinwalkerTest {
     }
 
     @Test
-    void ifItLastsTheVictimDies() {
+    void ifItLastsTheVictimIsTaken() {
         plugin.getConfig().set("skinwalker.possession-seconds", 10);
         plugin.saveConfig();
         plugin.reload();
@@ -303,7 +303,10 @@ class SkinwalkerTest {
         b.setGameMode(GameMode.CREATIVE); // a witness it will not hurt
         server.getScheduler().performTicks(20 * 18);
         assertFalse(plugin.possessions().isVictim(a));
-        assertTrue(a.isDead() || a.getHealth() <= 0, "kept too long: they die");
+        // kept too long it kills them; nobody dies in the Backrooms, so that is the death screen, then waking up
+        // wherever death.mode says (RETURN: out of the Backrooms)
+        assertFalse(a.isDead(), "the death screen instead of a death");
+        assertTrue(a.getWorld() != l0 || plugin.deaths().playing(a), "kept too long: it took them (death screen)");
         assertTrue(c.dead());
     }
 

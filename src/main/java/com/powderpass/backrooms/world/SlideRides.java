@@ -390,7 +390,12 @@ public final class SlideRides implements Listener {
 
     @EventHandler
     public void onDeath(PlayerDeathEvent e) {
-        end(e.getEntity().getUniqueId(), e.getEntity(), false);
+        forget(e.getEntity());
+    }
+
+    /** Off any slide, now (death, or the Backrooms death screen). */
+    public void forget(Player p) {
+        end(p.getUniqueId(), p, false);
     }
 
     @EventHandler

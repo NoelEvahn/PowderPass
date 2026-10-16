@@ -405,7 +405,12 @@ public final class CutsceneEngine implements Listener {
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onDeath(PlayerDeathEvent e) {
-        Playback pb = active.get(e.getPlayer().getUniqueId());
+        forget(e.getPlayer());
+    }
+
+    /** End any cutscene this player is in (death, or the Backrooms death screen). */
+    public void forget(Player p) {
+        Playback pb = active.get(p.getUniqueId());
         if (pb != null) pb.end(true);
     }
 

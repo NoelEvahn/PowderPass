@@ -64,7 +64,7 @@ public final class Items {
     public ItemStack flashlight(int seconds) {
         ItemStack s = new ItemStack(Material.STICK);
         ItemMeta m = s.getItemMeta();
-        m.setItemModel(NamespacedKey.minecraft("spyglass"));
+        m.setItemModel(new NamespacedKey("backrooms", "flashlight")); // the pack's torch (required inside)
         m.itemName(name("<#ffe9a8>Flashlight"));
         m.lore(lore("Hold it to light the way.", "Right-click a Battery to recharge."));
         m.setMaxStackSize(1);

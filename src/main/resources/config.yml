@@ -124,6 +124,21 @@ death:
   # LEVEL0 = respawn somewhere in Level 0, STAY = respawn in the same level
   mode: RETURN
   keep-inventory: true
+  # Nobody dies in the Backrooms: a killing blow plays a glitch screen (one of these lines, corrupted, with the
+  # pack's glitch sound) and the player wakes up wherever "mode" says. false = vanilla deaths.
+  screen:
+    enabled: true
+    lines:
+      - "THIS ISN'T THE LAST"
+      - "YOU CAN'T ESCAPE"
+      - "YOU TRIED"
+      - "WAKE UP"
+      - "NOT YET"
+      - "AGAIN"
+      - "IT REMEMBERS YOU"
+      - "THERE IS NO EXIT"
+      - "STAY"
+      - "YOU WERE NEVER HERE"
 
 restrictions:
   protect-blocks: true          # no breaking/placing inside (bypass: backrooms.bypass.protection)
@@ -222,8 +237,8 @@ resource-pack:
   # load the pack twice.
   server-properties:
     manage: true
-    url: "https://download.mc-packs.net/pack/df1ce33cb3463dd260de801b57662d293def1e44.zip"
-    sha1: "df1ce33cb3463dd260de801b57662d293def1e44"
+    url: "https://download.mc-packs.net/pack/244562d602b3ba2fad64da326d1eaaf553051601.zip"
+    sha1: "244562d602b3ba2fad64da326d1eaaf553051601"
     id: "b8fef2f6-9333-4c1d-bd91-eeebb1ac684a"
     prompt: '{"text":"Our server uses a custom pack!", "color":"gold"}'
     required: true               # players who decline are kicked (require-resource-pack)
@@ -319,6 +334,13 @@ items:
 # Supplies lying about the levels (almond water, rations, batteries, flashlights, supply crates): right-click to
 # pick one up. How often they appear is a generation setting per level: levels.<level>.generation.supply-chance
 # (default 0.04 per safe cell).
+# A camcorder look inside the Backrooms (needs the resource pack): grain, scanlines, a vignette, a blinking REC,
+# and a torch-beam version while a flashlight is on. It is a camera overlay carried by an invisible item on the
+# player's head; a helmet they wear is moved to their inventory while they are inside.
+vhs-overlay:
+  enabled: true
+  frame-ticks: 3                 # how often the grain moves (ticks per frame, 4 frames)
+
 vehicles:
   # Turn the driver's view with the car. Off by default: the server can only do this with 20 rotation updates a
   # second, which fights the player's own mouse and reads as camera jitter. Steering works the same either way.

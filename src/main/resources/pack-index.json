@@ -772,6 +772,19 @@
         "skinwalker.scuttle": 10
       }
     },
+    "glitch.death": {
+      "category": "event",
+      "duration_ticks": 60,
+      "loop": false,
+      "positional": true,
+      "variants": 2,
+      "profiles": [],
+      "muffled": false,
+      "stream": false,
+      "event_ticks": {
+        "glitch.death": 60
+      }
+    },
     "skinwalker.tear": {
       "category": "event",
       "duration_ticks": 38,

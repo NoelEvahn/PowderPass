@@ -245,7 +245,7 @@ public final class FallEntry implements Listener {
         p.playSound(p.getLocation(), Sound.BLOCK_SAND_PLACE, SoundCategory.MASTER, 1f, 0.6f);
         p.playSound(p.getLocation(), Sound.ENTITY_PLAYER_BIG_FALL, SoundCategory.MASTER, 0.8f, 0.7f);
         p.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 30, 2, false, false));
-        plugin.sessions().arrived(p, f.level);
+        if (!plugin.sessions().wakeUp(p, f.level)) plugin.sessions().arrived(p, f.level);
     }
 
     /** Ends a fall without landing logic (offline, world change, shutdown). */

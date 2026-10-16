@@ -18,6 +18,8 @@ public final class Session {
     public long lastHazardAt;
     public long vendCooldownUntil;
     public Location fakeLight;
+    /** The flashlight's soft glow just ahead of the holder (a second, dimmer fake light). */
+    public Location fakeSpill;
     public int flashlightCharge = -1;
     public int flashlightSaveIn;
     public long noiseCooldownUntil;

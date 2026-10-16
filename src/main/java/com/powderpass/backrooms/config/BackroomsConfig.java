@@ -31,6 +31,9 @@ public final class BackroomsConfig {
     public final int spreadRadius;
     public final String fallbackWorld;
     public final String deathMode;
+    public final boolean deathScreen, vhsOverlay;
+    public final int vhsFrameTicks;
+    public final java.util.List<String> deathLines;
     public final boolean keepInventory;
 
     public final boolean protectBlocks, blockPearls, blockChorus, disablePortals, disableBeds, suppressMusic;
@@ -145,6 +148,12 @@ public final class BackroomsConfig {
         entryTitle = c.getBoolean("entry.title", true);
         fallbackWorld = c.getString("return.fallback-world", "");
         deathMode = c.getString("death.mode", "RETURN").toUpperCase(Locale.ROOT);
+        deathScreen = c.getBoolean("death.screen.enabled", true);
+        vhsOverlay = c.getBoolean("vhs-overlay.enabled", true);
+        vhsFrameTicks = clamp(c.getInt("vhs-overlay.frame-ticks", 3), 1, 40);
+        java.util.List<String> dl = c.getStringList("death.screen.lines");
+        deathLines = dl.isEmpty() ? java.util.List.of("THIS ISN'T THE LAST", "YOU CAN'T ESCAPE", "YOU TRIED", "WAKE UP",
+                "NOT YET", "AGAIN", "IT REMEMBERS YOU", "THERE IS NO EXIT", "STAY", "YOU WERE NEVER HERE") : java.util.List.copyOf(dl);
         keepInventory = c.getBoolean("death.keep-inventory", true);
 
         protectBlocks = c.getBoolean("restrictions.protect-blocks", true);
@@ -204,8 +213,8 @@ public final class BackroomsConfig {
         packHostPort = clamp(c.getInt("resource-pack.host.port", 8163), 1, 65535);
         packHostPublicAddress = c.getString("resource-pack.host.public-address", "");
         serverPackManage = c.getBoolean("resource-pack.server-properties.manage", true);
-        serverPackUrl = c.getString("resource-pack.server-properties.url", "https://download.mc-packs.net/pack/df1ce33cb3463dd260de801b57662d293def1e44.zip");
-        serverPackSha1 = c.getString("resource-pack.server-properties.sha1", "df1ce33cb3463dd260de801b57662d293def1e44").trim().toLowerCase(Locale.ROOT);
+        serverPackUrl = c.getString("resource-pack.server-properties.url", "https://download.mc-packs.net/pack/244562d602b3ba2fad64da326d1eaaf553051601.zip");
+        serverPackSha1 = c.getString("resource-pack.server-properties.sha1", "244562d602b3ba2fad64da326d1eaaf553051601").trim().toLowerCase(Locale.ROOT);
         serverPackId = c.getString("resource-pack.server-properties.id", "b8fef2f6-9333-4c1d-bd91-eeebb1ac684a").trim();
         serverPackPrompt = c.getString("resource-pack.server-properties.prompt", "{\"text\":\"Our server uses a custom pack!\", \"color\":\"gold\"}");
         serverPackRequired = c.getBoolean("resource-pack.server-properties.required", true);

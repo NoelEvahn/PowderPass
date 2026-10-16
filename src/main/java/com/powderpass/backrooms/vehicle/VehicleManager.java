@@ -293,8 +293,13 @@ public final class VehicleManager implements Listener {
 
     @EventHandler
     public void onDeath(PlayerDeathEvent e) {
-        Car c = byRider.get(e.getPlayer().getUniqueId());
-        if (c != null) eject(e.getPlayer(), c);
+        forget(e.getPlayer());
+    }
+
+    /** Out of any car (death, or the Backrooms death screen). */
+    public void forget(Player p) {
+        Car c = byRider.get(p.getUniqueId());
+        if (c != null) eject(p, c);
     }
 
     @EventHandler

@@ -218,6 +218,9 @@ SOUNDS: List[Sound] = [
     S("skinwalker.scuttle", "event", "sfx.skinwalker_scuttle", 0.3, 6,
       method="3-7 hard leg-tip taps 16-45 ms apart (sharp tick, short shell ring, floor knock, occasional flam), "
              "flat / crescendo / decrescendo bursts."),
+    S("glitch.death", "event", "sfx.glitch_death", 3.0, 2,
+      method="Death screen: digital crunch, bit-crushed buffer stutters of a saturated hum, tape-stop pitch dive "
+             "into a low boom, hiss into dead air."),
     S("skinwalker.tear", "event", "sfx.skinwalker_tear", 1.6, 2, muffled=True,
       method="Slow wet rip (stick-slip gated pink noise through a climbing resonance), sinew pings and cracks, "
              "a deep wet release slap."),

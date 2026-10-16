@@ -16,14 +16,17 @@ import org.bukkit.util.RayTraceResult;
 import org.bukkit.util.Vector;
 
 /**
- * A server-side "dynamic light": while a charged flashlight is held, an invisible light block is shown
- * (client-side only, via sendBlockChange) a few blocks ahead of the holder to them and to nearby players.
- * The world is never modified; the fake block is restored as soon as it moves or the light is put away.
+ * A server-side "dynamic light": while a charged flashlight is held, two invisible light blocks are shown
+ * (client-side only, via sendBlockChange) to the holder and nearby players: a bright one where the beam lands (up to
+ * 16 blocks ahead) and a soft one just in front of them, so the light does not jump about in a single spot. They
+ * follow the aim every other tick, and only blocks that actually change are sent. The world is never modified.
+ * The look of the beam itself is the VHS overlay's flashlight frames (resource pack).
  */
 public final class FlashlightService {
     private final BackroomsPlugin plugin;
     private BukkitTask task;
     private int counter;
+    private static final int STEP = 2;
 
     public FlashlightService(BackroomsPlugin plugin) {
         this.plugin = plugin;
@@ -31,7 +34,7 @@ public final class FlashlightService {
 
     public void start() {
         stop();
-        task = plugin.getServer().getScheduler().runTaskTimer(plugin, this::pass, 10L, 4L);
+        task = plugin.getServer().getScheduler().runTaskTimer(plugin, this::pass, 10L, STEP);
     }
 
     public void stop() {
@@ -41,7 +44,7 @@ public final class FlashlightService {
     }
 
     private void pass() {
-        counter += 4;
+        counter += STEP;
         boolean second = counter % 20 == 0;
         for (Player p : plugin.getServer().getOnlinePlayers()) {
             Session s = plugin.sessions().get(p);
@@ -63,17 +66,29 @@ public final class FlashlightService {
                 if (++s.flashlightSaveIn >= 15) persist(p, s);
                 if (s.flashlightCharge == 30) p.sendActionBar(BackroomsConfig.mm("<gray>The flashlight dims."));
             }
-            Location target = aim(p);
-            if (target != null && !target.equals(s.fakeLight)) {
-                clear(p);
-                Light light = (Light) Material.LIGHT.createBlockData();
-                light.setLevel(s.flashlightCharge < 30 ? 9 : 14);
-                for (Player o : p.getWorld().getPlayers()) {
-                    if (o.getLocation().distanceSquared(target) < 48 * 48) o.sendBlockChange(target, light);
-                }
-                s.fakeLight = target;
-            }
+            int level = s.flashlightCharge < 30 ? 10 : 15;
+            s.fakeLight = show(p, s.fakeLight, aim(p, 16.0), level);
+            s.fakeSpill = show(p, s.fakeSpill, aim(p, 2.2), Math.max(6, level - 6));
         }
+    }
+
+    /** Is this player holding a flashlight that is on? */
+    public boolean lit(Player p) {
+        Session s = plugin.sessions().get(p);
+        return s.fakeLight != null || s.fakeSpill != null;
+    }
+
+    /** Move one fake light from {@code old} to {@code target} (nothing sent when it did not move). */
+    private Location show(Player p, Location old, Location target, int level) {
+        if (target != null && target.equals(old)) return old;
+        if (old != null) restore(old);
+        if (target == null) return null;
+        Light light = (Light) Material.LIGHT.createBlockData();
+        light.setLevel(level);
+        for (Player o : p.getWorld().getPlayers()) {
+            if (o.getLocation().distanceSquared(target) < 48 * 48) o.sendBlockChange(target, light);
+        }
+        return target;
     }
 
     private void persist(Player p, Session s) {
@@ -87,16 +102,16 @@ public final class FlashlightService {
         if (!Items.FLASHLIGHT.equals(plugin.items().id(p.getInventory().getItemInMainHand()))) s.flashlightCharge = -1;
     }
 
-    private Location aim(Player p) {
+    private Location aim(Player p, double reach) {
         World w = p.getWorld();
         Location eye = p.getEyeLocation();
         Vector dir = eye.getDirection();
-        RayTraceResult hit = w.rayTraceBlocks(eye, dir, 8.0);
-        double dist = hit == null ? 7.0 : Math.max(0.5, hit.getHitPosition().distance(eye.toVector()) - 0.6);
-        Location l = eye.clone().add(dir.multiply(dist));
+        RayTraceResult hit = w.rayTraceBlocks(eye, dir, reach);
+        double dist = hit == null ? reach - 1 : Math.max(0.5, hit.getHitPosition().distance(eye.toVector()) - 0.6);
+        Location l = eye.clone().add(dir.clone().multiply(dist));
         Block b = l.getBlock();
         for (int i = 0; i < 3 && b.getType() != Material.AIR; i++) {
-            l.subtract(eye.getDirection().multiply(0.5));
+            l.subtract(dir.clone().multiply(0.5));
             b = l.getBlock();
         }
         return b.getType() == Material.AIR ? b.getLocation() : null;
@@ -104,9 +119,13 @@ public final class FlashlightService {
 
     public void clear(Player p) {
         Session s = plugin.sessions().get(p);
-        if (s.fakeLight == null) return;
-        Location l = s.fakeLight;
+        if (s.fakeLight != null) restore(s.fakeLight);
+        if (s.fakeSpill != null) restore(s.fakeSpill);
         s.fakeLight = null;
+        s.fakeSpill = null;
+    }
+
+    private void restore(Location l) {
         if (l.getWorld() == null || !l.getWorld().isChunkLoaded(l.getBlockX() >> 4, l.getBlockZ() >> 4)) return;
         BlockData real = l.getBlock().getBlockData();
         for (Player o : l.getWorld().getPlayers()) {

@@ -89,6 +89,61 @@ public final class Transitions {
         return v.lengthSquared() < 1e-4 ? new Vector(0, 0, 1) : v.normalize();
     }
 
+    // ------------------------------------------------------------------ waking up in the Backrooms
+
+    /**
+     * Arriving in the Backrooms from outside: you come to lying on the carpet, the camera an inch off the floor and
+     * looking across it at an angle; the lights hum, you breathe, roll your head, push up to sitting, then kneeling,
+     * and slowly stand. As you get to your feet THE BACKROOMS fades in (the pack's title font).
+     */
+    public static Cutscene wakeUp(BackroomsPlugin plugin, Player p) {
+        Location here = p.getLocation().clone();
+        float yaw = here.getYaw();
+        Cutscene c = new Cutscene("wake_up")
+                .fadeOut(0, 1)
+                .travel(2, q -> here)
+                // lying on your side: eyes just above the carpet, looking across it
+                .camera(2, 0.35, 0.16, 0.05).camera(40, 0.35, 0.17, 0.05).camera(70, 0.33, 0.22, 0.04)
+                .lookAngles(2, yaw + 75, 6)
+                .fadeIn(6, 40)
+                .shake(6, 60, 0.6)
+                .at(4, q -> hear(plugin, q, "hum.fluorescent", Sound.BLOCK_BEACON_AMBIENT, 0.7f, 1.8f))
+                .at(24, q -> hear(plugin, q, "breath.heavy", Sound.ENTITY_PLAYER_BREATH, 0.8f, 0.8f))
+                .lookAngles(52, yaw + 55, 18)
+                // push up to sitting, looking down at the carpet
+                .camera(100, 0.18, 0.78, -0.05).lookAngles(96, yaw + 25, 32)
+                .at(88, q -> hear(plugin, q, null, Sound.BLOCK_WOOL_STEP, 0.6f, 0.7f))
+                .at(110, q -> hear(plugin, q, "breath.heavy", Sound.ENTITY_PLAYER_BREATH, 0.5f, 0.9f))
+                // kneeling, then up
+                .camera(140, 0.06, 1.1, 0).lookAngles(134, yaw + 8, 14)
+                .at(132, q -> hear(plugin, q, null, Sound.BLOCK_WOOL_STEP, 0.7f, 0.8f))
+                .camera(178, 0, 1.62, 0).lookAngles(170, yaw, 0)
+                .shake(140, 40, 0.35)
+                .at(150, q -> title(plugin, q))
+                .length(196)
+                .finish(q -> plugin.sessions().arrived(q, Level.LEVEL_0, true));
+        c.shortVersion(new Cutscene("wake_up_short")
+                .fadeOut(0, 1).travel(2, q -> here)
+                .camera(2, 0.3, 0.2, 0).camera(30, 0.15, 0.8, 0).camera(56, 0, 1.62, 0)
+                .lookAngles(2, yaw + 50, 12).lookAngles(40, yaw, 0)
+                .fadeIn(4, 16)
+                .at(4, q -> hear(plugin, q, "hum.fluorescent", Sound.BLOCK_BEACON_AMBIENT, 0.6f, 1.8f))
+                .at(36, q -> title(plugin, q))
+                .length(62)
+                .finish(q -> plugin.sessions().arrived(q, Level.LEVEL_0, true)));
+        return c;
+    }
+
+    /** THE BACKROOMS in the pack's title font (plain spaced letters for anyone without the pack). */
+    static void title(BackroomsPlugin plugin, Player q) {
+        net.kyori.adventure.text.Component t = plugin.pack().loaded(q)
+                ? net.kyori.adventure.text.Component.text("\ue000").font(Key.key("backrooms", "title")).color(net.kyori.adventure.text.format.TextColor.color(0xEDE3C4))
+                : com.powderpass.backrooms.config.BackroomsConfig.mm("<#ede3c4>T H E   B A C K R O O M S");
+        net.kyori.adventure.text.Component sub = com.powderpass.backrooms.config.BackroomsConfig.mm("<#8f8770>level 0  ·  the lobby");
+        q.showTitle(net.kyori.adventure.title.Title.title(t, sub, net.kyori.adventure.title.Title.Times.times(
+                java.time.Duration.ofMillis(1500), java.time.Duration.ofMillis(3000), java.time.Duration.ofMillis(1800))));
+    }
+
     // ------------------------------------------------------------------ Level 0 -> Poolrooms
 
     static Cutscene intoThePool(BackroomsPlugin plugin, Player p, Location dest, Level to) {

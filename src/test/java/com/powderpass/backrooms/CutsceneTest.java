@@ -146,4 +146,19 @@ class CutsceneTest {
         assertEquals(plugin.worlds().world(Level.LEVEL_1), p.getWorld());
         assertFalse(plugin.sessions().get(p).inTransition, "arrived");
     }
+
+    /** Coming into Level 0 from outside: the wake-up (lying on the carpet, getting up), ending where they landed. */
+    @Test
+    void wakingUpInTheLobby() {
+        TestPlayer p = player();
+        Location landed = p.getLocation().clone();
+        assertTrue(plugin.sessions().wakeUp(p, Level.LEVEL_0), "it plays");
+        assertTrue(plugin.cutscenes().playing(p));
+        assertFalse(plugin.sessions().wakeUp(p, Level.POOLROOMS), "only for the Lobby");
+        server.getScheduler().performTicks(210);
+        assertFalse(plugin.cutscenes().playing(p));
+        assertEquals(landed.getX(), p.getLocation().getX(), 0.01);
+        assertEquals(landed.getY(), p.getLocation().getY(), 0.01, "on their feet where they landed");
+        assertFalse(plugin.sessions().get(p).inTransition);
+    }
 }

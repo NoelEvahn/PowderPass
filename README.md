@@ -34,7 +34,7 @@ Backrooms adds a separate alternate reality to a Paper 1.21.11 server. It is bui
 
 ### Updating the resource pack
 
-The pack changed (new sounds). SHA-1 `df1ce33cb3463dd260de801b57662d293def1e44`.
+The pack changed (new sounds). SHA-1 `244562d602b3ba2fad64da326d1eaaf553051601`.
 1. Start the server once: the plugin extracts `plugins/Backrooms/resourcepack/Backrooms-pack.zip`.
 2. Upload that zip to your host (with the default URL, to mc-packs.net, which serves it at `https://download.mc-packs.net/pack/<sha1>.zip`).
 3. `resource-pack.url` uses `{sha1}`, so it follows automatically. Put a fixed URL there instead if you host elsewhere.

@@ -134,7 +134,7 @@ public final class PlayerListener implements Listener {
         if (nowBr && cfg().suppressMusic) p.stopSound(SoundCategory.MUSIC);
     }
 
-    @EventHandler(priority = EventPriority.HIGH)
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true) // the death screen cancels deaths inside
     public void onDeath(PlayerDeathEvent e) {
         Player p = e.getEntity();
         if (!plugin.worlds().isBackrooms(p.getWorld())) return;

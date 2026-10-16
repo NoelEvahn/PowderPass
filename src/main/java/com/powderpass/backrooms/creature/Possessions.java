@@ -448,7 +448,12 @@ public final class Possessions implements Listener {
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onDeath(PlayerDeathEvent e) {
-        Possession p = byVictim.get(e.getPlayer().getUniqueId());
+        forget(e.getPlayer());
+    }
+
+    /** The player died (or the Backrooms death screen took them): free them from any creature. */
+    public void forget(Player pl) {
+        Possession p = byVictim.get(pl.getUniqueId());
         if (p != null) p.release(false);
     }
 
