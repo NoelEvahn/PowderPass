@@ -293,6 +293,42 @@
         "car.engine": 80
       }
     },
+    "car.brake": {
+      "category": "event",
+      "duration_ticks": 48,
+      "loop": false,
+      "positional": true,
+      "variants": 2,
+      "profiles": [
+        "concrete",
+        "corridor"
+      ],
+      "muffled": false,
+      "stream": false,
+      "event_ticks": {
+        "car.brake": 48,
+        "car.brake.concrete": 49,
+        "car.brake.corridor": 42
+      }
+    },
+    "metal.scrape": {
+      "category": "event",
+      "duration_ticks": 44,
+      "loop": false,
+      "positional": true,
+      "variants": 2,
+      "profiles": [
+        "concrete",
+        "corridor"
+      ],
+      "muffled": false,
+      "stream": false,
+      "event_ticks": {
+        "metal.scrape": 44,
+        "metal.scrape.concrete": 47,
+        "metal.scrape.corridor": 39
+      }
+    },
     "car.start": {
       "category": "event",
       "duration_ticks": 37,
@@ -734,6 +770,46 @@
       "stream": false,
       "event_ticks": {
         "skinwalker.scuttle": 10
+      }
+    },
+    "skinwalker.tear": {
+      "category": "event",
+      "duration_ticks": 38,
+      "loop": false,
+      "positional": true,
+      "variants": 2,
+      "profiles": [],
+      "muffled": true,
+      "stream": false,
+      "event_ticks": {
+        "skinwalker.tear": 38,
+        "skinwalker.tear.muffled": 42
+      }
+    },
+    "skinwalker.whip": {
+      "category": "event",
+      "duration_ticks": 17,
+      "loop": false,
+      "positional": true,
+      "variants": 3,
+      "profiles": [],
+      "muffled": false,
+      "stream": false,
+      "event_ticks": {
+        "skinwalker.whip": 17
+      }
+    },
+    "skinwalker.crawl": {
+      "category": "event",
+      "duration_ticks": 24,
+      "loop": false,
+      "positional": true,
+      "variants": 4,
+      "profiles": [],
+      "muffled": false,
+      "stream": false,
+      "event_ticks": {
+        "skinwalker.crawl": 24
       }
     },
     "bacteria.screech": {

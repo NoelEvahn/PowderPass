@@ -1662,3 +1662,107 @@ def slide_rush(rng, v):
         mix_into(x, drop(rng, rng.uniform(500, 1800), 0.7, 0.02, rng.uniform(0.1, 0.35), 0.1, 0.12)
                  * float(np.interp(tp * SR, np.arange(n), env)), ns(tp))
     return room(hp(x, 40, 2), 0.08, "office")
+
+
+# ============================================================================ creature (skinwalker, tentacles)
+def skinwalker_tear(rng, v):
+    """Flesh splitting along the back: a slow wet rip (band-limited noise through a moving resonance, stick-slip
+    gated), sinew pings, a few cracks, and a heavy wet release."""
+    dur = 1.6
+    n = ns(dur)
+    t = taxis(n)
+    x = np.zeros(n)
+    # the rip: stick-slip gating (fast random gate) on squelchy noise whose resonance climbs as it tears
+    g = np.clip(smooth_random(n, rng.uniform(40, 70), rng, -0.4, 1.0), 0, None) ** 1.6
+    rip = bp(pink(n, rng), 250, 4200, 2) * g
+    fc = 380 + 1500 * (t / dur) ** 1.3
+    rip = sum(reson(rip, f, 3) * w for f, w in ((fc.mean() * 0.6, 0.5), (fc.mean(), 0.8), (fc.mean() * 1.7, 0.4)))
+    rip *= env_points(n, [(0, 0.0), (0.12, 0.5), (1.1, 1.0), (1.35, 0.7), (dur, 0.0)])
+    x += unit(rip) * 0.8
+    # sinew pings and cracks scattered through it
+    tp = rng.uniform(0.1, 0.25)
+    while tp < 1.3:
+        if rng.random() < 0.55:
+            mix_into(x, _bone_crack(rng, rng.uniform(0.7, 1.1)) * rng.uniform(0.2, 0.45), ns(tp))
+        else:
+            mix_into(x, _wet_pop(rng, rng.uniform(0.6, 1.0)) * rng.uniform(0.25, 0.5), ns(tp))
+        tp += rng.exponential(0.12)
+    # the release: a deep wet slap as it opens
+    rel = ns(rng.uniform(1.25, 1.38))
+    mix_into(x, pad_to(thump(rng, 120, 45, 0.09, 0.35, 0.9), ns(0.35)) * 0.9, rel)
+    mix_into(x, _wet_pop(rng, 1.6) * 0.7, rel)
+    return room(hp(x, 45, 2), 0.08)
+
+
+def skinwalker_whip(rng, v):
+    """A tentacle lash: a rising whoosh (air past a long limb) ending in a hard wet crack."""
+    dur = 0.7
+    n = ns(dur)
+    t = taxis(n)
+    hit = rng.uniform(0.32, 0.4)
+    # whoosh: noise through a band that sweeps up and gets louder until the hit
+    k = ns(hit)
+    w = pink(k, rng)
+    tk = taxis(k)
+    f = 300 + 2200 * (tk / hit) ** 2
+    wh = np.zeros(k)
+    for lo in (0.6, 1.0, 1.5):
+        wh += reson(w, float(np.mean(f) * lo), 2.5)
+    wh = unit(wh) * (tk / hit) ** 2.2
+    x = np.zeros(n)
+    mix_into(x, wh * 0.7, 0)
+    # the crack: a broadband snap with a short body thud and a wet smack
+    mix_into(x, burst(rng, 0.03, 0.004, 900, 11000) * 1.2, ns(hit))
+    mix_into(x, pad_to(thump(rng, 160, 70, 0.03, 0.15, 0.6), ns(0.15)) * 0.8, ns(hit))
+    mix_into(x, _wet_pop(rng, 0.9) * 0.4, ns(hit + 0.01))
+    return room(hp(x, 60, 2), 0.06)
+
+
+def skinwalker_crawl(rng, v):
+    """Its legs planting as it crawls: three to five soft, wet, heavy tentacle tips set down in quick succession,
+    with a drag of flesh on the floor between."""
+    dur = 0.8
+    n = ns(dur)
+    x = np.zeros(n)
+    tp = rng.uniform(0.01, 0.04)
+    for j in range(int(rng.integers(3, 6))):
+        a = rng.uniform(0.6, 1.0)
+        mix_into(x, pad_to(thump(rng, rng.uniform(110, 160), 55, 0.035, 0.2, 0.7), ns(0.2)) * a * 0.8, ns(tp))
+        mix_into(x, _wet_pop(rng, rng.uniform(0.7, 1.1)) * a * 0.35, ns(tp + 0.004))
+        if rng.random() < 0.5:
+            mix_into(x, _leg_tap(rng, 0.6) * a * 0.3, ns(tp + 0.01))
+        tp += rng.uniform(0.09, 0.17)
+        if tp > 0.62:
+            break
+    drag = bp(brown(n, rng), 120, 1400, 2) * np.clip(smooth_random(n, 9, rng, -0.3, 1.0), 0, None)
+    x += unit(drag) * 0.18
+    return room(hp(x, 40, 2), 0.05)
+
+
+# ============================================================================ cars
+def car_brake(rng, v):
+    """Tyres squealing under hard braking: a narrow, wavering 1.6-3 kHz tone (stick-slip of rubber) over road
+    hiss, fading as the car stops."""
+    dur = 1.2
+    n = ns(dur)
+    t = taxis(n)
+    f0 = rng.uniform(1600, 2400)
+    wob = smooth_random(n, 7, rng) * 90 + smooth_random(n, 31, rng) * 25
+    tone = np.sin(phase_of(f0 + wob - 260 * t, n))
+    tone += 0.35 * np.sin(phase_of(2 * (f0 + wob - 260 * t), n))
+    am = 0.6 + 0.4 * np.clip(smooth_random(n, 18, rng), -1, 1)
+    hiss = bp(white(n, rng), 1500, 6000, 2) * 0.25
+    x = (tone * am + hiss) * env_points(n, [(0, 0.0), (0.05, 1.0), (0.8, 0.8), (dur, 0.0)])
+    return room(x, 0.1, "concrete")
+
+
+def metal_scrape(rng, v):
+    """A car's flank grinding along a wall: gritty friction noise exciting inharmonic sheet-metal modes."""
+    dur = 1.0
+    n = ns(dur)
+    exc = bp(white(n, rng), 300, 8000, 2) * np.clip(smooth_random(n, 60, rng, -0.2, 1.0), 0, None)
+    modes = modal(np.sort(rng.uniform(220, 3400, 8)), rng.uniform(0.3, 1.0, 8), rng.uniform(0.04, 0.2, 8), ns(0.4), rng, True)
+    x = signal.fftconvolve(exc, modes)[:n]
+    x = unit(x) * 0.8 + unit(exc) * 0.35
+    x *= env_points(n, [(0, 0.0), (0.04, 1.0), (0.75, 0.85), (dur, 0.0)])
+    return room(hp(x, 80, 2), 0.1, "concrete")

@@ -1,0 +1,15 @@
+{
+  "bed.level0": {
+    "files": [
+      "user/bed_level0.ogg"
+    ],
+    "category": "ambient",
+    "positional": false,
+    "stereo": false,
+    "loop": true,
+    "length": 60.0,
+    "level": -20,
+    "license": "Supplied by the server owner",
+    "method": "User-supplied Level 0 bed, imported with tools/audio/import_user_loop.py. Entry reconstructed from the shipped pack (the original registry file was not part of the uploaded source)."
+  }
+}

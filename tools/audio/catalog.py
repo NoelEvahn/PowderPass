@@ -138,6 +138,10 @@ SOUNDS: List[Sound] = [
       method="Old 4-cylinder idle (~740 rpm): loop-periodic firing pulses (one weak cylinder, timing jitter) "
              "through exhaust resonances (92/185/370/760 Hz), tappet ticks, alternator whine, idle hunting AM; "
              "brown-noise rumble and firing-gated intake hiss."),
+    S("car.brake", "event", "sfx.car_brake", 1.2, 2, profiles=GARAGE,
+      method="Tyre squeal: narrow wavering 1.6-2.4 kHz tone with 2nd harmonic, stick-slip AM, road hiss, fading."),
+    S("metal.scrape", "event", "sfx.metal_scrape", 1.0, 2, profiles=GARAGE,
+      method="Gritty gated friction noise convolved with inharmonic sheet-metal modes."),
     S("car.start", "event", "sfx.car_start", 1.5, profiles=GARAGE,
       method="Solenoid clunk, starter motor (harmonic whine + pinion gear) slowed by 6.4 Hz compression "
              "strokes with chugs, the engine catching: two pops, firing run accelerating to ~55 Hz and settling "
@@ -214,6 +218,13 @@ SOUNDS: List[Sound] = [
     S("skinwalker.scuttle", "event", "sfx.skinwalker_scuttle", 0.3, 6,
       method="3-7 hard leg-tip taps 16-45 ms apart (sharp tick, short shell ring, floor knock, occasional flam), "
              "flat / crescendo / decrescendo bursts."),
+    S("skinwalker.tear", "event", "sfx.skinwalker_tear", 1.6, 2, muffled=True,
+      method="Slow wet rip (stick-slip gated pink noise through a climbing resonance), sinew pings and cracks, "
+             "a deep wet release slap."),
+    S("skinwalker.whip", "event", "sfx.skinwalker_whip", 0.7, 3,
+      method="Tentacle lash: rising swept whoosh ending in a broadband snap, a body thud and a wet smack."),
+    S("skinwalker.crawl", "event", "sfx.skinwalker_crawl", 0.8, 4,
+      method="3-5 soft heavy wet tentacle-tip plants (low thump + wet pop + tap) with a flesh drag between."),
     # ---------------------------------------------------------------- creature (bacteria, Level 0)
     S("bacteria.screech", "event", "voices.bacteria_screech", 2.0, 2, profiles=LOBBY,
       method="Thin high shriek (jittered 1.2-2.4 kHz harmonic source, sub-harmonic rasp, 2.6/4.1/6.3 kHz "

@@ -3,3 +3,4 @@ build/
 .gradle/
 pack/java/
 pack/bedrock/
+tools/audio/__pycache__/
