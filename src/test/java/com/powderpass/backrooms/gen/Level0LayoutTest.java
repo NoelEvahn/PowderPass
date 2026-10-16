@@ -108,9 +108,10 @@ class Level0LayoutTest {
         for (int x = -600; x < 600; x += 1) {
             for (int z = -600; z < 600; z += 8) {
                 int zz = z + 5;
-                if (g.holeAt(x, zz)) {
+                if (g.holeAt(x, z + 4)) {
                     holes++;
-                    if (someHole == null) someHole = new int[]{x, zz};
+                    if (someHole == null) someHole = new int[]{x, z + 4};
+                    assertFalse(g.holeAt(x + 1, z + 4) || g.holeAt(x, z + 5), "holes stand one block apart");
                 }
                 if (g.shaftAt(x, zz)) {
                     shafts++;
@@ -118,7 +119,7 @@ class Level0LayoutTest {
                 }
             }
         }
-        assertTrue(holes > 20, "grids of holes in some open areas: " + holes);
+        assertTrue(holes > 4 && holes < 400, "a few rare holes: " + holes);
         assertTrue(shafts > 10, "loop shafts on the lower floor: " + shafts);
         // a hole really opens from the upper floor onto the lower floor's open space
         Area a = new Area(g, someHole[0] - 8, someHole[1] - 8, someHole[0] + 8, someHole[1] + 8);

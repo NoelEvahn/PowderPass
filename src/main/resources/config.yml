@@ -20,7 +20,7 @@ levels:
     biome: "minecraft:swamp"
     generation:            # [locked]
       brightness: -2           # light levels added to every fixture (-2: dimmer than a lit room; 0: as bright as before)
-      floor-holes-chance: 0.4  # open areas of the upper floor with a grid of holes you can fall through to the lower floor
+      floor-holes-chance: 0.12 # rare: pillar halls of the upper floor with a few small holes (one block apart) down to the lower floor
       loop-shaft-chance: 0.35  # open areas of the lower floor with dark shafts that drop you back out of the upper floor's ceiling
       hall-chance: 0.08        # share of regions that become pillar halls
       dark-zone-chance: 0.20   # sectors where the fixtures have died
@@ -239,7 +239,7 @@ resource-pack:
     manage: true
     url: "https://download.mc-packs.net/pack/19e2879e7c1c642392c5abd211ac4974bb38900c.zip"
     sha1: "19e2879e7c1c642392c5abd211ac4974bb38900c"
-    id: "60927d6f-06a0-4960-9979-058f0c101843"
+    id: "8ba391a6-05da-454b-bfd0-bdcd89151432"
     prompt: '{"text":"Our server uses a custom resource pack!", "color":"gold"}'
     required: true               # players who decline are kicked (require-resource-pack)
   host:

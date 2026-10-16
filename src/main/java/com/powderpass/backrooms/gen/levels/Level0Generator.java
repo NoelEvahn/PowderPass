@@ -449,6 +449,10 @@ public final class Level0Generator extends RoomLevel {
                 if (c.floor == UP && holeAt(x, z)) {
                     int lowCeil = ceilY(DOWN, c.cx, c.cz);
                     for (int y = c.fy; y >= lowCeil; y--) c.set(u, y, v, B.AIR);
+                } else if (c.floor == UP && (holeAt(x + 1, z) || holeAt(x - 1, z) || holeAt(x, z + 1) || holeAt(x, z - 1))) {
+                    // the hole's sides show carpet, not the slab's insides
+                    int lowCeil = ceilY(DOWN, c.cx, c.cz);
+                    for (int y = c.fy - 1; y > lowCeil; y--) c.set(u, y, v, CARPET);
                 }
                 if (c.floor == DOWN && shaftAt(x, z)) {
                     for (int y = c.fy; y > bottomY; y--) c.set(u, y, v, B.AIR);
@@ -468,8 +472,8 @@ public final class Level0Generator extends RoomLevel {
      */
     private boolean holeRegion(int rx, int rz) {
         Zone z = zoneOf(UP, rx, rz);
-        if (z != Zone.PILLARS && z != Zone.EXPANSE) return false;
-        return Rng.chance(Rng.hash(seed ^ 0x401E5L, rx, rz), gs.get("floor-holes-chance", 0.4));
+        if (z != Zone.PILLARS) return false; // pillar halls only, never the open expanses
+        return Rng.chance(Rng.hash(seed ^ 0x401E5L, rx, rz), gs.get("floor-holes-chance", 0.12));
     }
 
     /** Regions of the lower floor's open spaces with shafts that drop away into the dark (and back to the top). */
@@ -481,7 +485,7 @@ public final class Level0Generator extends RoomLevel {
 
     boolean hasHoles(int floor, int cx, int cz) {
         if (floor != UP) return false;
-        int x = cx * S + 5, z = cz * S + 5;
+        int x = cx * S + 4, z = cz * S + 4;
         return holeAt(x, z);
     }
 
@@ -490,17 +494,20 @@ public final class Level0Generator extends RoomLevel {
         return shaftAt(x, z);
     }
 
-    /** A column of a floor hole in the upper floor: the 2 x 2 at (5..6, 5..6) of a cell, if the floor below is free there. */
+    /**
+     * A column of a floor hole in the upper floor: four single-block holes one block apart at (4|6, 4|6) of a cell,
+     * in about a quarter of the cells of a (rare) hole region, where the floor below is free to land on.
+     */
     public boolean holeAt(int x, int z) {
         int u = localOf(x), v = localOf(z);
-        if (u < 5 || u > 6 || v < 5 || v > 6) return false;
+        if ((u != 4 && u != 6) || (v != 4 && v != 6)) return false;
         int cx = cellOf(x), cz = cellOf(z);
         if (!holeRegion(Math.floorDiv(cx, R), Math.floorDiv(cz, R))) return false;
+        if (!Rng.chance(Rng.hash(seed ^ 0x40C3L, cx, cz), 0.25)) return false;
         if (featureAt(UP, cx, cz) != null || featureAt(DOWN, cx, cz) != null) return false;
         boolean[] lay = layout(DOWN, cx, cz);
-        for (int a = 5; a <= 6; a++) for (int b = 5; b <= 6; b++) if (lay[a * S + b]) return false;
-        // and somewhere to land: the lower floor's room around it is not a solid hall
-        return !lay[4 * S + 4] || !lay[7 * S + 7];
+        for (int a = 4; a <= 6; a++) for (int b = 4; b <= 6; b++) if (lay[a * S + b]) return false;
+        return true;
     }
 
     /**

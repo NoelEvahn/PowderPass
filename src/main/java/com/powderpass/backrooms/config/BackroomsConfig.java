@@ -215,7 +215,7 @@ public final class BackroomsConfig {
         serverPackManage = c.getBoolean("resource-pack.server-properties.manage", true);
         serverPackUrl = c.getString("resource-pack.server-properties.url", "https://download.mc-packs.net/pack/19e2879e7c1c642392c5abd211ac4974bb38900c.zip");
         serverPackSha1 = c.getString("resource-pack.server-properties.sha1", "19e2879e7c1c642392c5abd211ac4974bb38900c").trim().toLowerCase(Locale.ROOT);
-        serverPackId = c.getString("resource-pack.server-properties.id", "60927d6f-06a0-4960-9979-058f0c101843").trim();
+        serverPackId = c.getString("resource-pack.server-properties.id", "8ba391a6-05da-454b-bfd0-bdcd89151432").trim();
         serverPackPrompt = c.getString("resource-pack.server-properties.prompt", "{\"text\":\"Our server uses a custom resource pack!\", \"color\":\"gold\"}");
         serverPackRequired = c.getBoolean("resource-pack.server-properties.required", true);
         bedrockCustomSounds = c.getBoolean("bedrock.custom-sounds", false);
