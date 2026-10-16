@@ -196,43 +196,4 @@ final class Poses {
 
     // ------------------------------------------------------------------ skinwalker
 
-    /**
-     * @param phase  gait phase (radians)
-     * @param moving legs stepping
-     * @param jaw    0..1 lower jaw open
-     * @param split  0..1 mandibles opening sideways
-     * @param strike 0..1 mantis arms lashing forward
-     * @param twitch head roll, radians
-     * @param rear   0..1 front lifted (screech / pounce)
-     */
-    static Map<String, Matrix4f> skinwalker(double phase, boolean moving, double age, double jaw, double split, double strike, double twitch, double rear) {
-        Map<String, Matrix4f> p = new LinkedHashMap<>();
-        double bob = moving ? Math.abs(Math.sin(phase * 2)) * 0.05 : Math.sin(age * 0.08) * 0.025;
-        Matrix4f lift = new Matrix4f().translate(0, (float) bob, 0).mul(about(0, 1.2, -0.85, rx(-0.35 * rear)));
-        p.put("body", new Matrix4f(lift));
-        p.put("head", new Matrix4f(lift).mul(about(0, Bodies.SKIN_HEAD_Y, Bodies.SKIN_HEAD_Z, new Matrix4f().rotateZ((float) twitch).rotateX((float) (-0.25 * rear)))));
-        Vector3f hinge = Bodies.skinHead(0, 1.02, 0.62), ml = Bodies.skinHead(-0.2, 1.04, 0.72), mr = Bodies.skinHead(0.2, 1.04, 0.72);
-        p.put("head.jaw", about(hinge.x, hinge.y, hinge.z, rx(0.7 * jaw)));
-        p.put("head.mand_l", about(ml.x, ml.y, ml.z, ry(-0.6 * split)));
-        p.put("head.mand_r", about(mr.x, mr.y, mr.z, ry(0.6 * split)));
-        p.put("head.eyes", new Matrix4f());
-        for (int s = -1; s <= 1; s += 2) {
-            String arm = s < 0 ? "arm_l" : "arm_r";
-            double idle = Math.sin(age * 0.11 + s) * 0.06;
-            p.put(arm, new Matrix4f(lift).mul(about(s * 0.3, 1.0, 0.45, rx(-1.1 * strike + idle))));
-            p.put(arm + ".lo", about(s * 0.42, 0.55, 0.62, rx(0.9 * strike)));
-        }
-        for (int i = 0; i < 8; i++) {
-            int side = i < 4 ? -1 : 1;
-            Vector3f[] j = Bodies.skinwalkerLegJoints(i);
-            double off = (i % 2 == 0 ? 0 : Math.PI) + (i < 4 ? 0 : Math.PI / 2);
-            double swing = moving ? Math.sin(phase + off) * 0.38 : Math.sin(age * 0.05 + i) * 0.04;
-            double up = moving ? Math.max(0, Math.cos(phase + off)) * 0.28 : 0;
-            Matrix4f hip = new Matrix4f().translate(0, (float) bob, 0).mul(about(j[0].x, j[0].y, j[0].z, new Matrix4f().rotateY((float) swing).rotateZ((float) (side * up))));
-            if (i % 4 == 0 && rear > 0) hip.mul(about(j[0].x, j[0].y, j[0].z, rx(-0.6 * rear)));
-            p.put("leg" + i, hip);
-            p.put("leg" + i + ".lo", about(j[1].x, j[1].y, j[1].z, rz(-side * up * 0.9)));
-        }
-        return p;
-    }
 }

@@ -20,7 +20,7 @@ public final class CreatureModels {
             case "drifter" -> Bodies.drifter();
             case "watcher" -> Bodies.watcher();
             case "bacteria" -> Bodies.bacteria();
-            case "skinwalker" -> Bodies.skinwalker();
+            case "skinwalker" -> TentacleRig.preview();
             default -> null;
         };
     }

@@ -25,6 +25,32 @@ final class TestPlayer extends PlayerMock {
         return CompletableFuture.completedFuture(teleport(location, cause));
     }
 
+    @Override
+    public boolean teleport(Location location, PlayerTeleportEvent.TeleportCause cause) {
+        return super.teleport(location, cause, new TeleportFlag[0]);
+    }
+
+    @Override
+    public boolean teleport(Location location, PlayerTeleportEvent.TeleportCause cause, TeleportFlag... flags) {
+        // MockBukkit refuses a same-world teleport that keeps passengers; Paper allows it (the possession asks for it)
+        if (super.teleport(location, cause, new TeleportFlag[0])) return true;
+        if (getPassengers().isEmpty() || location.getWorld() != getWorld()) return false;
+        setLocation(location);
+        return true;
+    }
+
+    /**
+     * Stand-in for the client's own physics: a velocity sent by the server moves the player by that much (one
+     * tick's worth), as the real client does before its friction kicks in. Off by default.
+     */
+    boolean clientPhysics;
+
+    @Override
+    public void setVelocity(org.bukkit.util.Vector velocity) {
+        super.setVelocity(velocity);
+        if (clientPhysics) setLocation(getLocation().add(velocity));
+    }
+
     /** Every namespaced sound played to this player: "key@x,y,z". */
     final List<String> customSounds = new ArrayList<>();
     final List<String> stopped = new ArrayList<>();

@@ -2,65 +2,86 @@ package com.powderpass.backrooms.creature;
 
 import com.powderpass.backrooms.BackroomsPlugin;
 import com.powderpass.backrooms.config.BackroomsConfig;
-import com.powderpass.backrooms.display.Keys;
-import io.papermc.paper.datacomponent.item.ResolvableProfile;
+import io.papermc.paper.entity.LookAnchor;
+import io.papermc.paper.entity.TeleportFlag;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.title.Title;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
+import org.bukkit.Particle;
 import org.bukkit.Sound;
-import org.bukkit.SoundCategory;
 import org.bukkit.World;
-import org.bukkit.block.Block;
-import org.bukkit.entity.Mannequin;
+import org.bukkit.attribute.Attribute;
+import org.bukkit.attribute.AttributeInstance;
+import org.bukkit.attribute.AttributeModifier;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.Interaction;
 import org.bukkit.entity.Player;
-import org.bukkit.entity.Pose;
-import org.bukkit.inventory.EntityEquipment;
-import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.EquipmentSlotGroup;
+import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.util.Vector;
+import org.joml.Vector3d;
 
-import java.time.Duration;
-import java.util.ArrayDeque;
-import java.util.Deque;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * A player being worn by a skinwalker.
+ * A player taken by a skinwalker. The player is <b>not</b> a spectator: they stay in their own body, in their own
+ * game mode, visible to everyone with their own skin, and are carried by a black tentacled organism that grows out
+ * of their back ({@link TentacleRig}). The AI moves them, not the player.
  * <p>
- * <b>The victim</b> is put in spectator mode, locked onto their own body (they watch through its eyes), and
- * cannot move, type in chat, run commands or talk on voice chat (see {@link Possessions} for the locks). Their
- * original game mode is stored in their PersistentDataContainer before anything changes, so a crash or a
- * disconnect always restores them.
+ * <b>How the body is moved.</b> A grounded, collision-aware controller ({@link GroundController}) is the real body:
+ * it paths over real blocks, steps up single blocks, falls with gravity and never leaves loaded chunks. The player
+ * hovers just above it. Their own movement and jumping are taken away with attribute modifiers (speed, jump
+ * strength and gravity set to zero), so the only thing that moves them is the velocity the server sends every
+ * tick: the controller's motion plus a correction toward it. The player's client therefore still collides with
+ * real blocks and simulates the motion smoothly (no teleport jitter, no flying, no clipping). Only when the client
+ * drifts more than two blocks off (lag, a hacked client) is it put back with a teleport.
  * <p>
- * <b>The body</b> is a {@link Mannequin} wearing the victim's skin, name and visible equipment. It acts human:
- * it keeps to the group a few blocks behind whoever leads, walks at their pace with footsteps, looks where
- * people look and at whoever is closest, copies sneaks, jumps and arm swings after a human-like delay, idles and
- * glances around, punches back (harmlessly) when punched, repeats things the victim said in chat, and, with
- * Simple Voice Chat, plays back recordings of the victim's own voice.
- * <p>
- * It gives itself away when punched too often, and after {@code skinwalker.disguise-seconds} it stops pretending.
+ * <b>Safety.</b> Before anything changes, a flag with the player's original state is written to their
+ * PersistentDataContainer, and every modifier carries a fixed key, so a disconnect, a death, a reload or a crash
+ * always gives the player back exactly what they had (see {@link Possessions#restore}).
  */
 final class Possession {
+    enum Stage { TRANSFORMING, ACTIVE }
+
+    /** Length of the transformation, in ticks (5.5 s). */
+    static final int TRANSFORM_TICKS = 110;
+    static final double HOVER = 0.72;
+
     private final BackroomsPlugin plugin;
     private final Possessions registry;
     final Skinwalker walker;
     final UUID victimId;
     final String victimName;
-    final Mannequin body;
-    private final GameMode originalMode;
     private final AtomicReference<double[]> voicePos;
-    private boolean active = true, reveal, carried;
-    private int ticks, nextChat, nextVoice, sneakFor, jumpTicks, idleLookFor, stareFor;
-    private float lookYaw, lookPitch;
-    private final Deque<Long> punches = new ArrayDeque<>();
-    private Location lastLeader;
-    private int stepIn;
+    final GroundController ground;
+    final TentacleRig rig;
+    private boolean active = true;
+    Stage stage = Stage.TRANSFORMING;
+    int ticks;
+    private int nextChat, nextVoice, nextJerk, breathIn, repathIn, nextLook;
+    private double hover, prevTx, prevTy, prevTz, heading;
+    private List<int[]> path = List.of();
+    private int pathIndex;
+    // goal set by the AI
+    private double goalX, goalY, goalZ, goalSpeed;
+    private boolean faceTarget;
+    private Player lookTarget;
+    // attacks
+    private int strikeTick = -1, punchTick = -1;
+    private Player strikeTarget;
+    private double strikeDamage;
+    private Interaction hitbox;
+    private int lastRigUpdate;
 
     Possession(BackroomsPlugin plugin, Possessions registry, Skinwalker walker, Player victim) {
         this.plugin = plugin;
@@ -68,332 +89,531 @@ final class Possession {
         this.walker = walker;
         this.victimId = victim.getUniqueId();
         this.victimName = victim.getName();
-        this.originalMode = victim.getGameMode();
         Location at = victim.getLocation();
         // persisted first: whatever happens next, the victim can be restored
-        victim.getPersistentDataContainer().set(registry.victimKey(), PersistentDataType.STRING, originalMode.name());
-        victim.getPersistentDataContainer().set(registry.flySpeedKey(), PersistentDataType.FLOAT, victim.getFlySpeed());
-        this.body = at.getWorld().spawn(at, Mannequin.class, m -> {
-            m.setPersistent(false);
-            m.setInvulnerable(true);
-            try {
-                m.setProfile(ResolvableProfile.resolvableProfile(victim.getPlayerProfile()));
-            } catch (RuntimeException | LinkageError ex) {
-                plugin.getLogger().warning("[Skinwalker] could not copy " + victim.getName() + "'s skin: " + ex);
-            }
-            m.customName(victim.name());
-            m.setCustomNameVisible(true);
-            try {
-                m.setDescription(null);
-            } catch (RuntimeException ignored) {
-                // older builds may require a component; the default description is acceptable
-            }
-            m.setMainHand(victim.getMainHand());
-            EntityEquipment eq = m.getEquipment();
-            EntityEquipment ve = victim.getEquipment();
-            if (eq != null && ve != null) {
-                eq.setHelmet(copy(ve.getHelmet()));
-                eq.setChestplate(copy(ve.getChestplate()));
-                eq.setLeggings(copy(ve.getLeggings()));
-                eq.setBoots(copy(ve.getBoots()));
-                eq.setItemInMainHand(copy(ve.getItemInMainHand()));
-                eq.setItemInOffHand(copy(ve.getItemInOffHand()));
-            }
-            m.getPersistentDataContainer().set(Keys.CREATURE, PersistentDataType.STRING, walker.id.toString());
-            m.setRotation(at.getYaw(), at.getPitch());
-        });
+        PersistentDataContainer pdc = victim.getPersistentDataContainer();
+        pdc.set(registry.victimKey(), PersistentDataType.STRING, victim.getGameMode().name());
+        pdc.set(registry.flySpeedKey(), PersistentDataType.FLOAT, victim.getFlySpeed());
+        pdc.set(registry.flightKey(), PersistentDataType.BYTE, (byte) ((victim.getAllowFlight() ? 1 : 0) | (victim.isFlying() ? 2 : 0) | (victim.hasGravity() ? 4 : 0)));
+        this.ground = new GroundController(at.getWorld(), at.getX(), at.getY(), at.getZ());
+        ground.reset(at.getX(), at.getY(), at.getZ());
+        this.heading = at.getYaw();
+        this.goalX = ground.x;
+        this.goalY = ground.y;
+        this.goalZ = ground.z;
+        this.prevTx = ground.x;
+        this.prevTy = ground.smoothY;
+        this.prevTz = ground.z;
         this.voicePos = VoiceBridge.tracker(at);
-        this.lookYaw = at.getYaw();
-        this.lookPitch = at.getPitch();
         lock(victim);
+        this.rig = new TentacleRig(victimId.getMostSignificantBits() ^ System.nanoTime());
+        rig.spawn(victim, walker.id.toString());
         BackroomsConfig c = plugin.cfg();
-        nextChat = 20 * (25 + ThreadLocalRandom.current().nextInt(40));
-        nextVoice = 20 * (20 + ThreadLocalRandom.current().nextInt(40));
-        if (!c.skinwalkerChatMimic) nextChat = Integer.MAX_VALUE;
-        if (!c.skinwalkerVoiceMimic) nextVoice = Integer.MAX_VALUE;
+        nextChat = c.skinwalkerChatMimic ? 20 * (25 + ThreadLocalRandom.current().nextInt(40)) : Integer.MAX_VALUE;
+        nextVoice = c.skinwalkerVoiceMimic ? 20 * (20 + ThreadLocalRandom.current().nextInt(40)) : Integer.MAX_VALUE;
     }
 
-    private static ItemStack copy(ItemStack s) {
-        return s == null ? null : s.clone();
-    }
+    // ------------------------------------------------------------------ locks
 
+    /** Freeze the player in their body: no walking, no jumping, no gravity of their own, no flying. */
     private void lock(Player v) {
-        registry.setReleasing(victimId, true);
-        v.setGameMode(GameMode.SPECTATOR);
-        registry.setReleasing(victimId, false);
-        v.setSpectatorTarget(body);
-        v.setFlySpeed(0f); // a spectator can always fly; with no speed they cannot leave even if the camera lets go
-        v.addPotionEffect(new PotionEffect(PotionEffectType.DARKNESS, 80, 0, false, false));
-        v.showTitle(Title.title(Component.text("You can't move.").color(net.kyori.adventure.text.format.NamedTextColor.DARK_RED),
-                Component.text("Something is wearing you.").color(net.kyori.adventure.text.format.NamedTextColor.GRAY),
-                Title.Times.times(Duration.ofMillis(200), Duration.ofSeconds(4), Duration.ofSeconds(2))));
-        v.playSound(v.getLocation(), Sound.BLOCK_BONE_BLOCK_BREAK, SoundCategory.HOSTILE, 1f, 0.5f);
+        modifier(v, Attribute.MOVEMENT_SPEED, registry.lockKey("speed"), -1, AttributeModifier.Operation.MULTIPLY_SCALAR_1);
+        modifier(v, Attribute.JUMP_STRENGTH, registry.lockKey("jump"), -1, AttributeModifier.Operation.MULTIPLY_SCALAR_1);
+        modifier(v, Attribute.GRAVITY, registry.lockKey("gravity"), -1, AttributeModifier.Operation.MULTIPLY_SCALAR_1);
+        modifier(v, Attribute.STEP_HEIGHT, registry.lockKey("step"), 0.5, AttributeModifier.Operation.ADD_NUMBER);
+        modifier(v, Attribute.SAFE_FALL_DISTANCE, registry.lockKey("fall"), 1000, AttributeModifier.Operation.ADD_NUMBER);
+        // allowed flight only so the server never kicks a hovering player for flying; flight itself is cancelled
+        // (Possessions#onToggleFlight) and has no speed
+        v.setAllowFlight(true);
+        v.setFlying(false);
+        v.setFlySpeed(0f);
+        v.setGravity(false);
+        v.setVelocity(new Vector());
+        v.setFallDistance(0);
+        if (v.isInsideVehicle()) v.leaveVehicle();
         registry.voice().mute(victimId, true);
-        // spectator target needs the body to be tracked first; assert it again next tick
-        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
-            Player p = plugin.getServer().getPlayer(victimId);
-            if (p != null && active) {
-                p.setSpectatorTarget(body);
-                TabList.showAsSurvival(plugin, p, plugin.getServer().getOnlinePlayers());
-            }
-        }, 2L);
+        v.sendActionBar(Component.text("You can't move.").color(NamedTextColor.DARK_RED));
     }
 
-    /**
-     * Run every few ticks: pulls the victim back onto their body and onto the camera if anything (a teleport, a
-     * chunk reload, the body moving between worlds) let go, so a worn player is always locked to the monster.
-     */
-    void keepLocked(Player v) {
-        if (!active || !body.isValid()) return;
-        Location at = body.getLocation();
-        if (v.getWorld() != at.getWorld() || v.getLocation().distanceSquared(at) > 4) v.teleport(at);
-        if (v.getSpectatorTarget() != body) v.setSpectatorTarget(body);
-        if (v.getFlySpeed() != 0f) v.setFlySpeed(0f);
+    static void modifier(Player v, Attribute a, NamespacedKey key, double amount, AttributeModifier.Operation op) {
+        try {
+            AttributeInstance inst = v.getAttribute(a);
+            if (inst == null) return;
+            inst.removeModifier(key);
+            inst.addModifier(new AttributeModifier(key, amount, op, EquipmentSlotGroup.ANY));
+        } catch (RuntimeException ex) {
+            // an attribute the server does not support for players: the velocity control still holds them
+        }
     }
 
     boolean active() {
         return active;
     }
 
-    boolean wantsReveal() {
-        return reveal;
-    }
-
     Player victim() {
         return plugin.getServer().getPlayer(victimId);
     }
 
-    // ------------------------------------------------------------------ acting human
+    /** Where the organism's body is (the ground under the hovering player). */
+    Location root() {
+        return new Location(ground.world(), ground.x, ground.y, ground.z, (float) heading, 0);
+    }
 
-    /** One AI step while disguised. Returns the body's location (the creature follows it). */
-    Location tick(int dt) {
-        ticks += dt;
+    double heading() {
+        return heading;
+    }
+
+    void mountHitbox(Interaction hb) {
+        this.hitbox = hb;
         Player v = victim();
-        if (v == null || !body.isValid()) {
+        if (v != null && hb != null) v.addPassenger(hb);
+    }
+
+    // ------------------------------------------------------------------ AI input
+
+    /** Where the AI wants the body to go, and how fast (blocks per tick); {@code look} is who to stare at, or null. */
+    void goal(double x, double y, double z, double speed, Player look) {
+        boolean moved = Math.abs(x - goalX) + Math.abs(z - goalZ) > 1.5;
+        goalX = x;
+        goalY = y;
+        goalZ = z;
+        goalSpeed = speed;
+        lookTarget = look;
+        faceTarget = look != null;
+        if (moved) repathIn = 0;
+    }
+
+    boolean blocked() {
+        return ground.blocked;
+    }
+
+    /** Lash at the target with the striking tentacle (damage lands when the tip arrives). */
+    void strike(Player target, double damage) {
+        if (strikeTick >= 0 || punchTick >= 0) return;
+        strikeTarget = target;
+        strikeDamage = damage;
+        strikeTick = 0;
+        walker.sfx(root(), "skinwalker.screech", Sound.ENTITY_WARDEN_ROAR, 0.7f, 1.7f);
+    }
+
+    /** Punch with the victim's own arm. */
+    void punch(Player target, double damage) {
+        if (strikeTick >= 0 || punchTick >= 0) return;
+        strikeTarget = target;
+        strikeDamage = damage;
+        punchTick = 0;
+    }
+
+    boolean attacking() {
+        return strikeTick >= 0 || punchTick >= 0;
+    }
+
+    // ------------------------------------------------------------------ every tick
+
+    /** One server tick: transformation or locomotion, the pull on the player, attacks, sounds, the rig. */
+    void tick() {
+        if (!active) return;
+        Player v = victim();
+        if (v == null || !v.isOnline() || v.isDead()) {
             release(false);
-            reveal = true;
-            return null;
+            return;
         }
-        if (ticks % 10 < dt && v.getSpectatorTarget() != body) v.setSpectatorTarget(body);
-        BackroomsConfig c = plugin.cfg();
-        World w = body.getWorld();
-        Location here = body.getLocation();
-        List<Player> group = registry.groupAround(here, c.skinwalkerGroupRadius, this);
-        if (group.isEmpty() || ticks > c.skinwalkerDisguiseSeconds * 20) {
-            reveal = true; // nobody left to fool, or it has waited long enough
-            return here;
+        ticks++;
+        if (v.getWorld() != ground.world()) {
+            // something moved them to another world: that ends it
+            release(false);
+            return;
         }
-        Player leader = group.get(0);
-        Location ll = leader.getLocation();
-        double leaderSpeed = lastLeader == null || lastLeader.getWorld() != ll.getWorld() ? 0 : horizontal(ll, lastLeader) / dt;
-        boolean leaderJumped = lastLeader != null && ll.getY() - lastLeader.getY() > 0.25 && !leader.isFlying();
-        lastLeader = ll.clone();
+        if (stage == Stage.TRANSFORMING) transform(v);
+        else locomotion(v);
+        pull(v);
+        attacks(v);
+        if (stage == Stage.ACTIVE) ambience(v);
+        animate(v);
+        if (hitbox != null && hitbox.isValid() && !v.getPassengers().contains(hitbox)) v.addPassenger(hitbox);
+    }
 
-        // where a companion would walk: a little behind the leader, to one side
-        Vector facing = ll.getDirection().setY(0);
-        if (facing.lengthSquared() < 1e-4) facing = new Vector(0, 0, 1);
-        facing.normalize();
-        Vector side = new Vector(-facing.getZ(), 0, facing.getX()).multiply((victimId.hashCode() & 1) == 0 ? 1.3 : -1.3);
-        Location want = ll.clone().add(facing.clone().multiply(-2.6)).add(side);
-        double dist = horizontal(here, ll);
-        Location next = here.clone();
-        boolean moving = false;
-        if (horizontal(here, want) > 1.3 && dist > 2.2) {
-            double speed = Math.max(0.1, Math.min(0.29, leaderSpeed > 0.02 ? leaderSpeed : dist > 6 ? 0.22 : 0.14));
-            if (dist > 12) speed = 0.28; // catching up
-            int[] wp = waypoint(here, want);
-            if (wp != null) {
-                double dx = wp[0] + 0.5 - here.getX(), dz = wp[2] + 0.5 - here.getZ();
-                double len = Math.sqrt(dx * dx + dz * dz);
-                double step = Math.min(len, speed * dt);
-                if (len > 1e-3) next.add(dx / len * step, 0, dz / len * step);
-                next.setY(wp[1]);
-                moving = step > 0.01;
+    /** The transformation: a freeze, cracking and jerks, the back tearing open, tentacles, the lift, the reveal. */
+    private void transform(Player v) {
+        int t = ticks;
+        World w = ground.world();
+        Location back = backPoint(v);
+        ThreadLocalRandom r = ThreadLocalRandom.current();
+        if (t == 1) {
+            // a loud crack in the silence, as everything in them locks
+            walker.sfx(back, "skinwalker.crackle", Sound.BLOCK_BONE_BLOCK_BREAK, 2.0f, 0.5f);
+            walker.sfx(back, "skinwalker.crackle", Sound.ENTITY_ZOMBIE_BREAK_WOODEN_DOOR, 0.8f, 0.6f);
+            nextJerk = 5;
+        }
+        // unnatural jerks: the head snaps round, the body jolts, the arms twitch, the knees buckle
+        if (t < 96 && t >= nextJerk) {
+            nextJerk = t + (t < 40 ? 4 + r.nextInt(6) : 7 + r.nextInt(10));
+            jerk(v, t < 40 ? 1.0 : 0.6);
+            walker.sfx(back, "skinwalker.crackle", Sound.BLOCK_BONE_BLOCK_HIT, 1.1f, 0.4f + r.nextFloat() * 0.3f);
+            w.spawnParticle(Particle.BLOCK, back, 6, 0.12, 0.15, 0.12, 0.05, Material.BONE_BLOCK.createBlockData());
+        }
+        if (t == 24) {
+            // the back tears open
+            walker.sfx(back, "skinwalker.tear", Sound.ENTITY_SLIME_SQUISH, 1.6f, 0.5f);
+            walker.sfx(back, "skinwalker.tear", Sound.BLOCK_HONEY_BLOCK_BREAK, 1.2f, 0.5f);
+            w.spawnParticle(Particle.BLOCK, back, 24, 0.15, 0.2, 0.15, 0.1, Material.NETHER_WART_BLOCK.createBlockData());
+            w.spawnParticle(Particle.SQUID_INK, back, 18, 0.1, 0.15, 0.1, 0.05);
+        }
+        rig.wound = TentacleRig.clamp01((t - 24) / 10.0);
+        // tentacles force their way out and flail
+        rig.emerge = TentacleRig.smooth((t - 30) / 26.0);
+        if (t >= 30 && t < 58 && t % 3 == 0) {
+            w.spawnParticle(Particle.SQUID_INK, back, 4, 0.12, 0.12, 0.12, 0.03);
+            if (t % 6 == 0) walker.sfx(back, "skinwalker.tear", Sound.ENTITY_SQUID_SQUIRT, 0.9f, 0.5f);
+        }
+        // they reach down and plant
+        if (t == 56) rig.settle(ground, new Vector3d(ground.x, ground.y, ground.z), heading);
+        rig.plant = TentacleRig.clamp01((t - 56) / 16.0);
+        if (t == 66 || t == 70) {
+            for (TentacleRig.Leg l : rig.legs) {
+                if (!l.hasGround) continue;
+                Location foot = new Location(w, l.plant.x, l.plant.y + 0.05, l.plant.z);
+                w.spawnParticle(Particle.BLOCK, foot, 8, 0.15, 0.02, 0.15, 0.1, foot.clone().add(0, -0.5, 0).getBlock().getBlockData());
+            }
+            walker.sfx(back, "skinwalker.scuttle", Sound.ENTITY_IRON_GOLEM_STEP, 1.2f, 0.5f);
+        }
+        // and slowly lift the body off the ground
+        double lift = TentacleRig.smooth((t - 72) / 24.0);
+        hover = lift * (HOVER + 0.25 * Math.sin(Math.PI * Math.min(1, (t - 72) / 24.0)));
+        if (t == 74 || t == 84) walker.sfx(back, "skinwalker.crackle", Sound.BLOCK_SCULK_SPREAD, 1.2f, 0.5f);
+        // twitching, then the reveal
+        rig.twitch = t >= 92 && t < 106 ? 0.9 : t >= 36 && t < 56 ? 0.4 : 0;
+        if (t == 104) {
+            Player near = nearestOther(v, 24);
+            if (near != null) look(v, near.getEyeLocation());
+            walker.sfx(back, "skinwalker.screech", Sound.ENTITY_WARDEN_ROAR, 1.6f, 0.8f);
+            for (Player p : w.getPlayers()) {
+                if (p != v && p.getLocation().distanceSquared(back) < 20 * 20) p.addPotionEffect(new PotionEffect(PotionEffectType.DARKNESS, 50, 0, false, false));
             }
         }
-        // jumps and sneaks copied a beat late, like a person reacting
-        if (leaderJumped && jumpTicks == 0) jumpTicks = -(4 + ThreadLocalRandom.current().nextInt(4));
-        if (jumpTicks < 0 && (jumpTicks += dt) >= 0) jumpTicks = 1;
-        double hop = 0;
-        if (jumpTicks > 0) {
-            double t = jumpTicks / 12.0;
-            hop = Math.max(0, 4 * 1.2 * t * (1 - t));
-            if ((jumpTicks += dt) > 12) jumpTicks = 0;
+        if (t >= TRANSFORM_TICKS) {
+            stage = Stage.ACTIVE;
+            rig.emerge = 1;
+            rig.plant = 1;
+            rig.wound = 1;
+            rig.twitch = 0;
+            breathIn = 20;
         }
-        sneakFor = leader.isSneaking() ? sneakFor + dt : Math.min(sneakFor, 0) - dt;
-        boolean sneak = sneakFor > 8;
+        // keep the body where it was grabbed (gravity still applies to it)
+        ground.move(0, 0);
+    }
+
+    private void jerk(Player v, double strength) {
+        ThreadLocalRandom r = ThreadLocalRandom.current();
+        Location eye = v.getEyeLocation();
+        double yaw = Math.toRadians(eye.getYaw() + r.nextGaussian() * 70 * strength);
+        double pitch = Math.max(-80, Math.min(80, r.nextGaussian() * 45 * strength));
+        look(v, eye.clone().add(-Math.sin(yaw) * 5, -Math.tan(Math.toRadians(pitch)) * 5, Math.cos(yaw) * 5));
+        swing(v, r.nextBoolean());
+        // the knees buckle for a moment (everyone sees a crouch flicker)
+        if (r.nextDouble() < 0.5 * strength) {
+            v.setSneaking(true);
+            plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+                Player p = victim();
+                if (p != null && active) p.setSneaking(false);
+            }, 2 + r.nextInt(3));
+        }
+    }
+
+    private void look(Player v, Location at) {
         try {
-            body.setPose(sneak ? Pose.SNEAKING : Pose.STANDING, true);
-        } catch (RuntimeException ignored) {
-            // pose not supported for mannequins on this build
+            v.lookAt(at.getX(), at.getY(), at.getZ(), LookAnchor.EYES);
+        } catch (RuntimeException | AbstractMethodError ignored) {
+            // not supported (test server)
         }
+    }
 
-        // where it looks: where it walks, the leader's gaze, the nearest face, or a slow idle glance
-        Player near = group.stream().min((a, b) -> Double.compare(a.getLocation().distanceSquared(here), b.getLocation().distanceSquared(here))).orElse(leader);
-        float targetYaw, targetPitch;
-        if (moving) {
-            targetYaw = yawTo(here, next.getX() - here.getX(), next.getZ() - here.getZ());
-            targetPitch = 5;
-        } else if (stareFor > 0) {
-            stareFor -= dt; // the one tell: it looks at someone a little too long
-            Location e = near.getEyeLocation();
-            targetYaw = yawTo(here, e.getX() - here.getX(), e.getZ() - here.getZ());
-            targetPitch = 0;
-        } else if (idleLookFor > 0) {
-            idleLookFor -= dt;
-            targetYaw = lookYaw;
-            targetPitch = lookPitch;
-        } else {
-            double r = ThreadLocalRandom.current().nextDouble();
-            if (r < 0.02) {
-                idleLookFor = 20 + ThreadLocalRandom.current().nextInt(40);
-                lookYaw += (float) ThreadLocalRandom.current().nextDouble(-70, 70);
-                lookPitch = (float) ThreadLocalRandom.current().nextDouble(-15, 20);
-            } else if (r < 0.025) {
-                stareFor = 60 + ThreadLocalRandom.current().nextInt(60);
+    /** Walk the controller along a path toward the AI's goal. */
+    private void locomotion(Player v) {
+        double clearance = ground.clearance(4);
+        ground.height = 1.85 + Math.min(0.1, Math.max(0, clearance - 1.9));
+        double dx = goalX - ground.x, dz = goalZ - ground.z;
+        double dist = Math.hypot(dx, dz);
+        double mx = 0, mz = 0;
+        if (goalSpeed > 0.005 && dist > 0.4) {
+            if (--repathIn <= 0 || pathIndex >= path.size()) {
+                int bx = (int) Math.floor(ground.x), by = (int) Math.floor(ground.y + 0.01), bz = (int) Math.floor(ground.z);
+                path = Nav.path(ground.world(), bx, by, bz, (int) Math.floor(goalX), (int) Math.floor(goalY), (int) Math.floor(goalZ), 3, Nav.Medium.GROUND, 500);
+                if (path.isEmpty()) path = Nav.path(ground.world(), bx, by, bz, (int) Math.floor(goalX), (int) Math.floor(goalY), (int) Math.floor(goalZ), 2, Nav.Medium.GROUND, 500);
+                pathIndex = 0;
+                repathIn = 10;
             }
-            targetYaw = r < 0.5 ? ll.getYaw() : yawTo(here, near.getX() - here.getX(), near.getZ() - here.getZ());
-            targetPitch = r < 0.5 ? ll.getPitch() * 0.6f : 0;
+            double wx, wz;
+            if (pathIndex < path.size()) {
+                int[] wp = path.get(pathIndex);
+                wx = wp[0] + 0.5;
+                wz = wp[2] + 0.5;
+                if (Math.hypot(wx - ground.x, wz - ground.z) < 0.35) {
+                    pathIndex++;
+                    if (pathIndex < path.size()) {
+                        wp = path.get(pathIndex);
+                        wx = wp[0] + 0.5;
+                        wz = wp[2] + 0.5;
+                    }
+                }
+            } else if (dist < 2.5) {
+                wx = goalX;
+                wz = goalZ;
+            } else {
+                wx = ground.x;
+                wz = ground.z;
+            }
+            double ddx = wx - ground.x, ddz = wz - ground.z, dd = Math.hypot(ddx, ddz);
+            if (dd > 1e-3) {
+                // ease in and out so it never jerks from standing to full speed
+                double s = Math.min(goalSpeed, dd);
+                mx = ddx / dd * s;
+                mz = ddz / dd * s;
+            }
         }
-        lookYaw = approach(lookYaw, targetYaw, 18f);
-        lookPitch += (targetPitch - lookPitch) * 0.3f;
-        next.setYaw(lookYaw);
-        next.setPitch(lookPitch);
-        Location placed = next.clone().add(0, hop, 0);
-        body.teleport(placed);
-        voicePos.set(new double[]{placed.getX(), placed.getY() + 1.6, placed.getZ()});
-        if (moving && (stepIn -= dt) <= 0) {
-            stepIn = sneak ? 12 : leaderSpeed > 0.2 ? 6 : 8;
-            Block below = placed.clone().add(0, -0.2, 0).getBlock();
+        ground.move(mx, mz);
+        // the body turns toward its prey, or where it is going; never faster than a creature can turn
+        double want = heading;
+        if (faceTarget && lookTarget != null && lookTarget.isValid() && lookTarget.getWorld() == ground.world()) {
+            want = yawTo(lookTarget.getLocation().getX() - ground.x, lookTarget.getLocation().getZ() - ground.z);
+        } else if (ground.lastMoved > 0.02) {
+            want = yawTo(mx, mz);
+        }
+        heading = approach(heading, want, 9);
+        // the player's head follows the body's heading: it is what the organism looks through
+        Location eye = v.getEyeLocation();
+        double off = Math.abs(wrap(eye.getYaw() - heading));
+        if (ticks >= nextLook && (off > 30 || (faceTarget && ThreadLocalRandom.current().nextDouble() < 0.05))) {
+            nextLook = ticks + 12 + ThreadLocalRandom.current().nextInt(20);
+            if (faceTarget && lookTarget != null && lookTarget.getWorld() == v.getWorld()) look(v, lookTarget.getEyeLocation());
+            else {
+                double h = Math.toRadians(heading);
+                look(v, eye.clone().add(-Math.sin(h) * 6, -0.4, Math.cos(h) * 6));
+            }
+        }
+        // hover: lower where the ceiling is low, a slow breathing bob, a sway with each tripod
+        double room = Math.max(0, clearance - 1.85);
+        double bob = 0.06 * Math.sin(ticks * 0.21) + (ground.lastMoved > 0.02 ? 0.05 * Math.sin(ticks * 0.9) : 0);
+        hover = Math.max(0, Math.min(HOVER + bob, room));
+    }
+
+    /**
+     * Pull the player to the body: the body's own motion plus a share of the error, as a velocity their client
+     * simulates with real collisions. A player more than two blocks off is put back.
+     */
+    @SuppressWarnings("removal") // RETAIN_PASSENGERS: harmless where passengers are already kept by default
+    private void pull(Player v) {
+        double tx = ground.x, ty = ground.smoothY + hover, tz = ground.z;
+        Location at = v.getLocation();
+        double ex = tx - at.getX(), ey = ty - at.getY(), ez = tz - at.getZ();
+        double err = Math.sqrt(ex * ex + ey * ey + ez * ez);
+        if (err > 2.2) {
+            Location dest = new Location(ground.world(), tx, ty, tz, at.getYaw(), at.getPitch());
+            registry.ownTeleport(victimId, true);
             try {
-                w.playSound(placed, below.getBlockData().getSoundGroup().getStepSound(), SoundCategory.PLAYERS, sneak ? 0.1f : 0.15f, 1f);
-            } catch (RuntimeException ignored) {
-                // no sound group in a test environment
+                v.teleport(dest, TeleportFlag.EntityState.RETAIN_PASSENGERS);
+            } finally {
+                registry.ownTeleport(victimId, false);
+            }
+            rig.remount(v);
+            v.setVelocity(new Vector());
+        } else {
+            double fx = tx - prevTx, fy = ty - prevTy, fz = tz - prevTz;
+            double k = 0.4;
+            Vector vel = new Vector(clamp(fx + ex * k, 0.9), clamp(fy + ey * k, 0.9), clamp(fz + ez * k, 0.9));
+            v.setVelocity(vel);
+        }
+        prevTx = tx;
+        prevTy = ty;
+        prevTz = tz;
+        v.setFallDistance(0);
+        if (v.isFlying()) v.setFlying(false);
+        voicePos.set(new double[]{tx, ty + 1.6, tz});
+    }
+
+    private void attacks(Player v) {
+        if (strikeTick >= 0) {
+            strikeTick++;
+            // windup 6 ticks, lash 5, recoil 8
+            rig.strike = strikeTick <= 6 ? strikeTick / 6.0 : strikeTick <= 11 ? 1 + (strikeTick - 6) / 5.0 : Math.min(3, 2 + (strikeTick - 11) / 8.0);
+            if (strikeTarget != null && strikeTarget.isValid()) {
+                Location t = strikeTarget.getLocation();
+                rig.strikeAt.set(t.getX(), t.getY() + 1.1, t.getZ());
+            }
+            if (strikeTick == 7) walker.sfx(root(), "skinwalker.whip", Sound.ENTITY_PLAYER_ATTACK_SWEEP, 1.4f, 0.5f);
+            if (strikeTick == 9) land(v, 4.4);
+            if (strikeTick >= 19) {
+                strikeTick = -1;
+                rig.strike = 0;
             }
         }
+        if (punchTick >= 0) {
+            punchTick++;
+            if (punchTick == 1 && strikeTarget != null) look(v, strikeTarget.getEyeLocation());
+            if (punchTick == 3) swing(v, true);
+            if (punchTick == 4) land(v, 2.8);
+            if (punchTick >= 10) punchTick = -1;
+        }
+    }
 
+    private static void swing(Player v, boolean main) {
+        try {
+            if (main) v.swingMainHand();
+            else v.swingOffHand();
+        } catch (RuntimeException ignored) {
+            // not supported (test server)
+        }
+    }
+
+    /** The blow lands if the target is still within reach and in sight. */
+    private void land(Player v, double reach) {
+        Player t = strikeTarget;
+        if (t == null || !t.isValid() || t.getWorld() != ground.world()) return;
+        Location c = v.getLocation().add(0, 1.2, 0);
+        if (t.getLocation().add(0, 1, 0).distance(c) > reach) {
+            walker.sfx(t.getLocation(), "skinwalker.whip", Sound.ENTITY_PLAYER_ATTACK_NODAMAGE, 0.8f, 0.6f);
+            return;
+        }
+        walker.landed(t, strikeDamage, c);
+    }
+
+    private void ambience(Player v) {
+        Location here = v.getLocation();
+        // breathing through the victim's mouth, wet and slow
+        if (--breathIn <= 0) {
+            breathIn = 50 + ThreadLocalRandom.current().nextInt(30);
+            walker.sfx(here.clone().add(0, 1.5, 0), "breath.heavy", Sound.ENTITY_WOLF_PANT, 0.9f, 0.45f);
+        }
+        if (ThreadLocalRandom.current().nextDouble() < 0.008) walker.sfx(backPoint(v), "skinwalker.crackle", Sound.BLOCK_BONE_BLOCK_HIT, 0.8f, 0.5f);
         // its voice: things the victim said, in chat and out loud
-        if ((nextChat -= dt) <= 0) {
+        if ((nextChat -= 1) <= 0) {
             nextChat = 20 * (45 + ThreadLocalRandom.current().nextInt(75));
             String line = registry.recentLine(victimId);
             if (line != null) {
                 Component msg = Component.text("<" + victimName + "> " + line);
-                for (Player p : w.getPlayers()) p.sendMessage(msg);
+                for (Player p : here.getWorld().getPlayers()) if (p != v) p.sendMessage(msg);
             }
         }
-        if ((nextVoice -= dt) <= 0) {
+        if ((nextVoice -= 1) <= 0) {
             nextVoice = 20 * (40 + ThreadLocalRandom.current().nextInt(80));
-            registry.voice().play(victimId, w, voicePos, plugin.cfg().skinwalkerVoiceDistance);
-        }
-        // too many punches and people get suspicious; it stops pretending
-        long now = ticks;
-        while (!punches.isEmpty() && now - punches.peekFirst() > 20 * 20) punches.removeFirst();
-        if (punches.size() >= plugin.cfg().skinwalkerPunchesToExpose) reveal = true;
-        return placed;
-    }
-
-    /** A next foot position toward {@code want}, from the creature navigator (one node ahead). */
-    private int[] waypoint(Location from, Location want) {
-        List<int[]> path = Nav.path(from.getWorld(), from.getBlockX(), (int) Math.floor(from.getY() + 0.01), from.getBlockZ(),
-                want.getBlockX(), want.getBlockY(), want.getBlockZ(), 2, Nav.Medium.GROUND, 400);
-        if (path.isEmpty()) return null;
-        return path.get(Math.min(1, path.size() - 1));
-    }
-
-    /** Punched by a player: take it like a friend would, and punch back a moment later. */
-    void punched(Player by) {
-        punches.addLast((long) ticks);
-        int delay = 6 + ThreadLocalRandom.current().nextInt(8);
-        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
-            if (!active || !body.isValid() || !by.isOnline() || by.getWorld() != body.getWorld()) return;
-            if (by.getLocation().distanceSquared(body.getLocation()) > 16) return;
-            Location here = body.getLocation();
-            here.setYaw(yawTo(here, by.getX() - here.getX(), by.getZ() - here.getZ()));
-            body.teleport(here);
-            body.swingMainHand();
-            Vector kb = by.getLocation().toVector().subtract(here.toVector()).setY(0);
-            if (kb.lengthSquared() > 1e-3) by.setVelocity(by.getVelocity().add(kb.normalize().multiply(0.32).setY(0.18)));
-            by.getWorld().playSound(by.getLocation(), Sound.ENTITY_PLAYER_ATTACK_WEAK, SoundCategory.PLAYERS, 0.7f, 1f);
-        }, delay);
-    }
-
-    /** Someone nearby swung their arm: sometimes it does too, a beat later. */
-    void mirrorSwing() {
-        if (!active || carried || ThreadLocalRandom.current().nextDouble() > 0.4) return;
-        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
-            if (active && body.isValid()) body.swingMainHand();
-        }, 6 + ThreadLocalRandom.current().nextInt(9));
-    }
-
-    // ------------------------------------------------------------------ true form
-
-    /** The body is now carried under the true form: limp, horizontal, nameless. */
-    void trueForm() {
-        carried = true;
-        body.setCustomNameVisible(false);
-        try {
-            body.setPose(Pose.SWIMMING, true);
-        } catch (RuntimeException ignored) {
-            // fall back to whatever pose it has
-        }
-        Player v = victim();
-        if (v != null) {
-            v.showTitle(Title.title(Component.empty(), Component.text("It is done pretending.").color(net.kyori.adventure.text.format.NamedTextColor.DARK_RED),
-                    Title.Times.times(Duration.ZERO, Duration.ofSeconds(3), Duration.ofSeconds(1))));
+            registry.voice().play(victimId, here.getWorld(), voicePos, plugin.cfg().skinwalkerVoiceDistance);
         }
     }
 
-    void carry(Location creature, float yaw) {
-        if (!active || !body.isValid()) return;
-        // under the thorax, between the ribs, head toward the rear: the body is about 1.8 blocks long lying down
-        double r = Math.toRadians(yaw);
-        Location l = creature.clone().add(Math.sin(r) * 0.55, 0.3, -Math.cos(r) * 0.55);
-        l.setYaw(yaw + 180);
-        l.setPitch(0);
-        body.teleport(l);
-        if (ticks++ % 10 == 0) {
-            Player v = victim();
-            if (v != null && v.getSpectatorTarget() != body) v.setSpectatorTarget(body);
+    private final List<Vector3d> landed = new ArrayList<>();
+
+    /** Gait and pose, every second tick (every fourth when nobody but the victim is near). */
+    private void animate(Player v) {
+        int every = 2;
+        if (stage == Stage.ACTIVE && nearestOther(v, 32) == null) every = 4;
+        if (ticks - lastRigUpdate < every) return;
+        int dt = ticks - lastRigUpdate;
+        lastRigUpdate = ticks;
+        Location at = v.getLocation();
+        Vector3d feet = new Vector3d(at.getX(), at.getY(), at.getZ());
+        Vector3d root = new Vector3d(ground.x, ground.y, ground.z);
+        if (stage == Stage.ACTIVE) {
+            Vector3d vel = new Vector3d(ground.x - prevRootX, 0, ground.z - prevRootZ).div(Math.max(1, dt));
+            landed.clear();
+            double speed = Math.hypot(vel.x, vel.z);
+            int down = rig.gait(ground, root, heading, vel, dt, speed > 0.15 ? 4 : 6, landed);
+            if (down > 0) {
+                Location foot = new Location(ground.world(), landed.get(0).x, landed.get(0).y, landed.get(0).z);
+                walker.sfx(foot, "skinwalker.crawl", Sound.ENTITY_SPIDER_STEP, 0.55f + 0.1f * down, 0.55f);
+                if (ThreadLocalRandom.current().nextDouble() < 0.4) walker.sfx(foot, "skinwalker.scuttle", Sound.BLOCK_SLIME_BLOCK_STEP, 0.5f, 0.6f);
+            }
+            // now and then a limb twitches on its own
+            rig.twitch = ThreadLocalRandom.current().nextDouble() < 0.03 ? 0.6 : Math.max(0, rig.twitch - 0.2);
         }
+        prevRootX = ground.x;
+        prevRootZ = ground.z;
+        double ceiling = ground.ceilingY(ground.x, ground.y + 0.05, ground.z, 5);
+        rig.update(feet, v.getHeight(), heading, ceiling, dt, dt + 1);
+    }
+
+    private double prevRootX, prevRootZ;
+
+    private Location backPoint(Player v) {
+        Location l = v.getLocation();
+        double h = Math.toRadians(heading);
+        return l.add(Math.sin(h) * 0.25, TentacleRig.BACK_Y, -Math.cos(h) * 0.25);
+    }
+
+    private Player nearestOther(Player v, double max) {
+        Player best = null;
+        double bd = max * max;
+        for (Player p : v.getWorld().getPlayers()) {
+            if (p == v || p.getGameMode() == GameMode.SPECTATOR) continue;
+            double d = p.getLocation().distanceSquared(v.getLocation());
+            if (d < bd) {
+                bd = d;
+                best = p;
+            }
+        }
+        return best;
     }
 
     // ------------------------------------------------------------------ release
 
     /**
-     * Let the victim go: restore their game mode, stop spectating, put them on safe ground where their body was.
-     * With {@code dies}, they come back only to die (the skinwalker kept them too long, or it fed).
+     * Let the victim go: the organism tears away, every lock comes off, they are put on safe ground. With
+     * {@code dies}, they come back only to die (it kept them too long, or it fed).
      */
     void release(boolean dies) {
         if (!active) return;
         active = false;
-        Location at = body.isValid() ? body.getLocation() : null;
-        if (body.isValid()) body.remove();
+        Player v = victim();
+        Location at = v != null ? v.getLocation() : root();
+        if (rig != null) {
+            World w = at.getWorld();
+            if (w != null && rig.size() > 0) {
+                w.spawnParticle(Particle.SQUID_INK, at.clone().add(0, 1.3, 0), 30, 0.6, 0.6, 0.6, 0.04);
+                walker.sfx(at, "skinwalker.tear", Sound.ENTITY_SLIME_SQUISH, 1.0f, 0.4f);
+            }
+            rig.remove(v);
+        }
+        if (hitbox != null && v != null) v.removePassenger(hitbox);
         registry.voice().mute(victimId, false);
         registry.forget(this);
-        Player v = victim();
         if (v == null) return; // restored from the PDC flag when they rejoin
-        registry.restore(v, originalMode, at);
+        registry.restore(v, null, root());
         if (dies) {
-            v.sendMessage(Component.text("It has no more use for you.").color(net.kyori.adventure.text.format.NamedTextColor.DARK_RED));
+            v.sendMessage(Component.text("It has no more use for you.").color(NamedTextColor.DARK_RED));
             v.setHealth(0);
         } else {
             v.addPotionEffect(new PotionEffect(PotionEffectType.NAUSEA, 160, 0, false, false));
             v.addPotionEffect(new PotionEffect(PotionEffectType.DARKNESS, 60, 0, false, false));
-            v.sendMessage(Component.text("You are yourself again. Mostly.").color(net.kyori.adventure.text.format.NamedTextColor.GRAY));
+            v.sendMessage(Component.text("You are yourself again. Mostly.").color(NamedTextColor.GRAY));
         }
     }
 
-    private static double horizontal(Location a, Location b) {
-        double dx = a.getX() - b.getX(), dz = a.getZ() - b.getZ();
-        return Math.sqrt(dx * dx + dz * dz);
+    // ------------------------------------------------------------------ math
+
+    static double clamp(double v, double m) {
+        return Math.max(-m, Math.min(m, v));
     }
 
-    private static float yawTo(Location from, double dx, double dz) {
-        return (float) Math.toDegrees(Math.atan2(-dx, dz));
+    static double yawTo(double dx, double dz) {
+        return Math.toDegrees(Math.atan2(-dx, dz));
     }
 
-    private static float approach(float from, float to, float maxStep) {
-        float d = ((to - from) % 360 + 540) % 360 - 180;
+    static double wrap(double a) {
+        return ((a % 360) + 540) % 360 - 180;
+    }
+
+    static double approach(double from, double to, double maxStep) {
+        double d = wrap(to - from);
         return from + Math.max(-maxStep, Math.min(maxStep, d));
+    }
+
+    /** All entities of the organism (for sweeps and tests). */
+    List<Entity> parts() {
+        List<Entity> out = new ArrayList<>(rig.entities());
+        if (hitbox != null) out.add(hitbox);
+        return out;
+    }
+
+    double hover() {
+        return hover;
     }
 }

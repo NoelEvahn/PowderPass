@@ -44,7 +44,7 @@ public final class BackroomsConfig {
     public final boolean detailsEnabled, performanceMode;
     public final boolean fogEnabled;
     // skinwalker
-    public final int skinwalkerDisguiseSeconds, skinwalkerTrueSeconds, skinwalkerPunchesToExpose;
+    public final int skinwalkerDisguiseSeconds, skinwalkerTrueSeconds, skinwalkerPunchesToExpose, skinwalkerPossessionSeconds, skinwalkerPatienceSeconds;
     public final double skinwalkerGroupRadius;
     public final boolean skinwalkerChatMimic, skinwalkerVoiceMimic, skinwalkerLockCommands;
     public final float skinwalkerVoiceDistance;
@@ -199,6 +199,8 @@ public final class BackroomsConfig {
         skinwalkerDisguiseSeconds = clamp(c.getInt("skinwalker.disguise-seconds", 150), 10, 3600);
         skinwalkerTrueSeconds = clamp(c.getInt("skinwalker.true-form-seconds", 90), 10, 3600);
         skinwalkerPunchesToExpose = clamp(c.getInt("skinwalker.punches-to-expose", 6), 1, 100);
+        skinwalkerPossessionSeconds = clamp(c.getInt("skinwalker.possession-seconds", c.getInt("skinwalker.true-form-seconds", 150)), 10, 3600);
+        skinwalkerPatienceSeconds = clamp(c.getInt("skinwalker.patience-seconds", 10), 2, 120);
         skinwalkerGroupRadius = Math.max(8, Math.min(128, c.getDouble("skinwalker.group-radius", 48)));
         skinwalkerChatMimic = c.getBoolean("skinwalker.chat-mimic", true);
         skinwalkerVoiceMimic = c.getBoolean("skinwalker.voice-mimic", true);

@@ -1,6 +1,5 @@
 package com.powderpass.backrooms;
 
-import com.destroystokyo.paper.event.player.PlayerStopSpectatingEntityEvent;
 import com.powderpass.backrooms.creature.Creature;
 import com.powderpass.backrooms.creature.CreatureType;
 import io.papermc.paper.event.player.AsyncChatEvent;
@@ -11,11 +10,17 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.World;
+import org.bukkit.attribute.Attribute;
+import org.bukkit.attribute.AttributeModifier;
+import org.bukkit.entity.BlockDisplay;
 import org.bukkit.entity.Entity;
-import org.bukkit.entity.Pose;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerTeleportEvent;
+import org.bukkit.event.player.PlayerToggleFlightEvent;
+import org.bukkit.inventory.EquipmentSlotGroup;
 import org.bukkit.persistence.PersistentDataType;
+import org.joml.Vector3f;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -23,10 +28,14 @@ import org.mockbukkit.mockbukkit.MockBukkit;
 import org.mockbukkit.mockbukkit.ServerMock;
 
 import java.util.HashSet;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/** The skinwalker against MockBukkit (with a test Mannequin): every lock, the human act, true form and release. */
+/**
+ * The skinwalker against MockBukkit: stalking, the take, the transformation, the possessed body carried by its
+ * tentacles (the victim stays a normal survival player, never a spectator), the locks, release and recovery.
+ */
 class SkinwalkerTest {
     private ServerMock server;
     private BackroomsPlugin plugin;
@@ -38,17 +47,21 @@ class SkinwalkerTest {
         server = MockBukkit.mock(new TestServer());
         server.createWorld(new org.bukkit.WorldCreator("world"));
         plugin = MockBukkit.load(BackroomsPlugin.class);
-        // only the skinwalker under test: no natural spawns
+        // only the skinwalker under test: no natural spawns; a short patience so tests stay quick
         plugin.getConfig().set("creatures.spawn-attempt-seconds", 3600);
+        plugin.getConfig().set("skinwalker.patience-seconds", 2);
         plugin.saveConfig();
         plugin.reload();
         l0 = plugin.worlds().world(Level.LEVEL_0);
-        for (int x = -16; x <= 16; x++) {
-            for (int z = -16; z <= 16; z++) {
+        for (int x = -24; x <= 24; x++) {
+            for (int z = -24; z <= 24; z++) {
                 l0.getBlockAt(x, 64, z).setType(Material.STONE);
-                for (int y = 65; y <= 68; y++) l0.getBlockAt(x, y, z).setType(Material.AIR);
+                for (int y = 65; y <= 70; y++) l0.getBlockAt(x, y, z).setType(Material.AIR);
+                l0.getBlockAt(x, 71, z).setType(Material.STONE);
             }
         }
+        // a wall it must path round, never through
+        for (int z = -24; z <= 6; z++) for (int y = 65; y <= 70; y++) l0.getBlockAt(12, y, z).setType(Material.STONE);
         for (int cx = -2; cx <= 1; cx++) for (int cz = -2; cz <= 1; cz++) l0.getChunkAt(cx, cz);
     }
 
@@ -59,6 +72,7 @@ class SkinwalkerTest {
 
     private TestPlayer player(double x, double z) {
         TestPlayer p = new TestPlayer(server, "Walker" + (++n));
+        p.clientPhysics = true;
         server.addPlayer(p);
         p.setGameMode(GameMode.SURVIVAL);
         p.teleport(new Location(l0, x, 65, z));
@@ -81,8 +95,29 @@ class SkinwalkerTest {
         }
     }
 
-    private NamespacedKey victimKey() {
-        return new NamespacedKey(plugin, "skinwalker_victim");
+    private NamespacedKey key(String k) {
+        return new NamespacedKey(plugin, k);
+    }
+
+    /** Ticks until the predicate holds (or the limit runs out). */
+    private boolean until(int maxTicks, java.util.function.BooleanSupplier ok) {
+        for (int i = 0; i < maxTicks; i++) {
+            if (ok.getAsBoolean()) return true;
+            server.getScheduler().performTicks(1);
+        }
+        return ok.getAsBoolean();
+    }
+
+    private static double attr(TestPlayer p, Attribute a) {
+        var inst = p.getAttribute(a);
+        return inst == null ? Double.NaN : inst.getValue();
+    }
+
+    /** A takes the skinwalker (B keeps them company), through the whole transformation. */
+    private Creature taken(TestPlayer a) {
+        Creature c = skinwalkerAt(a.getX() + 1.2, a.getZ());
+        assertTrue(until(20 * 6, () -> plugin.possessions().isVictim(a)), "a still player with company is taken: " + c.state());
+        return c;
     }
 
     @Test
@@ -95,36 +130,66 @@ class SkinwalkerTest {
     }
 
     @Test
-    void aLonePlayerIsNotWornButHunted() {
+    void itStalksInsteadOfWalkingStraightAtYou() {
         TestPlayer a = player(0.5, 0.5);
-        Creature c = skinwalkerAt(1.5, 0.5);
-        server.getScheduler().performTicks(10);
-        assertEquals("skinwalker:true", c.state(), "alone: straight to its true form");
-        assertEquals(GameMode.SURVIVAL, a.getGameMode());
+        Creature c = skinwalkerAt(-9.5, 0.5);
+        // the player keeps moving, so the patience timer never runs out: it should never close to arm's reach
+        double closest = 99;
+        for (int i = 0; i < 200; i++) {
+            Location l = a.getLocation();
+            // a slow wander (about 3 blocks per second), always moving
+            a.teleport(l.clone().add(Math.cos(i * 0.02) * 0.15, 0, Math.sin(i * 0.02) * 0.15));
+            server.getScheduler().performTicks(1);
+            closest = Math.min(closest, c.loc().distance(a.getLocation()));
+        }
+        assertTrue(closest > 2.5, "kept its distance from a moving player: " + closest);
+        assertEquals(20.0, a.getHealth(), 1e-9, "a moving player is never attacked");
         assertFalse(plugin.possessions().isVictim(a));
-        double hp = a.getHealth();
-        server.getScheduler().performTicks(80);
-        assertTrue(a.getHealth() < hp || a.isDead(), "the true form attacks");
+        assertTrue(c.state().startsWith("skinwalker:mimic"), c.state());
     }
 
     @Test
-    void withCompanyItLocksThePlayerAndActsAsThem() {
+    void aLonePlayerIsStruckNotTaken() {
+        TestPlayer a = player(0.5, 0.5);
+        double hp = a.getHealth();
+        Creature c = skinwalkerAt(-6.5, 0.5);
+        assertTrue(until(20 * 10, () -> a.getHealth() < hp), "standing still too long alone: it strikes");
+        assertFalse(plugin.possessions().isVictim(a), "a lone player is never taken");
+        assertEquals(GameMode.SURVIVAL, a.getGameMode());
+        assertTrue(c.state().startsWith("skinwalker:mimic"), c.state());
+    }
+
+    @Test
+    void withCompanyItTakesThemAndTheyStayInTheirBody() {
         TestPlayer a = player(0.5, 0.5);
         TestPlayer b = player(6.5, 0.5);
-        // something A said earlier, inside the Backrooms
         server.getPluginManager().callEvent(new AsyncChatEvent(false, a, new HashSet<>(), null,
                 Component.text("guys wait for me"), Component.text("guys wait for me"), null));
-        Creature c = skinwalkerAt(1.5, 0.5);
-        server.getScheduler().performTicks(10);
-        assertEquals("skinwalker:wearing", c.state());
-        assertTrue(plugin.possessions().isVictim(a));
-        Entity body = plugin.possessions().bodyOf(a);
-        assertNotNull(body);
-        assertEquals(GameMode.SPECTATOR, a.getGameMode(), "locked in spectator");
-        assertSame(body, a.getSpectatorTarget(), "watching through its own eyes");
-        assertEquals("SURVIVAL", a.getPersistentDataContainer().get(victimKey(), PersistentDataType.STRING), "original mode saved first");
-        assertEquals(net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText().serialize(a.name()),
-                net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText().serialize(body.customName()), "wears their name");
+        Creature c = taken(a);
+        assertEquals("skinwalker:transforming", c.state());
+        assertEquals(Boolean.TRUE, plugin.possessions().transforming(a));
+
+        // no spectator mode: still themselves, survival, with their state saved first
+        assertEquals(GameMode.SURVIVAL, a.getGameMode(), "never put in spectator");
+        assertNull(a.getSpectatorTarget());
+        assertEquals("SURVIVAL", a.getPersistentDataContainer().get(key("skinwalker_victim"), PersistentDataType.STRING));
+        assertTrue(a.getPersistentDataContainer().has(key("skinwalker_flight"), PersistentDataType.BYTE), "flight and gravity saved");
+        // frozen: their own walking, jumping and gravity are gone; they cannot fly
+        assertEquals(0, attr(a, Attribute.MOVEMENT_SPEED), 1e-9, "cannot walk");
+        double jump = attr(a, Attribute.JUMP_STRENGTH); // not registered for players on MockBukkit
+        if (!Double.isNaN(jump)) assertEquals(0, jump, 1e-9, "cannot jump");
+        assertFalse(a.hasGravity());
+        PlayerToggleFlightEvent fly = new PlayerToggleFlightEvent(a, true);
+        server.getPluginManager().callEvent(fly);
+        assertTrue(fly.isCancelled(), "cannot fly away");
+        assertEquals(0f, a.getFlySpeed());
+
+        // the organism rides them: every tentacle part is a passenger, so it can never drift off their back
+        List<Entity> parts = plugin.possessions().organismOf(a);
+        assertFalse(parts.isEmpty());
+        for (Entity e : parts) assertTrue(a.getPassengers().contains(e), "attached: " + e.getType());
+        long displays = parts.stream().filter(e -> e instanceof BlockDisplay).count();
+        assertTrue(displays >= 60 && displays <= 110, "a detailed but bounded rig: " + displays);
 
         // the locks
         AsyncChatEvent chat = new AsyncChatEvent(false, a, new HashSet<>(), null, Component.text("help"), Component.text("help"), null);
@@ -133,118 +198,156 @@ class SkinwalkerTest {
         PlayerCommandPreprocessEvent cmd = new PlayerCommandPreprocessEvent(a, "/spawn");
         server.getPluginManager().callEvent(cmd);
         assertTrue(cmd.isCancelled(), "cannot run commands");
-        PlayerStopSpectatingEntityEvent stop = new PlayerStopSpectatingEntityEvent(a, body);
-        server.getPluginManager().callEvent(stop);
-        assertTrue(stop.isCancelled(), "cannot stop spectating");
-        a.setGameMode(GameMode.SURVIVAL);
-        assertEquals(GameMode.SPECTATOR, a.getGameMode(), "cannot switch game mode out");
+        PlayerTeleportEvent tp = new PlayerTeleportEvent(a, a.getLocation(), a.getLocation().add(30, 0, 0), PlayerTeleportEvent.TeleportCause.ENDER_PEARL);
+        server.getPluginManager().callEvent(tp);
+        assertTrue(tp.isCancelled(), "no pearls or other teleports out");
+        a.setGameMode(GameMode.CREATIVE);
+        assertEquals(GameMode.SURVIVAL, a.getGameMode(), "cannot switch game mode out");
 
-        // it follows the group
-        b.teleport(new Location(l0, 12.5, 65, 0.5));
-        double before = body.getLocation().distance(b.getLocation());
-        server.getScheduler().performTicks(80);
-        assertTrue(body.getLocation().distance(b.getLocation()) < before - 2, "keeps up with the group");
+        // the transformation: tentacles grow out, plant, and lift them off the ground over ~5.5 s
+        assertTrue(until(130, () -> c.state().equals("skinwalker:possessed")), c.state());
+        assertTrue(a.getLocation().getY() > 65.3, "lifted off the ground: " + a.getLocation().getY());
+        assertTrue(a.getLocation().getY() < 66.6, "only slightly: " + a.getLocation().getY());
+        int visible = 0;
+        for (Entity e : parts) {
+            if (e instanceof BlockDisplay d && d.getTransformation().getScale().length() > 0.05f) visible++;
+        }
+        assertTrue(visible >= 55, "the tentacles have grown out: " + visible);
+        // the legs reach the floor: some part of the rig comes down to the ground (feet hover ~0.7 above it)
+        double lowest = 99;
+        for (Entity e : parts) {
+            if (!(e instanceof BlockDisplay d)) continue;
+            var tr = d.getTransformation();
+            org.joml.Matrix4f m = new org.joml.Matrix4f().translation(tr.getTranslation()).rotate(tr.getLeftRotation())
+                    .scale(tr.getScale()).rotate(tr.getRightRotation());
+            for (float cx = 0; cx <= 1; cx++) for (float cy = 0; cy <= 1; cy++) for (float cz = 0; cz <= 1; cz++) {
+                Vector3f corner = m.transformPosition(new Vector3f(cx, cy, cz));
+                lowest = Math.min(lowest, a.getLocation().getY() + a.getHeight() + corner.y);
+            }
+        }
+        assertTrue(lowest < 65.4, "a leg is planted on the floor: " + lowest);
 
-        // punched by a friend: no damage, it punches back a moment later
-        MannequinMock m = (MannequinMock) body;
-        PrePlayerAttackEntityEvent hit = new PrePlayerAttackEntityEvent(b, body, true);
-        b.teleport(body.getLocation().clone().add(1.5, 0, 0));
-        server.getPluginManager().callEvent(hit);
-        assertTrue(hit.isCancelled());
-        server.getScheduler().performTicks(20);
-        assertTrue(m.swings >= 1, "punches back");
-
-        // it repeats what A said
+        // it repeats what A said, to the others
         boolean said = false;
-        for (int i = 0; i < 80 && !said; i++) {
+        for (int i = 0; i < 100 && !said; i++) {
             server.getScheduler().performTicks(20);
             String msg;
             while ((msg = b.nextMessage()) != null) if (msg.contains("guys wait for me")) said = true;
         }
-        assertTrue(said, "repeats the victim's words in chat");
+        assertTrue(said || !plugin.possessions().isVictim(a), "repeats the victim's words in chat");
     }
 
     @Test
-    void tooManyPunchesRevealItAndKillingItFreesTheVictim() {
+    void itCarriesTheBodyOverRealGroundAndAttacksWhoeverStandsStill() {
         TestPlayer a = player(0.5, 0.5);
         TestPlayer b = player(4.5, 0.5);
-        Creature c = skinwalkerAt(1.5, 0.5);
-        server.getScheduler().performTicks(10);
-        Entity body = plugin.possessions().bodyOf(a);
-        assertNotNull(body);
-        for (int i = 0; i < 6; i++) server.getPluginManager().callEvent(new PrePlayerAttackEntityEvent(b, body, true));
-        server.getScheduler().performTicks(10);
-        assertEquals("skinwalker:true", c.state(), "exposed");
-        assertEquals(GameMode.SPECTATOR, a.getGameMode(), "the victim is still inside, carried");
-        assertEquals(Pose.SWIMMING, ((MannequinMock) body).getPose(), "the body hangs limp under it");
-        assertFalse(body.isCustomNameVisible());
+        Creature c = taken(a);
+        assertTrue(until(130, () -> c.state().equals("skinwalker:possessed")));
+        double hp = b.getHealth();
+        boolean hurt = false;
+        for (int i = 0; i < 20 * 12 && !hurt; i++) {
+            server.getScheduler().performTicks(1);
+            Location root = c.loc();
+            // the body never stands inside a block
+            assertTrue(l0.getBlockAt(root.getBlockX(), root.getBlockY(), root.getBlockZ()).isPassable(), "inside a block at " + root);
+            assertTrue(l0.getBlockAt(root.getBlockX(), root.getBlockY() + 1, root.getBlockZ()).isPassable(), "head in a block at " + root);
+            // the victim is pulled along with it by velocity, hovering just above the body
+            assertTrue(a.getLocation().distance(root) < 1.6, "victim stays with the body: " + a.getLocation().distance(root));
+            assertEquals(65.0, root.getY(), 0.6, "it walks on the floor");
+            hurt = b.getHealth() < hp;
+        }
+        assertTrue(hurt, "B stood still for too long: it went for them");
+        assertTrue(plugin.possessions().isVictim(a) || a.isDead());
+        assertEquals(a.getHealth(), a.getHealth()); // the victim takes nothing from its own attacks
+    }
+
+    @Test
+    void hittingTheVictimHurtsTheOrganismAndKillingItFreesThem() {
+        TestPlayer a = player(0.5, 0.5);
+        TestPlayer b = player(4.5, 0.5);
+        Creature c = taken(a);
+        double hp = a.getHealth();
+        PrePlayerAttackEntityEvent hit = new PrePlayerAttackEntityEvent(b, a, true);
+        server.getPluginManager().callEvent(hit);
+        assertTrue(hit.isCancelled(), "the victim's friends never hurt the victim");
+        assertEquals(hp, a.getHealth());
+        // the victim cannot fight either
+        PrePlayerAttackEntityEvent own = new PrePlayerAttackEntityEvent(a, b, true);
+        server.getPluginManager().callEvent(own);
+        assertTrue(own.isCancelled());
 
         c.hurt(b, 500);
         assertTrue(c.dead());
-        assertEquals(GameMode.SURVIVAL, a.getGameMode(), "killing it frees them");
-        assertNull(a.getSpectatorTarget());
-        assertFalse(a.getPersistentDataContainer().has(victimKey()));
-        assertFalse(plugin.possessions().isVictim(a));
-        assertFalse(body.isValid(), "the stolen body is gone");
+        assertFalse(plugin.possessions().isVictim(a), "killing it frees them");
+        assertEquals(GameMode.SURVIVAL, a.getGameMode());
+        assertTrue(a.getPassengers().isEmpty(), "the organism is gone from their back");
+        assertTrue(a.hasGravity(), "gravity back");
+        assertFalse(a.getAllowFlight(), "no flight left over");
+        assertTrue(attr(a, Attribute.MOVEMENT_SPEED) > 0, "can walk again");
+        double jump = attr(a, Attribute.JUMP_STRENGTH);
+        if (!Double.isNaN(jump)) assertTrue(jump > 0, "can jump again");
+        assertFalse(a.getPersistentDataContainer().has(key("skinwalker_victim")));
+        assertFalse(a.getPersistentDataContainer().has(key("skinwalker_flight")));
     }
 
     @Test
     void ifItLastsTheVictimDies() {
-        plugin.getConfig().set("skinwalker.true-form-seconds", 10);
+        plugin.getConfig().set("skinwalker.possession-seconds", 10);
         plugin.saveConfig();
         plugin.reload();
         warmed = false;
         for (int cx = -2; cx <= 1; cx++) for (int cz = -2; cz <= 1; cz++) l0.getChunkAt(cx, cz);
         TestPlayer a = player(0.5, 0.5);
         TestPlayer b = player(4.5, 0.5);
+        Creature c = taken(a);
         b.setGameMode(GameMode.CREATIVE); // a witness it will not hurt
-        TestPlayer d = player(5.5, 0.5);
-        Creature c = skinwalkerAt(1.5, 0.5);
-        server.getScheduler().performTicks(10);
-        assertTrue(plugin.possessions().isVictim(a));
-        Entity body = plugin.possessions().bodyOf(a);
-        for (int i = 0; i < 6; i++) server.getPluginManager().callEvent(new PrePlayerAttackEntityEvent(b, body, true));
-        d.teleport(new Location(l0, 15.5, 65, 15.5));
-        d.setGameMode(GameMode.CREATIVE);
-        server.getScheduler().performTicks(20 * 12);
+        server.getScheduler().performTicks(20 * 18);
         assertFalse(plugin.possessions().isVictim(a));
         assertTrue(a.isDead() || a.getHealth() <= 0, "kept too long: they die");
-        assertNotEquals(GameMode.SPECTATOR, a.getGameMode());
+        assertTrue(c.dead());
     }
 
     @Test
     void disconnectingOrAClearAlwaysGivesThePlayerBack() {
         TestPlayer a = player(0.5, 0.5);
         player(5.5, 0.5);
-        Creature c = skinwalkerAt(1.5, 0.5);
-        server.getScheduler().performTicks(10);
-        assertTrue(plugin.possessions().isVictim(a));
+        Creature c = taken(a);
         a.disconnect();
-        assertEquals(GameMode.SURVIVAL, a.getGameMode(), "restored before their data is saved");
-        assertFalse(a.getPersistentDataContainer().has(victimKey()));
+        assertFalse(a.getPersistentDataContainer().has(key("skinwalker_victim")), "restored before their data is saved");
+        assertTrue(a.hasGravity());
+        assertTrue(attr(a, Attribute.MOVEMENT_SPEED) > 0);
         server.getScheduler().performTicks(6);
-        assertEquals("skinwalker:true", c.state(), "nothing left to wear");
+        assertTrue(c.dead(), "the organism dies without its body");
 
         // a second victim, then an admin clear
-        TestPlayer e = player(0.5, 0.5);
-        player(5.5, 0.5);
+        TestPlayer e = player(-6.5, -6.5);
+        player(-2.5, -6.5);
         plugin.creatures().clearAll();
-        Creature c2 = skinwalkerAt(1.5, 0.5);
-        server.getScheduler().performTicks(10);
+        Creature c2 = taken(e);
         assertTrue(plugin.possessions().isVictim(e), c2.state());
-        server.dispatchCommand(server.getConsoleSender(), "backrooms entity clear level level0");
+        server.dispatchCommand(server.getConsoleSender(), "backrooms creature clear level level0");
         server.dispatchCommand(server.getConsoleSender(), "backrooms confirm");
-        assertEquals(GameMode.SURVIVAL, e.getGameMode(), "clearing creatures frees victims");
+        assertFalse(plugin.possessions().isVictim(e), "clearing creatures frees victims");
+        assertTrue(e.getPassengers().isEmpty());
+        assertTrue(e.hasGravity());
     }
 
     @Test
     void aCrashLeftoverIsRestoredOnJoin() {
         TestPlayer a = player(0.5, 0.5);
-        a.setGameMode(GameMode.SPECTATOR);
-        a.getPersistentDataContainer().set(victimKey(), PersistentDataType.STRING, "ADVENTURE");
+        // what a crash mid-possession leaves on a player: the flags and the attribute locks
+        a.getPersistentDataContainer().set(key("skinwalker_victim"), PersistentDataType.STRING, "ADVENTURE");
+        a.getPersistentDataContainer().set(key("skinwalker_flight"), PersistentDataType.BYTE, (byte) 4);
+        var speed = a.getAttribute(Attribute.MOVEMENT_SPEED);
+        if (speed != null) speed.addModifier(new AttributeModifier(key("skinwalker_lock_speed"), -1, AttributeModifier.Operation.MULTIPLY_SCALAR_1, EquipmentSlotGroup.ANY));
+        a.setGravity(false);
+        a.setAllowFlight(true);
         server.getPluginManager().callEvent(new PlayerJoinEvent(a, Component.empty()));
         assertEquals(GameMode.ADVENTURE, a.getGameMode());
-        assertFalse(a.getPersistentDataContainer().has(victimKey()));
+        assertFalse(a.getPersistentDataContainer().has(key("skinwalker_victim")));
+        assertTrue(a.hasGravity());
+        assertFalse(a.getAllowFlight());
+        if (speed != null) assertTrue(speed.getValue() > 0, "the speed lock is gone");
     }
 
     @Test

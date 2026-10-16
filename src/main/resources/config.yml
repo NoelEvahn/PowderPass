@@ -232,15 +232,15 @@ bedrock:
   allow-entry: true
 
 skinwalker:
-  # It wears another creature until it reaches a player. If that player has company within group-radius,
-  # it locks them in spectator mode inside their own body (no moving, chat, commands or voice chat) and walks
-  # with the group wearing their skin. After disguise-seconds, or punches-to-expose punches within 20 s, or
-  # when the group is gone, it cracks open into its true form with the player's body caught underneath.
-  # Killing the true form frees the player; if it survives true-form-seconds or kills someone, they die.
-  # A lone player is not worn: it goes straight to its true form.
-  disguise-seconds: 150
-  true-form-seconds: 90
-  punches-to-expose: 6
+  # It wears another creature of the level and stalks (keeps its distance, circles, shuffles, repositions).
+  # When a player with company (within group-radius) stands still for patience-seconds, or walks into it
+  # unseen, it takes them: they freeze, crack, and black tentacles tear out of their back and lift them off
+  # the ground. They stay in their own body and game mode (no spectator mode) while the organism carries them
+  # and stalks everyone else; anyone standing still for patience-seconds gets punched or lashed. Hitting the
+  # victim hurts the organism (creatures.types.skinwalker.health), never the victim. Kill it to free them; if
+  # it lasts possession-seconds or kills someone, the victim dies. A lone player is struck, never taken.
+  possession-seconds: 150
+  patience-seconds: 10
   group-radius: 48
   chat-mimic: true             # repeats lines the victim typed inside the Backrooms (kept in memory only)
   voice-mimic: true            # with Simple Voice Chat: replays the victim's recent speech (memory only, never saved)

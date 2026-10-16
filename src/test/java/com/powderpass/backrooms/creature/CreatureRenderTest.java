@@ -80,10 +80,10 @@ class CreatureRenderTest {
         return out;
     }
 
-    /** A generic player body lying face down under the creature (the plugin uses the victim's real skin). */
-    private static Model strandedBody() {
+    /** A generic standing player (the plugin shows the victim's real body and skin), feet at {@code y}. */
+    private static Model standingBody(double y) {
         Model m = new Model();
-        m.push().translate(0, 0.3, 0.15).rotate('x', -90);
+        m.push().translate(0, y, 0);
         m.box(Material.YELLOW_TERRACOTTA, -0.25, 1.5, -0.25, 0.5, 0.5, 0.5);      // head (skin)
         m.box(Material.BROWN_WOOL, -0.26, 1.85, -0.26, 0.52, 0.17, 0.52);         // hair
         m.box(Material.CYAN_TERRACOTTA, -0.25, 0.75, -0.125, 0.5, 0.75, 0.25);    // shirt
@@ -95,17 +95,71 @@ class CreatureRenderTest {
         return m;
     }
 
+    private static final TentacleRig.Ground FLOOR = new TentacleRig.Ground() {
+        @Override
+        public double groundY(double x, double fromY, double z, double depth) {
+            return fromY >= 0 && fromY - depth <= 0 ? 0 : Double.NaN;
+        }
+
+        @Override
+        public double ceilingY(double x, double fromY, double z, double range) {
+            return 4.5;
+        }
+    };
+
+    /** The tentacle rig as boxes, for a body hovering {@code hover} above the floor (facing +Z, yaw 0). */
+    private static List<Box> rig(TentacleRig r, double hover, double ageTicks) {
+        r.update(new org.joml.Vector3d(0, hover, 0), 1.8, 0, 4.5, ageTicks, 0);
+        List<Box> out = new ArrayList<>();
+        Matrix4f origin = new Matrix4f().translation(0, (float) (hover + 1.8), 0);
+        for (int i = 0; i < r.computed.size(); i++) {
+            Matrix4f w = new Matrix4f(origin).mul(r.computed.get(i));
+            if (Math.abs(w.determinant()) < 1e-12) continue;
+            Material mat = r.blockFor(i).getMaterial();
+            out.add(new Box(new Matrix4f(w).invert(), w, RGB.getOrDefault(mat, new int[]{20, 20, 24}), false, 1));
+        }
+        out.addAll(boxes(standingBody(hover), new Matrix4f()));
+        return out;
+    }
+
     @Test
     void renderSkinwalker() throws Exception {
         String out = System.getenv("RENDER_CREATURES");
         Assumptions.assumeTrue(out != null && !out.isBlank(), "set RENDER_CREATURES=<dir>");
         new File(out).mkdirs();
-        List<Box> trueForm = new ArrayList<>(boxes(Bodies.skinwalker(), new Matrix4f()));
-        trueForm.addAll(boxes(strandedBody(), new Matrix4f()));
-        render(trueForm, 35, 22, 5.2, 0.8, "Skinwalker — true form", "Eight jointed legs, ridged spine, a split skull full of teeth and a cluster of pale eyes; the worn player hangs in its ribs.")
-                .let(f -> write(f, new File(out, "skinwalker-true-form.png")));
-        render(trueForm, 100, 8, 5.4, 0.8, "Skinwalker — true form, side", "Low and wide (about 3.5 blocks across); it scuttles at about 6 blocks per second.")
-                .let(f -> write(f, new File(out, "skinwalker-true-form-side.png")));
+        // the transformation, frame by frame (the same parameters Possession drives over 5.5 s)
+        double[][] frames = { // tick, wound, emerge, plant, hover
+                {28, 0.4, 0, 0, 0}, {44, 1, 0.55, 0, 0}, {62, 1, 1, 0.35, 0}, {84, 1, 1, 1, 0.45}, {110, 1, 1, 1, 0.72}};
+        String[] names = {"1 the back tears", "2 tentacles force out", "3 reaching for the floor", "4 lifting the body", "5 carried"};
+        BufferedImage strip = new BufferedImage(W / 2 * frames.length, H / 2 + 60, BufferedImage.TYPE_INT_RGB);
+        Graphics2D sg = strip.createGraphics();
+        for (int k = 0; k < frames.length; k++) {
+            TentacleRig r = new TentacleRig(5);
+            r.settle(FLOOR, new org.joml.Vector3d(), 0);
+            r.wound = frames[k][1];
+            r.emerge = frames[k][2];
+            r.plant = frames[k][3];
+            BufferedImage img = render(rig(r, frames[k][4], frames[k][0]), 150, 14, 6.4, 1.3, names[k], "").img;
+            sg.drawImage(img, k * W / 2, 60, W / 2, H / 2, null);
+        }
+        sg.setColor(new Color(230, 225, 205));
+        sg.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 28));
+        sg.drawString("Skinwalker transformation (" + TentacleRig.partCount() + " display parts riding the victim)", 20, 42);
+        sg.dispose();
+        write(strip, new File(out, "skinwalker-transformation.png"));
+        TentacleRig r = new TentacleRig(5);
+        r.settle(FLOOR, new org.joml.Vector3d(), 0);
+        r.wound = r.emerge = r.plant = 1;
+        render(rig(r, 0.72, 40), 145, 16, 6.2, 1.3, "Skinwalker — possessed (back)", "The victim's own body, hovering, carried by six tentacle legs from its back; smaller tentacles crawl over the torso.")
+                .let(f -> write(f, new File(out, "skinwalker-possessed-back.png")));
+        render(rig(r, 0.72, 44), 35, 10, 6.2, 1.3, "Skinwalker — possessed (front)", "From the front: the legs arch over the shoulders; the striking tentacle coils over the right shoulder.")
+                .let(f -> write(f, new File(out, "skinwalker-possessed-front.png")));
+        render(rig(r, 0.72, 48), 95, 6, 6.4, 1.3, "Skinwalker — possessed (side)", "About 4.5 blocks across, 3 tall; it fits under a 4-block ceiling.")
+                .let(f -> write(f, new File(out, "skinwalker-possessed-side.png")));
+        r.strike = 1.6;
+        r.strikeAt.set(0, 1.4, 3.6);
+        render(rig(r, 0.72, 52), 70, 10, 6.6, 1.3, "Skinwalker — tentacle strike", "The striking tentacle lashes at someone who stood still too long.")
+                .let(f -> write(f, new File(out, "skinwalker-strike.png")));
         // disguises: what it looks like before it reaches anyone
         List<Box> line = new ArrayList<>();
         line.addAll(boxes(Bodies.faceling(), new Matrix4f().translate(-1.6f, 0, 0)));
@@ -131,15 +185,10 @@ class CreatureRenderTest {
                 new Spec("drifter", Bodies.drifter(), 0.4, 3.2, "reaching, mid-stroke", Poses.drifter(1.2, 0.4, 1, 1), 35),
                 new Spec("watcher", Bodies.watcher(), 1.15, 4.0, "moving (edges smear)", Poses.watcherHaze(7, false), 25),
                 new Spec("bacteria", Bodies.bacteria(), 1.7, 5.0, "hunting: glitching mid-stride", Poses.bacteria(0.9, 1, 12345L, 0, 0.2), 25),
-                new Spec("bacteria-loom", Bodies.bacteria(), 1.7, 5.0, "leaning over someone who keeps still", Poses.bacteria(0, 0, 0, 1, 0.3), 40),
-                new Spec("skinwalker", Bodies.skinwalker(), 0.9, 5.6, "pouncing: jaws split, arms strike", Poses.skinwalker(0.8, true, 0, 1, 1, 1, 0.15, 1), 25)};
+                new Spec("bacteria-loom", Bodies.bacteria(), 1.7, 5.0, "leaning over someone who keeps still", Poses.bacteria(0, 0, 0, 1, 0.3), 40)};
         for (Spec s : specs) {
             List<Box> rest = new ArrayList<>(boxes(s.model, new Matrix4f()));
             List<Box> act = new ArrayList<>(boxes(s.model, new Matrix4f(), s.action));
-            if (s.name.equals("skinwalker")) {
-                rest.addAll(boxes(strandedBody(), new Matrix4f()));
-                act.addAll(boxes(strandedBody(), new Matrix4f()));
-            }
             BufferedImage[] panels = {render(rest, 30, 12, s.dist, s.look, "rest, front", "").img,
                     render(rest, 95, 6, s.dist, s.look, "rest, side", "").img,
                     render(act, s.actionYaw, 10, s.dist, s.look, s.actionName, "").img};

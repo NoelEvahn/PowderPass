@@ -4,6 +4,7 @@ import com.powderpass.backrooms.BackroomsPlugin;
 import com.powderpass.backrooms.Level;
 import com.powderpass.backrooms.config.BackroomsConfig;
 import com.powderpass.backrooms.display.Model;
+import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
@@ -18,35 +19,34 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * The skinwalker. Three shapes:
+ * The skinwalker. It is not a monster of its own: it is a black tentacled organism that takes a person and walks
+ * around in them.
  * <ol>
- *   <li><b>Borrowed shape</b>: it wears the body of another creature from the level (a Faceling, a Smiler, a
- *   Watcher, a Hound) and behaves almost like one, except that it keeps coming closer while nobody is looking.
- *   Strike it and the disguise splits open.</li>
- *   <li><b>Worn player</b>: when it reaches a player who has company, it takes them. The player is locked inside
- *   their own body (spectating it, unable to move, type, run commands or speak on voice chat) while the
- *   skinwalker walks among their friends wearing their skin: following the group, copying sneaks, jumps and arm
- *   swings, punching back playfully, repeating things the player said in chat and, with Simple Voice Chat, in
- *   their own recorded voice. See {@link Possession}.</li>
- *   <li><b>True form</b>: after a while, or when the group gets suspicious (too many punches), or when the
- *   player it reached was alone, its back cracks open into a spider-like thing with the player's body caught
- *   underneath, and it hunts. Kill it and the player is freed; if it lasts long enough, or feeds, the player
- *   dies with it.</li>
+ *   <li><b>Borrowed shape</b>: until it finds someone, it wears the body of another creature from the level and
+ *   stalks like one (see {@link Stalker}): it keeps its distance, circles, shuffles, slips out of view. When a
+ *   player who has company stands still for about ten seconds, or walks into it unseen, it takes them. A lone
+ *   player is not taken (there is nobody to fool): it strikes them instead and goes on stalking.</li>
+ *   <li><b>Transformation</b> (about 5.5 s, see {@link Possession}): the player freezes, something cracks, their
+ *   body jerks, their back tears open and black tentacles force their way out, reach down, plant on the ground and
+ *   slowly lift them into the air.</li>
+ *   <li><b>Possessed</b>: the player stays in their own body, in survival, visible with their own skin, carried by
+ *   the organism on six tentacle legs while smaller tentacles crawl over them ({@link TentacleRig}). The AI moves
+ *   them; they cannot. It stalks the other players the same way, and anyone who stands still for about ten
+ *   seconds is approached and punched with the victim's own fist or lashed with a tentacle. It repeats what the
+ *   victim said. Hitting the victim hurts the organism, not them: kill it (true-form health) and the victim is
+ *   freed; if it lasts {@code skinwalker.possession-seconds}, or kills someone, the victim dies with it.</li>
  * </ol>
  */
 final class Skinwalker extends Creature {
-    enum Phase { MIMIC, WEARING, TRUE }
+    enum Phase { MIMIC, TRANSFORMING, POSSESSED }
 
     private final BackroomsConfig.CreatureSettings settings;
     Phase phase = Phase.MIMIC;
     private CreatureType disguise = CreatureType.FACELING;
     Possession possession;
     private Player target;
-    private int trueTicks, idleTicks, attackCooldown, scuttleIn, chitterIn, kills;
-    /** True-form animation: ticks left of the arm strike and of the rearing screech; current head roll. */
-    private int strikeTicks, rearTicks;
-    private double twitch;
-    private boolean screamed;
+    private Stalker stalker;
+    private int possessedTicks, lonelyTicks, kills, wanderIn;
 
     Skinwalker(BackroomsPlugin plugin, CreatureManager mgr, BackroomsConfig.CreatureSettings s) {
         super(plugin, mgr, CreatureType.SKINWALKER, 10_000);
@@ -65,17 +65,31 @@ final class Skinwalker extends Creature {
             case PLAINS -> List.of(CreatureType.WATCHER, CreatureType.SMILER);
         };
         disguise = options.get(ThreadLocalRandom.current().nextInt(options.size()));
+        stalker = new Stalker(7, 13, 1.8, patienceTicks(), id.getLeastSignificantBits());
         super.spawn(at, onlyViewer);
+    }
+
+    private int patienceTicks() {
+        return plugin.cfg().skinwalkerPatienceSeconds * 20 + ThreadLocalRandom.current().nextInt(30) - 15;
     }
 
     @Override
     public String state() {
-        return "skinwalker:" + phase.name().toLowerCase(java.util.Locale.ROOT) + (phase == Phase.MIMIC ? ":" + disguise.id : "");
+        return "skinwalker:" + switch (phase) {
+            case MIMIC -> "mimic:" + disguise.id;
+            case TRANSFORMING -> "transforming";
+            case POSSESSED -> "possessed";
+        };
     }
 
     /** What it currently looks like, for status and tests. */
     CreatureType disguise() {
         return disguise;
+    }
+
+    /** The stalking mind, for tests. */
+    Stalker stalker() {
+        return stalker;
     }
 
     @Override
@@ -92,20 +106,15 @@ final class Skinwalker extends Creature {
     @Override
     protected float[] hitboxSize() {
         return switch (phase) {
-            case WEARING -> null; // the mannequin is what gets punched
-            case TRUE -> new float[]{2.2f, 1.7f};
-            default -> new float[]{0.7f, 2.0f};
+            case MIMIC -> new float[]{0.7f, 2.0f};
+            // riding the victim: its origin is the top of their head, the box covers the tentacle arch above
+            default -> new float[]{1.8f, 1.6f};
         };
     }
 
     @Override
-    protected int navHeight() {
-        return phase == Phase.TRUE ? 1 : 2;
-    }
-
-    @Override
     protected double headHeight() {
-        return phase == Phase.TRUE ? 1.2 : 1.8;
+        return 1.8;
     }
 
     @Override
@@ -120,35 +129,73 @@ final class Skinwalker extends Creature {
     @Override
     protected void think() {
         int dt = plugin.cfg().creatureTickInterval;
-        attackCooldown = Math.max(0, attackCooldown - dt);
         switch (phase) {
             case MIMIC -> mimic(dt);
-            case WEARING -> wearing(dt);
-            case TRUE -> trueForm(dt);
+            case TRANSFORMING, POSSESSED -> possessed(dt);
         }
     }
 
     // ------------------------------------------------------------------ 1. borrowed shape
 
     private void mimic(int dt) {
-        Player p = nearestPlayer(56);
-        if (p == null || age > 20 * 240) {
+        if (target == null || !present(target) || target.getWorld() != world || dist(target) > 60 || possessions().isVictim(target)) target = prey(56);
+        if (target == null || age > 20 * 240) {
             remove();
             return;
         }
-        face(p.getLocation());
-        boolean watched = anyoneWatching(35, 48);
-        double d = dist(p);
-        if (!watched) {
-            moveToward(p.getLocation(), 0.16, 1.2);
-            animateDisguise(true);
-            // the only tell: now and then, something cracks when you are not looking
-            if (d < 12 && ThreadLocalRandom.current().nextDouble() < 0.015) sfx(loc(), "skinwalker.crackle", Sound.BLOCK_BONE_BLOCK_BREAK, 0.25f, 0.5f);
-        } else {
-            place(x, y, z, yaw);
-            animateDisguise(false);
+        boolean watched = watchedBy(target, 35, 48);
+        stalker.think(dt, x, y, z, target, watched);
+        double d = dist(target);
+        // watched, it moves like what it is wearing; unwatched it is a little too quick
+        double speed = Math.max(0, stalker.speed) * (watched ? 0.8 : 1.15);
+        boolean moving = false;
+        if (speed > 0.01) {
+            Location goal = new Location(world, stalker.gx, stalker.gy, stalker.gz);
+            double before = x * x + z * z;
+            moveToward(goal, speed, 0.6);
+            moving = Math.abs(before - (x * x + z * z)) > 1e-6;
+            if (!moving && path.isEmpty()) stalker.blocked();
         }
-        if (d <= 2.0 && targetable(p) && !possessions().isVictim(p)) take(p);
+        if (stalker.faceTarget) {
+            face(target.getLocation());
+            place(x, y, z, yaw);
+        }
+        animateDisguise(moving);
+        // the only tell: now and then, something cracks when you are not looking
+        if (!watched && d < 14 && ThreadLocalRandom.current().nextDouble() < 0.02) {
+            sfx(loc(), "skinwalker.crackle", Sound.BLOCK_BONE_BLOCK_BREAK, 0.35f, 0.5f);
+        }
+        boolean reach = stalker.strikeNow || (d <= 1.6 && !watched);
+        if (reach && targetable(target) && !possessions().isVictim(target)) {
+            if (hasCompany(target)) {
+                if (!wear(target)) stalker.struck();
+            } else {
+                lunge(target);
+                stalker.struck();
+            }
+        }
+    }
+
+    /** A lone player is struck, not taken: the borrowed shape lunges, then melts back into the dark. */
+    private void lunge(Player p) {
+        face(p.getLocation());
+        place(x, y, z, yaw);
+        double dmg = (settings.damage() > 0 ? settings.damage() : 9) * 0.55;
+        p.damage(dmg);
+        Vector kb = p.getLocation().toVector().subtract(loc().toVector()).setY(0);
+        if (kb.lengthSquared() > 0.01) p.setVelocity(kb.normalize().multiply(0.45).setY(0.25));
+        mgr.noteAttack(p, type);
+        sfx(loc(), "skinwalker.screech", Sound.ENTITY_SPIDER_HURT, 0.9f, 0.4f);
+        sfx(loc(), "skinwalker.crackle", Sound.BLOCK_BONE_BLOCK_BREAK, 0.8f, 0.5f);
+    }
+
+    private boolean hasCompany(Player victim) {
+        double radius = plugin.cfg().skinwalkerGroupRadius;
+        for (Player o : world.getPlayers()) {
+            if (o == victim || !targetable(o) || possessions().isVictim(o)) continue;
+            if (o.getLocation().distanceSquared(victim.getLocation()) <= radius * radius) return true;
+        }
+        return false;
     }
 
     /**
@@ -177,78 +224,122 @@ final class Skinwalker extends Creature {
         }
     }
 
-    /** It reached a player: wear them if they have company, otherwise there is nobody to fool. */
-    private void take(Player victim) {
-        double radius = plugin.cfg().skinwalkerGroupRadius;
-        boolean company = false;
-        for (Player o : world.getPlayers()) {
-            if (o == victim || !targetable(o) || possessions().isVictim(o)) continue;
-            if (o.getLocation().distanceSquared(victim.getLocation()) <= radius * radius) company = true;
-        }
-        if (!company) {
-            reveal(null);
-            target = victim;
-            return;
-        }
-        if (!wear(victim)) reveal(null);
-    }
-
     /**
-     * Wear this player, with or without company: they are locked in spectator mode on their own body and the
-     * skinwalker takes their place. Used when it reaches someone and by {@code /backrooms skinwalker}. With nobody
-     * else around it drops the disguise on its next step and the body is carried under the true form.
+     * Take this player now: the borrowed shape dissolves into them and the transformation begins. Used when it
+     * reaches someone with company and by {@code /backrooms creature skinwalker} (with or without company).
      */
     boolean wear(Player victim) {
+        if (!targetable(victim) && victim.getGameMode() != GameMode.CREATIVE) return false;
+        Location from = loc();
         Possession pos = possessions().begin(this, victim);
         if (pos == null) return false;
         possession = pos;
-        phase = Phase.WEARING;
+        phase = Phase.TRANSFORMING;
+        health = settings.health() > 0 ? settings.health() : 80;
+        // the disguise collapses into black smoke that pours into them
+        world.spawnParticle(Particle.SQUID_INK, from.clone().add(0, 1, 0), 40, 0.3, 0.8, 0.3, 0.04);
         reshape(null);
-        makeHitbox();
         Location l = victim.getLocation();
-        place(l.getX(), l.getY(), l.getZ(), l.getYaw());
+        x = l.getX();
+        y = l.getY();
+        z = l.getZ();
+        yaw = l.getYaw();
+        makeHitbox();
+        pos.mountHitbox(hitbox);
+        possessions().bind(pos, hitbox);
+        stalker = new Stalker(5, 10, 3.2, patienceTicks(), id.getMostSignificantBits());
+        target = null;
         return true;
     }
 
-    // ------------------------------------------------------------------ 2. worn player
+    // ------------------------------------------------------------------ 2-3. transformation and possession
 
-    private void wearing(int dt) {
+    private void possessed(int dt) {
         if (possession == null || !possession.active()) {
-            reveal(null);
+            // the victim is gone (released, disconnected, died): the organism dies with the body
+            vanish();
             return;
         }
-        Location l = possession.tick(dt);
-        if (l != null) place(l.getX(), l.getY(), l.getZ(), l.getYaw());
-        if (possession.wantsReveal()) reveal(possession);
-    }
-
-    // ------------------------------------------------------------------ 3. true form
-
-    /** Crack open into the true form, carrying the worn body if there is one. */
-    void reveal(Possession carried) {
-        if (phase == Phase.TRUE) return;
-        phase = Phase.TRUE;
-        health = settings.health() > 0 ? settings.health() : 80;
-        Location l = loc();
-        world.spawnParticle(Particle.BLOCK, l.clone().add(0, 1, 0), 40, 0.4, 0.6, 0.4, 0.1, org.bukkit.Material.BONE_BLOCK.createBlockData());
-        sfx(l, "skinwalker.crackle", Sound.BLOCK_BONE_BLOCK_BREAK, 1.2f, 0.6f);
-        plugin.getServer().getScheduler().runTaskLater(plugin, () -> sfx(loc(), "skinwalker.crackle", Sound.ENTITY_SKELETON_HURT, 1.0f, 0.5f), 12L);
-        plugin.getServer().getScheduler().runTaskLater(plugin, () -> sfx(loc(), "skinwalker.screech", Sound.ENTITY_GHAST_SCREAM, 1.0f, 0.5f), 26L);
-        reshape(Bodies.skinwalker());
-        makeHitbox();
-        if (carried != null) carried.trueForm();
-        for (Player p : world.getPlayers()) {
-            if (p.getLocation().distanceSquared(l) < 24 * 24) p.addPotionEffect(new PotionEffect(PotionEffectType.DARKNESS, 60, 0, false, false));
+        Location root = possession.root();
+        x = root.getX();
+        y = root.getY();
+        z = root.getZ();
+        yaw = (float) possession.heading();
+        if (possession.stage == Possession.Stage.TRANSFORMING) return;
+        phase = Phase.POSSESSED;
+        possessedTicks += dt;
+        if (possessedTicks > plugin.cfg().skinwalkerPossessionSeconds * 20) {
+            // it has had them too long
+            possession.release(true);
+            vanish();
+            return;
         }
-        screamed = true;
-        idleTicks = 0;
+        Player victim = possession.victim();
+        if (target == null || !targetable(target) || target.getWorld() != world || target.getLocation().distance(root) > 56 || possessions().isVictim(target)) {
+            target = victim == null ? null : nearestPrey(root, 48, victim);
+        }
+        if (target == null) {
+            wander(dt, root);
+            return;
+        }
+        lonelyTicks = 0;
+        boolean watched = watchedFrom(target, root);
+        stalker.think(dt, root.getX(), root.getY(), root.getZ(), target, watched);
+        possession.goal(stalker.gx, stalker.gy, stalker.gz, Math.max(0, stalker.speed), stalker.faceTarget ? target : null);
+        if (possession.blocked() && stalker.mode != Stalker.Mode.ATTACK && ThreadLocalRandom.current().nextDouble() < 0.2) stalker.blocked();
+        if (stalker.strikeNow && !possession.attacking()) {
+            double dmg = settings.damage() > 0 ? settings.damage() : 9;
+            double d = target.getLocation().distance(root);
+            // close enough for a fist, or lash out with the tentacle
+            if (d < 2.4 && ThreadLocalRandom.current().nextBoolean()) possession.punch(target, dmg * 0.5);
+            else possession.strike(target, dmg);
+            stalker.struck();
+        }
     }
 
-    private Player prey() {
+    /** Nobody to hunt: it drifts about with its passenger, slowly. */
+    private void wander(int dt, Location root) {
+        lonelyTicks += dt;
+        if ((wanderIn -= dt) <= 0) {
+            wanderIn = 60 + ThreadLocalRandom.current().nextInt(80);
+            double a = ThreadLocalRandom.current().nextDouble(Math.PI * 2), r = 4 + ThreadLocalRandom.current().nextDouble(8);
+            possession.goal(root.getX() + Math.cos(a) * r, root.getY(), root.getZ() + Math.sin(a) * r, 0.08, null);
+        }
+    }
+
+    /** A blow from the organism landed on someone. */
+    void landed(Player t, double damage, Location from) {
+        if (!targetable(t)) return;
+        t.damage(damage);
+        t.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 30, 1, false, false));
+        Vector kb = t.getLocation().toVector().subtract(from.toVector()).setY(0);
+        if (kb.lengthSquared() > 0.01) t.setVelocity(kb.normalize().multiply(0.55).setY(0.3));
+        mgr.noteAttack(t, type);
+        sfx(t.getLocation(), "skinwalker.whip", Sound.ENTITY_PLAYER_ATTACK_STRONG, 1.0f, 0.6f);
+        if (t.isDead() || t.getHealth() <= 0) {
+            kills++;
+            target = null;
+            if (possession != null && possession.active()) {
+                // it fed; the worn body is spent
+                possession.release(true);
+                vanish();
+            }
+        }
+    }
+
+    private boolean watchedFrom(Player p, Location root) {
+        Location eye = p.getEyeLocation();
+        Vector to = root.toVector().add(new Vector(0, 1.6, 0)).subtract(eye.toVector());
+        double d = to.length();
+        if (d > 48 || d < 0.01) return d < 0.01;
+        return Math.toDegrees(eye.getDirection().angle(to)) <= 35 && p.hasLineOfSight(root.clone().add(0, 1.6, 0));
+    }
+
+    private Player prey(double max) {
         Player best = null;
-        double bd = 48 * 48;
+        double bd = max * max;
         for (Player p : world.getPlayers()) {
-            if (!targetable(p) || possessions().isVictim(p)) continue;
+            if (!present(p) || possessions().isVictim(p)) continue;
             double d = p.getLocation().distanceSquared(loc());
             if (d < bd) {
                 bd = d;
@@ -258,81 +349,18 @@ final class Skinwalker extends Creature {
         return best;
     }
 
-    private void trueForm(int dt) {
-        trueTicks += dt;
-        if (possession != null && possession.active() && trueTicks > plugin.cfg().skinwalkerTrueSeconds * 20) {
-            // it has had them too long
-            possession.release(true);
-            vanish();
-            return;
-        }
-        if (target == null || !targetable(target) || target.getWorld() != world || dist(target) > 56) target = prey();
-        if (chitterIn-- <= 0) {
-            chitterIn = 40;
-            sfx(loc(), "skinwalker.chitter", Sound.ENTITY_SPIDER_AMBIENT, 0.7f, 0.6f);
-        }
-        if (target == null) {
-            if ((idleTicks += dt) > 20 * 30) {
-                if (possession != null) possession.release(true);
-                vanish();
-            }
-            legs(false);
-            carry();
-            return;
-        }
-        idleTicks = 0;
-        if (!screamed) {
-            screamed = true;
-            sfx(loc(), "skinwalker.screech", Sound.ENTITY_GHAST_SCREAM, 0.9f, 0.5f);
-            rearTicks = 24;
-        }
-        double d = dist(target);
-        if (d <= 2.3 && attackCooldown == 0) {
-            face(target.getLocation());
-            place(x, y, z, yaw);
-            target.damage(settings.damage() > 0 ? settings.damage() : 9);
-            target.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 40, 1, false, false));
-            Vector kb = target.getLocation().toVector().subtract(loc().toVector()).setY(0);
-            if (kb.lengthSquared() > 0.01) target.setVelocity(kb.normalize().multiply(0.5).setY(0.3));
-            mgr.noteAttack(target, type);
-            sfx(loc(), "skinwalker.screech", Sound.ENTITY_SPIDER_HURT, 0.6f, 0.4f);
-            attackCooldown = 30;
-            strikeTicks = 8;
-            if (target.isDead() || target.getHealth() <= 0) {
-                kills++;
-                if (possession != null && possession.active()) possession.release(true); // it fed; the worn body is spent
-                target = null;
-            }
-        } else {
-            moveToward(target.getLocation(), 0.3, 1.8);
-            if (scuttleIn-- <= 0) {
-                scuttleIn = 3;
-                sfx(loc(), "skinwalker.scuttle", Sound.ENTITY_SPIDER_STEP, 0.6f, 1.4f);
+    private Player nearestPrey(Location at, double max, Player victim) {
+        Player best = null;
+        double bd = max * max;
+        for (Player p : world.getPlayers()) {
+            if (p == victim || !present(p) || possessions().isVictim(p)) continue;
+            double d = p.getLocation().distanceSquared(at);
+            if (d < bd) {
+                bd = d;
+                best = p;
             }
         }
-        legs(true);
-        carry();
-    }
-
-    private void carry() {
-        if (possession != null && possession.active()) possession.carry(loc(), yaw);
-    }
-
-    /** The true form's whole-body animation, see {@link Poses#skinwalker}. */
-    private void legs(boolean moving) {
-        if (body == null) return;
-        int dt = plugin.cfg().creatureTickInterval;
-        ThreadLocalRandom r = ThreadLocalRandom.current();
-        strikeTicks = Math.max(0, strikeTicks - dt);
-        rearTicks = Math.max(0, rearTicks - dt);
-        // the head never quite settles: small rolls, and now and then a hard jerk
-        if (r.nextDouble() < 0.12) twitch = r.nextDouble() < 0.25 ? r.nextGaussian() * 0.45 : r.nextGaussian() * 0.08;
-        double close = target == null ? 0 : Math.max(0, 1 - dist(target) / 7);
-        double jaw = Math.max(close, strikeTicks > 0 ? 1 : 0.12 + 0.12 * Math.sin(age * 0.7));
-        double split = Math.max(close * 0.8, rearTicks > 0 ? 1 : 0.1 * (1 + Math.sin(age * 0.45)));
-        double strike = strikeTicks > 4 ? 1 : strikeTicks > 0 ? 0.4 : 0;
-        double rear = rearTicks > 0 ? Math.min(1, rearTicks / 8.0) : 0;
-        body.pose(Poses.skinwalker(walkPhase * 1.4, moving, age, jaw, split, strike, twitch, rear), dt + 1);
+        return best;
     }
 
     private void vanish() {
@@ -346,24 +374,27 @@ final class Skinwalker extends Creature {
     @Override
     protected void onHurt(Player by, double amount) {
         if (phase == Phase.MIMIC) {
-            // the borrowed shape splits open
-            reveal(null);
-            target = by;
+            // the borrowed shape tears; it flees into the dark and comes back later
+            sfx(loc(), "skinwalker.screech", Sound.ENTITY_SPIDER_HURT, 0.8f, 0.5f);
+            world.spawnParticle(Particle.SQUID_INK, loc().add(0, 1, 0), 20, 0.3, 0.6, 0.3, 0.03);
+            if (amount >= 4 || ThreadLocalRandom.current().nextDouble() < 0.35) {
+                remove();
+                return;
+            }
+            stalker.blocked();
             return;
         }
-        if (phase == Phase.TRUE) {
-            sfx(loc(), "skinwalker.screech", Sound.ENTITY_SPIDER_HURT, 0.7f, 0.5f);
-            world.spawnParticle(Particle.BLOCK, loc().add(0, 1, 0), 12, 0.4, 0.4, 0.4, 0.1, org.bukkit.Material.BONE_BLOCK.createBlockData());
-            target = by;
-        }
+        sfx(loc(), "skinwalker.screech", Sound.ENTITY_SPIDER_HURT, 0.9f, 0.5f);
+        world.spawnParticle(Particle.SQUID_INK, loc().add(0, 2, 0), 12, 0.4, 0.4, 0.4, 0.05);
+        target = by;
     }
 
     @Override
     protected void onDeath(Player by) {
-        sfx(loc(), "skinwalker.screech", Sound.ENTITY_GHAST_DEATH, 1.0f, 0.5f);
-        sfx(loc(), "skinwalker.crackle", Sound.BLOCK_BONE_BLOCK_BREAK, 1.0f, 0.5f);
-        world.spawnParticle(Particle.BLOCK, loc().add(0, 1, 0), 60, 0.8, 0.6, 0.8, 0.1, org.bukkit.Material.BONE_BLOCK.createBlockData());
-        // killing it frees the one it was wearing
+        sfx(loc(), "skinwalker.screech", Sound.ENTITY_WARDEN_DEATH, 1.2f, 0.7f);
+        sfx(loc(), "skinwalker.tear", Sound.ENTITY_SLIME_SQUISH, 1.0f, 0.5f);
+        world.spawnParticle(Particle.SQUID_INK, loc().add(0, 1.5, 0), 60, 0.8, 0.8, 0.8, 0.06);
+        // killing it frees the one it was carrying
         if (possession != null && possession.active()) possession.release(false);
     }
 
@@ -374,13 +405,21 @@ final class Skinwalker extends Creature {
         super.remove();
     }
 
+    @Override
+    public int entityCount() {
+        return super.entityCount() + (possession != null && possession.active() ? possession.rig.size() : 0);
+    }
+
     // ------------------------------------------------------------------ sound
 
-    /** Custom pack sound for players who have it, a vanilla stand-in for everyone else. */
+    /**
+     * Custom pack sound for players who have it, a vanilla stand-in for everyone else. Monster sounds carry far
+     * (48 blocks) and play in the HOSTILE category so they are never drowned by the ambience.
+     */
     void sfx(Location at, String custom, Sound fallback, float volume, float pitch) {
         boolean has = plugin.audio().index().has(custom);
         for (Player p : at.getWorld().getPlayers()) {
-            if (p.getLocation().distanceSquared(at) > 40 * 40) continue;
+            if (p.getLocation().distanceSquared(at) > 48 * 48) continue;
             if (has && plugin.audio().custom(p)) p.playSound(at, "backrooms:" + custom, SoundCategory.HOSTILE, volume, pitch < 0.8f ? 1f : pitch);
             else p.playSound(at, fallback, SoundCategory.HOSTILE, volume, pitch);
         }

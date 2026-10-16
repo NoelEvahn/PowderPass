@@ -41,7 +41,6 @@ class PosesTest {
         allBonesExist("hound", Bodies.hound(), Poses.hound(1, 1, 1, 1, 0.3, 0.2));
         allBonesExist("drifter", Bodies.drifter(), Poses.drifter(1, 0.4, 1, 1));
         allBonesExist("watcher", Bodies.watcher(), Poses.watcherHaze(3, false));
-        allBonesExist("skinwalker", Bodies.skinwalker(), Poses.skinwalker(1, true, 10, 1, 1, 1, 0.2, 1));
         for (String b : List.of("leg_l", "leg_r", "arm_l", "arm_r")) {
             assertTrue(Bodies.faceling().parts.stream().anyMatch(p -> b.equals(p.name)), "faceling walk bone " + b);
             assertTrue(Bodies.watcher().parts.stream().anyMatch(p -> b.equals(p.name)), "watcher walk bone " + b);
@@ -63,12 +62,6 @@ class PosesTest {
 
     @Test
     void neutralPosesKeepTheRestShape() {
-        Model sw = Bodies.skinwalker();
-        Map<String, Matrix4f> rest = Poses.skinwalker(0, false, 0, 0, 0, 0, 0, 0);
-        for (Part p : sw.parts) {
-            if (p.name == null || !p.name.startsWith("head.mand")) continue;
-            assertTrue(Body.compose(p.name, rest, p.local).equals(p.local, 1e-4f), "closed mandibles sit at rest");
-        }
         Map<String, Matrix4f> shut = Poses.faceling(0, 0, 0, 0);
         assertTrue(shut.get("head.mouth").equals(new Matrix4f(), 1e-5f), "a shut mouth is the rest seam");
     }
