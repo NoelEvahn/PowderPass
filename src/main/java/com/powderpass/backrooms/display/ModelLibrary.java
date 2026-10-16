@@ -61,6 +61,7 @@ public final class ModelLibrary {
         if (base.equals("creature")) return com.powderpass.backrooms.creature.CreatureModels.build(suffix);
         Model slide = SlideModels.build(base, suffix, seed);
         if (slide != null) return slide;
+        if (base.equals("supply")) return SupplyModels.build(suffix, seed, m) ? m : null;
         if (base.equals("statue_face")) {
             // statue_face:<scale blocks>:<expression>
             String[] a = suffix.split(":");

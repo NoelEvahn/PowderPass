@@ -314,6 +314,13 @@ items:
   flashlight-battery-seconds: 300
   battery-seconds: 240
 
+# Supplies lying about the levels (almond water, rations, batteries, flashlights, supply crates): right-click to
+# pick one up. How often they appear is a generation setting per level: levels.<level>.generation.supply-chance
+# (default 0.04 per safe cell).
+supplies:
+  per-player: false              # false: taken once for everyone; true: every player may take each supply once
+  respawn-minutes: 0             # shared supplies come back after this long (0 = never)
+
 debug: false
 
 messages:

@@ -56,6 +56,7 @@ public class BackroomsPlugin extends JavaPlugin {
     private com.powderpass.backrooms.audio.AudioEngine audio;
     private com.powderpass.backrooms.vehicle.VehicleManager vehicles;
     private com.powderpass.backrooms.world.LiftService lifts;
+    private com.powderpass.backrooms.item.SupplyService supplies;
     private com.powderpass.backrooms.world.SlideRides slides;
     private com.powderpass.backrooms.display.AssetStore assets;
     private BukkitTask debugTask;
@@ -82,6 +83,7 @@ public class BackroomsPlugin extends JavaPlugin {
         teleports = new TeleportService(this);
         items = new Items(this);
         loot = new LootService(this);
+        supplies = new com.powderpass.backrooms.item.SupplyService(this);
         sessions = new SessionManager(this);
         transitions = new TransitionService(this);
         decorations = new DecorationManager(this);
@@ -145,6 +147,7 @@ public class BackroomsPlugin extends JavaPlugin {
         audio.start();
         vehicles.start();
         lifts.start();
+        supplies.start();
         slides.start();
         cutscenes.start();
         if (debugTask != null) debugTask.cancel();
@@ -155,6 +158,7 @@ public class BackroomsPlugin extends JavaPlugin {
         if (debugTask != null) debugTask.cancel();
         if (vehicles != null) vehicles.stop();
         if (lifts != null) lifts.stop();
+        if (supplies != null) supplies.stop();
         if (slides != null) slides.stop();
         if (cutscenes != null) cutscenes.stop();
         debugTask = null;
@@ -305,6 +309,10 @@ public class BackroomsPlugin extends JavaPlugin {
 
     public com.powderpass.backrooms.vehicle.VehicleManager vehicles() {
         return vehicles;
+    }
+
+    public com.powderpass.backrooms.item.SupplyService supplies() {
+        return supplies;
     }
 
     public com.powderpass.backrooms.world.LiftService lifts() {

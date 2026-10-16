@@ -422,6 +422,11 @@ public final class DecorationManager implements Listener {
         ws.entities += model.entityCount();
     }
 
+    /** Forget that a decoration was hidden; it comes back the next time its chunk activates. */
+    public void unhide(World w, String specKey) {
+        hidden.remove(hiddenKey(w, specKey));
+    }
+
     public boolean hidden(World w, String specKey) {
         return hidden.contains(hiddenKey(w, specKey));
     }
@@ -730,6 +735,9 @@ public final class DecorationManager implements Listener {
                 p.sendMessage(BackroomsConfig.mm(lines[ThreadLocalRandom.current().nextInt(lines.length)]));
             }
             case "slide" -> plugin.slides().rideAsset(p, inst.spec, w);
+            case "supply" -> {
+                if (plugin.supplies() != null) plugin.supplies().take(p, w, inst.spec);
+            }
             case "vending" -> {
                 w.playSound(inst.anchor, Sound.BLOCK_CHEST_LOCKED, SoundCategory.BLOCKS, 0.8f, 0.6f);
                 if (plugin.sessions().tryVend(p)) {

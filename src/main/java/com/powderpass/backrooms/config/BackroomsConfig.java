@@ -89,6 +89,8 @@ public final class BackroomsConfig {
 
     public final boolean sanityEnabled, sanityActionbar;
     public final int flashlightSeconds, batterySeconds;
+    public final boolean suppliesPerPlayer;
+    public final int supplyRespawnMinutes;
     public final boolean debug;
 
     private final Map<String, String> messages = new HashMap<>();
@@ -286,6 +288,8 @@ public final class BackroomsConfig {
         sanityEnabled = c.getBoolean("sanity.enabled", true);
         sanityActionbar = c.getBoolean("sanity.show-actionbar", false);
         flashlightSeconds = clamp(c.getInt("items.flashlight-battery-seconds", 300), 10, 100000);
+        suppliesPerPlayer = c.getBoolean("supplies.per-player", false);
+        supplyRespawnMinutes = clamp(c.getInt("supplies.respawn-minutes", 0), 0, 100000);
         batterySeconds = clamp(c.getInt("items.battery-seconds", 240), 10, 100000);
         debug = c.getBoolean("debug", false);
 

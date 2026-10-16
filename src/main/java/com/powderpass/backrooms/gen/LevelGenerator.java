@@ -404,9 +404,44 @@ public abstract class LevelGenerator {
                 }
             }
         }
+        supplies(minX, minZ, out);
         // functional decorations first, then details by tier and rank, so budgets always drop details first
         out.sort(java.util.Comparator.comparingInt((DecorSpec d) -> d.tier).thenComparingDouble(d -> d.rank));
         return out;
+    }
+
+    /** Supply kinds and their weights: almond water, a ration, batteries, a flashlight, a supply crate. */
+    private static final String[] SUPPLY = {"almond", "ration", "battery", "flashlight", "crate"};
+    private static final double[] SUPPLY_W = {0.35, 0.2, 0.2, 0.07, 0.18};
+
+    /**
+     * Supplies lying about: on safe cells (whose standing spot is guaranteed), {@code supply-chance} per cell, a
+     * little off the exact spot. Picked up with a right-click (the runtime remembers what was taken).
+     */
+    protected void supplies(int minX, int minZ, List<DecorSpec> out) {
+        double chance = gs.get("supply-chance", 0.04);
+        if (chance <= 0) return;
+        for (int f = 0; f < floorY.length; f++) {
+            for (int cx = cellOf(minX); cx <= cellOf(minX + 15); cx++) {
+                for (int cz = cellOf(minZ); cz <= cellOf(minZ + 15); cz++) {
+                    long h = ch(f, cx, cz, 0x5A99L);
+                    if (!Rng.chance(h, chance) || featureAt(f, cx, cz) != null || !isSafeCell(f, cx, cz)) continue;
+                    int[] l = safeLocal(f, cx, cz);
+                    double x = cx * S + l[0] + 0.2 + 0.6 * Rng.unit(Rng.hash(h, 1)), z = cz * S + l[1] + 0.2 + 0.6 * Rng.unit(Rng.hash(h, 2));
+                    if ((int) Math.floor(x) < minX || (int) Math.floor(x) >= minX + 16 || (int) Math.floor(z) < minZ || (int) Math.floor(z) >= minZ + 16) continue;
+                    double r = Rng.unit(Rng.hash(h, 3)), acc = 0;
+                    String kind = SUPPLY[0];
+                    for (int k = 0; k < SUPPLY.length; k++) {
+                        acc += SUPPLY_W[k];
+                        if (r < acc) {
+                            kind = SUPPLY[k];
+                            break;
+                        }
+                    }
+                    out.add(new DecorSpec("supply:" + kind, x, floorY[f] + 1, z, 0, 0, 0, Rng.hash(h, 4)));
+                }
+            }
+        }
     }
 
     /**
