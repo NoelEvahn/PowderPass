@@ -42,13 +42,16 @@ class PoolroomsLayoutTest {
             perFloor.add(seen);
             seen.forEach((k, v) -> all.merge(k, v, Integer::sum));
         }
-        assertEquals(5, all.size(), "bays, dry tile, bright rooms, hallways and massive halls: " + all);
+        assertEquals(Zone.values().length, all.size(), "every kind of space: " + all);
         for (Zone z : new Zone[]{Zone.BAYS, Zone.DRY, Zone.BRIGHT, Zone.HALLWAY}) {
             for (int f = 0; f < 3; f++) assertTrue(perFloor.get(f).getOrDefault(z, 0) > 0, z + " missing on floor " + f + ": " + perFloor.get(f));
         }
         assertEquals(0, perFloor.get(0).getOrDefault(Zone.MASSIVE, 0), "massive halls start on the main floor");
         int classic = all.getOrDefault(Zone.BAYS, 0) + all.getOrDefault(Zone.DRY, 0);
-        assertTrue(classic > 3 * 441 / 2, "tiled bays stay the main fabric: " + all);
+        assertTrue(classic > 3 * 441 / 5 && classic < 3 * 441 * 3 / 5, "plain bays are common but no longer everything: " + all);
+        int custom = 0;
+        for (Zone z : new Zone[]{Zone.ENCLOSED, Zone.LONGPOOL, Zone.FLOODED, Zone.CORRIDORS, Zone.CURVED, Zone.MULTILEVEL}) custom += all.getOrDefault(z, 0);
+        assertTrue(custom > 3 * 441 / 4, "the new architecture is a large share: " + all);
     }
 
     @Test
@@ -117,11 +120,6 @@ class PoolroomsLayoutTest {
                 // the start is found by the trigger query and is at the gallery
                 int[] st = s.start()[0];
                 assertSame(s, g.slideStartingAt(st[0], st[1], st[2]));
-                // a giant head in the hall
-                int marble = 0;
-                for (int x = rx * 60; x < rx * 60 + 60; x++) for (int z = rz * 60; z < rz * 60 + 60; z++)
-                    for (int y = wy + 1; y < wy + 40; y++) if (a.type(x, y, z) == Material.CALCITE) marble++;
-                assertTrue(marble > 150, "the hall's statue is missing (" + marble + " calcite blocks)");
             }
         }
         assertTrue(slides >= 2, "expected slides near the origin, found " + slides);
@@ -163,5 +161,112 @@ class PoolroomsLayoutTest {
             }
         }
         assertTrue(lights > 40, "too few lights: " + lights);
+    }
+
+    @Test
+    void darkStoreysAreRareAndAlmostUnlit() {
+        int dark = 0, total = 0;
+        int[] darkRegion = null;
+        for (int rx = -12; rx <= 12; rx++) for (int rz = -12; rz <= 12; rz++) for (int f = 0; f < 3; f++) {
+            total++;
+            if (g.plan(rx, rz).dark[f]) {
+                dark++;
+                if (darkRegion == null) darkRegion = new int[]{rx, rz, f};
+            }
+        }
+        assertTrue(dark > 0 && dark < total * 0.12, "dark storeys are uncommon: " + dark + "/" + total);
+        int lo = g.floorY[darkRegion[2]] - 8, hi = g.floorY[darkRegion[2]] + 22, lights = 0;
+        for (int x = darkRegion[0] * 60; x < darkRegion[0] * 60 + 60; x++) for (int z = darkRegion[1] * 60; z < darkRegion[1] * 60 + 60; z++) {
+            if (g.cellOf(x) == g.plan(darkRegion[0], darkRegion[1]).towerCx && g.cellOf(z) == g.plan(darkRegion[0], darkRegion[1]).towerCz) continue;
+            B[] col = g.column(x, z);
+            for (int y = lo; y <= hi; y++) if (col[y - g.bottomY].mat == Material.LIGHT) lights++;
+        }
+        assertTrue(lights < 40, "a dark storey keeps only a few isolated lights: " + lights);
+    }
+
+    @Test
+    void someUpperHallsAreOpenToTheSky() {
+        int open = 0, checked = 0;
+        for (int rx = -12; rx <= 12 && checked < 6; rx++) for (int rz = -12; rz <= 12 && checked < 6; rz++) {
+            var p = g.plan(rx, rz);
+            if (!p.open[PoolroomsGenerator.HIGH]) continue;
+            open++;
+            checked++;
+            int sky = 0;
+            for (int x = rx * 60 + 10; x < rx * 60 + 50; x += 3) for (int z = rz * 60 + 10; z < rz * 60 + 50; z += 3) {
+                B[] col = g.column(x, z);
+                boolean clear = true;
+                for (int y = g.floorY[PoolroomsGenerator.HIGH] + 1; y <= g.roofY; y++) {
+                    if (!col[y - g.bottomY].passable()) {
+                        clear = false;
+                        break;
+                    }
+                }
+                if (clear) sky++;
+                // never any water left hanging up there
+                for (int y = g.floorY[PoolroomsGenerator.HIGH] + 2; y <= g.roofY; y++) assertNotEquals(Material.WATER, col[y - g.bottomY].mat);
+            }
+            assertTrue(sky > 20, "an open hall really has no roof over it: " + sky + " open columns in region " + rx + "," + rz);
+        }
+        assertTrue(open > 0, "some open-air halls near the origin");
+    }
+
+    @Test
+    void enclosedRoomsHaveWallsAndCeilings() {
+        int found = 0;
+        for (int rx = -10; rx <= 10 && found < 3; rx++) for (int rz = -10; rz <= 10 && found < 3; rz++) {
+            var p = g.plan(rx, rz);
+            for (int f = 0; f < 3; f++) {
+                if (p.zone[f] != Zone.ENCLOSED || p.open[f]) continue;
+                found++;
+                int fy = g.floorY[f], covered = 0, cols = 0;
+                for (int x = rx * 60 + 1; x < rx * 60 + 59; x += 2) for (int z = rz * 60 + 1; z < rz * 60 + 59; z += 2) {
+                    B[] col = g.column(x, z);
+                    if (!col[fy + 1 - g.bottomY].passable() || col[fy + 1 - g.bottomY].mat == Material.WATER) continue;
+                    cols++;
+                    for (int y = fy + 3; y <= fy + 22; y++) if (!col[y - g.bottomY].passable()) {
+                        covered++;
+                        break;
+                    }
+                }
+                assertEquals(cols, covered, "every enclosed room has a ceiling");
+            }
+        }
+        assertTrue(found > 0, "enclosed rooms near the origin");
+    }
+
+    @Test
+    void statuesAreRareAndSetIntoSolidWalls() {
+        int statues = 0, regions = 0;
+        for (int rx = -14; rx <= 14; rx++) for (int rz = -14; rz <= 14; rz++) {
+            regions++;
+            for (int cx = rx * 5; cx < rx * 5 + 5; cx++) for (int cz = rz * 5; cz < rz * 5 + 5; cz++) {
+                for (int f = 0; f < 3; f++) {
+                    List<DecorSpec> out = new ArrayList<>();
+                    for (DecorSpec d : decorOf(f, cx, cz)) if (d.model.startsWith("statue_face")) out.add(d);
+                    for (DecorSpec d : out) {
+                        statues++;
+                        assertTrue(d.isStructural());
+                        // the block just behind the face's back is solid: it is set into a wall
+                        double yaw = Math.toRadians(d.yaw);
+                        double bx = d.x + Math.sin(yaw) * 0.3, bz = d.z - Math.cos(yaw) * 0.3; // behind = -front
+                        int scale = Integer.parseInt(d.model.split(":")[1]);
+                        int by = (int) Math.floor(d.y + scale * 0.5);
+                        B[] col = g.column((int) Math.floor(bx), (int) Math.floor(bz));
+                        assertFalse(col[by - g.bottomY].passable(), "face " + d.model + " at " + d.x + "," + d.y + "," + d.z + " is not against a wall");
+                    }
+                }
+            }
+        }
+        assertTrue(statues > 0, "some statues exist");
+        assertTrue(statues < regions * 0.6, "statues stay rare: " + statues + " in " + regions + " regions");
+    }
+
+    private List<DecorSpec> decorOf(int f, int cx, int cz) {
+        List<DecorSpec> out = new ArrayList<>();
+        for (DecorSpec d : g.decorations(Math.floorDiv(cx * g.S, 16), Math.floorDiv(cz * g.S, 16))) {
+            if (g.cellOf((int) Math.floor(d.x)) == cx && g.cellOf((int) Math.floor(d.z)) == cz && g.floorAt((int) Math.floor(d.y) + 1) == f) out.add(d);
+        }
+        return out;
     }
 }

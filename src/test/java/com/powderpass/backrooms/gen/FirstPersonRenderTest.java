@@ -303,9 +303,56 @@ class FirstPersonRenderTest {
             double[] lo = g.hallPoint(massive[0], massive[1], 44.5, 52.5), lo2 = g.hallPoint(massive[0], massive[1], 32.5, 30.5);
             views.put("slide-landing", new double[]{lo[0], mid, lo[1], yawTo(lo, lo2), 18, 70});
         }
+        // the newer architecture: one view of each kind of space, and an open-air hall and a dark storey
+        java.util.Set<String> skyViews = new java.util.HashSet<>();
+        java.util.Map<com.powderpass.backrooms.gen.levels.PoolroomsGenerator.Zone, int[]> first = new java.util.EnumMap<>(com.powderpass.backrooms.gen.levels.PoolroomsGenerator.Zone.class);
+        int[] openRegion = null, darkRegion = null;
+        for (int r = 0; r < 18; r++) for (int rx = -r; rx <= r; rx++) for (int rz = -r; rz <= r; rz++) {
+            if (Math.max(Math.abs(rx), Math.abs(rz)) != r) continue;
+            var p = g.plan(rx, rz);
+            for (int f = 0; f < 3; f++) {
+                if (!p.dark[f] && !(f == 2 && p.open[2])) first.putIfAbsent(p.zone[f], new int[]{rx, rz, f});
+                if (darkRegion == null && p.dark[f] && p.zone[f] != com.powderpass.backrooms.gen.levels.PoolroomsGenerator.Zone.MASSIVE) darkRegion = new int[]{rx, rz, f};
+            }
+            if (openRegion == null && p.open[2] && p.zone[2] != com.powderpass.backrooms.gen.levels.PoolroomsGenerator.Zone.CURVED) openRegion = new int[]{rx, rz, 2};
+        }
+        java.util.function.Function<int[], double[]> eye = (int[] q) -> {
+            // a dry standable spot looking across the region, from its west side toward the middle
+            int f = q[2], fy = g.floorY[f] + 1;
+            for (int[] off : new int[][]{{8, 30}, {30, 8}, {6, 14}, {14, 6}, {4, 29}, {29, 4}, {22, 22}, {20, 30}, {2, 2}, {3, 45}, {45, 3}}) {
+                int x = q[0] * 60 + off[0], z = q[1] * 60 + off[1];
+                B[] col = g.column(x, z);
+                Material fl = col[fy - 1 - g.bottomY].mat, ft = col[fy - g.bottomY].mat, hd = col[fy + 1 - g.bottomY].mat;
+                if (!Mats.passable(fl) && fl != Material.WATER && Mats.passable(ft) && ft != Material.WATER && Mats.passable(hd)) {
+                    double tx = q[0] * 60 + 30, tz = q[1] * 60 + 30;
+                    return new double[]{x + 0.5, fy, z + 0.5, Double.NaN, 4, 34}; // looks down the longest open line
+                }
+            }
+            return null;
+        };
+        for (var e2 : first.entrySet()) {
+            String name = e2.getKey().name().toLowerCase(java.util.Locale.ROOT);
+            if (java.util.Set.of("bays", "dry", "bright", "hallway", "massive").contains(name)) continue;
+            double[] v = eye.apply(e2.getValue());
+            if (v != null) views.put("new-" + name, v);
+        }
+        if (openRegion != null) {
+            double[] v = eye.apply(openRegion);
+            if (v != null) {
+                v[4] = 22;
+                v[5] = 40;
+                views.put("open-sky", v);
+                skyViews.add("open-sky");
+            }
+        }
+        if (darkRegion != null) {
+            double[] v = eye.apply(darkRegion);
+            if (v != null) views.put("dark-storey", v);
+        }
         for (var e : views.entrySet()) {
             double[] v = e.getValue();
             Scene sc = new Scene(g, v[0], v[1], v[2], v[3], v[4], (int) v[5]);
+            if (skyViews.contains(e.getKey()) || e.getKey().startsWith("new-curved")) sc.openSky(true);
             sc.label = "The Poolrooms (" + e.getKey() + ")";
             File f = new File(out, "poolrooms-" + e.getKey() + ".png");
             f.getParentFile().mkdirs();
@@ -329,6 +376,8 @@ class FirstPersonRenderTest {
         String note;
         /** Open night sky: rays that leave the scene show stars, surfaces open to the sky get faint moonlight. */
         boolean night;
+        /** With {@link #night}: a daytime sky instead (blue, a sun, sunlight on surfaces open to it). */
+        boolean day;
         double far = 60;
         int[][] skyTop;
 
@@ -412,9 +461,44 @@ class FirstPersonRenderTest {
             return pack(r, gg, b);
         }
 
-        /** Faint blue moonlight on surfaces open to the sky. */
+        /** Turns on the open sky after construction (day = sunlit, else the night sky). */
+        void openSky(boolean daytime) {
+            night = true;
+            day = daytime;
+            far = 160;
+            skyTop = new int[x1 - x0][z1 - z0];
+            for (int x = x0; x < x1; x++) for (int z = z0; z < z1; z++) {
+                int top = Integer.MIN_VALUE;
+                for (int y = g.roofY; y >= y0; y--) {
+                    Material m = type(x, y, z);
+                    if (!Mats.passable(m) && glassTint(m) == null) {
+                        top = y;
+                        break;
+                    }
+                }
+                skyTop[x - x0][z - z0] = top;
+            }
+        }
+
+        int skyColor(double dx, double dy, double dz) {
+            if (!day) return sky(dx, dy, dz);
+            if (dy < 0) return pack(150, 170, 190);
+            double sun = Math.max(0, (dx * 0.3 + dy * 0.9 + dz * 0.3) / Math.sqrt(0.99));
+            double t = Math.min(1, dy * 1.6);
+            double r = 175 * (1 - t) + 95 * t, gg = 205 * (1 - t) + 145 * t, b = 240 * (1 - t) + 230 * t;
+            if (sun > 0.995) return pack(255, 252, 235);
+            double glow = Math.pow(sun, 40) * 60;
+            return pack(r + glow, gg + glow, b + glow * 0.6);
+        }
+
+        /** Faint blue moonlight (or bright sunlight, by day) on surfaces open to the sky. */
         int moonlit(int col, double faceShade, int[] base, double x, double y, double z) {
             if (!night || !skyOpen(x, y, z)) return col;
+            if (day) {
+                double k = 0.62 * faceShade;
+                int r = (col >> 16) & 255, gg = (col >> 8) & 255, b = col & 255;
+                return pack(r + base[0] * k, gg + base[1] * k * 0.98, b + base[2] * k * 0.92);
+            }
             double k = 0.13 * faceShade;
             int r = (col >> 16) & 255, gg = (col >> 8) & 255, b = col & 255;
             return pack(r + base[0] * k * 0.75, gg + base[1] * k * 0.85, b + base[2] * k * 1.15);
@@ -674,7 +758,7 @@ class FirstPersonRenderTest {
                 double hx = ex + dx * bestT, hy = ey + dy * bestT, hz = ez + dz * bestT;
                 return applyTint(shadeBox(hitBox, bn, hx, hy, hz, bestT), waterTint);
             }
-            return night ? applyTint(sky(dx, dy, dz), waterTint) : 0x050403;
+            return night ? applyTint(skyColor(dx, dy, dz), waterTint) : 0x050403;
         }
 
         static int applyTint(int c, double[] t) {

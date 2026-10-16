@@ -36,7 +36,11 @@ levels:
       massive-chance: 0.1      # per region: a 56-block hall with a gallery, a Greek head and a water slide
       hallway-chance: 0.06     # per region: a long tall hallway with 2x2 holes into small rooms
       bright-room-chance: 0.12 # per region: a wall-less room under a ceiling of light panels
-      canal-chance: 0.10       # per region: a canal court, a railed promenade round a canal with bridges to an arched pavilion
+      long-pool-chance: 0.07   # per row of three regions: one long wide pool running straight through them
+      architecture-chance: 0.5 # per region: enclosed rooms, flooded halls, corridors into a gigantic chamber, curved halls, multi-level halls
+      dark-chance: 0.06        # per region and storey: an almost dark storey with a few isolated lights
+      sky-chance: 0.35         # upper-storey open halls (and some massive halls) with no roof: open to the sky
+      statue-chance: 0.06      # rare classical faces set into walls, sometimes in small groups, sometimes half under water
       slide-chance: 0.25       # per region and storey: a water slide that bores down to the floor below (some land in a hidden pocket room)
       fun-slide-chance: 0.2    # per region and storey: a shorter slide from a tall platform into a pool on the same floor
       display-hall-slides: 1   # 1 = the massive halls' slides are display chutes like the others (0 = the old tiled chute)

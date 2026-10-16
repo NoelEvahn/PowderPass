@@ -93,23 +93,8 @@ final class PoolProps {
                 m.box(WHITE_CONCRETE, -0.04, 0.15, 0.55, 0.08, 0.04, 0.4);
             }
             case "greek_bust" -> {
-                // a classical head on a plinth, about life size and a half: face toward +Z
-                m.box(SMOOTH_QUARTZ, -0.35, 0, -0.35, 0.7, 1.0, 0.7);
-                m.box(QUARTZ_PILLAR, -0.42, 1.0, -0.42, 0.84, 0.08, 0.84);
-                m.box(SMOOTH_QUARTZ, -0.13, 1.08, -0.15, 0.26, 0.28, 0.28);                 // neck
-                m.box(SMOOTH_QUARTZ, -0.34, 1.26, -0.3, 0.6, 0.12, 0.5);                   // shoulders
-                m.box(SMOOTH_QUARTZ, -0.22, 1.36, -0.26, 0.44, 0.62, 0.5);                 // head
-                m.box(SMOOTH_QUARTZ, -0.15, 1.33, 0.12, 0.3, 0.14, 0.14);                  // chin
-                m.box(SMOOTH_QUARTZ, -0.2, 1.7, 0.22, 0.4, 0.05, 0.06);                    // brow
-                m.box(SMOOTH_QUARTZ, -0.035, 1.5, 0.23, 0.07, 0.2, 0.09);                  // nose
-                m.box(GRAY_CONCRETE, -0.16, 1.62, 0.235, 0.09, 0.04, 0.01);                // eye shadows
-                m.box(GRAY_CONCRETE, 0.07, 1.62, 0.235, 0.09, 0.04, 0.01);
-                m.box(LIGHT_GRAY_CONCRETE, -0.07, 1.44, 0.24, 0.14, 0.02, 0.01);           // lips
-                m.box(CALCITE, -0.25, 1.82, -0.3, 0.5, 0.2, 0.52);                         // hair cap
-                m.box(CALCITE, -0.25, 1.45, -0.3, 0.5, 0.4, 0.1);                          // back of the hair
-                for (int i = 0; i < 5; i++) m.box(CALCITE, -0.22 + i * 0.1, 1.76, 0.18, 0.08, 0.08, 0.08); // fringe curls
-                m.box(CALCITE, -0.27, 1.55, -0.2, 0.06, 0.3, 0.3);
-                m.box(CALCITE, 0.21, 1.55, -0.2, 0.06, 0.3, 0.3);
+                // no plinth any more: a life-and-a-half size face, set into whatever wall is behind it
+                StatueModels.face(m, 1.6, Math.floorMod(seed, 4));
             }
             case "floor_sign" -> {
                 int f = suffix.isEmpty() ? 1 : Math.max(0, Math.min(2, Integer.parseInt(suffix)));

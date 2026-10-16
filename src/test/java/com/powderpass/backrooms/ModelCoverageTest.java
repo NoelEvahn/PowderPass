@@ -60,6 +60,11 @@ class ModelCoverageTest {
             for (Part p : m.parts) {
                 if (p.kind == Part.Kind.BLOCK) assertNotNull(p.block, id + " has a block part without block data");
             }
+            // structural architecture (statues, slide pieces) has its own budget and is spawned outside the prop caps
+            if (new DecorSpec(id, 0, 0, 0, 0, 0, 0, 0).isStructural()) {
+                assertTrue(m.entityCount() <= 64, "structural model " + id + " uses " + m.entityCount() + " entities");
+                continue;
+            }
             if (m.entityCount() > maxParts) {
                 maxParts = m.entityCount();
                 biggest = id;

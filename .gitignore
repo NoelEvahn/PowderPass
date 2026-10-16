@@ -1,3 +1,5 @@
 dist/
 build/
 .gradle/
+pack/java/
+pack/bedrock/

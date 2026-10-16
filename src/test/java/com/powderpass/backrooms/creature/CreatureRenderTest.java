@@ -40,7 +40,7 @@ class CreatureRenderTest {
         c(Material.LIGHT_GRAY_TERRACOTTA, 0x876B62); c(Material.YELLOW_TERRACOTTA, 0xBA8524); c(Material.BROWN_WOOL, 0x6B4226);
         c(Material.BLUE_WOOL, 0x35399D); c(Material.CYAN_TERRACOTTA, 0x575B5B);
         c(Material.MUSHROOM_STEM, 0xCBC4B9); c(Material.RED_TERRACOTTA, 0x8F3D2E); c(Material.BLACK_TERRACOTTA, 0x251610);
-        c(Material.NETHER_WART_BLOCK, 0x732A1E); c(Material.BLACK_STAINED_GLASS, 0x191919); c(Material.WHITE_STAINED_GLASS, 0xFFFFFF);
+        c(Material.NETHER_WART_BLOCK, 0x732A1E); c(Material.SMOOTH_QUARTZ, 0xE9E3DA); c(Material.CALCITE, 0xD6D7D1); c(Material.BLACK_STAINED_GLASS, 0x191919); c(Material.WHITE_STAINED_GLASS, 0xFFFFFF);
     }
 
     private static void c(Material m, int rgb) {
@@ -167,6 +167,34 @@ class CreatureRenderTest {
         line.addAll(boxes(Bodies.hound(), new Matrix4f().translate(1.6f, 0, 0).rotateY((float) Math.toRadians(-30))));
         render(line, 0, 6, 5.6, 1.1, "Skinwalker — borrowed shapes", "Before it reaches anyone it wears another creature of the level: a Faceling, a Watcher, a Hound (or a Smiler).")
                 .let(f -> write(f, new File(out, "skinwalker-disguises.png")));
+    }
+
+    /** The Poolrooms' wall faces, one per expression, seen straight on and from the side (design review). */
+    @Test
+    void renderStatueFaces() throws Exception {
+        String out = System.getenv("RENDER_CREATURES");
+        Assumptions.assumeTrue(out != null && !out.isBlank(), "set RENDER_CREATURES=<dir>");
+        new File(out).mkdirs();
+        String[] names = {"serene", "sorrow", "sleeping", "singing"};
+        BufferedImage sheet = new BufferedImage(W / 2 * 4, H / 2 * 2 + 60, BufferedImage.TYPE_INT_RGB);
+        Graphics2D g = sheet.createGraphics();
+        int parts = 0;
+        for (int e = 0; e < 4; e++) {
+            Model m = com.powderpass.backrooms.display.ModelLibrary.build("statue_face:3:" + e, 1L);
+            parts = Math.max(parts, m.parts.size());
+            // set into a wall: a slab of tile behind it
+            Model wall = new Model();
+            wall.box(Material.WHITE_CONCRETE, -2.5, -0.5, -0.6, 5, 5, 0.6);
+            List<Box> b = new ArrayList<>(boxes(m, new Matrix4f().translate(0, 0.2f, 0)));
+            b.addAll(boxes(wall, new Matrix4f()));
+            g.drawImage(render(b, 8, 4, 5.2, 1.7, names[e], "").img, e * W / 2, 60, W / 2, H / 2, null);
+            g.drawImage(render(b, 62, 10, 5.0, 1.7, names[e] + ", three-quarter", "").img, e * W / 2, 60 + H / 2, W / 2, H / 2, null);
+        }
+        g.setColor(new Color(230, 225, 205));
+        g.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 28));
+        g.drawString("Wall faces (statue_face, up to " + parts + " display parts each)", 20, 42);
+        g.dispose();
+        write(sheet, new File(out, "statue-faces.png"));
     }
 
     /** One sheet per creature: front three-quarter, side, and an action pose from {@link Poses}. */

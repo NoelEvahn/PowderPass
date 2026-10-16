@@ -168,7 +168,9 @@ public final class WorldManager {
         w.setGameRule(GameRules.FIRE_SPREAD_RADIUS_AROUND_PLAYER, 0);
         w.setGameRule(GameRules.KEEP_INVENTORY, plugin.cfg().keepInventory);
         Level lvl = byWorld.get(w.getUID());
-        w.setTime(lvl != null && lvl.outdoor() ? 12700 : 18000); // the plains are stuck at sunset
+        // the plains are stuck at sunset; the Poolrooms at a bright noon (their open-air halls show the sun overhead);
+        // every other level at midnight (sealed indoors, the sky never shows)
+        w.setTime(lvl == null ? 18000 : lvl.outdoor() ? 12700 : lvl == Level.POOLROOMS ? 6000 : 18000);
         w.setStorm(false);
         w.setThundering(false);
         w.setClearWeatherDuration(Integer.MAX_VALUE / 2);

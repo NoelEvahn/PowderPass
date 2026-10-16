@@ -20,7 +20,7 @@ public final class AssetCatalog {
     static {
         cat("pool", "floatie_ring", "floatie_duck", "floatie_mattress", "beach_ball", "pool_lounger", "pool_bench", "submerged_bench",
                 "floating_chair_pool", "lifeguard_chair", "lifebuoy", "pool_railing", "pool_lamp", "drain_grate", "drain_vortex", "caustics",
-                "greek_bust", "floor_sign", "water_slide", "slide_water");
+                "greek_bust", "statue_face:4:0", "statue_face:8:1", "floor_sign", "water_slide", "slide_water");
         cat("slides", "slide:open", "slide:half", "slide:enclosed", "slide:open:dry", "slide:enclosed:dry", "slide_ride");
         cat("lights", "ceiling_panel", "panel_light", "panel_flicker", "tube_light", "cage_lamp", "wall_lamp", "skylight_panel",
                 "floor_lamp", "table_lamp", "desk_lamp", "tower_lamp", "roof_beacon", "sunbeam", "daylight_door", "daylight_window");

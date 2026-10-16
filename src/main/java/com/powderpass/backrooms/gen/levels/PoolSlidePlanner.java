@@ -205,7 +205,9 @@ final class PoolSlidePlanner {
         if (cx == p.towerCx && cz == p.towerCz) return false;
         if (g.featureAt(floor, cx, cz) != null) return false;
         Zone zn = p.zone[floor];
-        return zn != Zone.MASSIVE && (!landing || (zn != Zone.HALLWAY && zn != Zone.CANAL));
+        // slides only cross and land in the plain kinds of space: never through the new architecture's walls
+        if (zn == Zone.BAYS || zn == Zone.DRY || zn == Zone.BRIGHT) return true;
+        return !landing && zn == Zone.HALLWAY;
     }
 
     private Placed place(int rx, int rz, int kind, int f, long h, Map<Long, B[]> raw) {

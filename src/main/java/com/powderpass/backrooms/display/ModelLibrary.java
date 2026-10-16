@@ -61,6 +61,18 @@ public final class ModelLibrary {
         if (base.equals("creature")) return com.powderpass.backrooms.creature.CreatureModels.build(suffix);
         Model slide = SlideModels.build(base, suffix, seed);
         if (slide != null) return slide;
+        if (base.equals("statue_face")) {
+            // statue_face:<scale blocks>:<expression>
+            String[] a = suffix.split(":");
+            try {
+                double scale = Math.max(1, Math.min(16, Double.parseDouble(a[0])));
+                int expr = a.length > 1 ? Math.floorMod(Integer.parseInt(a[1]), 4) : 0;
+                StatueModels.face(m, scale, expr);
+                return m;
+            } catch (RuntimeException e) {
+                return null;
+            }
+        }
         switch (base) {
             // ---------------------------------------------------------------- Level 0
             case "chair" -> Shapes.chair(m, BIRCH_PLANKS, BROWN_WOOL);

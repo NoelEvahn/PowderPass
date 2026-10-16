@@ -35,10 +35,9 @@ import java.util.concurrent.ConcurrentHashMap;
  *   <li><b>Massive halls</b> (main + upper storey): a 56-block-high hall with a gallery at the upper floor, a grand
  *   staircase up to it, a giant Greek head in its own pool and a working water slide from the gallery down into
  *   the big pool ({@link #slideStartingAt}, ridden with {@code world.SlideRides}).</li>
- *   <li><b>Canal courts</b> (off in worlds made before they existed, see {@code canal-chance}): a railed promenade
- *   round a sunken canal, four bridges to a two-storey pavilion in the middle with arched passages and window slits
- *   to look through, a cloister, a statue court and a roof terrace up a stair, so you see the other sections across
- *   the water and can always walk to them ({@link #canal}).</li>
+ *   <li>New architecture ({@link PoolZones}): enclosed tiled rooms, long pools, flooded rooms, narrow corridors
+ *   into gigantic chambers, curved pool halls round an atrium, multi-level halls. On the upper storey some rooms
+ *   are open to the sky (no roof at all); a few storeys anywhere are almost dark.</li>
  * </ul>
  * All layout is a pure function of seed and coordinates ({@link #column}), so painting, the safe-spot search, the
  * slide rides and the tests all agree. Lights are emissive {@code light_panel_cool} blocks over invisible lights
@@ -46,34 +45,38 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public final class PoolroomsGenerator extends LevelGenerator {
     public static final int LOW = 0, MID = 1, HIGH = 2;
-    private static final int[] FLOORS = {32, 64, 96};
-    private static final int BOTTOM = 16, ROOF = 128, H = ROOF - BOTTOM + 1;
-    private static final int REG = 60;
+    static final int[] FLOORS = {32, 64, 96};
+    static final int BOTTOM = 16, ROOF = 128, H = ROOF - BOTTOM + 1;
+    static final int REG = 60;
     /** Ceiling of a massive hall (its floor is the main floor). */
     public static final int HALL_CEIL = 120;
     static final int K_DRY = 0, K_SHALLOW = 1, K_DEEP = 2, K_RAISED = 3, K_TERRACE = 4;
     private static final String[] KINDS = {"dry", "shallow", "deep", "raised", "terrace-pool"};
     private static final String[] FLOOR_NAMES = {"lower", "main", "upper"};
 
-    public enum Zone { BAYS, DRY, BRIGHT, HALLWAY, MASSIVE, CANAL }
+    /**
+     * Kinds of space. The first five are the original ones; the rest are painted by {@link PoolZones}: fully
+     * enclosed tiled rooms, long wide pools running through three regions, rooms whose floor is all water, narrow
+     * corridors opening into a gigantic chamber, curved organic pool halls round a stepped atrium, and multi-level
+     * halls with balconies, a sunken pool and stairways.
+     */
+    public enum Zone { BAYS, DRY, BRIGHT, HALLWAY, MASSIVE, ENCLOSED, LONGPOOL, FLOODED, CORRIDORS, CURVED, MULTILEVEL }
 
-    private static final B TILE = CustomBlocks.get("pool_tile");
-    private static final B POOL = CustomBlocks.get("pool_tile_blue");
-    private static final B GRIME = CustomBlocks.get("pool_tile_grime");
-    private static final B PANEL = CustomBlocks.get("light_panel_cool");
+    static final B TILE = CustomBlocks.get("pool_tile");
+    static final B POOL = CustomBlocks.get("pool_tile_blue");
+    static final B GRIME = CustomBlocks.get("pool_tile_grime");
+    static final B PANEL = CustomBlocks.get("light_panel_cool");
     private static final B UNDER = B.of(Material.WHITE_CONCRETE);
-    private static final B STEP = B.of(Material.QUARTZ_STAIRS, "[facing=west,half=bottom,waterlogged=true]");
-    private static final B UNDERWATER_LIGHT = B.of(Material.LIGHT, "[level=12,waterlogged=true]");
-    private static final B BED = B.of(Material.SMOOTH_QUARTZ);
-    private static final B LIP = B.slab(Material.SMOOTH_QUARTZ_SLAB, false);
-    private static final B GRAY = B.of(Material.GRAY_CONCRETE);
+    static final B STEP = B.of(Material.QUARTZ_STAIRS, "[facing=west,half=bottom,waterlogged=true]");
+    static final B UNDERWATER_LIGHT = B.of(Material.LIGHT, "[level=12,waterlogged=true]");
+    static final B BED = B.of(Material.SMOOTH_QUARTZ);
+    static final B LIP = B.slab(Material.SMOOTH_QUARTZ_SLAB, false);
+    static final B GRAY = B.of(Material.GRAY_CONCRETE);
     private static final B DRAIN = B.of(Material.BLACK_CONCRETE);
-    private static final B SKIN = B.of(Material.SMOOTH_QUARTZ);
-    private static final B HAIR = B.of(Material.CALCITE);
-    private static final B BARS = B.of(Material.IRON_BARS);
 
     private final Map<Long, Plan> plans = new ConcurrentHashMap<>();
     private final PoolSlidePlanner slides = new PoolSlidePlanner(this);
+    private final PoolZones zones = new PoolZones(this);
 
     public PoolroomsGenerator(long seed, GenSettings gs) {
         super(Level.POOLROOMS, seed, gs, 12, 5, 3, FLOORS.clone(), BOTTOM, ROOF, 0.0, 0.0);
@@ -132,6 +135,12 @@ public final class PoolroomsGenerator extends LevelGenerator {
         final boolean[] brightPool = new boolean[3];
         final boolean[] statue = new boolean[3];
         final int[] face = new int[3];
+        /** A rare almost-dark storey: most lights dead, a few isolated ones left. */
+        public final boolean[] dark = new boolean[3];
+        /** Open to the sky (upper storey only): no ceiling and no roof above the room. */
+        public final boolean[] open = new boolean[3];
+        /** Per-storey variant seed for the new kinds of space. */
+        final long[] var = new long[3];
         /** Cell of the stair tower (always a corner cell of the region). */
         public final int towerCx, towerCz;
         final Hall hall;
@@ -149,16 +158,24 @@ public final class PoolroomsGenerator extends LevelGenerator {
                 if (massive && f >= MID) {
                     zone[f] = Zone.MASSIVE;
                 } else {
-                    // long tall hallways run through three regions in a row (along X) or a column (along Z)
-                    double hp = gs.get("hallway-chance", 0.06);
+                    // long tall hallways and long pools run through three regions in a row (along X) or a column (along Z)
+                    double hp = gs.get("hallway-chance", 0.06), lp = gs.get("long-pool-chance", 0.07);
                     boolean hx = Rng.chance(Rng.hash(seed ^ 0x4A11L, Math.floorDiv(rx, 3), rz, f), hp);
                     boolean hz = Rng.chance(Rng.hash(seed ^ 0x4A12L, rx, Math.floorDiv(rz, 3), f), hp);
+                    boolean px = Rng.chance(Rng.hash(seed ^ 0x9A11L, Math.floorDiv(rx, 3), rz, f), lp);
+                    boolean pz = Rng.chance(Rng.hash(seed ^ 0x9A12L, rx, Math.floorDiv(rz, 3), f), lp);
                     double r = Rng.unit(Rng.hash(h, 10 + f));
                     boolean free = !(feat && f == MID);
                     if (free && (hx || hz)) zone[f] = Zone.HALLWAY;
-                    // its own roll, so switching canal courts on never moves any other room; absent from older worlds' settings = off
-                    else if (free && !massive && Rng.chance(Rng.hash(h, 70 + f), gs.get("canal-chance", 0.0))) zone[f] = Zone.CANAL;
-                    else if (free && r < gs.get("bright-room-chance", 0.12)) zone[f] = Zone.BRIGHT;
+                    else if (free && (px || pz)) {
+                        zone[f] = Zone.LONGPOOL;
+                        hx = px;
+                    } else if (free && r < gs.get("bright-room-chance", 0.12)) zone[f] = Zone.BRIGHT;
+                    else if (free && (r -= gs.get("bright-room-chance", 0.12)) < gs.get("architecture-chance", 0.5)) {
+                        // the new kinds of space, each with its own share
+                        Zone[] kinds = {Zone.ENCLOSED, Zone.ENCLOSED, Zone.FLOODED, Zone.CORRIDORS, Zone.CURVED, Zone.MULTILEVEL};
+                        zone[f] = kinds[Rng.pick(Rng.hash(h, 80 + f), kinds.length)];
+                    }
                     else zone[f] = Rng.chance(Rng.hash(h, 20 + f), new double[]{0.2, 0.3, 0.42}[f]) ? Zone.DRY : Zone.BAYS;
                     alongX[f] = hx;
                     rollExtras(f, h);
@@ -167,21 +184,25 @@ public final class PoolroomsGenerator extends LevelGenerator {
                 rollExtras(f, h);
             }
             if (massive) {
+                // some massive halls have no roof: a giant pool chamber under the open sky
+                open[MID] = Rng.chance(Rng.hash(h, 98), gs.get("sky-chance", 0.35) * 1.5);
                 hall = new Hall(rx, rz, Rng.pick(Rng.hash(h, 2), 4));
                 int[] w = l2w(6, 54, hall.rot);
                 towerCx = rx * R + w[0] / S;
                 towerCz = rz * R + w[1] / S;
             } else {
                 hall = null;
-                // a canal court's stair tower must stand in the north-west corner, where its door meets the promenade
-                boolean canal = zone[LOW] == Zone.CANAL || zone[MID] == Zone.CANAL || zone[HIGH] == Zone.CANAL;
-                int corner = canal ? 0 : Rng.pick(Rng.hash(h, 3), 4);
+                int corner = Rng.pick(Rng.hash(h, 3), 4);
                 towerCx = rx * R + (corner & 1) * (R - 1);
                 towerCz = rz * R + (corner >> 1) * (R - 1);
             }
         }
 
         private void rollExtras(int f, long h) {
+            var[f] = Rng.hash(h, 90 + f);
+            dark[f] = zone[f] != Zone.MASSIVE && Rng.chance(Rng.hash(h, 95 + f), gs.get("dark-chance", 0.06));
+            open[f] = f == HIGH && !dark[f] && (zone[f] == Zone.BRIGHT || zone[f] == Zone.FLOODED || zone[f] == Zone.CURVED
+                    || zone[f] == Zone.LONGPOOL || zone[f] == Zone.CORRIDORS) && Rng.chance(Rng.hash(h, 97), gs.get("sky-chance", 0.35));
             brightPool[f] = Rng.chance(Rng.hash(h, 40 + f), 0.7);
             statue[f] = brightPool[f] && Rng.chance(Rng.hash(h, 50 + f), 0.55);
             face[f] = Rng.pick(Rng.hash(h, 60 + f), 4);
@@ -300,8 +321,6 @@ public final class PoolroomsGenerator extends LevelGenerator {
         final Map<Long, Integer> path = new HashMap<>();
         final Map<Long, Integer> rim = new HashMap<>();
         final Slide slide;
-        final int statueX, statueZ, statueY;
-        final int[] statueFace;
 
         Hall(int rx, int rz, int rot) {
             this.rot = rot;
@@ -347,11 +366,6 @@ public final class PoolroomsGenerator extends LevelGenerator {
             } else {
                 slide = new Slide(pts, new int[][]{{px[0], BED0 + 1, pz[0]}, {px[1], BED0 + 1, pz[1]}}, new double[]{ex, 0, ez}, FLOORS[MID]);
             }
-            int[] s = l2w(46, 20, rot);
-            statueX = x0 + s[0];
-            statueZ = z0 + s[1];
-            statueY = FLOORS[MID] - 4;
-            statueFace = rotDir(-1, 0, rot);
         }
 
         /** Rider feet height over chute block i: always above the stepped bed, never touching it. */
@@ -473,7 +487,7 @@ public final class PoolroomsGenerator extends LevelGenerator {
             double e = zone(cx, cz, 0xE1E7L + f * 17L, 60);
             int k;
             if (feat != null) k = feat.id().equals("drain") ? K_DEEP : K_DRY;
-            else if (tower || band || zone == Zone.BRIGHT || zone == Zone.MASSIVE || zone == Zone.CANAL) k = K_DRY;
+            else if (tower || band || zone != Zone.BAYS && zone != Zone.DRY && zone != Zone.HALLWAY) k = K_DRY;
             else if (zone == Zone.DRY) k = e > 0.62 ? K_RAISED : K_DRY;
             else if (w > 0.57) k = K_DEEP;
             else if (w > 0.45) k = K_SHALLOW;
@@ -550,25 +564,86 @@ public final class PoolroomsGenerator extends LevelGenerator {
                     if (f == MID) massive(p.hall, lx, lz, x, z, col);
                 }
                 case BRIGHT -> bright(f, p, lx, lz, x, z, col);
-                case CANAL -> canal(f, p, lx, lz, x, z, col);
+                case ENCLOSED, LONGPOOL, FLOODED, CORRIDORS, CURVED, MULTILEVEL -> zones.paint(f, p, lx, lz, x, z, col);
                 default -> {
                     bay(f, cells[f], u, v, x, z, col);
                     if (p.zone[f] == Zone.HALLWAY) hallway(f, p, lx, lz, x, z, col);
                 }
             }
         }
-        if (cellOf(x) == p.towerCx && cellOf(z) == p.towerCz && u >= 2 && v >= 2) tower(p, u, v, col);
+        for (int f = 0; f < 3; f++) {
+            if (p.dark[f]) darken(f, x, z, col);
+        }
+        if (p.open[HIGH]) sky(HIGH, p, col);
+        if (p.open[MID] && p.hall != null) sky(MID, p, col);
+        boolean towerCell = cellOf(x) == p.towerCx && cellOf(z) == p.towerCz;
+        if (towerCell && u >= 2 && v >= 2) tower(p, u, v, col);
+        else if (towerCell) apron(p, col);
     }
 
-    private static void set(B[] col, int yy, B b) {
+    /**
+     * A dark storey: the light panels are dead tiles and nearly every invisible light is gone, except a rare one
+     * that leaves an island of light in the black (about one in thirty, by position, so they never line up).
+     */
+    private void darken(int f, int x, int z, B[] col) {
+        int lo = FLOORS[f] - 9, hi = f == HIGH ? ROOF - 1 : FLOORS[f + 1] - 10;
+        boolean keep = Rng.chance(Rng.hash(seed ^ 0xDA4CL, x >> 3, z >> 3, f), 0.035) && Math.floorMod(x, 8) == 4 && Math.floorMod(z, 8) == 4;
+        for (int yy = lo; yy <= hi; yy++) {
+            B b = get(col, yy);
+            if (b == PANEL) set(col, yy, keep ? PANEL : GRIME);
+            else if (b.mat == Material.LIGHT) set(col, yy, keep ? B.light(9) : b.state.contains("waterlogged") ? B.WATER : B.AIR);
+        }
+    }
+
+    /**
+     * Opens a room to the sky: everything from its ceiling up to the roof becomes air and the bedrock roof goes, so
+     * the sun is really overhead (the Poolrooms keep a fixed noon). Only rooms that are open all the way to their
+     * ceiling are opened, so no wall or upper floor is ever cut.
+     */
+    private void sky(int f, Plan p, B[] col) {
+        int fy = FLOORS[f];
+        int ceil = -1;
+        for (int yy = fy + 2; yy < ROOF; yy++) {
+            B b = get(col, yy);
+            if (!b.passable() || b == PANEL) {
+                ceil = yy;
+                break;
+            }
+        }
+        // the room must reach its ceiling with air under it (not a wall column) and be tall enough
+        // only tall rooms (never a doorway, a passage or a corridor through a wall)
+        if (ceil < fy + 9 || get(col, ceil - 1).mat != Material.AIR && get(col, ceil - 1).mat != Material.LIGHT) return;
+        for (int yy = ceil; yy < ROOF; yy++) {
+            B b = get(col, yy);
+            // only solid filler above: never cut into water, a gallery, a stair or another room up there
+            if (b.mat == Material.WATER || b.passable() && b.mat != Material.LIGHT) return;
+        }
+        for (int yy = ceil; yy <= ROOF; yy++) col[y(yy)] = B.AIR;
+    }
+
+    /** The open strip round a stair tower: dry floor and headroom, so its door is always reachable. */
+    private void apron(Plan p, B[] col) {
+        for (int f = LOW; f <= p.towerTop(); f++) {
+            int fy = FLOORS[f];
+            if (p.zone[f] == Zone.MASSIVE && f == HIGH) continue;
+            B fl = get(col, fy);
+            if (fl.mat == Material.WATER || fl.passable()) set(col, fy, TILE);
+            for (int yy = fy + 1; yy <= fy + 4; yy++) {
+                B b = get(col, yy);
+                if (!b.passable() || b.mat == Material.WATER) set(col, yy, B.AIR);
+            }
+        }
+    }
+
+    static void set(B[] col, int yy, B b) {
         if (yy > BOTTOM && yy < ROOF) col[y(yy)] = b;
     }
 
-    private static B get(B[] col, int yy) {
+    static B get(B[] col, int yy) {
         return col[y(yy)];
     }
 
-    private static void light(B[] col, int yy, int level) {
+    static void light(B[] col, int yy, int level) {
         if (get(col, yy) == B.AIR) set(col, yy, B.light(level));
     }
 
@@ -675,180 +750,6 @@ public final class PoolroomsGenerator extends LevelGenerator {
         if (Math.floorMod(x, 8) == 1 && Math.floorMod(z, 8) == 1) light(col, ceil - 1, 15);
         if (Math.floorMod(x, 6) == 3 && Math.floorMod(z, 6) == 3) light(col, fy + 6, 15);
         if (Math.floorMod(x, 8) == 5 && Math.floorMod(z, 8) == 5) light(col, fy + 14, 15);
-        if (p.statue[f]) {
-            int[] fd = rotDir(0, 1, p.face[f]);
-            statue(col, HEAD, x - (p.rx * REG + 30), z - (p.rz * REG + 30), fy - 2, fd);
-        }
-    }
-
-    // ---------------------------------------------------------------- canal courts
-
-    /*
-     * Layout coordinates (a, b) run 0..59 across the region and are rotated per storey like a massive hall's.
-     * Bands by ring = distance from the nearest edge of the region:
-     *   0-4    promenade, floor level, open to every neighbour; a railing runs along its inner edge (ring 4)
-     *   5-10   the canal: 4 blocks of water over a tiled bed, 6 wide, all the way round
-     *   11-12  pavilion wall, 9 high, with a 6-wide stepped arch in the middle of every side and window slits
-     *   13-17  cloister under the roof, columns along its inner edge (ring 17)
-     *   18-19  court rim; 20-39 a pool with a Greek head in it, open to the tall ceiling
-     *   roof   (rings 11-17) a terrace at floor + 12 with railings, reached by a stair in the cloister
-     * Four 6-wide bridges (a or b 27..32) join the promenade to the four arches. Three-wide flights of steps (a or b
-     * 10..12 and 47..49) climb out of the canal anywhere you might fall in, so the water is never a trap.
-     */
-
-    private static final int CN_EDGE = 4, CN_BED = 5, CN_WALL = 11, CN_COURT = 18, CN_POOL = 20;
-    private static final int SPAN0 = 27, SPAN1 = 32, STAIR_A0 = 14, STAIR_A1 = 24, STAIR_B0 = 14, STAIR_B1 = 15;
-
-    private static int ring(int a, int b) {
-        return Math.min(Math.min(a, b), Math.min(REG - 1 - a, REG - 1 - b));
-    }
-
-    /** Which side's bridge / arch a point is on (0 north = small b, 1 south, 2 west = small a, 3 east), or -1. */
-    private static int spanSide(int a, int b) {
-        if (a >= SPAN0 && a <= SPAN1) {
-            if (b <= CN_WALL + 1) return 0;
-            if (b >= REG - 2 - CN_WALL) return 1;
-        }
-        if (b >= SPAN0 && b <= SPAN1) {
-            if (a <= CN_WALL + 1) return 2;
-            if (a >= REG - 2 - CN_WALL) return 3;
-        }
-        return -1;
-    }
-
-    private static boolean stepAlong(int along) {
-        return (along >= 10 && along <= 12) || (along >= 47 && along <= 49);
-    }
-
-    /** Railing at walking height: the canal edge except at bridges and steps, and both sides of every bridge. */
-    private static boolean rail0(int a, int b) {
-        int r = ring(a, b), side = spanSide(a, b);
-        if (side >= 0 && r >= CN_EDGE && r < CN_WALL) {
-            int across = side < 2 ? a : b;
-            return across == SPAN0 || across == SPAN1;
-        }
-        if (r != CN_EDGE) return false;
-        boolean ns = b == CN_EDGE || b == REG - 1 - CN_EDGE;
-        return !(ns ? stepAlong(a) : stepAlong(b));
-    }
-
-    /** Railing on the roof terrace: both edges of the ring, and round the opening of the stair. */
-    private static boolean rail1(int a, int b) {
-        int r = ring(a, b);
-        if (r == CN_WALL || r == CN_COURT - 1) return true;
-        if (a >= STAIR_A1 - 5 && a <= STAIR_A1 && (b == STAIR_B0 - 1 || b == STAIR_B1 + 1)) return true;
-        return a == STAIR_A1 - 5 && b >= STAIR_B0 && b <= STAIR_B1;
-    }
-
-    private static boolean railAt(int lx, int lz, int rot, boolean upper) {
-        if (lx < 0 || lz < 0 || lx >= REG || lz >= REG) return false;
-        int[] l = w2l(lx, lz, rot);
-        return upper ? rail1(l[0], l[1]) : rail0(l[0], l[1]);
-    }
-
-    /** A railing post joined to its railing neighbours (in world directions). */
-    private static B bars(int lx, int lz, int rot, boolean upper) {
-        boolean n = railAt(lx, lz - 1, rot, upper), s = railAt(lx, lz + 1, rot, upper);
-        boolean e = railAt(lx + 1, lz, rot, upper), w = railAt(lx - 1, lz, rot, upper);
-        if (!n && !s && !e && !w) return BARS;
-        return B.of(Material.IRON_BARS, "[north=" + n + ",south=" + s + ",east=" + e + ",west=" + w + "]");
-    }
-
-    private void canal(int f, Plan p, int lx, int lz, int x, int z, B[] col) {
-        int fy = FLOORS[f], ceil = brightCeil(f), rot = p.face[f];
-        int[] l = w2l(lx, lz, rot);
-        int a = l[0], b = l[1], r = ring(a, b);
-        boolean grid = Math.floorMod(x, 6) == 0 || Math.floorMod(z, 6) == 0;
-        for (int yy = fy + 1; yy < ceil; yy++) set(col, yy, B.AIR);
-        int mx = Math.floorMod(x, 4), mz = Math.floorMod(z, 4);
-        set(col, ceil, (mx == 1 || mx == 2) && (mz == 1 || mz == 2) ? PANEL : TILE);
-        if (r < CN_BED) {
-            set(col, fy, grid ? POOL : TILE);
-        } else if (r < CN_WALL) {
-            canalWater(fy, a, b, r, grid, col);
-        } else {
-            pavilion(f, p, fy, a, b, r, x, z, grid, col);
-        }
-        if (rail0(a, b)) set(col, fy + 1, bars(lx, lz, rot, false));
-        if (r >= CN_WALL && r < CN_COURT && rail1(a, b)) set(col, fy + 12, bars(lx, lz, rot, true));
-        if (Math.floorMod(x, 8) == 1 && Math.floorMod(z, 8) == 1) light(col, ceil - 1, 15);
-        if (Math.floorMod(x, 6) == 3 && Math.floorMod(z, 6) == 3) light(col, fy + 6, 15);
-        if (Math.floorMod(x, 8) == 5 && Math.floorMod(z, 8) == 5) light(col, fy + 14, 15);
-        if (r == 8 && ((b <= 10 || b >= REG - 11) ? a : b) % 12 == 6 && get(col, fy - 4) == B.WATER) set(col, fy - 4, UNDERWATER_LIGHT);
-    }
-
-    /** The canal ring (rings 5-10): bed, water, the bridges across it and the flights of steps out of it. */
-    private void canalWater(int fy, int a, int b, int r, boolean grid, B[] col) {
-        set(col, fy - 5, grid ? TILE : POOL);
-        for (int yy = fy - 4; yy <= fy - 1; yy++) set(col, yy, B.WATER);
-        set(col, fy, B.AIR);
-        if (spanSide(a, b) >= 0) {
-            set(col, fy, grid ? POOL : TILE); // the bridge deck, flush with the promenade
-            return;
-        }
-        // steps climb toward the promenade: facing = the direction of the rise
-        String up;
-        boolean steps;
-        if (b == r) {
-            up = "north";
-            steps = stepAlong(a);
-        } else if (REG - 1 - b == r) {
-            up = "south";
-            steps = stepAlong(a);
-        } else if (a == r) {
-            up = "west";
-            steps = stepAlong(b);
-        } else {
-            up = "east";
-            steps = stepAlong(b);
-        }
-        if (!steps || r > 9) return;
-        int top = fy - (r - CN_BED);
-        for (int yy = fy - 4; yy < top; yy++) set(col, yy, TILE);
-        set(col, top, B.of(Material.QUARTZ_STAIRS, "[facing=" + up + ",half=bottom,waterlogged=" + (top < fy) + "]"));
-    }
-
-    /** The pavilion (rings 11 and in): wall with arches and windows, cloister, court, roof terrace and its stair. */
-    private void pavilion(int f, Plan p, int fy, int a, int b, int r, int x, int z, boolean grid, B[] col) {
-        int rot = p.face[f];
-        set(col, fy, grid ? POOL : TILE);
-        boolean wall = r < CN_WALL + 2, court = r >= CN_COURT;
-        int along = (b < REG / 2 && b == r) || (b >= REG / 2 && REG - 1 - b == r) ? a : b;
-        if (court) {
-            if (r >= CN_POOL) {
-                set(col, fy - 3, POOL);
-                for (int yy = fy - 2; yy <= fy; yy++) set(col, yy, B.WATER);
-                if (a == 30 && b == 30) set(col, fy - 2, UNDERWATER_LIGHT);
-            }
-            if (p.statue[f]) statue(col, HEAD, x - (p.rx * REG + 30), z - (p.rz * REG + 30), fy - 2, rotDir(0, 1, p.face[f]));
-            return;
-        }
-        // walls, cloister roof and columns
-        if (wall) {
-            for (int yy = fy + 1; yy <= fy + 9; yy++) set(col, yy, yy == fy + 4 || yy == fy + 9 ? POOL : TILE);
-            if (spanSide(a, b) >= 0) {
-                int d = Math.min(along - SPAN0, SPAN1 - along);
-                for (int yy = fy + 1; yy <= fy + 4 + d; yy++) set(col, yy, B.AIR);
-            } else if ((along >= 16 && along <= 17) || (along >= 21 && along <= 22) || (along >= 37 && along <= 38) || (along >= 42 && along <= 43)) {
-                for (int yy = fy + 2; yy <= fy + 5; yy++) set(col, yy, B.AIR);
-            }
-        } else if (r == CN_COURT - 1 && along % 6 < 2) {
-            for (int yy = fy + 1; yy <= fy + 9; yy++) set(col, yy, TILE);
-        }
-        // the roof: two courses, light panels on the underside, a blue coping on both edges of the terrace
-        boolean edge = r == CN_WALL || r == CN_COURT - 1;
-        int mx = Math.floorMod(x, 4), mz = Math.floorMod(z, 4);
-        set(col, fy + 10, !wall && (mx == 1 || mx == 2) && (mz == 1 || mz == 2) ? PANEL : TILE);
-        set(col, fy + 11, edge || grid ? POOL : TILE);
-        if (!wall && Math.floorMod(x, 4) == 1 && Math.floorMod(z, 4) == 1) light(col, fy + 9, 15);
-        // the stair up to the terrace, in the cloister along the north side: rises one block per column toward +a
-        if (a >= STAIR_A0 && a <= STAIR_A1 && b >= STAIR_B0 && b <= STAIR_B1) {
-            int k = a - STAIR_A0;
-            for (int yy = fy + 1; yy <= fy + k; yy++) set(col, yy, TILE);
-            for (int yy = fy + 2 + k; yy <= fy + 11; yy++) if (k >= 6) set(col, yy, B.AIR);
-            int[] dir = rotDir(1, 0, rot);
-            set(col, fy + 1 + k, B.stairs(Material.QUARTZ_STAIRS, facing(dir[0], dir[1]), false));
-        }
     }
 
     // ---------------------------------------------------------------- the long tall hallway
@@ -935,9 +836,9 @@ public final class PoolroomsGenerator extends LevelGenerator {
                 }
             }
         } else {
-            // outer wall: plain cubicles open onto the bays behind them
+            // outer wall: plain cubicles open onto the bays behind them (a statue cubicle keeps its back wall)
             int t = cubicle(p, f, k, side);
-            if ((t == 0 || t == 3 || t == 5) && a % 6 >= 1 && a % 6 <= 2 && a > 0) {
+            if ((t == 0 || t == 5) && a % 6 >= 1 && a % 6 <= 2 && a > 0) {
                 set(col, fy + 1, B.AIR);
                 set(col, fy + 2, B.AIR);
             }
@@ -1049,8 +950,6 @@ public final class PoolroomsGenerator extends LevelGenerator {
             set(col, r + 1, POOL);
             set(col, r + 2, LIP);
         }
-        // the giant head, half sunk in the second pool, looking out over the hall
-        statue(col, HEAD_BIG, x - hl.statueX, z - hl.statueZ, hl.statueY, hl.statueFace);
         // invisible lights hanging in the air
         if (Math.floorMod(a, 8) == 4 && Math.floorMod(b, 8) == 4) {
             light(col, fy + 7, 15);
@@ -1066,104 +965,6 @@ public final class PoolroomsGenerator extends LevelGenerator {
         int[] d = alongA ? rotDir(1, 0, hl.rot) : rotDir(0, 1, hl.rot);
         return d[0] != 0 ? B.of(Material.WHITE_STAINED_GLASS_PANE, "[east=true,west=true]")
                 : B.of(Material.WHITE_STAINED_GLASS_PANE, "[north=true,south=true]");
-    }
-
-    // ---------------------------------------------------------------- the giant Greek head
-
-    /** A voxelised classical head at one scale: face toward +z, chin at y = 0, centred on x = z = 0. */
-    static final class Head {
-        final double s;
-        final int hx, hy0, hy1, hz;
-        final B[] g;
-
-        Head(double s) {
-            this.s = s;
-            hx = (int) Math.ceil(8.6 * s);
-            hz = (int) Math.ceil(10.2 * s);
-            hy0 = (int) Math.floor(-9 * s);
-            hy1 = (int) Math.ceil(21.6 * s);
-            g = new B[(2 * hx + 1) * (hy1 - hy0 + 1) * (2 * hz + 1)];
-            for (int x = -hx; x <= hx; x++) for (int yy = hy0; yy <= hy1; yy++) for (int z = -hz; z <= hz; z++) {
-                g[idx(x, yy, z)] = headAt(x / s, (yy + 0.5) / s, z / s);
-            }
-        }
-
-        int idx(int x, int y, int z) {
-            return ((x + hx) * (hy1 - hy0 + 1) + (y - hy0)) * (2 * hz + 1) + (z + hz);
-        }
-
-        B at(int x, int y, int z) {
-            if (Math.abs(x) > hx || Math.abs(z) > hz || y < hy0 || y > hy1) return null;
-            return g[idx(x, y, z)];
-        }
-    }
-
-    private static final Head HEAD = new Head(1.0), HEAD_BIG = new Head(1.25);
-
-    private static double sq(double d) {
-        return d * d;
-    }
-
-    private static boolean ell(double x, double y, double z, double cx, double cy, double cz, double rx, double ry, double rz) {
-        return sq((x - cx) / rx) + sq((y - cy) / ry) + sq((z - cz) / rz) <= 1;
-    }
-
-    private static boolean hairZone(double x, double y, double z) {
-        return y > 13.3 || (z < -1.6 && y > 5.5) || (Math.abs(x) > 5.6 && y > 11 && z < 2.5);
-    }
-
-    /**
-     * The head in head units (about 13 wide, 21 tall): cranium and jaw volumes cut flat at the face, a heavy brow,
-     * deep eye sockets with blank eyeballs, a straight Greek nose, full parted lips, a rounded chin, ears, and hair
-     * in curls (a curly shell over the crown and the back, a fringe of round curls over the forehead).
-     */
-    static B headAt(double x, double y, double z) {
-        double ax = Math.abs(x);
-        if (y < 0.6) return y > -9 && sq(x / 3.9) + sq((z + 1.2) / 4.2) <= 1 ? SKIN : null; // the neck
-        if (ell(ax, y, z, 3.0, 9.5, 4.0, 1.25, 0.95, 1.0)) return HAIR;                   // blank eyeballs, deep in shadow
-        if (ell(ax, y, z, 3.0, 9.6, 6.4, 2.0, 1.45, 2.5)) return null;                     // eye sockets
-        if (ell(ax, y, z, 1.0, 5.6, 7.2, 0.6, 0.5, 1.2)) return null;                      // nostrils
-        if (ell(x, y, z, 0, 3.65, 6.4, 2.9, 0.45, 2.4)) return null;                       // parted lips
-        if (y >= 10.9 && y <= 12.5 && ax <= 5.8 && z >= 3 && z <= 6.9 - 0.05 * ax * ax) return SKIN; // brow
-        if (y >= 5.0 && y <= 11.4) {                                                        // nose
-            double w = 0.8 + (11.4 - y) * 0.15, zm = 5.6 + (11.4 - y) * 0.42;
-            if (ax <= w && z <= zm && z >= 3) return SKIN;
-        }
-        if (ell(x, y, z, 0, 4.5, 5.8, 2.8, 0.7, 1.1)) return SKIN;                       // upper lip
-        if (ell(x, y, z, 0, 2.85, 5.7, 2.3, 0.8, 1.1)) return SKIN;                      // lower lip
-        if (ell(x, y, z, 0, 1.5, 4.9, 2.5, 1.7, 1.5)) return SKIN;                         // chin
-        if (ell(ax, y, z, 3.8, 6.6, 4.2, 2.0, 2.3, 1.6)) return SKIN;                      // cheeks
-        if (ell(ax, y, z, 6.7, 8.6, -0.6, 0.9, 2.3, 1.3)) return SKIN;                     // ears
-        for (double xi = -4.6; xi <= 4.7; xi += 2.3) {
-            if (ell(x, y, z, xi, 13.9, 5.0, 1.2, 1.2, 1.2)) return HAIR;                    // fringe curls
-        }
-        if (ell(ax, y, z, 6.1, 12.2, 2.8, 1.3, 1.6, 1.3)) return HAIR;                     // curls at the temples
-        boolean cran = ell(x, y, z, 0, 11.6, -0.8, 6.6, 8.6, 7.6), jaw = ell(x, y, z, 0, 5.6, 0.3, 5.3, 5.9, 6.2);
-        boolean mask = ell(x, y, z, 0, 7.6, 2.4, 5.0, 6.6, 3.3);
-        if ((cran || jaw || mask) && z <= 5.3) return hairZone(x, y, z) ? HAIR : SKIN;
-        if (ell(x, y, z, 0, 11.8, -1.0, 7.7, 9.7, 8.6) && hairZone(x, y, z) && y > 6
-                && Math.sin(x * 1.35) + Math.sin(y * 1.35 + 1.1) + Math.sin(z * 1.35 + 2.3) > 0.8) return HAIR; // curls
-        return null;
-    }
-
-    /**
-     * Paints a head into one column: (ox, oz) = offset of the column from the head's centre, chin at {@code y0},
-     * facing world direction {@code fd}. The statue only ever adds blocks, so below the water line its hollows stay
-     * water. Two invisible lights hang in front of the face so it is lit from the front.
-     */
-    private static void statue(B[] col, Head hd, int ox, int oz, int y0, int[] fd) {
-        int reach = Math.max(hd.hx, hd.hz) + 3;
-        if (Math.abs(ox) > reach || Math.abs(oz) > reach) return;
-        int zl = ox * fd[0] + oz * fd[1];
-        int xl = -ox * fd[1] + oz * fd[0];
-        for (int yy = hd.hy0; yy <= hd.hy1; yy++) {
-            B b = hd.at(xl, yy, zl);
-            if (b != null) set(col, y0 + yy, b);
-        }
-        if (zl == (int) Math.round(9.5 * hd.s) + 2 && Math.abs(xl) == (int) Math.round(3 * hd.s)) {
-            light(col, y0 + (int) Math.round(8 * hd.s), 15);
-            light(col, y0 + (int) Math.round(14 * hd.s), 15);
-        }
     }
 
     // ================================================================== LevelGenerator surface
@@ -1228,6 +1029,11 @@ public final class PoolroomsGenerator extends LevelGenerator {
     private static final String[] FLOATIES = {"floatie_ring:0", "floatie_ring:1", "floatie_ring:2", "floatie_ring:3", "floatie_duck",
             "floatie_mattress", "beach_ball", "floatie_ring:1", "floatie_mattress", "floatie_duck"};
 
+    /** A floatie on water whose surface is at {@code surfaceY} (the top of the highest water block). */
+    DecorSpec floatieAt(long h, double x, double surfaceY, double z) {
+        return floatie(h, x, surfaceY, z);
+    }
+
     private DecorSpec floatie(long h, double x, double surfaceY, double z) {
         return new DecorSpec(FLOATIES[Rng.pick(h, FLOATIES.length)], x, surfaceY - 0.12, z, (float) Rng.pick(Rng.hash(h, 1), 360), 0, 0, h);
     }
@@ -1250,8 +1056,8 @@ public final class PoolroomsGenerator extends LevelGenerator {
             if (floor == MID) for (DecorSpec d : hallDecor(p)) if (cellOf((int) Math.floor(d.x)) == cx && cellOf((int) Math.floor(d.z)) == cz) out.add(d);
             return;
         }
-        if (zn == Zone.CANAL) {
-            for (DecorSpec d : canalDecor(p, floor)) if (cellOf((int) Math.floor(d.x)) == cx && cellOf((int) Math.floor(d.z)) == cz) out.add(d);
+        if (PoolZones.custom(zn)) {
+            zones.decor(p, floor, cx, cz, out);
             return;
         }
         if (zn == Zone.BRIGHT) {
@@ -1338,6 +1144,15 @@ public final class PoolroomsGenerator extends LevelGenerator {
             int[] w = l2w(s[0], s[1], hl.rot);
             out.add(new DecorSpec("pool_lamp", hl.x0 + w[0] + 0.5, fy - 1 - s[2] + 0.02, hl.z0 + w[1] + 0.5, 0f, 0, 0, h));
         }
+        // a giant face set high into the hall's far wall, looking down over the second pool, where the wall behind
+        // is solid (the neighbour is an ordinary room, so its tile is behind the face)
+        Plan nb = neighbourBehind(p, hl);
+        if (nb != null) {
+            int[] c = l2w(59, 20, hl.rot), out_ = rotDir(1, 0, hl.rot), face = rotDir(-1, 0, hl.rot);
+            double wx = hl.x0 + c[0] + 0.5 + out_[0] * 0.499, wz = hl.z0 + c[1] + 0.5 + out_[1] * 0.499;
+            float yaw = (float) Math.toDegrees(Math.atan2(-face[0], face[1]));
+            out.add(PoolZones.statue(Rng.hash(h, 500), wx, FLOORS[MID] + 18, wz, yaw, 10));
+        }
         // loungers along the big pool
         for (int i = 0; i < 4; i++) {
             int[] w = l2w(23 + i * 5, 33, hl.rot);
@@ -1347,25 +1162,13 @@ public final class PoolroomsGenerator extends LevelGenerator {
         return out;
     }
 
-    /** Floaties drifting in the canal (away from the bridges and steps) and loungers on the promenade. */
-    private List<DecorSpec> canalDecor(Plan p, int f) {
-        List<DecorSpec> out = new ArrayList<>();
-        long h = Rng.hash(seed ^ 0xCA17L, p.rx, p.rz, f);
-        int rot = p.face[f], x0 = p.rx * REG, z0 = p.rz * REG;
-        double water = FLOORS[f]; // the canal's surface is a block lower than the promenade
-        int[][] moat = {{18, 7}, {40, 7}, {18, 52}, {41, 52}, {7, 18}, {52, 18}, {7, 41}, {52, 41}};
-        for (int i = 0; i < moat.length; i++) {
-            if (!Rng.chance(Rng.hash(h, i), 0.6)) continue;
-            int[] w = l2w(moat[i][0], moat[i][1], rot);
-            out.add(floatie(Rng.hash(h, 10 + i), x0 + w[0] + 0.5, water, z0 + w[1] + 0.5));
-        }
-        int[][] deck = {{18, 2}, {42, 2}, {18, 57}, {42, 57}, {2, 42}, {57, 42}};
-        for (int i = 0; i < deck.length; i++) {
-            if (!Rng.chance(Rng.hash(h, 30 + i), 0.5)) continue;
-            int[] w = l2w(deck[i][0], deck[i][1], rot);
-            out.add(new DecorSpec("pool_lounger", x0 + w[0] + 0.5, FLOORS[f] + 1, z0 + w[1] + 0.5, (float) (Rng.pick(Rng.hash(h, 40 + i), 4) * 90), 0, 0, Rng.hash(h, 50 + i)));
-        }
-        return out;
+    /** The region beyond a massive hall's far wall, if it gives the wall a solid back up to the face's height. */
+    private Plan neighbourBehind(Plan p, Hall hl) {
+        int[] d = rotDir(1, 0, hl.rot);
+        Plan n = plan(p.rx + d[0], p.rz + d[1]);
+        Zone z = n.zone[MID];
+        boolean low = z == Zone.BAYS || z == Zone.DRY; // ceilings at most 16 high, solid tile above
+        return low && n.zone[HIGH] != Zone.MASSIVE && n.hall == null ? n : null;
     }
 
     private List<DecorSpec> brightDecor(Plan p, int f) {
@@ -1407,7 +1210,13 @@ public final class PoolroomsGenerator extends LevelGenerator {
                 float yaw = (float) Math.toDegrees(Math.atan2(-toHall[0], toHall[1]));
                 switch (t) {
                     case 1, 2 -> out.add(floatie(h, x, t == 1 ? fy : fy - 2, z));
-                    case 3 -> out.add(new DecorSpec("greek_bust", x, fy, z, yaw, 0, 0, h).barrier((int) Math.floor(x), fy, (int) Math.floor(z)));
+                    case 3 -> {
+                        // rarely, a face in the cubicle's back wall, looking out at the hallway
+                        if (!Rng.chance(Rng.hash(h, 77), gs.get("statue-chance", 0.06) * 1.5)) break;
+                        double back = side == 0 ? 17.002 : REG - 17.002;
+                        double fx = x0 + (ax ? a : back), fz = z0 + (ax ? back : a);
+                        out.add(PoolZones.statue(h, fx, fy + 0.4, fz, yaw, 2 + (int) (h & 1)));
+                    }
                     case 0 -> out.add(new DecorSpec(Rng.chance(h, 0.5) ? "pool_bench" : "pool_lounger", x, fy, z, yaw, 0, 0, h));
                     default -> {
                     }
