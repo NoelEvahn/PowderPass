@@ -244,7 +244,8 @@ class PlainsStyle2Test {
             }
         }
         assertTrue(steep < n / 500, "gentle slopes: " + steep + " steep steps of " + n);
-        assertTrue(max >= 14 && max <= 20, "tallest swell " + max);
+        // massifs: the tallest ground well above the ordinary swells (about 20), never past the cap
+        assertTrue(max >= 24 && max <= PlainsGenerator.MAX_HILL, "tallest swell " + max);
         for (int cx = -40; cx < 40; cx++) {
             for (int cz = -40; cz < 40; cz++) {
                 cells++;

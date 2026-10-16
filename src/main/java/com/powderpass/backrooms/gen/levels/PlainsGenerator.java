@@ -113,6 +113,8 @@ public final class PlainsGenerator extends LevelGenerator {
     final boolean rolling;
     /** How far a lower terrace sits below the base floor. */
     static final int TERRACE_DROP = 40;
+    /** Highest hill above its tier (style 3 massifs reach it; style 2 hills stay near 20). */
+    static final int MAX_HILL = 38;
 
     public PlainsGenerator(long seed, GenSettings gs) {
         super(Level.PLAINS, seed, gs, 32, 4, 3, new int[]{FLOOR}, modern(gs) ? FLOOR - TERRACE_DROP - 24 : FLOOR - 20, FLOOR + 40, 0.0, 0.0);
@@ -419,7 +421,7 @@ public final class PlainsGenerator extends LevelGenerator {
     double hillMask(double x, double z) {
         if (rolling) {
             // mostly rolling country, with wide dead-flat stretches between
-            double n = ValueNoise.fractal(seed ^ 0x41115L, x, z, 320);
+            double n = ValueNoise.fractal(seed ^ 0x41115L, x, z, 460);
             double t = clamp01((n - 0.28) / 0.2);
             return t * t * (3 - 2 * t);
         }
@@ -436,8 +438,14 @@ public final class PlainsGenerator extends LevelGenerator {
             // broad swells: two smooth octaves, the second on a rotated grid so no lattice shows
             double a = ValueNoise.sample(seed ^ 0xB0B5L, x / 95.0, z / 95.0);
             double b = ValueNoise.sample(seed ^ 0xB0B6L, (x * 0.8 - z * 0.6) / 64.0, (x * 0.6 + z * 0.8) / 64.0);
-            double n = clamp01((a * 0.7 + b * 0.3 - 0.2) / 0.66);
-            return Math.min(20, m * 20 * n * n * (3 - 2 * n));
+            // a far larger octave: whole massifs of high ground and long low basins, so the scale of the land
+            // changes as you walk (a hill you can see from a long way off, then a wide shallow bowl)
+            double c = ValueNoise.sample(seed ^ 0xB0B7L, (x * 0.6 + z * 0.8) / 280.0, (z * 0.6 - x * 0.8) / 280.0);
+            double massif = clamp01((c - 0.45) / 0.35);
+            massif = massif * massif * (3 - 2 * massif);
+            double n = clamp01((a * 0.6 + b * 0.25 + c * 0.15 - 0.2) / 0.66);
+            double amp = 16 + 20 * massif;
+            return Math.min(MAX_HILL, m * amp * n * n * (3 - 2 * n) + m * 8 * massif);
         }
         double n = ValueNoise.fractal(seed ^ 0xB0B5L, x, z, 22);
         double b = clamp01((n - 0.38) / 0.5);
