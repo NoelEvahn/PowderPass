@@ -87,6 +87,7 @@ public final class FogService implements Listener {
             int target = b != null ? b.distance : restingDistance(level);
             apply(p, target <= 0 ? -1 : target);
             if (b != null || (level == Level.PLAINS && target > 0)) haze(p, b != null);
+            if (plugin.cfg().ambientParticles) ambient(p, level);
         }
     }
 
@@ -96,6 +97,28 @@ public final class FogService implements Listener {
         int count = thick ? 30 : 4;
         p.spawnParticle(Particle.WHITE_ASH, l, count, 7, 2.5, 7, 0.0);
         if (thick && ThreadLocalRandom.current().nextInt(4) == 0) p.spawnParticle(Particle.ASH, l, 10, 5, 2, 5, 0.0);
+    }
+
+    /**
+     * Each level's air, seen only by the player it is around (so it costs nothing elsewhere): dust hanging in the
+     * Lobby's light, drips from Level 1's ceilings, damp in the Poolrooms, dust in the towers.
+     */
+    private void ambient(Player p, Level level) {
+        Location l = p.getLocation().add(0, 1.4, 0);
+        ThreadLocalRandom r = ThreadLocalRandom.current();
+        switch (level) {
+            case LEVEL_0 -> p.spawnParticle(Particle.WHITE_ASH, l, 3, 5, 1.5, 5, 0.0);
+            case LEVEL_1 -> {
+                if (r.nextInt(2) == 0) p.spawnParticle(Particle.DRIPPING_DRIPSTONE_WATER, l.clone().add(r.nextDouble(-5, 5), 2.2, r.nextDouble(-5, 5)), 1, 0, 0, 0, 0);
+                p.spawnParticle(Particle.WHITE_ASH, l, 2, 6, 1.5, 6, 0.0);
+            }
+            case POOLROOMS -> {
+                if (r.nextInt(3) == 0) p.spawnParticle(Particle.DRIPPING_WATER, l.clone().add(r.nextDouble(-6, 6), 3, r.nextDouble(-6, 6)), 1, 0, 0, 0, 0);
+            }
+            case LEVEL_4 -> p.spawnParticle(Particle.WHITE_ASH, l, 1, 5, 1.5, 5, 0.0);
+            default -> {
+            }
+        }
     }
 
     /** Sets the player's send view distance; -1 restores the world default. */

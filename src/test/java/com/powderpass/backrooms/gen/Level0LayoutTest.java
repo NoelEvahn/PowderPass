@@ -138,4 +138,26 @@ class Level0LayoutTest {
         assertTrue(target > up + 6 && target < Level0Generator.CEILING_SHAFT_TOP, "carried into the shaft over the ceiling: " + target);
         assertTrue(holeRegions >= 0);
     }
+
+    private static int brightestLight(LevelGenerator g) {
+        int max = 0;
+        for (int cx = 0; cx < 6; cx++) for (int cz = 0; cz < 6; cz++) {
+            MemoryCanvas c = new MemoryCanvas(g.bottomY, g.roofY + 1);
+            g.paint(c, cx, cz);
+            for (int x = 0; x < 16; x++) for (int z = 0; z < 16; z++) for (int y = g.bottomY; y <= g.roofY; y++) {
+                B b = c.get(x, y, z);
+                if (b.mat == org.bukkit.Material.LIGHT) max = Math.max(max, Integer.parseInt(b.toString().replaceAll(".*level=(\\d+).*", "$1")));
+            }
+        }
+        return max;
+    }
+
+    /** The Lobby is two light levels dimmer by default; brightness 0 puts the fixtures back to full. */
+    @org.junit.jupiter.api.Test
+    void theLobbyIsDimmerByDefault() {
+        int dim = brightestLight(Generators.create(com.powderpass.backrooms.Level.LEVEL_0, 77, GenSettings.defaults()));
+        int full = brightestLight(new com.powderpass.backrooms.gen.levels.Level0Generator(77, new GenSettings(java.util.Map.of("brightness", 0.0))));
+        org.junit.jupiter.api.Assertions.assertEquals(15, full);
+        org.junit.jupiter.api.Assertions.assertEquals(13, dim);
+    }
 }

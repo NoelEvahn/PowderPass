@@ -19,6 +19,7 @@ levels:
     enabled: true
     biome: "minecraft:swamp"
     generation:            # [locked]
+      brightness: -2           # light levels added to every fixture (-2: dimmer than a lit room; 0: as bright as before)
       floor-holes-chance: 0.4  # open areas of the upper floor with a grid of holes you can fall through to the lower floor
       loop-shaft-chance: 0.35  # open areas of the lower floor with dark shafts that drop you back out of the upper floor's ceiling
       hall-chance: 0.08        # share of regions that become pillar halls
@@ -270,6 +271,7 @@ fog:
   # Fog is made by lowering each player's server view distance inside a level: the client draws its fog at
   # the edge of what it can see. 0 = leave the view distance alone. Restored when they leave the Backrooms.
   enabled: true
+  ambient-particles: true        # each level's air, shown only to the player in it: dust, drips, damp
   bank-view-distance: 3          # during a rolling fog bank (the "fog" event)
   levels: {level0: 0, poolrooms: 7, level1: 5, level4: 0, plains: 6}
 

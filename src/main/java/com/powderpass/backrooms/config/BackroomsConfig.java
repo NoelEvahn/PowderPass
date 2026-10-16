@@ -90,7 +90,7 @@ public final class BackroomsConfig {
     public final boolean sanityEnabled, sanityActionbar;
     public final int flashlightSeconds, batterySeconds;
     public final boolean suppliesPerPlayer;
-    public final boolean carCameraFollow;
+    public final boolean carCameraFollow, ambientParticles;
     public final int supplyRespawnMinutes;
     public final boolean debug;
 
@@ -223,6 +223,7 @@ public final class BackroomsConfig {
         skinwalkerLockCommands = c.getBoolean("skinwalker.lock-commands", true);
         skinwalkerVoiceDistance = (float) Math.max(4, Math.min(64, c.getDouble("skinwalker.voice-distance", 24)));
         fogEnabled = c.getBoolean("fog.enabled", true);
+        ambientParticles = c.getBoolean("fog.ambient-particles", true);
         fogBankDistance = clamp(c.getInt("fog.bank-view-distance", 3), 2, 32);
         Map<Level, Integer> fogDefaults = Map.of(Level.LEVEL_0, 0, Level.POOLROOMS, 7, Level.LEVEL_1, 5, Level.LEVEL_4, 0, Level.PLAINS, 6);
         for (Level l : Level.values()) {

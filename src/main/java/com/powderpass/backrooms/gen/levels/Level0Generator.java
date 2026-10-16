@@ -428,7 +428,7 @@ public final class Level0Generator extends RoomLevel {
             for (int i = 0; i < t[2]; i++) {
                 int u = t[0] + i, v = t[1];
                 c.set(u, ceil, v, state == 2 ? PANEL_OFF : PANEL);
-                if (state != 2) c.set(u, ceil - 1, v, B.light(15));
+                if (state != 2) c.set(u, ceil - 1, v, B.light(lit(15)));
             }
         }
         if (zoneOfCell(c.floor, c.cx, c.cz) == Zone.TALL && !dark(c.floor, c.cx, c.cz)) {
@@ -436,8 +436,8 @@ public final class Level0Generator extends RoomLevel {
             for (int u = 2; u < S; u += 4) {
                 for (int v = 2; v < S; v += 4) {
                     if (lay[u * S + v]) continue;
-                    c.set(u, c.fy + 5, v, B.light(13));
-                    c.set(u, c.fy + 13, v, B.light(11));
+                    c.set(u, c.fy + 5, v, B.light(lit(13)));
+                    c.set(u, c.fy + 13, v, B.light(lit(11)));
                 }
             }
         }
@@ -704,5 +704,14 @@ public final class Level0Generator extends RoomLevel {
 
     static String f2(double d) {
         return String.format(java.util.Locale.ROOT, "%.2f", d);
+    }
+
+    /**
+     * A light level with the level's brightness offset applied ({@code brightness}, default -2): the Lobby is meant
+     * to be dimmer than a lit room. The client's own brightness slider cannot be touched by a server, so this is
+     * done with the light the level gives off.
+     */
+    private int lit(int level) {
+        return Math.max(1, Math.min(15, level + (int) Math.round(gs.get("brightness", -2))));
     }
 }
