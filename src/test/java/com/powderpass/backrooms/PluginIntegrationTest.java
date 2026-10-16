@@ -211,7 +211,8 @@ class PluginIntegrationTest {
         plugin.sessions().get(p).cooldownUntil = 0;
         plugin.transitions().onMove(p, p.getLocation());
         assertTrue(plugin.sessions().get(p).inTransition);
-        server.getScheduler().performTicks(60);
+        assertTrue(plugin.cutscenes().playing(p), "it plays the service-door sequence");
+        server.getScheduler().performTicks(150);
         assertEquals(l1, p.getWorld(), "the Poolrooms service door leads to Level 1");
         assertFalse(plugin.sessions().get(p).inTransition);
         assertTrue(plugin.sessions().get(p).cooldownUntil > plugin.sessions().now(), "arrival cooldown prevents bouncing back");

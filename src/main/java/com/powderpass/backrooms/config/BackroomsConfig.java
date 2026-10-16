@@ -55,6 +55,8 @@ public final class BackroomsConfig {
     public final int audioMaxSources, audioQuality;
     public final Map<Level, Double> audioLevelIntensity = new EnumMap<>(Level.class);
     public final int audioMusicInterval;
+    public final boolean cutscenesEnabled, cutscenesSkippable;
+    public final String cutsceneReplay;
     public final boolean audioMusicRecords, audioFootsteps;
     public final double audioAnnounceVolume, audioMonsterVolume;
     // resource pack delivery
@@ -175,6 +177,9 @@ public final class BackroomsConfig {
         audioMusicFrequency = Math.max(0.05, Math.min(4, c.getDouble("audio.music-frequency", 1.0)));
         audioDistanceScale = Math.max(0.25, Math.min(3, c.getDouble("audio.distance-scale", 1.0)));
         audioMaxSources = clamp(c.getInt("audio.max-sources", 6), 1, 24);
+        cutscenesEnabled = c.getBoolean("cutscenes.enabled", true);
+        cutscenesSkippable = c.getBoolean("cutscenes.skippable", true);
+        cutsceneReplay = c.getString("cutscenes.replay", "first-time").toLowerCase(Locale.ROOT).equals("always") ? "always" : "first-time";
         audioMusicInterval = clamp(c.getInt("audio.music-interval-seconds", 200), 30, 3600);
         audioMusicRecords = !"music".equalsIgnoreCase(c.getString("audio.music-category", "records"));
         audioAnnounceVolume = Math.max(0, Math.min(1, c.getDouble("audio.announce-volume", 1.0)));

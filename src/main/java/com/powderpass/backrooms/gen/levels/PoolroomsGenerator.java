@@ -1005,6 +1005,26 @@ public final class PoolroomsGenerator extends LevelGenerator {
                 && head.passable() && head.mat != Material.WATER;
     }
 
+    /**
+     * A deep pool on the main floor near (x, z) to arrive in (the way in from Level 0 drops you into water):
+     * {x, waterSurfaceBlockY, z, ceilingY, depth} of the middle of a deep bay, or null if none is near.
+     */
+    public int[] arrivalPool(int x, int z) {
+        int ccx = cellOf(x), ccz = cellOf(z);
+        for (int r = 0; r <= 14; r++) {
+            for (int dx = -r; dx <= r; dx++) for (int dz = -r; dz <= r; dz++) {
+                if (Math.max(Math.abs(dx), Math.abs(dz)) != r) continue;
+                int cx = ccx + dx, cz = ccz + dz;
+                Plan p = plan(Math.floorDiv(cx, R), Math.floorDiv(cz, R));
+                if (p.zone[MID] != Zone.BAYS || p.dark[MID] || (cx == p.towerCx && cz == p.towerCz) || featureAt(MID, cx, cz) != null) continue;
+                Cell c = cell(MID, cx, cz);
+                if (c.kind != K_DEEP || c.depth < 5 || c.ceil - FLOORS[MID] < 7) continue;
+                return new int[]{cx * S + 6, FLOORS[MID], cz * S + 6, c.ceil, c.depth};
+            }
+        }
+        return null;
+    }
+
     /** Every arrival lands on the main floor. */
     @Override
     public int[] safeSpot(int x, int z, int preferredFloor) {

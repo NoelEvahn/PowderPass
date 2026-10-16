@@ -206,6 +206,11 @@ public final class SessionManager {
     }
 
     public void arrived(Player p, Level level) {
+        arrived(p, level, false);
+    }
+
+    /** {@code quiet}: the arrival was a cutscene, which already showed where they are (no title card). */
+    public void arrived(Player p, Level level, boolean quiet) {
         Session s = get(p);
         s.inTransition = false;
         s.zone = null;
@@ -215,7 +220,7 @@ public final class SessionManager {
         PersistentDataContainer pdc = p.getPersistentDataContainer();
         pdc.set(Keys.INSIDE, PersistentDataType.BYTE, (byte) 1);
         p.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, cfg().arrivalProtectionTicks, 4, false, false));
-        if (cfg().entryTitle) {
+        if (cfg().entryTitle && !quiet) {
             p.showTitle(Title.title(BackroomsConfig.mm(level.color() + "<bold>" + level.displayName().toUpperCase()),
                     BackroomsConfig.mm("<gray><italic>" + level.subtitle()),
                     Title.Times.times(Duration.ofMillis(800), Duration.ofMillis(2500), Duration.ofMillis(1500))));

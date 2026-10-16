@@ -56,6 +56,7 @@ public final class TransitionService {
     public void onMove(Player p, Location to) {
         Level level = plugin.worlds().levelOf(to.getWorld());
         if (level == null || p.getGameMode() == GameMode.SPECTATOR) return;
+        if (plugin.possessions().isVictim(p) || plugin.cutscenes().playing(p)) return; // carried, or already travelling
         Session s = plugin.sessions().get(p);
         if (s.inTransition) return;
         Feature f = plugin.worlds().generator(level).triggerAt(to.getBlockX(), to.getBlockY(), to.getBlockZ());
@@ -110,7 +111,7 @@ public final class TransitionService {
     /** Start the noclip sequence toward the feature's destination. */
     public void begin(Player p, Level from, Feature f) {
         Dest dest = f.dest();
-        if (dest == null) return;
+        if (dest == null || plugin.possessions().isVictim(p) || plugin.cutscenes().playing(p)) return;
         Session s = plugin.sessions().get(p);
         if (!dest.isExit() && !plugin.worlds().available(dest.level())) {
             s.cooldownUntil = plugin.sessions().now() + 60;
@@ -119,6 +120,13 @@ public final class TransitionService {
             return;
         }
         s.inTransition = true;
+        // the cinematic way: an in-world sequence that hides the world change (falls back to the plain one)
+        try {
+            com.powderpass.backrooms.cutscene.Cutscene cs = com.powderpass.backrooms.cutscene.Transitions.forFeature(plugin, p, from, f);
+            if (cs != null && plugin.cutscenes().play(p, cs)) return;
+        } catch (RuntimeException ex) {
+            plugin.getLogger().log(java.util.logging.Level.WARNING, "[Cutscene] could not build the transition from " + from, ex);
+        }
         p.addPotionEffect(new PotionEffect(PotionEffectType.DARKNESS, 50, 0, false, false));
         p.addPotionEffect(new PotionEffect(PotionEffectType.NAUSEA, 70, 0, false, false));
         p.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 25, 3, false, false));

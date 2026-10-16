@@ -96,6 +96,7 @@ public class BackroomsPlugin extends JavaPlugin {
         vehicles = new com.powderpass.backrooms.vehicle.VehicleManager(this);
         lifts = new com.powderpass.backrooms.world.LiftService(this);
         slides = new com.powderpass.backrooms.world.SlideRides(this);
+        cutscenes = new com.powderpass.backrooms.cutscene.CutsceneEngine(this);
         assets = new com.powderpass.backrooms.display.AssetStore(this);
         assets.load();
 
@@ -114,6 +115,7 @@ public class BackroomsPlugin extends JavaPlugin {
         pm.registerEvents(vehicles, this);
         pm.registerEvents(lifts, this);
         pm.registerEvents(slides, this);
+        pm.registerEvents(cutscenes, this);
 
         startServices();
         pack.bootCheck();
@@ -143,6 +145,7 @@ public class BackroomsPlugin extends JavaPlugin {
         vehicles.start();
         lifts.start();
         slides.start();
+        cutscenes.start();
         if (debugTask != null) debugTask.cancel();
         debugTask = getServer().getScheduler().runTaskTimer(this, this::debugOverlay, 20L, 10L);
     }
@@ -152,6 +155,7 @@ public class BackroomsPlugin extends JavaPlugin {
         if (vehicles != null) vehicles.stop();
         if (lifts != null) lifts.stop();
         if (slides != null) slides.stop();
+        if (cutscenes != null) cutscenes.stop();
         debugTask = null;
         if (audio != null) audio.stop();
         if (pack != null) pack.stop();
@@ -316,6 +320,29 @@ public class BackroomsPlugin extends JavaPlugin {
 
     public com.powderpass.backrooms.audio.AudioEngine audio() {
         return audio;
+    }
+
+    private com.powderpass.backrooms.cutscene.CutsceneEngine cutscenes;
+    private final java.util.Set<java.util.UUID> cutsceneTeleports = new java.util.HashSet<>();
+
+    public com.powderpass.backrooms.cutscene.CutsceneEngine cutscenes() {
+        return cutscenes;
+    }
+
+    /** A teleport made by the cutscene engine (other listeners can tell it apart from a real one). */
+    public void cutsceneTeleport(org.bukkit.entity.Player p, org.bukkit.Location to) {
+        cutsceneTeleports.add(p.getUniqueId());
+        try {
+            if (p.isInsideVehicle()) p.leaveVehicle();
+            p.teleport(to, org.bukkit.event.player.PlayerTeleportEvent.TeleportCause.PLUGIN);
+            p.setFallDistance(0);
+        } finally {
+            cutsceneTeleports.remove(p.getUniqueId());
+        }
+    }
+
+    public boolean inCutsceneTeleport(org.bukkit.entity.Player p) {
+        return cutsceneTeleports.contains(p.getUniqueId());
     }
 
     public com.powderpass.backrooms.creature.Possessions possessions() {

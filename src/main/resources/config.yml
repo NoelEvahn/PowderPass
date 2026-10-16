@@ -256,6 +256,14 @@ skinwalker:
   voice-distance: 24
   lock-commands: true          # victims cannot run commands (backrooms.bypass.skinwalker exempts)
 
+cutscenes:
+  # Level changes play as in-world sequences instead of a bare teleport: the player rides an invisible camera
+  # (no mods, no packets), the screen goes dark (blindness: vanilla clients cannot do a real fade) while the world
+  # changes, and the new level is revealed. Each player sees their own, independently.
+  enabled: true
+  skippable: true                # sneak to skip
+  replay: first-time             # first-time: the full sequence once per player, a short one afterwards | always
+
 fog:
   # Fog is made by lowering each player's server view distance inside a level: the client draws its fog at
   # the edge of what it can see. 0 = leave the view distance alone. Restored when they leave the Backrooms.
