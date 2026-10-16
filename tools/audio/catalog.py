@@ -1,0 +1,356 @@
+"""Single source of truth for every sound id (see tools/audio/BRIEF.md).
+
+Shared by generate.py (what to synthesise) and build_pack.py (sounds.json, pack-index.json,
+Bedrock definitions, validation, MANIFEST table).
+"""
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from typing import List, Optional
+
+ALL = ["carpet", "office", "concrete", "pool", "corridor", "open"]
+# Each sound only carries the acoustic-profile copies its levels can request (Acoustics.profile() in the
+# plugin: Level 0 and Level 4 -> carpet/office/corridor, Level 1 -> concrete/corridor, Poolrooms -> pool,
+# Plains -> open). A missing copy falls back to the dry (or muffled) event, so pruning is safe.
+LOBBY = ["carpet", "office", "corridor"]        # Level 0
+OFFICE = LOBBY                                   # Level 4 (same set)
+GARAGE = ["concrete", "corridor"]                # Level 1 parking garage
+POOL = ["pool"]                                  # Poolrooms
+PLAINS = ["open"]                                # Plains
+L0_L1 = ["carpet", "office", "concrete", "corridor"]
+WATER_L1 = ["concrete", "pool", "corridor"]      # Poolrooms + Level 1
+INDOOR = ["carpet", "office", "concrete", "pool", "corridor"]  # every level but the Plains
+NAMESPACE = "backrooms"
+
+
+@dataclass
+class Sound:
+    id: str
+    category: str            # ambient | event | voice | music
+    gen: str                 # "module.function"
+    length: float            # loop length (exact) or nominal one-shot length (s)
+    variants: int = 1
+    loop: bool = False
+    profiles: List[str] = field(default_factory=list)
+    muffled: bool = False
+    positional: bool = True
+    stereo: bool = False
+    level: float = -3.0      # loops/music: LUFS target; one-shots: peak dBFS
+    method: str = ""
+    source: Optional[str] = None  # for derived ids (music .ambient): id of the job that renders it
+    paths: Optional[List[str]] = None  # external (user-supplied) sounds: explicit file paths, no ext
+    license: str = "CC0-1.0, original (this project)"
+    q: Optional[int] = None  # Vorbis -q:a override (default: 2 for music, 3 otherwise)
+    sr: int = 44100          # output sample rate; synthesis runs at dsp.SR and is resampled on encode
+
+    @property
+    def stream(self) -> bool:
+        return self.loop and self.length >= 10 or self.category == "music"
+
+    @property
+    def quality(self) -> int:
+        if self.q is not None:
+            return self.q
+        return 2 if self.category == "music" else 3
+
+    def events(self):
+        """[(event_name_without_namespace, file_stem)] in a stable order."""
+        out = [(self.id, "dry")]
+        for p in self.profiles:
+            out.append((f"{self.id}.{p}", p))
+        if self.muffled:
+            if self.profiles:
+                for p in self.profiles:
+                    out.append((f"{self.id}.{p}.muffled", f"{p}_muffled"))
+            else:
+                out.append((f"{self.id}.muffled", "muffled"))
+        return out
+
+    def dir(self) -> str:
+        return self.id.replace(".", "/")
+
+    @property
+    def external(self) -> bool:
+        return self.paths is not None
+
+    def files(self, stem):
+        if self.paths is not None:
+            return list(self.paths)
+        return [f"{self.dir()}/{stem}_{i + 1}" for i in range(self.variants)]
+
+
+def S(*a, **k):
+    return Sound(*a, **k)
+
+
+SOUNDS: List[Sound] = [
+    # ---------------------------------------------------------------- electrical / light
+    S("hum.fluorescent", "ambient", "sfx.hum_fluorescent", 8, 3, loop=True, level=-24,
+      method="Additive 120 Hz ballast stack (exact loop-periodic harmonics, boosted odd 'rattle' harmonics, "
+             "seeded spectral jitter per take), slow AM, buzz-gated band noise, room IR."),
+    S("hum.fluorescent_dense", "ambient", "sfx.hum_fluorescent_dense", 8, loop=True, level=-24,
+      method="Six detuned tube stacks (detune quantised to whole cycles per loop -> slow, seamless beating), "
+             "chorused buzz noise, room IR."),
+    S("hum.mains", "ambient", "sfx.hum_mains", 10, loop=True, level=-28,
+      method="60 Hz + harmonics, low-passed, concrete IR (distant transformer), brown-noise rumble."),
+    S("light.flicker", "event", "sfx.light_flicker", 1.5, 4,
+      method="Gated ballast buzz with random on/off segments and modal starter ticks."),
+    S("light.pop", "event", "sfx.light_pop", 0.5, 3,
+      method="Noise transient + pitch-dropping thump + modal glass tinkle, small room."),
+    S("light.arc", "event", "sfx.light_arc", 1.0, 3,
+      method="Clipped jittered 120 Hz arc buzz with bursty envelope, Poisson spark crackles, HF sizzle."),
+    S("power.down", "event", "sfx.power_down", 2.5,
+      method="Relay clunk (thump + modal click) then harmonic hum gliding down in pitch/brightness."),
+    S("power.up", "event", "sfx.power_up", 2.0,
+      method="Relay clunk, hum gliding up and swelling, tube starter ticks."),
+    # ---------------------------------------------------------------- machinery / air
+    S("vent.hvac", "ambient", "sfx.vent_hvac", 10, loop=True, level=-24,
+      method="Pink-noise air rush with duct-mode resonances and turbulence AM; FM fan blade-pass and motor whine."),
+    S("vent.small", "ambient", "sfx.vent_small", 8, loop=True, level=-27,
+      method="Band-passed grille hiss with flutter AM, low air, faint wobbling grille whistle."),
+    S("machine.distant", "ambient", "sfx.machine_distant", 12, loop=True, level=-24,
+      method="Fully loop-periodic machine cycle (9 x 1.3 s): thump, modal clank, pneumatic hiss, motor drone; "
+             "concrete IR baked in (circular convolution)."),
+    S("machine.start", "event", "sfx.machine_start", 4.0, profiles=GARAGE,
+      method="Contactor clunk, motor spin-up (rotation harmonics, gear whine, rising air noise, rattle)."),
+    S("transformer.hum", "ambient", "sfx.transformer_hum", 8, loop=True, level=-23,
+      method="Asymmetrically saturated 120/60 Hz core buzz + harmonic rattle band, buzz-gated noise."),
+    S("pipe.knock", "event", "sfx.pipe_knock", 2.0, 3, profiles=GARAGE,
+      method="Modal pipe (free-bar ratios) excited by bouncing hammer hits + thud."),
+    S("metal.creak", "event", "sfx.metal_creak", 2.0, 4, profiles=GARAGE,
+      method="Stick-slip impulse train with gliding rate through random metal modes; optional expansion tick."),
+    S("metal.clank", "event", "sfx.metal_clank", 2.5, 4, profiles=GARAGE,
+      method="Far heavy hit on pipes/ducts: low thump + boomy duct noise, impact burst through long inharmonic "
+             "shell/pipe modes (two bodies), bouncing rattle of small loose parts, distance low-pass."),
+    S("metal.groan", "event", "sfx.metal_groan", 4.0, 3, profiles=GARAGE, muffled=True,
+      method="Long low structural groan: slow stick-slip impulse train (rate gliding 6-40 Hz) through low "
+             "metal modes, a gliding buzzy moan tone gated by the slips, sub rumble, distance low-pass + far IR."),
+    S("steam.burst", "event", "sfx.steam_burst", 2.0, 3, profiles=GARAGE,
+      method="Valve/leak steam burst: sharp-onset noise through a bank of resonators whose centre glides "
+             "(moving resonance), sputter gating, decaying darker tail, valve tick and faint modal pipe ring."),
+    S("steam.hiss", "ambient", "sfx.steam_hiss", 6, loop=True, level=-25,
+      method="Continuous valve leak: white noise through a resonator bank weighted around a slowly wandering "
+             "~4.3 kHz centre, broadband hiss, ~11 Hz flutter + irregular wobble, faint low rumble, light "
+             "concrete IR; faint loop-periodic whistle."),
+    # ---------------------------------------------------------------- cars (Level 1 garage)
+    # car.engine is a deliberately short 4 s loop (the plugin raises its pitch with the car's speed)
+    S("car.engine", "ambient", "sfx.car_engine", 4, loop=True, level=-21,
+      method="Old 4-cylinder idle (~740 rpm): loop-periodic firing pulses (one weak cylinder, timing jitter) "
+             "through exhaust resonances (92/185/370/760 Hz), tappet ticks, alternator whine, idle hunting AM; "
+             "brown-noise rumble and firing-gated intake hiss."),
+    S("car.start", "event", "sfx.car_start", 1.5, profiles=GARAGE,
+      method="Solenoid clunk, starter motor (harmonic whine + pinion gear) slowed by 6.4 Hz compression "
+             "strokes with chugs, the engine catching: two pops, firing run accelerating to ~55 Hz and settling "
+             "towards idle, exhaust resonances."),
+    S("car.horn", "event", "sfx.car_horn", 0.8, 2, profiles=GARAGE,
+      method="Two-tone vibrating-diaphragm horn (saturated harmonic buzz, onset pitch sag, 30 Hz roughness, "
+             "1.25/2.5 kHz horn resonances): one long honk / two short honks."),
+    S("car.door", "event", "sfx.car_door", 0.6, 2, profiles=GARAGE,
+      method="v1 slam: latch pings, heavy thunk (low thump + 120-760 Hz panel modes), trim rattle; v2 open: "
+             "handle and latch release, short hinge creak, lighter stop thunk."),
+    # ---------------------------------------------------------------- lifts (Level 4 towers)
+    S("lift.ding", "event", "sfx.lift_ding", 1.2, profiles=OFFICE,
+      method="Single soft electronic bell strike (B5, partials 1/2/2.76/5.4 and a sub-octave), mild "
+             "saturation, small-speaker band-limit, office reflections."),
+    S("lift.door", "event", "sfx.lift_door", 1.5, profiles=OFFICE,
+      method="Relay click, door operator motor whir gliding with door speed, roller rumble, panel rattle, "
+             "rubber-edge bump and small ring as the doors meet."),
+    S("lift.motor", "ambient", "sfx.lift_motor", 6, loop=True, level=-24,
+      method="Inside a travelling car: 60/120 Hz traction-motor hum, 1.46 kHz inverter whine, three faint "
+             "guide-rail bumps (all loop-periodic, carpeted-cabin IR by circular convolution), rope/rail rush "
+             "and cabin air as noise."),
+    # ---------------------------------------------------------------- slides (Poolrooms)
+    S("slide.rush", "event", "sfx.slide_rush", 3.0, profiles=POOL,
+      method="Turbulent water flow (pink noise in four bands with moving weights), whoosh that opens and closes "
+             "a low-pass as it passes, low gurgle, spray drops (Minnaert blips)."),
+    # ---------------------------------------------------------------- water
+    S("water.drip", "event", "sfx.water_drip", 0.8, 5, profiles=WATER_L1,
+      method="Minnaert-bubble drop model (exponentially rising sine) + impact click, optional second plip."),
+    S("water.splash", "event", "sfx.water_splash", 2.0, 3, profiles=POOL,
+      method="Band-limited noise burst, plunge thump, dozens of bubble blips, falling-back drops, distance LPF."),
+    S("water.lap", "ambient", "sfx.water_lap", 10, 2, loop=True, level=-25,
+      method="Irregular slap envelopes on band-passed pink noise, tlok drops, bubbles, low swell, pool IR."),
+    S("water.circulation", "ambient", "sfx.water_circulation", 10, loop=True, level=-25,
+      method="Pump motor + impeller vane tones (loop-periodic), pink flow noise, gurgle via moving band weights."),
+    S("water.bubbles", "event", "sfx.water_bubbles", 2.0, 3,
+      method="Clustered bubble blips (size->pitch) and low gurgle."),
+    S("water.underwater", "ambient", "sfx.water_underwater", 8, loop=True, positional=False, level=-26,
+      method="Low-passed brown-noise bed with slow pressure swell, muffled bubbles, faint 55 Hz tone."),
+    S("room.damp", "ambient", "sfx.room_damp", 10, loop=True, level=-32,
+      method="Very quiet pink/brown room tone with two faint reverberant drips."),
+    # ---------------------------------------------------------------- presence
+    S("knock.distant", "event", "sfx.knock_distant", 1.5, 4, profiles=L0_L1, muffled=True,
+      method="Wood-door modal body excited by knuckle/fist bursts, four knock patterns, distance LPF."),
+    S("impact.distant", "event", "sfx.impact_distant", 2.5, 3, profiles=L0_L1, muffled=True,
+      method="Pitch-dropping boom, sub noise, crunch, ringing structure, debris ticks, distance LPF."),
+    S("step.carpet", "event", "sfx.step_carpet", 0.5, 6, profiles=LOBBY,
+      method="Heel + toe low-passed noise thuds with fabric scuff."),
+    S("step.concrete", "event", "sfx.step_concrete", 0.5, 6, profiles=GARAGE,
+      method="Heel/toe click + body thump + grit micro-clicks."),
+    S("step.tile", "event", "sfx.step_tile", 0.5, 6, profiles=POOL,
+      method="Hard click + short ceramic modal ring + thud."),
+    S("step.water", "event", "sfx.step_water", 1.1, 4, profiles=INDOOR,
+      method="Two sloshes (moving band weights), bubbles, falling drops."),
+    S("movement.distant", "event", "sfx.movement_distant", 3.0, 3, profiles=LOBBY, muffled=True,
+      method="Granular friction drag through furniture resonances + slow creak + set-down thump / rumble."),
+    S("breath.heavy", "event", "sfx.breath_heavy", 4.0, 3,
+      method="Formant-filtered noise inhales/exhales with tremble and a creaky glottal rasp; dry, close."),
+    # ---------------------------------------------------------------- creature (skinwalker)
+    S("skinwalker.crackle", "event", "sfx.skinwalker_crackle", 2.5, 3, muffled=True,
+      method="Accelerating Poisson cluster (~7/s -> ~50/s) of bone cracks (fracture micro-impulses through damped "
+             "inharmonic modal bodies + low knock), knuckle ratchets, bright snaps and wet joint pops (gliding "
+             "cavitation pop + gated squelch noise), stick-slip sinew strain underneath, final heavy crunch "
+             "(deep knock, dense splinter burst, gritty crush noise, wet tail). No voice."),
+    S("skinwalker.screech", "event", "voices.skinwalker_screech", 2.0, 2,
+      method="Pitch-dropping saturated harmonic shriek (period-doubling rasp, inharmonic second voice, high "
+             "formants) over an espeak-ng pure vowel (phoneme input, no words) glide-resampled down, ring-modulated "
+             "and saturated, plus a throat growl and chitin mandible click rattles."),
+    # target -25.5: the 2 x 0.3 s fades are 15 % of a 4 s loop and Vorbis trims some click HF, so the
+    # decoded file measures about -26.3 LUFS
+    S("skinwalker.chitter", "ambient", "sfx.skinwalker_chitter", 4, loop=True, level=-25.5,
+      method="Loop-periodic chitin clicks (irregular chitter bursts, fast stridulating trills, lone clicks through "
+             "short inharmonic shell modes, soft-limited) over a low wet breath (formant-filtered pink noise with "
+             "loop-periodic inhale/exhale envelope, gated squelch, sub rumble)."),
+    S("skinwalker.scuttle", "event", "sfx.skinwalker_scuttle", 0.3, 6,
+      method="3-7 hard leg-tip taps 16-45 ms apart (sharp tick, short shell ring, floor knock, occasional flam), "
+             "flat / crescendo / decrescendo bursts."),
+    # ---------------------------------------------------------------- creature (bacteria, Level 0)
+    S("bacteria.screech", "event", "voices.bacteria_screech", 2.0, 2, profiles=LOBBY,
+      method="Thin high shriek (jittered 1.2-2.4 kHz harmonic source, sub-harmonic rasp, 2.6/4.1/6.3 kHz "
+             "formants, hard saturation) over an espeak-ng pure vowel (phoneme input, no words) sped up ~2x, "
+             "then tape wow/flutter and chunk-wise digital damage (buffer-repeat stutters, bit-crush and "
+             "sample-and-hold, tape-speed jumps, dropouts, static bursts on cuts) and a hard clip."),
+    S("bacteria.skitter", "event", "sfx.bacteria_skitter", 0.6, 4, profiles=LOBBY,
+      method="Fast irregular gallop of long-limbed footfalls on carpet (padded low-passed thuds + low body "
+             "thump), dry joint cracks between them (fracture micro-impulses through a small bone body), a "
+             "finger drag over the carpet pile."),
+    S("bacteria.breath", "event", "sfx.bacteria_breath", 3.0, 2,
+      method="Close, dry breath cycles: formant-filtered noise inhales/exhales gated by an irregular 18-38 Hz "
+             "phlegm rattle, a creaky glottal rasp, airflow catches, saliva bubbles (Minnaert blips)."),
+    # ---------------------------------------------------------------- radio / speakers
+    S("radio.static", "ambient", "sfx.radio_static", 8, loop=True, level=-26,
+      method="AM-band hiss with fading, Poisson crackles, faint drifting heterodyne whistle."),
+    S("speaker.broken", "event", "sfx.speaker_broken", 2.0, 3,
+      method="Hum + noise through intermittent-contact gate, hard clipping, crackles, small-cone EQ."),
+    # ---------------------------------------------------------------- voices
+    S("voice.whisper", "voice", "voices.voice_whisper", 4.0, 6, profiles=LOBBY,
+      method="espeak-ng whisper variants on random nonsense syllables, chunk-shuffled/reversed, breath layer."),
+    S("voice.murmur", "voice", "voices.voice_murmur", 3.8, 4, profiles=POOL, muffled=True,
+      method="2-3 layered espeak-ng nonsense lines, reversed, slowed, low-passed."),
+    S("voice.conversation", "voice", "voices.voice_conversation", 6.0, 4, muffled=True,
+      method="Two espeak-ng voices alternating nonsense turns, room IR, 500 Hz wall low-pass."),
+    S("voice.phrase", "voice", "voices.voice_phrase", 2.0, 8, profiles=INDOOR, muffled=True,
+      method="espeak-ng lines (one per variant: 'Is anybody there?', 'Can you hear me?', 'Hello?', "
+             "'I think someone is here.', 'Wait for me.', 'Over here.', 'Did you hear that?', 'Who's there?'), "
+             "band-limited, distance reflections."),
+    S("voice.announce", "voice", "voices.voice_announce", 5.0, 10, profiles=INDOOR,
+      method="Two-tone chime + espeak-ng PA lines ('Please remain where you are.', 'This area is closed.', "
+             "'Do not enter.', 'Attention. The building will close shortly.', 'Please proceed to the nearest "
+             "exit.', 'There is no exit on this floor.', 'Remain calm. Help is on the way.', 'Your patience is "
+             "appreciated.', 'Do not look behind you.', 'Maintenance is in progress on all levels.'), "
+             "300-3400 Hz, saturation, multi-speaker delays, PA reverb."),
+    S("voice.radio", "voice", "voices.voice_radio", 3.0, 3,
+      method="espeak-ng lines through radio band-pass, hard clip, static bed, squelch tails, dropouts."),
+    S("voice.cry", "voice", "voices.voice_cry", 3.4, 2, profiles=PLAINS,
+      method="Formant-synthesised distant vowel call (no TTS), heavy low-pass and long distant reverb."),
+    # ---------------------------------------------------------------- office
+    S("office.ac", "ambient", "sfx.office_ac", 10, loop=True, level=-26,
+      method="Smooth low-passed pink diffuser air, light hiss, faint fan harmonics."),
+    S("office.printer", "event", "sfx.office_printer", 4.0, 2, profiles=OFFICE,
+      method="Solenoid clunk, feed-roller whir and paper swish, stepper carriage passes, line-feed ticks."),
+    S("office.phone", "event", "sfx.office_phone", 3.6, profiles=OFFICE, muffled=True,
+      method="Two inharmonic modal bells struck alternately at 20 Hz, two ring bursts, room."),
+    S("office.click", "event", "sfx.office_click", 0.25, 4,
+      method="Relay, keyboard key, wall switch and latch clicks (noise bursts through modal bodies)."),
+    # ---------------------------------------------------------------- plains
+    S("wind.plains", "ambient", "sfx.wind_plains", 12, 2, loop=True, level=-30,
+      method="Low-passed brown-noise gusts and a faint wandering resonant whistle."),
+    S("grass.rustle", "event", "sfx.grass_rustle", 2.0, 3,
+      method="Dense band-passed micro-crackle with swish layer and gusty envelope."),
+    S("plains.distant", "event", "sfx.plains_distant", 4.0, 3,
+      method="Far horn-like swell / slow metallic groan / beating low tones, long distant IR with slaps."),
+    # ---------------------------------------------------------------- per-level beds
+    # Constant player-attached layer: long seamless loops, mono 48 kHz, non-positional, Vorbis q2.
+    S("bed.poolrooms", "ambient", "sfx.bed_poolrooms", 40, loop=True, positional=False, level=-27, q=2, sr=48000,
+      method="Pool pump motor (120 Hz + harmonics) and impeller blade-pass tones, pink circulation flow with "
+             "moving gurgle bands, distant irregular lapping slaps and drops (all loop-periodic, pool IR wrapped "
+             "by circular convolution), very faint high tiled-room air tone."),
+    S("bed.garage", "ambient", "sfx.bed_garage", 48, loop=True, positional=False, level=-27, q=2, sr=48000,
+      method="Ventilation rush with harmonic duct resonances and slow turbulence, distant machinery cycle "
+             "(thumps, soft clanks, 41 Hz motor drone), three steam leaks (band-passed hiss with loop-periodic "
+             "irregular swells and sputter), sparse metal expansion ticks and two tiny groans; concrete IR baked "
+             "in by circular convolution."),
+    S("bed.office", "ambient", "sfx.bed_office", 40, loop=True, positional=False, level=-27, q=2, sr=48000,
+      method="Low-passed pink HVAC diffuser air with slow modulation, faint 120 Hz ballast stack, computer/server "
+             "fan hum (blade-pass harmonics, 60 Hz, faint coil whine), very faint distant saturated buzz, office IR."),
+    S("bed.plains", "ambient", "sfx.bed_plains", 48, loop=True, positional=False, level=-30, q=2, sr=48000,
+      method="Low-passed brown-noise wind with slow loop-periodic gust swells and faint wandering resonances, "
+             "faint gust-following grass hiss and micro-crackle."),
+    S("bed.level0_synth", "ambient", "sfx.bed_level0_synth", 40, loop=True, positional=False, level=-27, q=2,
+      sr=48000,
+      method="Ten 120 Hz ballast stacks detuned by whole cycles per loop (slow seamless beating), buzz-gated "
+             "band noise, faint 60 Hz mains hum, office IR. Original fallback for the bed.level0 recording."),
+    # ---------------------------------------------------------------- transitions
+    S("silence.transition", "event", "sfx.silence_transition", 3.0, positional=False,
+      method="Brown-noise pressure swell with closing low-pass and sub tone, drop to near-silence, faint ringing."),
+    # ---------------------------------------------------------------- music
+    S("music.lobby_1", "music", "music.lobby_1", 80, muffled=True, level=-20,
+      method="Db major, 58 BPM; detuned additive piano (2-string beating, +-5 c tuning drift), rolled maj9/m9 "
+             "voicings, motif melody, tape wow/flutter, saturation, hall IR, hiss."),
+    S("music.lobby_2", "music", "music.lobby_2", 80, muffled=True, level=-20,
+      method="C major slow waltz (50 BPM 3/4), worn piano, heavier wow, hall IR."),
+    S("music.pool_1", "music", "music.pool_1", 78, profiles=["pool"], level=-20,
+      method="E major, 68 BPM; chorused detuned-saw pads (maj9/m11), sub, FM celesta bell melody with "
+             "ping-pong echo, 4.5 s reverb."),
+    S("music.pool_2", "music", "music.pool_2", 79, profiles=["pool"], level=-20,
+      method="F major, 60 BPM; pads (maj9/m9/maj7#11/6-9), Rhodes melody with bell doubling, echo, long reverb."),
+    S("music.office_radio_1", "music", "music.office_radio_1", 70, muffled=True, level=-20,
+      method="Bb major lounge tune, 84 BPM swing; FM Rhodes comping, bass, brushes, vibes-like bell melody; "
+             "AM-radio band-limit, saturation, static and crackle. Ends on the V7 so it loops."),
+    S("music.office_radio_2", "music", "music.office_radio_2", 74, muffled=True, level=-20,
+      method="F major waltz, 100 BPM; piano comp, bass, bell melody; narrower radio band, more crackle; ends on V7."),
+    S("music.plains_1", "music", "music.plains_1", 73, level=-20,
+      method="G major (IV-iii-ii-V), 62 BPM; FM Rhodes chords + pad + sparse Rhodes/bell melody, chorus, "
+             "dark long reverb, tape, distant low-pass. Mono downmix of the stereo render."),
+    S("music.plains_1.ambient", "music", "music.plains_1", 73, positional=False, stereo=True, level=-20,
+      source="music.plains_1", method="Stereo version of music.plains_1 (non-positional)."),
+    S("music.plains_2", "music", "music.plains_2", 84, level=-20,
+      method="Eb major (I-vi-IV-V with maj9/m9/maj7#11/6sus2), 56 BPM; same palette as plains_1."),
+    S("music.plains_2.ambient", "music", "music.plains_2", 84, positional=False, stereo=True, level=-20,
+      source="music.plains_2", method="Stereo version of music.plains_2 (non-positional)."),
+    S("music.garage_1", "music", "music.garage_1", 82, profiles=["concrete"], level=-20,
+      method="C# drone (detuned saw stack, slowly sweeping filters), C#m9 pad swells, sparse pentatonic "
+             "piano/bell fragments with long echoes, reverb."),
+]
+
+BY_ID = {s.id: s for s in SOUNDS}
+
+
+def load_user_sounds(path):
+    """Optional pack/user_sounds.json: properly licensed tracks supplied by a server owner.
+
+    { "music.user_lobby": { "files": ["user/my_track.ogg"], "category": "music",
+                            "positional": false, "loop": false, "license": "CC-BY-4.0 Jane Doe" } }
+    Files live under pack/java/assets/backrooms/sounds/ (keep them in sounds/user/).
+    Optional keys: "length" (s; loops are checked against it and need it for "stream"), "stereo"
+    (default: not positional), "level" (LUFS the file was normalised to, for the report), "method".
+    A user loop (loop: true) gets the same fade/overlap checks as the built-in loops.
+    """
+    import json
+    import os
+    if not os.path.exists(path):
+        return []
+    with open(path, encoding="utf-8") as f:
+        data = json.load(f)
+    out = []
+    for sid, d in sorted(data.items()):
+        if sid in BY_ID:
+            raise SystemExit(f"user sound id {sid} collides with a built-in id")
+        files = [p[:-4] if p.endswith(".ogg") else p for p in d["files"]]
+        positional = bool(d.get("positional", d.get("category") != "music"))
+        out.append(Sound(sid, d.get("category", "music"), "external", float(d.get("length", 0)),
+                         variants=len(files), loop=bool(d.get("loop", False)), positional=positional,
+                         stereo=bool(d.get("stereo", not positional)), paths=files,
+                         license=d.get("license", "UNSPECIFIED"), level=float(d.get("level", -20)),
+                         method=d.get("method", "User-supplied track")))
+    return out

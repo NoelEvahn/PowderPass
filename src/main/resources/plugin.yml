@@ -1,0 +1,64 @@
+name: Backrooms
+version: '${version}'
+main: com.powderpass.backrooms.BackroomsPlugin
+api-version: '1.21.11'
+load: POSTWORLD
+softdepend: [voicechat]
+author: PowderPass
+description: A five-level Backrooms dimension built from custom worlds and display-entity models.
+commands:
+  backrooms:
+    description: Enter, explore and administrate the Backrooms.
+    usage: /backrooms help
+    aliases: [br]
+permissions:
+  backrooms.use:
+    description: Basic access (help, and /backrooms enter for yourself when enabled in config).
+    default: true
+  backrooms.admin:
+    description: All administrative Backrooms permissions.
+    default: op
+    children:
+      backrooms.use: true
+      backrooms.admin.teleport: true
+      backrooms.admin.entities: true
+      backrooms.admin.events: true
+      backrooms.admin.debug: true
+      backrooms.admin.reload: true
+      backrooms.admin.audio: true
+      backrooms.admin.assets: true
+      backrooms.admin.slides: true
+      backrooms.bypass.commands: true
+  backrooms.admin.assets:
+    description: /backrooms assets list|spawn|remove|info.
+    default: op
+  backrooms.admin.slides:
+    description: /backrooms slide list|info|ride.
+    default: op
+  backrooms.admin.teleport:
+    description: enter/leave other players, /backrooms goto, /backrooms spawnpoint.
+    default: op
+  backrooms.admin.entities:
+    description: /backrooms creature list|spawn|clear|skinwalker.
+    default: op
+  backrooms.admin.events:
+    description: /backrooms event list|trigger.
+    default: op
+  backrooms.admin.debug:
+    description: /backrooms status and /backrooms debug.
+    default: op
+  backrooms.admin.audio:
+    description: /backrooms audio status|reload|list|play|stop|debug.
+    default: op
+  backrooms.admin.reload:
+    description: /backrooms reload.
+    default: op
+  backrooms.bypass.commands:
+    description: Use commands listed in restrictions.blocked-commands while inside the Backrooms.
+    default: op
+  backrooms.bypass.skinwalker:
+    description: Can still run commands while being worn by a skinwalker.
+    default: op
+  backrooms.bypass.protection:
+    description: Break and place blocks inside the Backrooms when block protection is on.
+    default: false

@@ -1,0 +1,321 @@
+# ============================================================================
+#  Backrooms - configuration
+#  Values marked [locked] are copied into plugins/Backrooms/data/worlds.yml the
+#  first time a level's world is created. Later edits only affect levels whose
+#  worlds do not exist yet, so existing worlds never develop seams.
+# ============================================================================
+config-version: 1
+
+# [locked] Base seed of the whole Backrooms. 0 = pick a random seed once.
+seed: 0
+# World folder prefix. Level worlds are <prefix><level>, e.g. backrooms_level0.
+world-prefix: "backrooms_"
+
+levels:
+  # The levels form a chain: Level 0 -> Poolrooms -> Habitable Zone -> Office -> Plains -> (exit).
+  # Each level's way onward appears in every district; a rarer way back leads to the previous level.
+  # The only exit is the giant doorframe in the Plains.
+  level0:              # The Lobby: the only maze
+    enabled: true
+    biome: "minecraft:swamp"
+    generation:            # [locked]
+      hall-chance: 0.08        # share of regions that become pillar halls
+      dark-zone-chance: 0.20   # sectors where the fixtures have died
+      thick-wall-chance: 0.12  # abnormal wall thickness
+      repeat-chance: 0.06      # regions that exactly repeat their neighbour
+      poolrooms-chance: 0.35   # per district (~190 blocks square): the cold seam onward. Rare on purpose
+      landmark-chance: 0.6
+      decor-density: 1.0
+      loop-chance: 0.16        # extra connections beyond the spanning maze
+      empty-expanse-chance: 0.15 # per 320 x 320 block area: nothing at all, no walls, just carpet and lights
+  poolrooms:           # three storeys of tile: bays, dry tile, bright rooms, tall hallways, massive halls with slides
+    enabled: true
+    biome: "minecraft:warm_ocean"
+    generation:
+      water-ratio: 0.55
+      massive-chance: 0.1      # per region: a 56-block hall with a gallery, a Greek head and a water slide
+      hallway-chance: 0.06     # per region: a long tall hallway with 2x2 holes into small rooms
+      bright-room-chance: 0.12 # per region: a wall-less room under a ceiling of light panels
+      canal-chance: 0.10       # per region: a canal court, a railed promenade round a canal with bridges to an arched pavilion
+      slide-chance: 0.25       # per region and storey: a water slide that bores down to the floor below (some land in a hidden pocket room)
+      fun-slide-chance: 0.2    # per region and storey: a shorter slide from a tall platform into a pool on the same floor
+      display-hall-slides: 1   # 1 = the massive halls' slides are display chutes like the others (0 = the old tiled chute)
+      screen-chance: 0.2       # free-standing tile screens (always with an opening)
+      back-chance: 0.4         # per district: the drain back down to Level 0
+      landmark-chance: 0.5
+      decor-density: 1.0
+  level1:              # Habitable Zone: an endless underground parking garage
+    enabled: true
+    biome: "minecraft:plains"
+    generation:
+      supply-room-chance: 0.06 # per 32x32 bay: a rare supply room (or safe room)
+      dark-zone-chance: 0.25
+      back-chance: 0.4         # per district: the flooded stairwell back to the Poolrooms
+      landmark-chance: 0.3
+      decor-density: 1.0
+  level4:              # Office Towers: 2000s office towers in an endless night, joined by sky bridges
+    enabled: true
+    biome: "minecraft:the_void"
+    generation:
+      bridge-chance: 0.35      # extra sky bridges between neighbouring towers (a connected set is always built)
+      dark-floor-chance: 0.12  # floors with the lights off
+      lift-stray-chance: 0.10  # each lift ride: the doors open in a random other Backrooms level
+      back-chance: 0.4         # per district: the stairwell back down to the garage
+      landmark-chance: 0.5
+      decor-density: 1.0
+  plains:              # open sky, stuck at sunset
+    enabled: true
+    biome: "minecraft:pale_garden"
+    generation:
+      # 3 = as 2, but broad smooth rolling hills and houses spread evenly one by one (house-chance), no groups.
+      # 2 = moss everywhere, flat fields or small hills (up to ~20), terraces 40 blocks down with moss stairs,
+      # exponential-horn craters (and rare horns pointing up), fence lines round houses, 3x giants.
+      # 1 = the original rolling grass. Locked per world: run /backrooms regen plains to rebuild an old one.
+      terrain-style: 3
+      lone-house-chance: 0.15  # per flat cell: a house alone on the moss (no roads, no paths)
+      hill-house-chance: 0.5   # style 2, per hill cell: houses crowd the hills
+      house-chance: 0.9        # style 3: share of cells put forward for a house; houses keep 40+ blocks apart
+      hamlet-chance: 0.35      # per 128x128 area: a handful of houses dropped together at odd angles
+      giant-chance: 0.25       # per 128x128 area: an everyday object (style 2: scaled up by giant-scale)
+      giant-second-chance: 0.0
+      giant-scale: 3
+      sinkhole-chance: 0.08    # per 128x128 area without features: a ~90-wide horn-shaped crater into the void (lethal)
+      spike-chance: 0.15       # style 2: share of craters that are the other way up, a moss horn ~130 tall
+      terrace-chance: 0.3      # style 2: per 128x128 area: the whole area sits 40 blocks lower, stairs up each cliff
+      back-chance: 0.4         # per district: the bunker hatch back to the Office
+      landmark-chance: 0.6
+      decor-density: 1.0
+
+entry:
+  # Players may use "/backrooms enter" on themselves (needs backrooms.use).
+  allow-self-enter: true
+  # Players may use "/backrooms leave" on themselves. Off = they must find an exit.
+  allow-self-leave: false
+  # Worlds from which players may self-enter. Empty = any non-Backrooms world.
+  allowed-worlds: []
+  # Each entry lands in a different part of Level 0 within this radius, so players
+  # do not all share one spot. 0 = everyone arrives near the world origin.
+  spread-radius: 2500
+  title: true
+  # Entering means falling: you appear high in the dark above Level 0, plunge down, the ceiling opens
+  # under you for a moment, and you land in the Lobby. Off = an instant teleport instead.
+  fall:
+    enabled: true
+    height: 90                  # blocks above the level's roof the fall starts from
+  # The old way in: suffocate inside sand, gravel or concrete powder (anything that falls) outside the
+  # Backrooms for this long and reality gives way. You take no suffocation damage while it counts.
+  suffocation:
+    enabled: true
+    seconds: 2.0
+
+return:
+  # Used when a saved return location is missing or its world is gone. Empty = the first world.
+  fallback-world: ""
+
+death:
+  # RETURN = respawn at the saved return location (leaves the Backrooms)
+  # LEVEL0 = respawn somewhere in Level 0, STAY = respawn in the same level
+  mode: RETURN
+  keep-inventory: true
+
+restrictions:
+  protect-blocks: true          # no breaking/placing inside (bypass: backrooms.bypass.protection)
+  block-ender-pearls: true
+  block-chorus-fruit: true
+  disable-portals: true
+  disable-beds: true            # beds/anchors cannot set a spawn point inside
+  suppress-music: true          # stops vanilla background music for players inside
+  blocked-commands: [home, homes, sethome, spawn, tpa, tpahere, tpaccept, tpask, warp, warps, back, rtp, wild, tpr]
+
+transitions:
+  cooldown-seconds: 6           # after arriving, triggers are ignored for this long
+  dwell-seconds: 2.0            # elevators: stand inside this long
+  intent-seconds: 3.0           # noclip seams: crouch, or stand against them this long
+  arrival-protection-seconds: 3
+
+displays:
+  enabled: true
+  activation-radius-chunks: 3   # display props exist only near players
+  outdoor-activation-radius-chunks: 8   # the plains: colossi must be visible from far away
+  # Large display architecture (slides, statues, sky bridges) stays spawned this far out, exempt from the
+  # per-chunk cap, so long multi-chunk structures never render in pieces. Keep it <= your send view distance.
+  structural-radius-chunks: 6
+  max-entities-per-chunk: 80
+  max-entities-per-world: 2500
+  chunks-per-tick: 3            # activation work spread over ticks
+  animation-interval-ticks: 4
+  view-range: 0.7               # 1.0 = 64 blocks
+  hazards: true                 # steam vents / transformers can hurt
+  # Thin display overlays on top of the real blocks: trims, seams, frames, pipes, coping (architecture),
+  # stains, cracks, peeling (aging) and small extras such as grass clumps (environment). They exist only
+  # near players, are never saved, and are capped per chunk separately from the props above.
+  details:
+    enabled: true
+    performance-mode: false       # keep only the most important architectural details
+    density: 1.0                  # 0..2, scales every detail tier
+    aging: 1.0                    # 0..2, surface deterioration intensity
+    environment: 1.0              # 0..2, frequency of small environmental extras
+    max-per-chunk: 28
+    view-range: 0.45              # 1.0 = 64 blocks; details only matter up close
+    levels:
+      level0: {enabled: true, density: 1.0}
+      poolrooms: {enabled: true, density: 1.0}
+      level1: {enabled: true, density: 1.0}
+      level4: {enabled: true, density: 1.0}
+      plains: {enabled: true, density: 1.0}
+
+audio:
+  # The positional soundscape. Needs the resource pack below to be loaded by the client; players without it
+  # keep the vanilla ambience. All audio is original and synthesised offline (see pack/MANIFEST.md).
+  enabled: true
+  # A constant bed that follows each player and never stops: Level 0 fluorescent buzz, Poolrooms pumps and water,
+  # Level 1 ventilation, steam and metal, Level 4 air conditioning and ballast hum, Plains wind.
+  bed: true
+  bed-volume: 1.0                # 0..2
+  level0-bed: recording          # recording (the supplied fluorescent recording) | synth (original synthesised buzz)
+  ambient: true                  # looping physical sources near you: fixture hum, vents, water, machinery
+  music: true                    # rare music; it plays on the player, not at a place
+  announce-seconds: 25           # a PA announcement or a voice about this often in Level 0, Poolrooms, Level 1 and 4 (0 = off)
+  voices: true                   # whispers, distant conversations, announcements
+  event-density: 1.0             # 0..4, how often one-shot events happen (silence is part of the design)
+  rare-frequency: 1.0            # 0..4, scales the rare events
+  music-frequency: 1.0           # 0.05..4
+  max-sources: 6                 # simultaneous looping sources per player
+  distance-scale: 1.0            # 0.25..3, scales hearing radii and event distances
+  acoustic-quality: medium       # low (no obstruction tests or reflections) | medium | high (recalculated more often)
+  levels: {level0: 1.0, poolrooms: 1.0, level1: 1.0, level4: 1.0, plains: 1.0}   # per-level loudness 0..2
+
+resource-pack:
+  # The pack is embedded in the plugin JAR and extracted to plugins/Backrooms/resourcepack/Backrooms-pack.zip.
+  # Clients must download it from a public URL. The default points at mc-packs.net, whose links are derived
+  # from the file's SHA-1 ({sha1} is filled in): upload the extracted zip there once per plugin version.
+  # The pack is only offered once the URL is confirmed reachable; the console explains what to do otherwise.
+  enabled: true
+  url: "https://download.mc-packs.net/pack/{sha1}.zip"
+  required: false                # true kicks players who decline it
+  # The Backrooms are built from custom textured blocks that only look right with this pack (without it they are
+  # plain note blocks). false = vanilla look-alike blocks instead; needs a restart, and already generated chunks
+  # keep what they were built with.
+  custom-blocks: true
+  # Players whose client has not loaded the pack cannot fall into the Backrooms (they are told to accept it).
+  # Ignored while the pack URL is not reachable, so nobody is ever locked out by a hosting problem.
+  required-for-entry: true
+  prompt: "<gray>The Backrooms uses custom ambient sound. Accept to hear it."
+  # The same pack, set the vanilla way. On every start the plugin makes sure these keys are in server.properties
+  # (resource-pack, resource-pack-sha1, resource-pack-id, resource-pack-prompt, require-resource-pack) and logs a
+  # warning that a resource pack is set. Minecraft only reads server.properties at startup, so a change made here
+  # needs one restart; until then the plugin offers the pack itself. manage: false = never touch the file (the
+  # warning is still logged while the file has a resource-pack set).
+  # The id also becomes the id of the plugin's own offer when sha1 matches the pack in this JAR, so clients never
+  # load the pack twice.
+  server-properties:
+    manage: true
+    url: "https://download.mc-packs.net/pack/97d8d6bfb5708875c48a74deb97dc5b54037186f.zip"
+    sha1: "97d8d6bfb5708875c48a74deb97dc5b54037186f"
+    id: "0560e70f-5798-48aa-b622-39a587165d20"
+    prompt: '{"text":"Our server uses a custom resource pack!", "color":"gold"}'
+    required: true               # players who decline are kicked (require-resource-pack)
+  host:
+    # Optional: serve the pack from this server. Only if your host exposes this port publicly.
+    enabled: false
+    bind: "0.0.0.0"
+    port: 8163
+    public-address: ""           # the address players reach, e.g. play.example.com
+
+bedrock:
+  # Bedrock players (Geyser/Floodgate) never receive the Java pack. Copy
+  # plugins/Backrooms/resourcepack/Backrooms-bedrock.mcpack into Geyser's packs folder, restart Geyser,
+  # and set this to true. Untested: if they hear nothing, set it back to false.
+  custom-sounds: false
+  # Bedrock players cannot load the Java pack. true = let them in anyway (they see note blocks where the
+  # textured walls are); false = keep them out while custom-blocks is on.
+  allow-entry: true
+
+skinwalker:
+  # It wears another creature until it reaches a player. If that player has company within group-radius,
+  # it locks them in spectator mode inside their own body (no moving, chat, commands or voice chat) and walks
+  # with the group wearing their skin. After disguise-seconds, or punches-to-expose punches within 20 s, or
+  # when the group is gone, it cracks open into its true form with the player's body caught underneath.
+  # Killing the true form frees the player; if it survives true-form-seconds or kills someone, they die.
+  # A lone player is not worn: it goes straight to its true form.
+  disguise-seconds: 150
+  true-form-seconds: 90
+  punches-to-expose: 6
+  group-radius: 48
+  chat-mimic: true             # repeats lines the victim typed inside the Backrooms (kept in memory only)
+  voice-mimic: true            # with Simple Voice Chat: replays the victim's recent speech (memory only, never saved)
+  voice-distance: 24
+  lock-commands: true          # victims cannot run commands (backrooms.bypass.skinwalker exempts)
+
+fog:
+  # Fog is made by lowering each player's server view distance inside a level: the client draws its fog at
+  # the edge of what it can see. 0 = leave the view distance alone. Restored when they leave the Backrooms.
+  enabled: true
+  bank-view-distance: 3          # during a rolling fog bank (the "fog" event)
+  levels: {level0: 0, poolrooms: 7, level1: 5, level4: 0, plains: 6}
+
+creatures:
+  enabled: true
+  tick-interval: 2
+  spawn-attempt-seconds: 15
+  max-per-player: 2
+  max-per-level: 8
+  despawn-distance: 64
+  # base spawn chance per attempt per player, by level
+  level-chance: {level0: 0.30, level1: 0.32, poolrooms: 0.2, level4: 0.25, plains: 0.3}
+  # Which creatures live where. A config.yml without "table-version: 2" keeps each type's enabled/damage/health
+  # but takes these level weights.
+  table-version: 2
+  types:
+    bacteria:  {enabled: true, damage: 12.0, health: 120.0, weight: {level0: 4}}
+    smiler:    {enabled: true, damage: 6.0, weight: {level1: 3, plains: 3}}
+    faceling:  {enabled: true, weight: {level4: 6}}
+    hound:     {enabled: true, damage: 5.0, health: 30.0, weight: {level1: 6, level4: 4}}
+    drifter:   {enabled: true, damage: 2.0, health: 20.0, weight: {poolrooms: 8}}
+    watcher:   {enabled: true, damage: 4.0, weight: {level0: 4, poolrooms: 3, level1: 2, plains: 5}}
+    skinwalker: {enabled: true, damage: 9.0, health: 80.0, weight: {level0: 1, level1: 1.5, level4: 1.5, poolrooms: 0.8, plains: 0.8}}
+
+events:
+  enabled: true
+  check-seconds: 30
+  chance: 0.3                   # chance per check per player
+  ambient: true
+  ambient-seconds: 9
+  flicker-radius: 14
+  # On top of the per-player events: every 20 s each occupied level has this chance of a flicker, blackout or
+  # lights-out around one of its players, in every level.
+  light-event-chance: 0.25
+  blackout-smilers: 3            # Smilers that appear around each player during a Level 1 blackout (0 = none)
+
+sanity:
+  enabled: true
+  show-actionbar: false         # off = only in-world cues (whispers, heartbeat, hallucinations)
+
+items:
+  flashlight-battery-seconds: 300
+  battery-seconds: 240
+
+debug: false
+
+messages:
+  prefix: "<dark_gray>[<#d8c46a>Backrooms</#d8c46a>]</dark_gray> "
+  no-permission: "<red>You don't have permission to do that."
+  player-only: "<red>Only players can do that."
+  player-not-found: "<red>Player <white><name></white> not found."
+  unknown-level: "<red>Unknown level <white><level></white>. Use 0, poolrooms, 1, 2, 3, 4 or 5."
+  level-disabled: "<red><level> is disabled or its world is not loaded."
+  needs-pack: "<gray>The walls give a little... then hold. <dark_gray>(Accept the server resource pack to enter the Backrooms; rejoin or use the prompt.)"
+  entering: "<gray>The floor gives way beneath you..."
+  already-inside: "<gray><name> is already inside the Backrooms."
+  not-inside: "<gray><name> is not inside the Backrooms."
+  left: "<green>You find yourself back where you belong. Mostly."
+  enter-world-denied: "<red>You can't enter the Backrooms from here."
+  self-leave-denied: "<gray>There is no easy way out. Find an exit."
+  sealed: "<gray>The way is sealed."
+  blocked-command: "<dark_gray><italic>Nothing answers.</italic>"
+  protected: "<dark_gray><italic>The wall doesn't budge.</italic>"
+  spawn-set: "<green>Admin spawn for <level> saved at <x>, <y>, <z>."
+  reloaded: "<green>Configuration reloaded. Locked generation values were left untouched."
+  confirm: "<yellow>Type <white>/backrooms confirm</white> within 15 seconds to <action>."
+  nothing-to-confirm: "<gray>Nothing to confirm."
+  almond-water: "<#f3e9c6><italic>The water tastes faintly of almonds. Your thoughts settle.</italic>"
