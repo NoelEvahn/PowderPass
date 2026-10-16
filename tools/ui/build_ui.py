@@ -27,7 +27,7 @@ FONT_DIR = "/usr/share/fonts"
 TITLE_FONT = os.path.join(FONT_DIR, "opentype/inter/InterDisplay-Light.otf")
 OSD_FONT = os.path.join(FONT_DIR, "truetype/dejavu/DejaVuSansMono-Bold.ttf")
 FRAMES = 4
-W, H = 512, 288
+W, H = 2048, 1152
 
 
 def out(*parts):
@@ -77,76 +77,81 @@ def radial(w, h):
 
 
 def osd(draw: ImageDraw.ImageDraw, frame: int, light: bool):
-    font = ImageFont.truetype(OSD_FONT, 13)
-    small = ImageFont.truetype(OSD_FONT, 11)
-    white = (236, 236, 228, 215)
-    shadow = (0, 0, 0, 150)
+    """Small camcorder text, inset from the curved edges (sizes relative to the frame, so it reads small)."""
+    k = W / 512
+    font = ImageFont.truetype(OSD_FONT, int(8 * k))
+    small = ImageFont.truetype(OSD_FONT, int(7 * k))
+    white = (236, 236, 228, 175)
+    shadow = (0, 0, 0, 110)
+    m = int(30 * k)
 
     def text(xy, s, f=font, fill=white):
-        draw.text((xy[0] + 1, xy[1] + 1), s, font=f, fill=shadow)
+        draw.text((xy[0] + k * 0.6, xy[1] + k * 0.6), s, font=f, fill=shadow)
         draw.text(xy, s, font=f, fill=fill)
 
-    # REC with a blinking red dot (on for half the cycle)
+    y = m
     if frame < FRAMES // 2:
-        draw.ellipse((22, 20, 32, 30), fill=(220, 30, 30, 230))
-    text((38, 17), "REC")
-    text((W - 52, 17), "SP")
-    # battery
-    draw.rectangle((W - 92, 21, W - 66, 31), outline=white)
-    draw.rectangle((W - 65, 24, W - 63, 28), fill=white)
-    draw.rectangle((W - 90, 23, W - 80, 29), fill=(236, 236, 228, 200))
-    text((22, H - 32), "PLAY ▶", small)
-    text((W - 168, H - 32), "AM 3:33  JAN.01 1996", small)
+        r = 3 * k
+        draw.ellipse((m, y + 2 * k, m + 2 * r, y + 2 * k + 2 * r), fill=(220, 30, 30, 200))
+    text((m + 9 * k, y), "REC")
+    text((W - m - 14 * k, y), "SP")
+    bx = W - m - 40 * k
+    draw.rectangle((bx, y + 2 * k, bx + 16 * k, y + 8 * k), outline=white, width=max(1, int(k * 0.8)))
+    draw.rectangle((bx + 16 * k, y + 4 * k, bx + 17.5 * k, y + 6 * k), fill=white)
+    draw.rectangle((bx + 1.5 * k, y + 3.5 * k, bx + 9 * k, y + 6.5 * k), fill=white)
+    yb = H - m - 8 * k
+    text((m, yb), "PLAY \u25b6", small)
+    stamp = "AM 3:33  JAN.01 1996"
+    text((W - m - draw.textlength(stamp, font=small), yb), stamp, small)
     if light:
-        text((W // 2 - 22, H - 32), "LIGHT", small, (255, 226, 160, 200))
+        text((W // 2 - 12 * k, yb), "LIGHT", small, (255, 226, 160, 170))
 
 
 def vhs_frame(frame: int, light: bool) -> Image.Image:
     rng = np.random.default_rng(1996 + frame * 7 + (100 if light else 0))
-    r = radial(W, H)
-    rgba = np.zeros((H, W, 4), dtype=np.float64)
-    # vignette: corners fall into shadow (much deeper through a flashlight)
+    y, x = np.mgrid[0:H, 0:W].astype(np.float64)
+    nx = (x - W / 2) / (W / 2)
+    ny = (y - H / 2) / (H / 2)
+    r = np.sqrt(nx * nx + ny * ny * 1.15)
+    # curved CRT screen: the picture sits in a rounded, slightly bulging tube; outside it the bezel is black,
+    # with a soft falloff into the curve (superellipse edge)
+    edge = (np.abs(nx) ** 7 + np.abs(ny) ** 7) ** (1 / 7)
+    bezel = np.clip((edge - 0.955) / 0.04, 0, 1)
+    shade = np.clip((edge - 0.80) / 0.17, 0, 1) ** 2 * 0.45   # darkening as the glass curves away
     if light:
-        vig = np.clip((r - 0.32) / 0.75, 0, 1) ** 1.3 * 0.9
+        vig = np.clip((r - 0.35) / 0.8, 0, 1) ** 1.4 * 0.8
     else:
-        vig = np.clip((r - 0.55) / 0.8, 0, 1) ** 1.6 * 0.6
-    alpha = vig.copy()
+        vig = np.clip((r - 0.6) / 0.9, 0, 1) ** 1.8 * 0.3
+    alpha = np.maximum.reduce([vig, shade, bezel])
     col = np.zeros((H, W, 3))
-    # a flashlight's warm hot spot in the middle (adds a faint glow over what it lights)
     if light:
-        spot = np.clip(1 - r / 0.42, 0, 1) ** 2 * 0.1
+        spot = np.clip(1 - r / 0.42, 0, 1) ** 2 * 0.06
         col = col * (1 - spot[..., None]) + np.array([255, 236, 190]) * spot[..., None]
         alpha = alpha + spot * (1 - alpha)
-    # scanlines: every other row a little darker
+    # faint scanlines (every 4th row at this resolution: same pitch as before, much lighter)
     scan = np.zeros((H, W))
-    scan[::2, :] = 0.07
-    a2 = scan
-    col = col * (1 - a2[..., None] / np.maximum(alpha + a2, 1e-6)[..., None] * 0)  # scanlines are black
-    alpha = alpha + a2 * (1 - alpha)
-    # grain: specks of light and dark
+    scan[(np.arange(H) % 4) < 1, :] = 0.035
+    alpha = alpha + scan * (1 - alpha)
+    # fine, sparse grain: single specks, low opacity
     g = rng.normal(0, 1, (H, W))
-    bright = g > 1.45
-    dark = g < -1.45
+    bright = g > 2.6
+    dark = g < -2.6
     ga = np.zeros((H, W))
-    ga[bright] = rng.uniform(0.07, 0.22, bright.sum())
-    ga[dark] = rng.uniform(0.08, 0.24, dark.sum())
-    # film grain also comes in soft clumps, not only single specks
-    clump = np.clip(np.array(Image.fromarray((rng.uniform(0, 255, (H // 2, W // 2))).astype(np.uint8)).resize((W, H), Image.BILINEAR), dtype=np.float64) / 255 - 0.5, 0, 1) * 0.12
-    ga = np.maximum(ga, clump * (g > 0))
+    ga[bright] = rng.uniform(0.04, 0.10, bright.sum())
+    ga[dark] = rng.uniform(0.04, 0.10, dark.sum())
     gcol = np.zeros((H, W, 3))
     gcol[bright] = 235
     na = alpha + ga * (1 - alpha)
     col = (col * alpha[..., None] * (1 - ga[..., None]) + gcol * ga[..., None]) / np.maximum(na, 1e-6)[..., None]
     alpha = na
-    # a tracking band: a thin bright noisy strip somewhere, now and then
     if frame in (1, 3):
         y0 = int(rng.integers(H // 5, H - H // 5))
-        hgt = int(rng.integers(3, 7))
+        hgt = int(rng.integers(4, 10))
         band = np.zeros((H, W))
-        noise = rng.uniform(0, 1, (hgt, W))
-        band[y0:y0 + hgt, :] = (noise > 0.55) * rng.uniform(0.08, 0.2)
+        band[y0:y0 + hgt, :] = (rng.uniform(0, 1, (hgt, W)) > 0.7) * 0.06
         col = (col * alpha[..., None] * (1 - band[..., None]) + 250 * band[..., None]) / np.maximum(alpha + band * (1 - alpha), 1e-6)[..., None]
         alpha = alpha + band * (1 - alpha)
+    rgba = np.zeros((H, W, 4))
     rgba[..., :3] = np.clip(col, 0, 255)
     rgba[..., 3] = np.clip(alpha, 0, 1) * 255
     img = Image.fromarray(rgba.astype(np.uint8), "RGBA")

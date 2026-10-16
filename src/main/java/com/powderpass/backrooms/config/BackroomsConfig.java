@@ -213,8 +213,8 @@ public final class BackroomsConfig {
         packHostPort = clamp(c.getInt("resource-pack.host.port", 8163), 1, 65535);
         packHostPublicAddress = c.getString("resource-pack.host.public-address", "");
         serverPackManage = c.getBoolean("resource-pack.server-properties.manage", true);
-        serverPackUrl = c.getString("resource-pack.server-properties.url", "https://download.mc-packs.net/pack/244562d602b3ba2fad64da326d1eaaf553051601.zip");
-        serverPackSha1 = c.getString("resource-pack.server-properties.sha1", "244562d602b3ba2fad64da326d1eaaf553051601").trim().toLowerCase(Locale.ROOT);
+        serverPackUrl = c.getString("resource-pack.server-properties.url", "https://download.mc-packs.net/pack/19e2879e7c1c642392c5abd211ac4974bb38900c.zip");
+        serverPackSha1 = c.getString("resource-pack.server-properties.sha1", "19e2879e7c1c642392c5abd211ac4974bb38900c").trim().toLowerCase(Locale.ROOT);
         serverPackId = c.getString("resource-pack.server-properties.id", "60927d6f-06a0-4960-9979-058f0c101843").trim();
         serverPackPrompt = c.getString("resource-pack.server-properties.prompt", "{\"text\":\"Our server uses a custom resource pack!\", \"color\":\"gold\"}");
         serverPackRequired = c.getBoolean("resource-pack.server-properties.required", true);
