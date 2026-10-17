@@ -12,6 +12,44 @@ function windowTex(base, lit, unlit, cols = 4, rows = 6, seed = 1, frame) {
     }
   });
 }
+// one bay × one floor of facade; tiled with texture repeat
+const _facadeCache = new Map();
+function facadeTex(wall, glass, seed, opts = {}) {
+  const key = wall + glass + seed + JSON.stringify(opts);
+  if (_facadeCache.has(key)) return _facadeCache.get(key).clone();
+  const t = canvasTex(256, 256, (c, w, h) => {
+    const r = rng(seed);
+    c.fillStyle = wall; c.fillRect(0, 0, w, h);
+    for (let i = 0; i < 300; i++) { c.fillStyle = r() > 0.5 ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)'; c.fillRect(r() * w, r() * h, 3, 3); }
+    c.fillStyle = shade(wall, 0.85); c.fillRect(0, h - 18, w, 18); // floor band
+    for (let k = 0; k < 2; k++) {
+      const x = 28 + k * 120, y = 40, ww = 80, hh = 150;
+      c.fillStyle = shade(wall, 0.7); c.fillRect(x - 6, y - 6, ww + 12, hh + 12);
+      const lit = r() < (opts.lit ?? 0.25);
+      const g = c.createLinearGradient(0, y, 0, y + hh);
+      if (lit) { g.addColorStop(0, '#ffe7b0'); g.addColorStop(1, '#f2b968'); } else { g.addColorStop(0, glass); g.addColorStop(1, shade(glass, 0.65)); }
+      c.fillStyle = g; c.fillRect(x, y, ww, hh);
+      c.fillStyle = 'rgba(255,255,255,0.35)'; c.beginPath(); c.moveTo(x + 8, y + hh); c.lineTo(x + 30, y); c.lineTo(x + 44, y); c.lineTo(x + 22, y + hh); c.fill();
+      c.fillStyle = shade(wall, 0.55); c.fillRect(x + ww / 2 - 2, y, 4, hh); c.fillRect(x, y + hh * 0.45, ww, 4);
+      if (!lit && r() > 0.6) { c.fillStyle = 'rgba(240,235,225,0.75)'; c.fillRect(x, y, ww, hh * (0.2 + r() * 0.4)); }
+      c.fillStyle = shade(wall, 1.12); c.fillRect(x - 10, y + hh + 6, ww + 20, 9); // sill
+      if (opts.plants && r() > 0.6) { c.fillStyle = '#5a9a5a'; for (let p = 0; p < 6; p++) { c.beginPath(); c.arc(x + 10 + p * 12, y + hh + 2, 8, 0, TAU); c.fill(); } }
+    }
+  });
+  _facadeCache.set(key, t);
+  return t.clone();
+}
+function facadeMesh(parent, w, h, d, x, z, wall, glass, seed, opts = {}) {
+  const tex = facadeTex(wall, glass, seed, opts); tex.wrapS = tex.wrapT = THREE.RepeatWrapping; tex.repeat.set(Math.max(1, Math.round(w / 2.4)), Math.max(1, Math.round(h / 2.2))); tex.needsUpdate = true;
+  const g = group(parent, x, 0, z);
+  mesh(boxg(w, h, d), texMat(tex), 0, h / 2, 0, g, { ol: 0.025 });
+  mesh(boxg(w + 0.3, 0.35, d + 0.3), toon(shadeHex(new THREE.Color(wall).getHex(), 0.8)), 0, h + 0.17, 0, g, { ol: 0.01 }); // cornice
+  const r = rng(seed + 5);
+  if (r() > 0.4) { const wt = group(g, (r() - 0.5) * w * 0.5, h + 0.35, (r() - 0.5) * d * 0.4); mesh(cylg(0.55, 0.55, 1.1, 12), toon(0x8a6448), 0, 0.9, 0, wt, { ol: 0.01 }); mesh(G('wtcone', () => new THREE.ConeGeometry(0.62, 0.45, 12)), toon(0x5a4030), 0, 1.66, 0, wt); for (const [lx, lz] of [[-0.4, -0.4], [0.4, -0.4], [-0.4, 0.4], [0.4, 0.4]]) mesh(boxg(0.06, 0.4, 0.06), toon(0x3a3030), lx, 0.2, lz, wt); }
+  for (let i = 0; i < 2; i++) if (r() > 0.3) mesh(rbox(0.9, 0.5, 0.7, 0.05), toon(0xb8bcc0), (r() - 0.5) * w * 0.7, h + 0.6, (r() - 0.5) * d * 0.6, g, { ol: 0.008 });
+  if (r() > 0.6) mesh(cylg(0.03, 0.03, 2.5, 6), toon(0x4a4a4a), w * 0.3, h + 1.6, 0, g);
+  return g;
+}
 function addTree(parent, x, z, s = 1, seed = 1, leaf = 0x6aa864) {
   const g = group(parent, x, 0, z); g.scale.setScalar(s);
   mesh(cylg(0.07, 0.1, 1.2, 8), toon(0x7a5236), 0, 0.6, 0, g, { ol: 0.008 });
@@ -104,6 +142,8 @@ function buildCity() {
   const oaGlass = glassTex.clone(); oaGlass.wrapS = oaGlass.wrapT = THREE.RepeatWrapping; oaGlass.repeat.set(2, 4); oaGlass.needsUpdate = true;
   mesh(boxg(8, 18, 7), texMat(oaGlass), 0, 9, 0, oa, { ol: 0.03 });
   mesh(boxg(8.4, 0.3, 7.4), toon(0xf6f7f7), 0, 18.1, 0, oa);
+  for (let fy = 4.4; fy < 18; fy += 2.2) mesh(boxg(8.06, 0.16, 7.06), toon(0xf6f7f7), 0, fy, 0, oa, { cast: false });
+  mesh(boxg(5.5, 1.6, 4.5), toon(0x2c3238), 0, 19.0, 0, oa, { ol: 0.015 }); mesh(boxg(5.7, 0.12, 4.7), toon(0x3fe6c0, { emissive: 0x3fe6c0, ei: 0.5 }), 0, 19.85, 0, oa);
   mesh(boxg(8.2, 2.6, 0.4), toon(0xf6f7f7), 0, 1.3, 3.55, oa, { ol: 0.015 });
   mesh(boxg(3.0, 1.8, 0.1), toon(0x1f2a30, { emissive: 0x24474a, ei: 0.3 }), 0, 0.92, 3.78, oa); // entrance glass
   mesh(boxg(0.06, 1.8, 0.12), toon(0xd8dde0), 0, 0.92, 3.8, oa);
@@ -117,6 +157,8 @@ function buildCity() {
   mesh(boxg(8, 16, 7), texMat(anWin), 0, 8, 0, an, { ol: 0.03 });
   for (let i = 0; i < 9; i++) mesh(boxg(0.16, 13, 0.3), toon(0xb87a4e), -3.6 + i * 0.9, 9.5, 3.6, an, { cast: false });
   mesh(boxg(8.4, 0.3, 7.4), toon(0xc8693a), 0, 16.1, 0, an);
+  for (let fy = 4.2; fy < 16; fy += 2.4) mesh(boxg(8.06, 0.14, 7.06), toon(0xd9b48a), 0, fy, 0, an, { cast: false });
+  mesh(boxg(6, 1.2, 5), toon(0xf1e1c8), 0, 16.85, 0, an, { ol: 0.015 }); addPlant(an, -2, 17.45, 0, 3.5, 0xc8693a, 0x5c9a5a); addPlant(an, 2, 17.45, 0, 3.0, 0xc8693a, 0x4f9a6a);
   mesh(boxg(8.2, 2.6, 0.4), toon(0xf1e1c8), 0, 1.3, 3.55, an, { ol: 0.015 });
   mesh(boxg(3.0, 1.8, 0.1), toon(0x3a2418, { emissive: 0x5a3018, ei: 0.3 }), 0, 0.92, 3.78, an);
   mesh(boxg(0.06, 1.8, 0.12), toon(0xc99668), 0, 0.92, 3.8, an);
@@ -130,8 +172,8 @@ function buildCity() {
   for (const [x0, x1] of [[-40, -9.6], [9.6, 40]]) {
     let x = x0;
     while (x < x1) {
-      const w = 4 + r() * 3, h = 8 + r() * 12; const bt = windowTex(pal[Math.floor(r() * pal.length)], '#ffe9c2', '#8fa3b0', 4, 6, Math.floor(r() * 99)); bt.wrapS = bt.wrapT = THREE.RepeatWrapping; bt.repeat.set(Math.round(w / 2.5), Math.round(h / 3)); bt.needsUpdate = true;
-      mesh(boxg(w, h, 7), texMat(bt), x + w / 2, h / 2, -9.5, g, { ol: 0.025 });
+      const w = 4 + r() * 3, h = 8 + r() * 12;
+      facadeMesh(g, w, h, 7, x + w / 2, -9.5, pal[Math.floor(r() * pal.length)], '#8fb0c4', Math.floor(r() * 9), { plants: r() > 0.5 });
       x += w + 0.1;
     }
   }
@@ -141,9 +183,8 @@ function buildCity() {
   for (let i = 0; i < 12; i++) {
     const [name, accent, wall] = shops[i % shops.length];
     const w = 5.2, h = 6 + (i % 3) * 2.2;
-    const bt = windowTex(wall, '#ffe9c2', '#a7b4bb', 3, 4, 50 + i); bt.wrapS = bt.wrapT = THREE.RepeatWrapping; bt.repeat.set(2, Math.round(h / 3)); bt.needsUpdate = true;
     const b = group(g, sx + w / 2, 0, 9.5);
-    mesh(boxg(w, h, 7), texMat(bt), 0, h / 2, 0, b, { ol: 0.02 });
+    facadeMesh(b, w, h, 7, 0, 0, wall, '#9fb8c6', 20 + (i % 5), { plants: i % 2 === 0, lit: 0.15 });
     mesh(boxg(w, 2.0, 0.3), toon(new THREE.Color(wall).getHex()), 0, 1.0, -3.55, b, { ol: 0.01 });
     mesh(boxg(w * 0.7, 1.3, 0.1), toon(0x26323a, { emissive: 0x2a3a40, ei: 0.2 }), 0, 0.85, -3.72, b);
     // striped awning
@@ -159,8 +200,8 @@ function buildCity() {
   // distant towers
   for (let i = 0; i < 40; i++) {
     const x = -70 + i * 3.6 + r() * 2, z = (r() > 0.5 ? -1 : 1) * (22 + r() * 18), h = 14 + r() * 30, w = 3 + r() * 4;
-    const bt = windowTex(pal[i % pal.length], '#ffe9c2', '#91a2b4', 4, 8, 200 + i); bt.wrapS = bt.wrapT = THREE.RepeatWrapping; bt.repeat.set(2, Math.round(h / 4)); bt.needsUpdate = true;
-    mesh(boxg(w, h, w), texMat(bt), x, h / 2, z, g, { cast: false });
+    const tw = facadeTex(pal[i % pal.length], '#98b4c8', 40 + (i % 6)); tw.wrapS = tw.wrapT = THREE.RepeatWrapping; tw.repeat.set(Math.max(1, Math.round(w / 2.4)), Math.round(h / 2.2)); tw.needsUpdate = true;
+    mesh(boxg(w, h, w), texMat(tw), x, h / 2, z, g, { cast: false });
   }
   // trees, lamps, benches, hydrant along sidewalks
   for (let x = -30; x <= 30; x += 6) {

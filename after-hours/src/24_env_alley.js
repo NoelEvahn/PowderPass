@@ -107,9 +107,9 @@ function buildAlley() {
   for (const [c, x, y, z, i] of [[0xff5fa2, 1.6, 2.6, 3.6, 3], [0x4de8ff, -1.6, 2.4, -4.6, 3], [0xffb347, 1.6, 1.8, -6.5, 2], [0x7dffd9, -1.6, 2.2, -1.2, 2.2]]) {
     const pl = new THREE.PointLight(c, i, 6, 1.6); pl.position.set(x, y, z); g.add(pl); env.pl.push(pl);
   }
-  env.hemi = new THREE.HemisphereLight(0x4a5a98, 0x181420, 1.15); g.add(env.hemi);
-  env.amb = new THREE.AmbientLight(0x6070a0, 0.35); g.add(env.amb);
-  const rim = new THREE.DirectionalLight(0x7aa8ff, 0.7); rim.position.set(1, 4, -8); g.add(rim); g.add(rim.target); env.rim = rim;
+  env.hemi = new THREE.HemisphereLight(0x5060a8, 0x1c1826, 1.45); g.add(env.hemi);
+  env.amb = new THREE.AmbientLight(0x6070a0, 0.5); g.add(env.amb);
+  const rim = new THREE.DirectionalLight(0x7aa8ff, 0.45); rim.position.set(1, 4, -8); g.add(rim); g.add(rim.target); env.rim = rim;
   // the street glow at both ends + night skyline above
   mesh(new THREE.PlaneGeometry(4.6, 6), glow(0x3a4a7a, 0.9), 0, 3, -12.1, g, { cast: false });
   mesh(new THREE.PlaneGeometry(4.6, 6), glow(0x4a3a6a, 0.8), 0, 3, 12.1, g, { cast: false, ry: Math.PI });
@@ -141,7 +141,7 @@ function buildAlley() {
     env.doorLeds.forEach((l, i) => l.material.color.set(Math.floor(t * 4 + i * 0.7) % 3 ? PAL.cxMint : 0x103830).multiplyScalar(2));
     // lightning flashes
     let fl = 0; for (const lt of LIGHTNING) { const a = t - lt; if (a > 0 && a < 0.35) fl = Math.max(fl, (a < 0.06 ? 1 : 0.4) * (1 - a / 0.35)); }
-    env.hemi.intensity = 1.15 + fl * 4; info.flash = Math.max(info.flash || 0, fl * 0.25);
+    env.hemi.intensity = 1.45 + fl * 4; info.flash = Math.max(info.flash || 0, fl * 0.25);
   });
   return env;
 }

@@ -128,7 +128,9 @@ function buildRobot(kind) {
     const pw = 1.55, ph = 1.0;
     const faceGeo = G('ccFace', () => new THREE.SphereGeometry(headR * 1.012, 40, 24, Math.PI / 2 - pw / 2, pw, Math.PI / 2 - ph / 2 + 0.06, ph));
     const bezelGeo = G('ccBezel', () => new THREE.SphereGeometry(headR * 1.006, 40, 24, Math.PI / 2 - pw / 2 - 0.06, pw + 0.12, Math.PI / 2 - ph / 2 + 0.0, ph + 0.12));
-    const bez = mesh(bezelGeo, D, 0, 0, 0, head, { s: hs, cast: false });
+    const bezA = canvasTex(256, 192, (c, w, h) => { c.fillStyle = '#000'; c.fillRect(0, 0, w, h); rrect(c, 4, 4, w - 8, h - 8, 58); c.fillStyle = '#fff'; c.fill(); });
+    const bezM = new THREE.MeshToonMaterial({ color: PAL.ccDeep, gradientMap: GRAD3, alphaMap: bezA, alphaTest: 0.5 });
+    const bez = mesh(bezelGeo, bezM, 0, 0, 0, head, { s: hs, cast: false });
     const faceTex = canvasTex(320, 208); R.faceTex = faceTex;
     R.faceMesh = mesh(faceGeo, new THREE.MeshBasicMaterial({ map: faceTex, toneMapped: false, transparent: true }), 0, 0, 0, head, { s: hs, cast: false });
     void bez;

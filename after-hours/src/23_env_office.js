@@ -38,7 +38,7 @@ function buildOffice(name, origin, o) {
   for (let r = 0; r < 4; r++) mesh(boxg(0.36, 0.006, 0.022), toon(shadeHex(o.kbd, 0.85)), 0, DESK_H + 0.022, 0.19 + r * 0.03, desk, { cast: false });
   mesh(sphg(0.03, 10, 8), toon(o.kbd), 0.3, DESK_H + 0.01, 0.24, desk, { s: [0.8, 0.5, 1.2] });
   addPlant(desk, -0.62, DESK_H, -0.15, 0.55, o.pot, 0x4f9a6a);
-  for (let i = 0; i < 3; i++) mesh(boxg(0.07, 0.07, 0.002), toon([0xffe27a, 0x9ff2d6, 0xffb3a0][i]), -0.32 + i * 0.09, DESK_H + 0.35 + (i % 2) * 0.05, -0.16, desk, { cast: false, rz: (i - 1) * 0.12 });
+  for (let i = 0; i < 3; i++) mesh(boxg(0.06, 0.06, 0.002), toon([0xffe27a, 0x9ff2d6, 0xffb3a0][i]), -0.475 + (i % 2) * 0.012, DESK_H + 0.24 + i * 0.075, -0.164, desk, { cast: false, rz: (i - 1) * 0.12 });
   // chair (seat top 0.32)
   const ch = group(g, 0, 0, -1.02); env.chair = ch;
   mesh(rbox(0.42, 0.06, 0.4, 0.03), toon(o.chair), 0, 0.29, 0, ch, { ol: 0.006 });

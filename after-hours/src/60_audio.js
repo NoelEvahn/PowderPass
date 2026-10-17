@@ -54,7 +54,7 @@ const Audio = (() => {
     land(o, t, x) { const g = gain(0, o.sfx); osc('sine', 85, t, 0.2, g); noise(t, 0.08, filt('lowpass', x.soft ? 500 : 900, 1, gain(0.6, g))); envAt(g.gain, [[t, 0.0001], [t + 0.003, x.soft ? 0.18 : 0.3], [t + 0.18, 0.0001]]); },
     step(o, t, x) { const g = gain(0, o.sfx); const cx = x.who === 'cx'; const f = cx ? 1500 : 900; noise(t, 0.06, filt('bandpass', f * (0.85 + hash1(t * 9) * 0.3), 1.2, g)); osc('sine', cx ? 140 : 110, t, 0.06, gain(0.5, g)); const v = (x.soft ? 0.05 : 0.09) * (x.run ? 1.4 : 1); envAt(g.gain, [[t, 0.0001], [t + 0.002, v], [t + 0.06, 0.0001]]); if (x.wet) { const w = gain(0, o.sfx); noise(t, 0.12, filt('bandpass', 2600, 1.5, w)); envAt(w.gain, [[t, 0.0001], [t + 0.01, 0.06], [t + 0.12, 0.0001]]); } },
     click(o, t) { const g = gain(0, o.sfx); osc('sine', 2200, t, 0.04, g); envAt(g.gain, [[t, 0.0001], [t + 0.001, 0.1], [t + 0.035, 0.0001]]); },
-    grind(o, t, x) { const g = gain(0, o.sfx); const bp = filt('bandpass', 700, 1.5, g); noise(t, x.dur, bp); osc('square', 32, t, x.dur, gain(0.5, g.gain)); adsr(g, t, 0.05, 0.12, 0.1, 1, 0.1, t + x.dur); },
+    grind(o, t, x) { const g = gain(0, o.sfx); const bp = filt('bandpass', 700, 1.5, g); noise(t, x.dur, bp); osc('square', 32, t, x.dur, gain(0.05, g.gain)); adsr(g, t, 0.05, 0.12, 0.1, 1, 0.1, t + x.dur); },
     pour(o, t, x) { const g = gain(0, o.sfx); const bp = filt('bandpass', x.thin ? 1600 : 1000, 2.5, g); noise(t, x.dur, bp); osc('sine', 7, t, x.dur, gain(250, bp.frequency)); envAt(bp.frequency, [[t, x.thin ? 1500 : 900], [t + x.dur, x.thin ? 1900 : 1400]]); adsr(g, t, 0.08, 0.1, 0.1, 1, 0.15, t + x.dur); },
     hiss(o, t, x) { const g = gain(0, o.sfx); noise(t, x.dur, filt('highpass', 4200, 0.7, g)); adsr(g, t, 0.3, 0.04, 0.2, 0.7, 0.4, t + x.dur); },
     lever(o, t) { S.click(o, t); const g = gain(0, o.sfx); const oo = osc('triangle', 320, t, 0.25, g); envAt(oo.frequency, [[t, 320], [t + 0.2, 180]]); envAt(g.gain, [[t, 0.0001], [t + 0.005, 0.06], [t + 0.22, 0.0001]]); },
@@ -79,11 +79,11 @@ const Audio = (() => {
     whoosh(o, t, x) { const g = gain(0, o.sfx); const bp = filt('bandpass', 500, 1.6, g); noise(t, 0.3, bp); envAt(bp.frequency, [[t, 400], [t + 0.12, 2200], [t + 0.28, 600]]); envAt(g.gain, [[t, 0.0001], [t + 0.1, x.soft ? 0.08 : 0.17], [t + 0.28, 0.0001]]); },
     clatter(o, t) { for (let k = 0; k < 3; k++) S.clink(o, t + k * 0.09, { low: true }); },
     summon(o, t, x) { const cx = x.who === 'cx'; const g = gain(0, o.sfx); g.connect(o.rev); const oo = osc(cx ? 'sawtooth' : 'sine', cx ? 220 : 180, t, 0.9, filt('lowpass', 3000, 2, g)); envAt(oo.frequency, [[t, cx ? 220 : 180], [t + 0.6, cx ? 1320 : 720]]); envAt(g.gain, [[t, 0.0001], [t + 0.5, 0.08], [t + 0.85, 0.0001]]); (cx ? ['C6', 'G6', 'C7'] : ['A5', 'E6', 'A6']).forEach((n, i) => I.bell(o, t + 0.45 + i * 0.07, NOTE(n), 0.5, 1.0)); },
-    impact(o, t, x) { const s = x.s; const g = gain(0, o.sfx); g.connect(o.rev); noise(t, 0.25, filt('lowpass', 5000, 0.5, g)); const th = osc('sine', 90, t, 0.4, gain(1.2, g)); envAt(th.frequency, [[t, 120], [t + 0.25, 50]]); [[1240, 1], [2930, 0.6], [4870, 0.3]].forEach(([f, a]) => osc('sine', f * (0.95 + hash1(t) * 0.1), t, 0.6, gain(0.12 * a, g))); envAt(g.gain, [[t, 0.0001], [t + 0.002, 0.32 * Math.min(1.4, s)], [t + 0.12, 0.12 * s], [t + 0.55, 0.0001]]); },
+    impact(o, t, x) { const s = x.s; const g = gain(0, o.sfx); g.connect(o.rev); noise(t, 0.25, filt('lowpass', 5000, 0.5, g)); const th = osc('sine', 90, t, 0.4, gain(1.2, g)); envAt(th.frequency, [[t, 120], [t + 0.25, 50]]); [[1240, 1], [2930, 0.6], [4870, 0.3]].forEach(([f, a]) => osc('sine', f * (0.95 + hash1(t) * 0.1), t, 0.6, gain(0.12 * a, g))); envAt(g.gain, [[t, 0.0001], [t + 0.002, 0.24 * Math.min(1.4, s)], [t + 0.12, 0.09 * s], [t + 0.55, 0.0001]]); },
     splash(o, t) { const g = gain(0, o.sfx); noise(t, 0.25, filt('bandpass', 1800, 0.8, g)); envAt(g.gain, [[t, 0.0001], [t + 0.01, 0.12], [t + 0.22, 0.0001]]); for (let k = 0; k < 4; k++) { const tt = t + 0.04 + k * 0.05; const d = gain(0, o.sfx); const oo = osc('sine', 1400 + hash1(k + t) * 1600, tt, 0.05, d); envAt(oo.frequency, [[tt, 1200 + k * 400], [tt + 0.04, 2400]]); envAt(d.gain, [[tt, 0.0001], [tt + 0.003, 0.03], [tt + 0.045, 0.0001]]); } },
     skid(o, t, x) { const g = gain(0, o.sfx); noise(t, x.dur, filt('bandpass', 1100, 1.2, g)); envAt(g.gain, [[t, 0.0001], [t + 0.03, 0.12], [t + x.dur, 0.0001]]); },
-    lock(o, t, x) { const g = gain(0, o.sfx); g.connect(o.rev); const bp = filt('bandpass', 1600, 2, g); noise(t, x.dur, bp); osc('square', 23, t, x.dur, gain(0.6, g.gain)); osc('sine', 880, t, x.dur, gain(0.2, g)); osc('sine', 1318, t, x.dur, gain(0.15, g)); adsr(g, t, 0.05, 0.12, 0.2, 0.8, 0.3, t + x.dur - 0.3); },
-    gptDescend(o, t) { ['D5', 'F#5', 'A5', 'D6'].forEach((n, i) => { const g = gain(0, o.sfx); g.connect(o.rev); osc('sine', NOTE(n), t + i * 0.15, 2.2, g); osc('sine', 6, t, 2.4, gain(NOTE(n) * 0.006, g.gain)); adsr(g, t + i * 0.15, 0.6, 0.05, 0.4, 0.8, 0.8, t + 1.6); }); },
+    lock(o, t, x) { const g = gain(0, o.sfx); g.connect(o.rev); const bp = filt('bandpass', 1600, 2, g); noise(t, x.dur, bp); osc('square', 23, t, x.dur, gain(0.05, g.gain)); osc('sine', 880, t, x.dur, gain(0.2, g)); osc('sine', 1318, t, x.dur, gain(0.15, g)); adsr(g, t, 0.05, 0.12, 0.2, 0.8, 0.3, t + x.dur - 0.3); },
+    gptDescend(o, t) { ['D5', 'F#5', 'A5', 'D6'].forEach((n, i) => { const g = gain(0, o.sfx); g.connect(o.rev); const oo = osc('sine', NOTE(n), t + i * 0.15, 2.2, g); osc('sine', 6, t, 2.4, gain(NOTE(n) * 0.006, oo.frequency)); adsr(g, t + i * 0.15, 0.6, 0.05, 0.4, 0.8, 0.8, t + 1.6); }); },
     shock(o, t) { const g = gain(0, o.sfx); g.connect(o.rev); const oo = osc('sine', 70, t, 1.4, g); envAt(oo.frequency, [[t, 110], [t + 1, 40]]); noise(t, 0.6, filt('lowpass', 1500, 0.6, gain(0.6, g))); envAt(g.gain, [[t, 0.0001], [t + 0.01, 0.45], [t + 1.3, 0.0001]]); },
     holo(o, t) { ['E6', 'B6', 'E7'].forEach((n, i) => I.bell(o, t + i * 0.05, NOTE(n), 0.35, 0.7)); },
     buildPass(o, t) { ['C5', 'E5', 'G5', 'C6', 'E6', 'G6'].forEach((n, i) => I.bell(o, t + i * 0.05, NOTE(n), 0.55, 1.6)); },
@@ -196,8 +196,8 @@ const Audio = (() => {
       const prog = [['D2', 'D4', 'F4', 'A4'], ['Bb1', 'D4', 'F4', 'Bb4'], ['C2', 'C4', 'E4', 'G4'], ['A1', 'C#4', 'E4', 'A4']];
       for (let bar = 0; bar < bars; bar++) {
         const c = chord(prog[bar % 4]); const b0 = bar * 4;
-        for (let s = 0; s < 16; s++) add(B(b0 + s * 0.25), 0.15, (o, T) => I.bass(o, T, s % 4 === 2 ? c[0] * 2 : c[0], 0.12, 0.9));
-        [0, 1.5, 2.5].forEach((q) => add(B(b0 + q), 0.3, (o, T) => I.kick(o, T, 0.7)));
+        for (let s = 0; s < 16; s++) add(B(b0 + s * 0.25), 0.15, (o, T) => I.bass(o, T, s % 4 === 2 ? c[0] * 2 : c[0], 0.12, 0.6));
+        [0, 1.5, 2.5].forEach((q) => add(B(b0 + q), 0.3, (o, T) => I.kick(o, T, 0.55)));
         add(B(b0 + 1), 0.2, (o, T) => I.snare(o, T, 0.8)); add(B(b0 + 3), 0.2, (o, T) => I.snare(o, T, 0.8));
         for (let h = 0; h < 8; h++) add(B(b0 + h * 0.5), 0.1, (o, T) => I.hat(o, T, 0.35));
         add(B(b0), 0.4, (o, T) => I.stab(o, T, c.slice(1), 1.0)); add(B(b0 + 2.75), 0.4, (o, T) => I.stab(o, T, c.slice(1), 0.7));
@@ -283,8 +283,8 @@ const Audio = (() => {
         if (!AC) return;
         ctx = new AC({ latencyHint: 'interactive' });
         AU.ctx = ctx;
-        comp = ctx.createDynamicsCompressor(); comp.threshold.value = -14; comp.ratio.value = 3.5; comp.attack.value = 0.005; comp.release.value = 0.2;
-        master = ctx.createGain(); master.gain.value = AU.muted ? 0 : 0.9;
+        comp = ctx.createDynamicsCompressor(); comp.threshold.value = -12; comp.knee.value = 6; comp.ratio.value = 8; comp.attack.value = 0.005; comp.release.value = 0.2;
+        master = ctx.createGain(); master.gain.value = AU.muted ? 0 : 0.8;
         master.connect(comp); comp.connect(ctx.destination);
         makeBuffers();
         ctx.addEventListener('statechange', () => { if (Film.playing) { Film.anchorFilm = Film.t; Film.anchorClock = AU.clock(); if (ctx.state === 'running') AU.start(Film.t); } });
@@ -327,7 +327,8 @@ const Audio = (() => {
       try { ev.fn(sess.o, T); } catch (e) { /* one bad sound must not stop the score */ }
     }
   }
+  AU.debugTap = () => { if (!ctx) return null; const an = ctx.createAnalyser(); an.fftSize = 2048; comp.connect(an); const buf = new Float32Array(an.fftSize); return () => { an.getFloatTimeDomainData(buf); let s = 0, pk = 0; for (const v of buf) { s += v * v; pk = Math.max(pk, Math.abs(v)); } return { rms: Math.sqrt(s / buf.length), peak: pk }; }; };
   AU.stop = () => { clearInterval(timer); timer = null; killSession(); };
-  AU.setMuted = (m) => { AU.muted = m; if (master) { master.gain.cancelScheduledValues(0); master.gain.setTargetAtTime(m ? 0 : 0.9, ctx.currentTime, 0.03); } };
+  AU.setMuted = (m) => { AU.muted = m; if (master) { master.gain.cancelScheduledValues(0); master.gain.setTargetAtTime(m ? 0 : 0.8, ctx.currentTime, 0.03); } };
   return AU;
 })();

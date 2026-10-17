@@ -69,6 +69,7 @@ const Story = (() => {
     const info = { fade: 0, flash: 0, ab: 0, bloom: 0.55, tint: null, focus: null, shake: 0 };
     for (const up of env.updaters) up(t, dt, info);
     SEQ[sh.seq](t, env, sh, info, dt);
+    if (sh.grade.hide) for (const k of sh.grade.hide) A[k].root.visible = false;
     // camera
     const c = sh.cam(t, t - sh.t0);
     tmpV.set(c.p[0], c.p[1], c.p[2]).add(env.group.position);

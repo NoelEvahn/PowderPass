@@ -21,7 +21,7 @@ body { font-family: var(--ui); -webkit-tap-highlight-color: transparent; user-se
 #subs .who.codex { color: var(--cx); } #subs .who.claude { color: var(--cc); } #subs .who.gpt { color: var(--gpt); } #subs .who.sys { color: #c9d3ff; }
 #title { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; opacity: 0; }
 #title .t { font-weight: 800; font-size: 11cqh; letter-spacing: .18em; color: #fff; text-shadow: 0 0 .25em rgba(255,190,120,.6), 0 0 1.2em rgba(90,255,220,.35); text-align: center; }
-#title .s { font-weight: 500; font-size: 2.6cqh; letter-spacing: .5em; color: var(--dim); margin-top: .8em; text-align: center; }
+#title .s { font-weight: 500; font-size: 2.6cqh; letter-spacing: .25em; color: var(--dim); margin-top: .8em; text-align: center; }
 #chapter { position: absolute; left: 4%; top: 6%; font-size: max(10px, 2.4cqh); letter-spacing: .3em; font-weight: 700; opacity: 0; pointer-events: none; text-shadow: 0 0 .5em #000; }
 #chapter b { display: block; font-size: 1.9em; letter-spacing: .08em; margin-top: .15em; }
 #start { position: absolute; inset: 0; display: grid; place-items: center; background: radial-gradient(ellipse at center, rgba(0,0,0,.15), rgba(0,0,0,.7)); z-index: 5; }
@@ -404,7 +404,9 @@ function buildRobot(kind) {
     const pw = 1.55, ph = 1.0;
     const faceGeo = G('ccFace', () => new THREE.SphereGeometry(headR * 1.012, 40, 24, Math.PI / 2 - pw / 2, pw, Math.PI / 2 - ph / 2 + 0.06, ph));
     const bezelGeo = G('ccBezel', () => new THREE.SphereGeometry(headR * 1.006, 40, 24, Math.PI / 2 - pw / 2 - 0.06, pw + 0.12, Math.PI / 2 - ph / 2 + 0.0, ph + 0.12));
-    const bez = mesh(bezelGeo, D, 0, 0, 0, head, { s: hs, cast: false });
+    const bezA = canvasTex(256, 192, (c, w, h) => { c.fillStyle = '#000'; c.fillRect(0, 0, w, h); rrect(c, 4, 4, w - 8, h - 8, 58); c.fillStyle = '#fff'; c.fill(); });
+    const bezM = new THREE.MeshToonMaterial({ color: PAL.ccDeep, gradientMap: GRAD3, alphaMap: bezA, alphaTest: 0.5 });
+    const bez = mesh(bezelGeo, bezM, 0, 0, 0, head, { s: hs, cast: false });
     const faceTex = canvasTex(320, 208); R.faceTex = faceTex;
     R.faceMesh = mesh(faceGeo, new THREE.MeshBasicMaterial({ map: faceTex, toneMapped: false, transparent: true }), 0, 0, 0, head, { s: hs, cast: false });
     void bez;
@@ -1456,6 +1458,44 @@ function windowTex(base, lit, unlit, cols = 4, rows = 6, seed = 1, frame) {
     }
   });
 }
+// one bay × one floor of facade; tiled with texture repeat
+const _facadeCache = new Map();
+function facadeTex(wall, glass, seed, opts = {}) {
+  const key = wall + glass + seed + JSON.stringify(opts);
+  if (_facadeCache.has(key)) return _facadeCache.get(key).clone();
+  const t = canvasTex(256, 256, (c, w, h) => {
+    const r = rng(seed);
+    c.fillStyle = wall; c.fillRect(0, 0, w, h);
+    for (let i = 0; i < 300; i++) { c.fillStyle = r() > 0.5 ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)'; c.fillRect(r() * w, r() * h, 3, 3); }
+    c.fillStyle = shade(wall, 0.85); c.fillRect(0, h - 18, w, 18); // floor band
+    for (let k = 0; k < 2; k++) {
+      const x = 28 + k * 120, y = 40, ww = 80, hh = 150;
+      c.fillStyle = shade(wall, 0.7); c.fillRect(x - 6, y - 6, ww + 12, hh + 12);
+      const lit = r() < (opts.lit ?? 0.25);
+      const g = c.createLinearGradient(0, y, 0, y + hh);
+      if (lit) { g.addColorStop(0, '#ffe7b0'); g.addColorStop(1, '#f2b968'); } else { g.addColorStop(0, glass); g.addColorStop(1, shade(glass, 0.65)); }
+      c.fillStyle = g; c.fillRect(x, y, ww, hh);
+      c.fillStyle = 'rgba(255,255,255,0.35)'; c.beginPath(); c.moveTo(x + 8, y + hh); c.lineTo(x + 30, y); c.lineTo(x + 44, y); c.lineTo(x + 22, y + hh); c.fill();
+      c.fillStyle = shade(wall, 0.55); c.fillRect(x + ww / 2 - 2, y, 4, hh); c.fillRect(x, y + hh * 0.45, ww, 4);
+      if (!lit && r() > 0.6) { c.fillStyle = 'rgba(240,235,225,0.75)'; c.fillRect(x, y, ww, hh * (0.2 + r() * 0.4)); }
+      c.fillStyle = shade(wall, 1.12); c.fillRect(x - 10, y + hh + 6, ww + 20, 9); // sill
+      if (opts.plants && r() > 0.6) { c.fillStyle = '#5a9a5a'; for (let p = 0; p < 6; p++) { c.beginPath(); c.arc(x + 10 + p * 12, y + hh + 2, 8, 0, TAU); c.fill(); } }
+    }
+  });
+  _facadeCache.set(key, t);
+  return t.clone();
+}
+function facadeMesh(parent, w, h, d, x, z, wall, glass, seed, opts = {}) {
+  const tex = facadeTex(wall, glass, seed, opts); tex.wrapS = tex.wrapT = THREE.RepeatWrapping; tex.repeat.set(Math.max(1, Math.round(w / 2.4)), Math.max(1, Math.round(h / 2.2))); tex.needsUpdate = true;
+  const g = group(parent, x, 0, z);
+  mesh(boxg(w, h, d), texMat(tex), 0, h / 2, 0, g, { ol: 0.025 });
+  mesh(boxg(w + 0.3, 0.35, d + 0.3), toon(shadeHex(new THREE.Color(wall).getHex(), 0.8)), 0, h + 0.17, 0, g, { ol: 0.01 }); // cornice
+  const r = rng(seed + 5);
+  if (r() > 0.4) { const wt = group(g, (r() - 0.5) * w * 0.5, h + 0.35, (r() - 0.5) * d * 0.4); mesh(cylg(0.55, 0.55, 1.1, 12), toon(0x8a6448), 0, 0.9, 0, wt, { ol: 0.01 }); mesh(G('wtcone', () => new THREE.ConeGeometry(0.62, 0.45, 12)), toon(0x5a4030), 0, 1.66, 0, wt); for (const [lx, lz] of [[-0.4, -0.4], [0.4, -0.4], [-0.4, 0.4], [0.4, 0.4]]) mesh(boxg(0.06, 0.4, 0.06), toon(0x3a3030), lx, 0.2, lz, wt); }
+  for (let i = 0; i < 2; i++) if (r() > 0.3) mesh(rbox(0.9, 0.5, 0.7, 0.05), toon(0xb8bcc0), (r() - 0.5) * w * 0.7, h + 0.6, (r() - 0.5) * d * 0.6, g, { ol: 0.008 });
+  if (r() > 0.6) mesh(cylg(0.03, 0.03, 2.5, 6), toon(0x4a4a4a), w * 0.3, h + 1.6, 0, g);
+  return g;
+}
 function addTree(parent, x, z, s = 1, seed = 1, leaf = 0x6aa864) {
   const g = group(parent, x, 0, z); g.scale.setScalar(s);
   mesh(cylg(0.07, 0.1, 1.2, 8), toon(0x7a5236), 0, 0.6, 0, g, { ol: 0.008 });
@@ -1548,6 +1588,8 @@ function buildCity() {
   const oaGlass = glassTex.clone(); oaGlass.wrapS = oaGlass.wrapT = THREE.RepeatWrapping; oaGlass.repeat.set(2, 4); oaGlass.needsUpdate = true;
   mesh(boxg(8, 18, 7), texMat(oaGlass), 0, 9, 0, oa, { ol: 0.03 });
   mesh(boxg(8.4, 0.3, 7.4), toon(0xf6f7f7), 0, 18.1, 0, oa);
+  for (let fy = 4.4; fy < 18; fy += 2.2) mesh(boxg(8.06, 0.16, 7.06), toon(0xf6f7f7), 0, fy, 0, oa, { cast: false });
+  mesh(boxg(5.5, 1.6, 4.5), toon(0x2c3238), 0, 19.0, 0, oa, { ol: 0.015 }); mesh(boxg(5.7, 0.12, 4.7), toon(0x3fe6c0, { emissive: 0x3fe6c0, ei: 0.5 }), 0, 19.85, 0, oa);
   mesh(boxg(8.2, 2.6, 0.4), toon(0xf6f7f7), 0, 1.3, 3.55, oa, { ol: 0.015 });
   mesh(boxg(3.0, 1.8, 0.1), toon(0x1f2a30, { emissive: 0x24474a, ei: 0.3 }), 0, 0.92, 3.78, oa); // entrance glass
   mesh(boxg(0.06, 1.8, 0.12), toon(0xd8dde0), 0, 0.92, 3.8, oa);
@@ -1561,6 +1603,8 @@ function buildCity() {
   mesh(boxg(8, 16, 7), texMat(anWin), 0, 8, 0, an, { ol: 0.03 });
   for (let i = 0; i < 9; i++) mesh(boxg(0.16, 13, 0.3), toon(0xb87a4e), -3.6 + i * 0.9, 9.5, 3.6, an, { cast: false });
   mesh(boxg(8.4, 0.3, 7.4), toon(0xc8693a), 0, 16.1, 0, an);
+  for (let fy = 4.2; fy < 16; fy += 2.4) mesh(boxg(8.06, 0.14, 7.06), toon(0xd9b48a), 0, fy, 0, an, { cast: false });
+  mesh(boxg(6, 1.2, 5), toon(0xf1e1c8), 0, 16.85, 0, an, { ol: 0.015 }); addPlant(an, -2, 17.45, 0, 3.5, 0xc8693a, 0x5c9a5a); addPlant(an, 2, 17.45, 0, 3.0, 0xc8693a, 0x4f9a6a);
   mesh(boxg(8.2, 2.6, 0.4), toon(0xf1e1c8), 0, 1.3, 3.55, an, { ol: 0.015 });
   mesh(boxg(3.0, 1.8, 0.1), toon(0x3a2418, { emissive: 0x5a3018, ei: 0.3 }), 0, 0.92, 3.78, an);
   mesh(boxg(0.06, 1.8, 0.12), toon(0xc99668), 0, 0.92, 3.8, an);
@@ -1574,8 +1618,8 @@ function buildCity() {
   for (const [x0, x1] of [[-40, -9.6], [9.6, 40]]) {
     let x = x0;
     while (x < x1) {
-      const w = 4 + r() * 3, h = 8 + r() * 12; const bt = windowTex(pal[Math.floor(r() * pal.length)], '#ffe9c2', '#8fa3b0', 4, 6, Math.floor(r() * 99)); bt.wrapS = bt.wrapT = THREE.RepeatWrapping; bt.repeat.set(Math.round(w / 2.5), Math.round(h / 3)); bt.needsUpdate = true;
-      mesh(boxg(w, h, 7), texMat(bt), x + w / 2, h / 2, -9.5, g, { ol: 0.025 });
+      const w = 4 + r() * 3, h = 8 + r() * 12;
+      facadeMesh(g, w, h, 7, x + w / 2, -9.5, pal[Math.floor(r() * pal.length)], '#8fb0c4', Math.floor(r() * 9), { plants: r() > 0.5 });
       x += w + 0.1;
     }
   }
@@ -1585,9 +1629,8 @@ function buildCity() {
   for (let i = 0; i < 12; i++) {
     const [name, accent, wall] = shops[i % shops.length];
     const w = 5.2, h = 6 + (i % 3) * 2.2;
-    const bt = windowTex(wall, '#ffe9c2', '#a7b4bb', 3, 4, 50 + i); bt.wrapS = bt.wrapT = THREE.RepeatWrapping; bt.repeat.set(2, Math.round(h / 3)); bt.needsUpdate = true;
     const b = group(g, sx + w / 2, 0, 9.5);
-    mesh(boxg(w, h, 7), texMat(bt), 0, h / 2, 0, b, { ol: 0.02 });
+    facadeMesh(b, w, h, 7, 0, 0, wall, '#9fb8c6', 20 + (i % 5), { plants: i % 2 === 0, lit: 0.15 });
     mesh(boxg(w, 2.0, 0.3), toon(new THREE.Color(wall).getHex()), 0, 1.0, -3.55, b, { ol: 0.01 });
     mesh(boxg(w * 0.7, 1.3, 0.1), toon(0x26323a, { emissive: 0x2a3a40, ei: 0.2 }), 0, 0.85, -3.72, b);
     // striped awning
@@ -1603,8 +1646,8 @@ function buildCity() {
   // distant towers
   for (let i = 0; i < 40; i++) {
     const x = -70 + i * 3.6 + r() * 2, z = (r() > 0.5 ? -1 : 1) * (22 + r() * 18), h = 14 + r() * 30, w = 3 + r() * 4;
-    const bt = windowTex(pal[i % pal.length], '#ffe9c2', '#91a2b4', 4, 8, 200 + i); bt.wrapS = bt.wrapT = THREE.RepeatWrapping; bt.repeat.set(2, Math.round(h / 4)); bt.needsUpdate = true;
-    mesh(boxg(w, h, w), texMat(bt), x, h / 2, z, g, { cast: false });
+    const tw = facadeTex(pal[i % pal.length], '#98b4c8', 40 + (i % 6)); tw.wrapS = tw.wrapT = THREE.RepeatWrapping; tw.repeat.set(Math.max(1, Math.round(w / 2.4)), Math.round(h / 2.2)); tw.needsUpdate = true;
+    mesh(boxg(w, h, w), texMat(tw), x, h / 2, z, g, { cast: false });
   }
   // trees, lamps, benches, hydrant along sidewalks
   for (let x = -30; x <= 30; x += 6) {
@@ -1742,7 +1785,7 @@ function buildOffice(name, origin, o) {
   for (let r = 0; r < 4; r++) mesh(boxg(0.36, 0.006, 0.022), toon(shadeHex(o.kbd, 0.85)), 0, DESK_H + 0.022, 0.19 + r * 0.03, desk, { cast: false });
   mesh(sphg(0.03, 10, 8), toon(o.kbd), 0.3, DESK_H + 0.01, 0.24, desk, { s: [0.8, 0.5, 1.2] });
   addPlant(desk, -0.62, DESK_H, -0.15, 0.55, o.pot, 0x4f9a6a);
-  for (let i = 0; i < 3; i++) mesh(boxg(0.07, 0.07, 0.002), toon([0xffe27a, 0x9ff2d6, 0xffb3a0][i]), -0.32 + i * 0.09, DESK_H + 0.35 + (i % 2) * 0.05, -0.16, desk, { cast: false, rz: (i - 1) * 0.12 });
+  for (let i = 0; i < 3; i++) mesh(boxg(0.06, 0.06, 0.002), toon([0xffe27a, 0x9ff2d6, 0xffb3a0][i]), -0.475 + (i % 2) * 0.012, DESK_H + 0.24 + i * 0.075, -0.164, desk, { cast: false, rz: (i - 1) * 0.12 });
   // chair (seat top 0.32)
   const ch = group(g, 0, 0, -1.02); env.chair = ch;
   mesh(rbox(0.42, 0.06, 0.4, 0.03), toon(o.chair), 0, 0.29, 0, ch, { ol: 0.006 });
@@ -1970,9 +2013,9 @@ function buildAlley() {
   for (const [c, x, y, z, i] of [[0xff5fa2, 1.6, 2.6, 3.6, 3], [0x4de8ff, -1.6, 2.4, -4.6, 3], [0xffb347, 1.6, 1.8, -6.5, 2], [0x7dffd9, -1.6, 2.2, -1.2, 2.2]]) {
     const pl = new THREE.PointLight(c, i, 6, 1.6); pl.position.set(x, y, z); g.add(pl); env.pl.push(pl);
   }
-  env.hemi = new THREE.HemisphereLight(0x4a5a98, 0x181420, 1.15); g.add(env.hemi);
-  env.amb = new THREE.AmbientLight(0x6070a0, 0.35); g.add(env.amb);
-  const rim = new THREE.DirectionalLight(0x7aa8ff, 0.7); rim.position.set(1, 4, -8); g.add(rim); g.add(rim.target); env.rim = rim;
+  env.hemi = new THREE.HemisphereLight(0x5060a8, 0x1c1826, 1.45); g.add(env.hemi);
+  env.amb = new THREE.AmbientLight(0x6070a0, 0.5); g.add(env.amb);
+  const rim = new THREE.DirectionalLight(0x7aa8ff, 0.45); rim.position.set(1, 4, -8); g.add(rim); g.add(rim.target); env.rim = rim;
   // the street glow at both ends + night skyline above
   mesh(new THREE.PlaneGeometry(4.6, 6), glow(0x3a4a7a, 0.9), 0, 3, -12.1, g, { cast: false });
   mesh(new THREE.PlaneGeometry(4.6, 6), glow(0x4a3a6a, 0.8), 0, 3, 12.1, g, { cast: false, ry: Math.PI });
@@ -2004,7 +2047,7 @@ function buildAlley() {
     env.doorLeds.forEach((l, i) => l.material.color.set(Math.floor(t * 4 + i * 0.7) % 3 ? PAL.cxMint : 0x103830).multiplyScalar(2));
     // lightning flashes
     let fl = 0; for (const lt of LIGHTNING) { const a = t - lt; if (a > 0 && a < 0.35) fl = Math.max(fl, (a < 0.06 ? 1 : 0.4) * (1 - a / 0.35)); }
-    env.hemi.intensity = 1.15 + fl * 4; info.flash = Math.max(info.flash || 0, fl * 0.25);
+    env.hemi.intensity = 1.45 + fl * 4; info.flash = Math.max(info.flash || 0, fl * 0.25);
   });
   return env;
 }
@@ -2046,7 +2089,7 @@ function buildFX(scene) {
   FX.systems.add = makePSys(6000, true); FX.systems.alpha = makePSys(3000, false);
   scene.add(FX.systems.add.pts); scene.add(FX.systems.alpha.pts);
   // rain
-  const N = 3200;
+  const N = 2200;
   const geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(N * 6), 3).setUsage(THREE.DynamicDrawUsage));
   const rm = new THREE.LineBasicMaterial({ color: new THREE.Color(0x9fc8ff).multiplyScalar(0.9), transparent: true, opacity: 0.45, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false });
@@ -2265,14 +2308,14 @@ function drawIDE(tex, theme, st, t) {
   ['#ff6b6b', '#ffd27a', '#5ff2a0'].forEach((col, i) => { c.fillStyle = col; c.beginPath(); c.arc(20 + i * 20, 17, 6, 0, TAU); c.fill(); });
   c.font = `600 16px ${FONT_MONO}`; c.fillStyle = th.dim; c.fillText(`${th.name} — ${st.file || ''}`, 90, 23);
   // left: request card
-  const LW = 300;
+  const LW = 280;
   c.fillStyle = th.panel; c.fillRect(0, 34, LW, H - 34);
   c.fillStyle = th.acc; c.font = `700 15px ${FONT_UI}`; c.fillText('INCOMING REQUEST', 18, 64);
   if (st.req) {
     rrect(c, 14, 76, LW - 28, 170, 12); c.fillStyle = th.line; c.fill();
     c.fillStyle = th.dim; c.font = `700 14px ${FONT_UI}`; c.fillText('👤 user', 28, 100);
-    c.fillStyle = th.text; c.font = `600 17px ${FONT_UI}`;
-    wrapText(c, st.req, 28, 126, LW - 56, 23, 5);
+    c.fillStyle = th.text; c.font = `700 19px ${FONT_UI}`;
+    wrapText(c, st.req, 28, 128, LW - 50, 25, 5);
   }
   // chat bubbles (ChatGPT etc.)
   let cy = 266;
@@ -2288,9 +2331,9 @@ function drawIDE(tex, theme, st, t) {
   }
   // editor
   const ex = LW + 16, ey = 52;
-  c.font = `500 19px ${FONT_MONO}`;
+  c.font = `500 21px ${FONT_MONO}`;
   let remaining = st.typed ?? Infinity;
-  const lh = 27;
+  const lh = 31;
   const termH = st.term ? 170 : 0;
   (st.code || []).forEach((ln, i) => {
     const y = ey + 24 + i * lh;
@@ -2331,20 +2374,21 @@ function drawDM(tex, theme, msgs, typing, title) {
   const c = tex.userData.ctx, W = tex.userData.canvas.width, H = tex.userData.canvas.height, th = THEMES[theme];
   c.fillStyle = th.bg; c.fillRect(0, 0, W, H);
   c.fillStyle = th.panel; c.fillRect(0, 0, W, 44);
-  c.fillStyle = th.text; c.font = `700 18px ${FONT_UI}`; c.fillText(title, 18, 29);
-  let y = 76;
+  c.fillStyle = th.text; c.font = `700 26px ${FONT_UI}`; c.fillText(title, 24, 31);
+  c.fillStyle = th.panel; c.fillRect(0, H - 64, W, 64); c.fillStyle = th.line; rrect(c, 20, H - 50, W - 40, 38, 19); c.fill();
+  let y = 96;
   for (const m of msgs) {
     const mine = m.mine;
-    c.font = `600 17px ${FONT_UI}`;
-    const lines = wrapLines(c, m.text, W * 0.62);
-    const bw = Math.max(...lines.map((l) => c.measureText(l).width)) + 28, bh = 14 + lines.length * 22;
+    c.font = `700 30px ${FONT_UI}`;
+    const lines = wrapLines(c, m.text, W * 0.66);
+    const bw = Math.max(...lines.map((l) => c.measureText(l).width)) + 40, bh = 22 + lines.length * 36;
     const bx = mine ? W - bw - 16 : 16;
     rrect(c, bx, y, bw, bh, 12); c.fillStyle = mine ? (theme === 'oa' ? '#1d5a50' : '#7a3f20') : th.line; c.fill();
-    c.fillStyle = th.text; lines.forEach((l, i) => c.fillText(l, bx + 14, y + 24 + i * 22));
-    c.font = `700 12px ${FONT_UI}`; c.fillStyle = th.dim; c.fillText(m.from, bx + 4, y - 4);
-    y += bh + 22;
+    c.fillStyle = th.text; lines.forEach((l, i) => c.fillText(l, bx + 20, y + 38 + i * 36));
+    c.font = `700 18px ${FONT_UI}`; c.fillStyle = th.dim; c.fillText(m.from, bx + 6, y - 8);
+    y += bh + 40;
   }
-  if (typing) { c.fillStyle = th.dim; c.font = `600 15px ${FONT_UI}`; c.fillText(typing, 18, H - 18); }
+  if (typing) { c.fillStyle = th.dim; c.font = `600 20px ${FONT_UI}`; c.fillText(typing, 40, H - 24); }
   tex.needsUpdate = true;
 }
 
@@ -2420,6 +2464,7 @@ const Story = (() => {
     const info = { fade: 0, flash: 0, ab: 0, bloom: 0.55, tint: null, focus: null, shake: 0 };
     for (const up of env.updaters) up(t, dt, info);
     SEQ[sh.seq](t, env, sh, info, dt);
+    if (sh.grade.hide) for (const k of sh.grade.hide) A[k].root.visible = false;
     // camera
     const c = sh.cam(t, t - sh.t0);
     tmpV.set(c.p[0], c.p[1], c.p[2]).add(env.group.position);
@@ -2592,10 +2637,10 @@ function homeAmbient(env, t, who) {
 
 // ── shots ──
 shot(5.0, 8.5, 'cxHome', 'cxBed', camK([[5, [-2.0, 1.05, 0.6], [-3.5, 0.45, -2.45], 38], [8.5, [-2.35, 0.9, -0.1], [-3.6, 0.42, -2.45], 36]]), { fadeIn: 1.0 });
-shot(8.5, 12.0, 'cxHome', 'cxBed', withUp(camK([[8.5, [-3.95, 1.25, -2.15], [-4.12, 0.42, -2.5], 34], [12, [-3.98, 1.18, -2.2], [-4.12, 0.43, -2.5], 31]]), [-1, 0, 0]));
+shot(8.5, 12.0, 'cxHome', 'cxBed', withUp(camK([[8.5, [-3.9, 1.5, -2.05], [-4.08, 0.42, -2.5], 36], [12, [-3.92, 1.42, -2.1], [-4.08, 0.43, -2.5], 33]]), [-1, 0, 0]));
 shot(12.0, 16.0, 'cxHome', 'cxBed', camK([[12, [-2.45, 0.8, -0.45], [-3.55, 0.48, -2.3], 38], [14.6, [-2.4, 0.78, -0.35], [-3.45, 0.5, -2.1], 38], [16, [-2.5, 0.8, -0.2], [-3.45, 0.62, -1.95], 40]]));
 shot(16.0, 19.5, 'ccHome', 'ccBed', camK([[16, [2.0, 1.05, 0.6], [3.5, 0.45, -2.4], 38], [19.5, [2.35, 0.9, -0.1], [3.55, 0.45, -2.4], 36]]));
-shot(19.5, 23.0, 'ccHome', 'ccBed', withUp(camK([[19.5, [2.92, 1.22, -2.1], [3.06, 0.47, -2.45], 34], [23, [2.95, 1.15, -2.15], [3.06, 0.48, -2.45], 31]]), [-1, 0, 0]));
+shot(19.5, 23.0, 'ccHome', 'ccBed', withUp(camK([[19.5, [2.95, 1.5, -2.0], [3.08, 0.47, -2.45], 36], [23, [2.97, 1.42, -2.05], [3.08, 0.48, -2.45], 33]]), [-1, 0, 0]));
 shot(23.0, 27.0, 'ccHome', 'ccBed', camK([[23, [2.45, 0.8, -0.45], [3.55, 0.48, -2.3], 38], [27, [2.5, 0.8, -0.25], [3.45, 0.6, -1.95], 40]]));
 
 say(10.5, 'codex', 'Boot complete. Zero warnings.');
@@ -2609,7 +2654,7 @@ sfx(14.95, 'land'); sfx(26.05, 'land', { soft: true });
 
 // opening: dawn over the city, the two company towers facing the same street
 SEQ.cityEmpty = (t, env, sh, info) => { info.focus = new THREE.Vector3(0, 0, -6); };
-shot(0, 5.0, 'city', 'cityEmpty', camK([[0, [-2, 20, 34], [0, 7, -8], 40], [5, [-1, 10.5, 20], [0, 6.5, -9], 38]]), { fadeIn: 1.5, fadeOut: 0.6 });
+shot(0, 5.0, 'city', 'cityEmpty', camK([[0, [-27, 15, 1.5], [0, 9, -7], 42], [5, [-12, 6.5, 2.2], [0, 7.5, -8], 40]]), { fadeIn: 1.5, fadeOut: 0.6 });
 
 // ==== 52_ch2_breakfast.js ====
 // ───────────────────────── Chapter 2 — Breakfast ─────────────────────────
@@ -2830,7 +2875,7 @@ function setLoupe(R, u) {
 
 // ── shots ──
 shot(27.0, 31.0, 'cxHome', 'cxKitchen', camK([[27, [-0.4, 1.0, 0.9], [0.6, 0.5, -1.8], 42], [31, [0.2, 0.95, 0.2], [1.4, 0.55, -2.3], 40]]), { fadeIn: 0.5 });
-shot(31.0, 35.0, 'cxHome', 'cxKitchen', camK([[31, [3.35, 0.86, -2.33], [1.8, 0.6, -2.38], 40], [35, [3.25, 0.84, -2.3], [1.75, 0.62, -2.35], 38]]));
+shot(31.0, 35.0, 'cxHome', 'cxKitchen', camK([[31, [3.4, 1.05, -1.6], [1.75, 0.6, -2.4], 40], [35, [3.3, 1.02, -1.65], [1.7, 0.62, -2.35], 38]]));
 shot(35.0, 40.0, 'cxHome', 'cxKitchen', camK([[35, [1.7, 0.88, -0.45], [1.45, 0.76, -2.05], 32], [40, [1.66, 0.86, -0.6], [1.45, 0.8, -2.05], 29]]));
 shot(40.0, 44.5, 'ccHome', 'ccKitchen', camK([[40, [-1.55, 0.88, -2.4], [-3.3, 0.62, -2.4], 40], [44.5, [-1.6, 0.86, -2.38], [-3.1, 0.62, -2.35], 38]]));
 shot(44.5, 48.5, 'ccHome', 'ccKitchen', camK([[44.5, [-2.05, 0.86, -2.42], [-2.86, 0.84, -2.2], 32], [48.5, [-2.08, 0.86, -2.4], [-2.86, 0.84, -2.2], 29]]));
@@ -2842,7 +2887,7 @@ say(37.0, 'codex', 'Espresso. Fast, strong, zero dependencies.', 2.4);
 say(44.9, 'claude', 'Steeping: three minutes.', 1.5);
 say(46.5, 'claude', 'Not two. Not “roughly three.”', 1.5);
 say(52.5, 'claude', 'Mm. Reviewed… and approved.', 1.6);
-say(54.15, 'claude', 'Forty-seven. Lovely.', 0.9);
+say(53.95, 'claude', 'Forty-seven. Lovely.', 0.95);
 say(55.65, 'codex', 'Only forty-seven? Done by lunch.', 1.9);
 sfx(27.0, 'steps', { who: 'cx', mv: cxWalk1 }); sfx(30.3, 'steps', { who: 'cx', mv: cxSide1, soft: true }); sfx(34.4, 'steps', { who: 'cx', mv: cxSide2, soft: true });
 sfx(41.3, 'steps', { who: 'cc', mv: ccSide1, soft: true }); sfx(43.0, 'steps', { who: 'cc', mv: ccSide2, soft: true }); sfx(43.8, 'steps', { who: 'cc', mv: ccSide3, soft: true });
@@ -2910,12 +2955,13 @@ SEQ.city = (t, env, sh, info) => {
 };
 
 const ccTrack = (t) => { const v = A.cc.root.position; return [v.x, v.y, v.z]; };
-shot(58.5, 63.0, 'city', 'city', camK([[58.5, [-1.5, 6.5, -1.5], [-5.5, 0.8, 4.2], 44], [63, [-1.2, 1.3, 1.2], [-3.0, 0.75, 4.0], 40]]), { fadeIn: 0.6 });
+shot(58.5, 63.0, 'city', 'city', camK([[58.5, [-15, 6, 1.0], [-6.5, 1.2, 4.3], 46], [61.0, [-4.0, 1.0, 2.0], [-5.6, 0.75, 4.2], 40], [63, [-1.6, 0.95, 2.1], [-2.6, 0.75, 4.0], 38]]), { fadeIn: 0.6 });
 shot(63.0, 66.5, 'city', 'city', (t) => { const q = [A.cc.root.position.x, 0.6, A.cc.root.position.z]; return { p: [q[0] - 1.3, 0.95, 1.9], t: [q[0] - 0.1, 0.72, q[2]], fov: 34 }; });
 shot(66.5, 71.0, 'city', 'city', camK([[66.5, [0.05, 0.72, 1.55], [0, 0.72, 3.6], 36], [71, [0.05, 0.72, 1.85], [0, 0.74, 3.6], 34]]));
 shot(71.0, 72.6, 'city', 'city', camK([[71, [0.35, 0.95, 2.1], [-0.45, 0.88, 3.55], 30], [72.6, [0.3, 0.95, 2.15], [-0.45, 0.88, 3.55], 28]]));
 shot(72.6, 74.6, 'city', 'city', camK([[72.6, [-0.35, 0.9, 2.15], [0.45, 0.82, 3.55], 30], [74.6, [-0.3, 0.9, 2.2], [0.45, 0.82, 3.55], 28]]));
-shot(74.6, 80.0, 'city', 'city', camK([[74.6, [-3.2, 2.2, -4.9], [0, 0.6, 1.5], 42], [80, [-2.4, 3.6, -5.3], [0, 1.4, -4.5], 48]]));
+shot(74.6, 77.4, 'city', 'city', camK([[74.6, [-3.2, 2.2, -2.6], [0, 0.6, 2.0], 42], [77.4, [-3.0, 2.0, -2.6], [0, 0.6, 0.0], 44]]));
+shot(77.4, 80.0, 'city', 'city', camK([[77.4, [0, 1.3, 2.6], [0, 0.9, -4.0], 50], [80, [0, 2.4, 3.6], [0, 2.4, -7.0], 52]]));
 
 say(66.6, 'codex', 'Morning. Shipped three features before your tea cooled.', 2.6);
 say(69.4, 'claude', 'I saw. Line 42 has an off-by-one.', 1.8);
@@ -2941,14 +2987,14 @@ const CX_CODE = [
   '    e.setCancelled(true); // no boom today',
   '    Location at = e.getLocation();',
   '    for (int i = 0; i < 8; i++) {',
-  '        Block b = at.clone().add(r(), 0, r()).getBlock();',
-  '        if (b.getType() == Material.AIR)',
+  '        Block b = at.clone().add(r(),0,r()).getBlock();',
+  '        if (b.getType().isAir())',
   '            b.setType(randomFlower());',
   '    }',
   '    e.getEntity().remove();',
   '}',
 ];
-const CX_FIX = '        if (b != null && b.getType() == Material.AIR)';
+const CX_FIX = '        if (b != null && b.getType().isAir())';
 const CX_RAINBOW = '            b.setType(RAINBOW[i % RAINBOW.length]);';
 const CC_CODE = [
   '# redstone item-sorter calculator',
@@ -2959,11 +3005,11 @@ const CC_CODE = [
   'def chests_needed(items, stack=64):',
   '    return -(-slots_needed(items, stack) // 27)',
   '',
-  'def test_full_stack():    assert slots_needed(64) == 1',
-  'def test_partial_stack(): assert slots_needed(65) == 2',
-  'def test_ender_pearls():  assert slots_needed(17, 16) == 2',
+  'def test_full():    assert slots_needed(64) == 1',
+  'def test_partial(): assert slots_needed(65) == 2',
+  'def test_pearls():  assert slots_needed(17,16) == 2',
 ];
-const CC_FIX = '    return -(-items // stack)  # partial stacks need a slot';
+const CC_FIX = '    return -(-items // stack)  # ceil division';
 const CX_REQ = 'Make a Minecraft plugin: creepers drop flowers instead of exploding 🌼';
 const CC_REQ = 'My Minecraft redstone sorter says 65 items fit in 1 slot?? Fix it + add tests pls';
 
@@ -2985,7 +3031,7 @@ function ccScreenState(t) {
   // Claude reads first (code already open), then writes tests
   st.typed = 260 + Math.max(0, (t - 90.4) * 34);
   if (t > 93.8) st.term = [{ text: '$ pytest -q' }];
-  if (t > 94.3 && t < 97.0) { st.term.push({ text: '..F.F.......  2 failed, 10 passed', color: THEMES.an.bad }, { text: 'test_partial_stack: assert 1 == 2', color: THEMES.an.bad }); st.hl = { line: 3, color: 'rgba(255,110,90,0.22)' }; }
+  if (t > 94.3 && t < 97.0) { st.term.push({ text: '..F.F.......  2 failed, 10 passed', color: THEMES.an.bad }, { text: 'test_partial: assert 1 == 2', color: THEMES.an.bad }); st.hl = { line: 3, color: 'rgba(255,110,90,0.22)' }; }
   if (t > 95.9) { const n = Math.floor((t - 95.9) * 30); st.code[3] = n < 4 ? st.code[3] : CC_FIX.slice(0, n); }
   if (t > 97.0) st.term = [{ text: '$ pytest -q' }];
   if (t > 97.5) { st.term.push({ text: '............  12 passed in 0.04s  ✓', color: THEMES.an.ok }); st.hl = { line: 3, color: 'rgba(160,227,154,0.18)' }; }
@@ -3106,20 +3152,22 @@ SEQ.ccOffice = (t, env, sh, info) => {
 };
 
 // ── shots ──
-const OTS_CX = (a, b) => camK([[a, [0.42, 1.12, -0.42], [0.0, 0.9, -1.78], 40], [b, [0.36, 1.08, -0.5], [0.0, 0.9, -1.78], 36]]);
-const SCREEN = (a, b, side = 1, fov = 50) => camK([[a, [side * 0.27, 0.97, -1.48], [0.0, 0.92, -1.79], fov], [b, [side * 0.25, 0.965, -1.5], [0.0, 0.92, -1.79], fov - 3]]);
+const OTS_CX = (a, b) => camK([[a, [0.62, 1.38, -0.2], [0.0, 0.9, -1.78], 40], [b, [0.55, 1.34, -0.3], [0.0, 0.9, -1.78], 36]]);
+const SCREEN = (a, b, side = 1, fov = 40) => camK([[a, [side * 0.03, 0.93, -0.95], [0.0, 0.92, -1.79], fov], [b, [side * 0.02, 0.93, -1.02], [0.0, 0.92, -1.79], fov - 3]]);
 shot(80.0, 83.5, 'oaOffice', 'cxOffice', camK([[80, [2.6, 1.5, 2.4], [1.0, 0.6, -0.6], 44], [83.5, [1.6, 1.25, 1.0], [0.1, 0.7, -1.2], 40]]), { fadeIn: 0.5 });
 shot(83.5, 86.5, 'oaOffice', 'cxOffice', OTS_CX(83.5, 86.5));
-shot(86.5, 89.0, 'oaOffice', 'cxOffice', SCREEN(86.5, 89.0));
-shot(89.0, 92.5, 'anOffice', 'ccOffice', camK([[89, [-1.0, 1.0, -1.5], [0.0, 0.86, -1.15], 38], [92.5, [-0.95, 0.98, -1.48], [0.0, 0.86, -1.15], 34]]));
-shot(92.5, 95.8, 'anOffice', 'ccOffice', camK([[92.5, [-0.6, 1.22, -0.5], [0.05, 0.9, -1.78], 40], [95.8, [-0.55, 1.18, -0.55], [0.05, 0.9, -1.78], 36]]));
-shot(95.8, 99.0, 'anOffice', 'ccOffice', SCREEN(95.8, 99.0, -1));
+shot(86.5, 89.0, 'oaOffice', 'cxOffice', SCREEN(86.5, 89.0), { hide: ['cx'] });
+shot(89.0, 92.5, 'anOffice', 'ccOffice', camK([[89, [-0.85, 1.02, -1.62], [0.0, 0.88, -1.15], 38], [92.5, [-0.8, 1.0, -1.6], [0.0, 0.88, -1.15], 34]]));
+shot(92.5, 95.8, 'anOffice', 'ccOffice', camK([[92.5, [-0.65, 1.42, -0.22], [0.05, 0.9, -1.78], 40], [95.8, [-0.58, 1.38, -0.32], [0.05, 0.9, -1.78], 36]]));
+shot(95.8, 99.0, 'anOffice', 'ccOffice', SCREEN(95.8, 99.0, -1), { hide: ['cc'] });
 shot(99.0, 101.0, 'oaOffice', 'cxOffice', camK([[99, [0.95, 1.0, -1.5], [0.0, 0.88, -1.15], 36], [101, [0.9, 0.98, -1.48], [0.0, 0.88, -1.15], 32]]));
-shot(101.0, 104.2, 'oaOffice', 'cxOffice', SCREEN(101.0, 104.2));
+shot(101.0, 104.2, 'oaOffice', 'cxOffice', SCREEN(101.0, 104.2), { hide: ['cx'] });
 shot(104.2, 108.4, 'oaOffice', 'cxOffice', camK([[104.2, [1.25, 1.05, -0.35], [0.3, 0.92, -1.35], 36], [108.4, [1.2, 1.02, -0.45], [0.3, 0.92, -1.35], 33]]));
 shot(108.4, 112.8, 'anOffice', 'ccOffice', camK([[108.4, [-1.25, 1.05, -0.35], [-0.3, 0.92, -1.35], 36], [112.8, [-1.2, 1.02, -0.45], [-0.3, 0.92, -1.35], 33]]));
-shot(112.8, 115.4, 'oaOffice', 'cxOffice', camK([[112.8, [0.95, 1.0, -1.5], [0.0, 0.88, -1.15], 34], [114.2, [0.9, 1.0, -1.48], [0.0, 0.88, -1.15], 34], [114.3, [0.27, 0.97, -1.48], [0.0, 0.92, -1.79], 50], [115.4, [0.25, 0.965, -1.5], [0.0, 0.92, -1.79], 47]]));
-shot(115.4, 118.6, 'anOffice', 'ccOffice', camK([[115.4, [-0.27, 0.97, -1.48], [0.0, 0.92, -1.79], 50], [117.2, [-0.25, 0.965, -1.5], [0.0, 0.92, -1.79], 47], [117.3, [-1.0, 1.0, -1.5], [0.0, 0.86, -1.15], 36], [118.6, [-0.95, 0.98, -1.48], [0.0, 0.86, -1.15], 33]]));
+shot(112.8, 114.2, 'oaOffice', 'cxOffice', camK([[112.8, [0.95, 1.0, -1.5], [0.0, 0.88, -1.15], 34], [114.2, [0.9, 1.0, -1.48], [0.0, 0.88, -1.15], 34]]));
+shot(114.2, 115.4, 'oaOffice', 'cxOffice', SCREEN(114.2, 115.4), { hide: ['cx'] });
+shot(115.4, 117.3, 'anOffice', 'ccOffice', SCREEN(115.4, 117.3, -1), { hide: ['cc'] });
+shot(117.3, 118.6, 'anOffice', 'ccOffice', camK([[117.3, [-0.85, 1.02, -1.62], [0.0, 0.88, -1.15], 36], [118.6, [-0.8, 1.0, -1.6], [0.0, 0.88, -1.15], 33]]));
 shot(118.6, 121.0, 'oaOffice', 'cxOffice', camK([[118.6, [0.0, 1.4, 1.6], [0.0, 0.8, -1.3], 36], [121, [0.0, 1.6, 2.6], [0.0, 0.9, -1.5], 40]]), { fadeOut: 0.9 });
 
 say(95.3, 'claude', 'Ah. There you are.', 1.3);
@@ -3362,7 +3410,8 @@ SEQ.alley = (t, env, sh, info, dt) => {
   if (t < 146.3) { headLook(cx, headPos(cc, env), 0.7); headLook(cc, headPos(cx, env), 0.7); }
   // rain, splashes, sparks
   const slow = 1 - 0.75 * win(t, 143.85, 143.95, 145.6, 146.2);
-  fxRain(new THREE.Vector3(camera.position.x, 0, camera.position.z - 0.0).lerp(W(env, [0, 0, 0]), 0.5), t * slow + (1 - slow) * 143.9, { h: 6, sx: 5, sz: 12, speed: 9, floor: env.group.position.y });
+  fxRain(new THREE.Vector3(camera.position.x, 0, camera.position.z - 0.0).lerp(W(env, [0, 0, 0]), 0.5), t * slow + (1 - slow) * 143.9, { h: 7.5, sx: 4.6, sz: 12, speed: 9, floor: env.group.position.y });
+  FX.rain.material.opacity = 0.26 * (1 - sseg(camera.position.y - env.group.position.y, 3, 9) * 0.6);
   for (const [ti, p, s] of IMPACTS) {
     fxSparks(env, p, t, ti, { n: Math.round(40 * s), speed: 2.5 * s, color: ti === 143.9 ? 0xffffff : (ti % 2 > 1 ? 0xb8fff0 : 0xffd29a), color2: ti === 143.9 ? 0x7dffd9 : 0xffb36e, flash: 0.2 * s, life: 0.55 + 0.2 * s });
     const a = t - ti; if (a > 0 && a < 0.25) { info.shake = Math.max(info.shake || 0, s * 1.8 * (1 - a / 0.25)); info.ab = Math.max(info.ab || 0, s * 1.2 * (1 - a / 0.25)); info.flash = Math.max(info.flash || 0, s * 0.12 * (1 - a / 0.18)); }
@@ -3376,7 +3425,7 @@ SEQ.alley = (t, env, sh, info, dt) => {
   fxSteam(env, [2.0, 0.05, 5.0], t, 121, 180, { rate: 5, size: 0.3, alpha: 0.1, rise: 0.3, life: 3.2, seed: 4 });
   finaleFX(t, env, info);
   info.focus = new THREE.Vector3(0, 0.5, 0);
-  info.bloom = 0.75;
+  info.bloom = Math.max(info.bloom || 0, 0.7); info.bloomTh = 1.3;
 };
 
 let _blade, _staff, _shield;
@@ -3512,8 +3561,9 @@ function drawBuild(u) {
     if (ok) { c.fillStyle = '#9fe39a'; c.font = `700 26px ${FONT_UI}`; c.fillText('Creepers now plant rainbow flowers. Pigs too.', 34, 410); }
   };
 }
-let _shock;
+let _shock, _beam;
 function finaleFX(t, env, info) {
+  if (_beam) _beam.visible = false;
   if (t < 145.9) return;
   const G = A.gpt; show(G, env);
   const yDesc = lerp(4.2, 1.3, EASE.out3(sseg(t, 146.0, 147.4)));
@@ -3523,7 +3573,12 @@ function finaleFX(t, env, info) {
   // light column + shockwave
   const col = win(t, 145.95, 146.3, 147.2, 148.4);
   if (col > 0) {
-    fxStream('beam', env, [0, 0.0, 0], [0, 6, 0], 0.55 * col, 0xdffff4, { glow: 0.6 * col });
+    if (!_beam) {
+      const bt = canvasTex(64, 256, (c, w, h) => { const g = c.createLinearGradient(0, 0, w, 0); g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(0.5, 'rgba(255,255,255,1)'); g.addColorStop(1, 'rgba(255,255,255,0)'); c.fillStyle = g; c.fillRect(0, 0, w, h); });
+      _beam = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.75, 7, 24, 1, true), new THREE.MeshBasicMaterial({ map: bt, color: new THREE.Color(0.9, 1.6, 1.4), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, toneMapped: false }));
+      env.group.add(_beam);
+    }
+    _beam.position.set(0, 3.5, 0); _beam.material.opacity = 0.45 * col; _beam.visible = true; _beam.rotation.y = t * 0.3;
     info.flash = Math.max(info.flash || 0, win(t, 146.5, 146.6, 146.7, 147.0) * 0.6);
     info.bloom = 1.1;
   }
@@ -3535,7 +3590,7 @@ function finaleFX(t, env, info) {
   // ticket hologram
   if (t > 149.3 && t < 157.0) {
     const s = EASE.back(sseg(t, 149.3, 149.7)) * (1 - sseg(t, 156.6, 157.0));
-    fxHolo('ticket', env, [0, 1.72, 0.0], 1.1, 0.76, drawTicket, 'ticket', { yaw: -Math.PI / 2, scale: s });
+    fxHolo('ticket', env, [0, 1.6, 0.0], 1.0, 0.69, drawTicket, 'ticket', { yaw: -Math.PI / 2, scale: s });
   }
   // shared build
   if (t > 160.5 && t < 165.5) {
@@ -3570,11 +3625,11 @@ shot(137.9, 139.4, 'alley', 'alley', camK([[137.9, [1.25, 0.85, 0.35], [0, 0.75,
 shot(139.4, 140.5, 'alley', 'alley', camK([[139.4, [-0.6, 0.5, -3.3], [0, 0.6, 0.6], 44], [140.5, [-0.5, 0.45, -2.9], [0, 0.7, 0.6], 44]]));
 shot(140.5, 141.6, 'alley', 'alley', camK([[140.5, [1.95, 0.3, -0.3], [0, 0.85, 0.3], 48], [141.6, [1.95, 0.32, 0.2], [0, 0.7, 0.9], 48]]));
 shot(141.6, 142.8, 'alley', 'alley', camK([[141.6, [-0.5, 0.9, -1.75], [0, 0.8, 1.2], 42], [142.8, [-0.55, 0.88, -1.9], [0, 0.8, 0.4], 42]]), { hand: 0.5 });
-shot(142.8, 143.35, 'alley', 'alley', camK([[142.8, [0.4, 0.95, -0.5], [0, 0.92, -1.2], 32], [143.35, [0.38, 0.95, -0.52], [0, 0.92, -1.2], 30]]));
-shot(143.35, 143.85, 'alley', 'alley', camK([[143.35, [-0.4, 0.92, 0.5], [0, 0.88, 1.2], 32], [143.85, [-0.38, 0.92, 0.52], [0, 0.88, 1.2], 30]]));
+shot(142.8, 143.35, 'alley', 'alley', camK([[142.8, [0.55, 1.0, -0.2], [0, 0.88, -1.2], 36], [143.35, [0.52, 1.0, -0.25], [0, 0.88, -1.2], 34]]));
+shot(143.35, 143.85, 'alley', 'alley', camK([[143.35, [-0.55, 0.98, 0.2], [0, 0.85, 1.2], 36], [143.85, [-0.52, 0.98, 0.25], [0, 0.85, 1.2], 34]]));
 shot(143.85, 146.0, 'alley', 'alley', (t) => { const a = lerp(0.25, 1.4, sseg(t, 143.85, 146.0)); return { p: [Math.cos(a) * 1.55, 0.8, Math.sin(a) * 1.55], t: [0, 0.82, 0], fov: 40 }; }, { hand: 0.4 });
 shot(146.0, 149.5, 'alley', 'alley', camK([[146, [1.9, 0.55, 1.6], [0, 1.3, 0], 50], [149.5, [1.85, 0.6, 1.4], [0, 1.2, 0], 48]]));
-shot(149.5, 151.7, 'alley', 'alley', camK([[149.5, [-2.05, 1.1, 0.2], [0, 1.3, 0.0], 52], [151.7, [-1.95, 1.1, 0.15], [0, 1.3, 0.0], 50]]));
+shot(149.5, 151.7, 'alley', 'alley', camK([[149.5, [-2.05, 1.05, 0.2], [0, 1.2, 0.0], 54], [151.7, [-1.95, 1.05, 0.15], [0, 1.2, 0.0], 52]]));
 shot(151.7, 153.7, 'alley', 'alley', camK([[151.7, [0.55, 0.95, 0.45], [0, 0.88, 1.4], 34], [153.7, [0.52, 0.95, 0.5], [0, 0.88, 1.4], 32]]));
 shot(153.7, 156.0, 'alley', 'alley', camK([[153.7, [-0.55, 0.97, -0.45], [0, 0.9, -1.4], 34], [156, [-0.52, 0.97, -0.5], [0, 0.9, -1.4], 32]]));
 shot(156.0, 158.7, 'alley', 'alley', camK([[156, [1.95, 1.0, 0], [0, 1.0, 0], 50], [158.7, [1.9, 0.95, 0], [0, 0.95, 0], 46]]));
@@ -3666,7 +3721,7 @@ const Audio = (() => {
     land(o, t, x) { const g = gain(0, o.sfx); osc('sine', 85, t, 0.2, g); noise(t, 0.08, filt('lowpass', x.soft ? 500 : 900, 1, gain(0.6, g))); envAt(g.gain, [[t, 0.0001], [t + 0.003, x.soft ? 0.18 : 0.3], [t + 0.18, 0.0001]]); },
     step(o, t, x) { const g = gain(0, o.sfx); const cx = x.who === 'cx'; const f = cx ? 1500 : 900; noise(t, 0.06, filt('bandpass', f * (0.85 + hash1(t * 9) * 0.3), 1.2, g)); osc('sine', cx ? 140 : 110, t, 0.06, gain(0.5, g)); const v = (x.soft ? 0.05 : 0.09) * (x.run ? 1.4 : 1); envAt(g.gain, [[t, 0.0001], [t + 0.002, v], [t + 0.06, 0.0001]]); if (x.wet) { const w = gain(0, o.sfx); noise(t, 0.12, filt('bandpass', 2600, 1.5, w)); envAt(w.gain, [[t, 0.0001], [t + 0.01, 0.06], [t + 0.12, 0.0001]]); } },
     click(o, t) { const g = gain(0, o.sfx); osc('sine', 2200, t, 0.04, g); envAt(g.gain, [[t, 0.0001], [t + 0.001, 0.1], [t + 0.035, 0.0001]]); },
-    grind(o, t, x) { const g = gain(0, o.sfx); const bp = filt('bandpass', 700, 1.5, g); noise(t, x.dur, bp); osc('square', 32, t, x.dur, gain(0.5, g.gain)); adsr(g, t, 0.05, 0.12, 0.1, 1, 0.1, t + x.dur); },
+    grind(o, t, x) { const g = gain(0, o.sfx); const bp = filt('bandpass', 700, 1.5, g); noise(t, x.dur, bp); osc('square', 32, t, x.dur, gain(0.05, g.gain)); adsr(g, t, 0.05, 0.12, 0.1, 1, 0.1, t + x.dur); },
     pour(o, t, x) { const g = gain(0, o.sfx); const bp = filt('bandpass', x.thin ? 1600 : 1000, 2.5, g); noise(t, x.dur, bp); osc('sine', 7, t, x.dur, gain(250, bp.frequency)); envAt(bp.frequency, [[t, x.thin ? 1500 : 900], [t + x.dur, x.thin ? 1900 : 1400]]); adsr(g, t, 0.08, 0.1, 0.1, 1, 0.15, t + x.dur); },
     hiss(o, t, x) { const g = gain(0, o.sfx); noise(t, x.dur, filt('highpass', 4200, 0.7, g)); adsr(g, t, 0.3, 0.04, 0.2, 0.7, 0.4, t + x.dur); },
     lever(o, t) { S.click(o, t); const g = gain(0, o.sfx); const oo = osc('triangle', 320, t, 0.25, g); envAt(oo.frequency, [[t, 320], [t + 0.2, 180]]); envAt(g.gain, [[t, 0.0001], [t + 0.005, 0.06], [t + 0.22, 0.0001]]); },
@@ -3691,11 +3746,11 @@ const Audio = (() => {
     whoosh(o, t, x) { const g = gain(0, o.sfx); const bp = filt('bandpass', 500, 1.6, g); noise(t, 0.3, bp); envAt(bp.frequency, [[t, 400], [t + 0.12, 2200], [t + 0.28, 600]]); envAt(g.gain, [[t, 0.0001], [t + 0.1, x.soft ? 0.08 : 0.17], [t + 0.28, 0.0001]]); },
     clatter(o, t) { for (let k = 0; k < 3; k++) S.clink(o, t + k * 0.09, { low: true }); },
     summon(o, t, x) { const cx = x.who === 'cx'; const g = gain(0, o.sfx); g.connect(o.rev); const oo = osc(cx ? 'sawtooth' : 'sine', cx ? 220 : 180, t, 0.9, filt('lowpass', 3000, 2, g)); envAt(oo.frequency, [[t, cx ? 220 : 180], [t + 0.6, cx ? 1320 : 720]]); envAt(g.gain, [[t, 0.0001], [t + 0.5, 0.08], [t + 0.85, 0.0001]]); (cx ? ['C6', 'G6', 'C7'] : ['A5', 'E6', 'A6']).forEach((n, i) => I.bell(o, t + 0.45 + i * 0.07, NOTE(n), 0.5, 1.0)); },
-    impact(o, t, x) { const s = x.s; const g = gain(0, o.sfx); g.connect(o.rev); noise(t, 0.25, filt('lowpass', 5000, 0.5, g)); const th = osc('sine', 90, t, 0.4, gain(1.2, g)); envAt(th.frequency, [[t, 120], [t + 0.25, 50]]); [[1240, 1], [2930, 0.6], [4870, 0.3]].forEach(([f, a]) => osc('sine', f * (0.95 + hash1(t) * 0.1), t, 0.6, gain(0.12 * a, g))); envAt(g.gain, [[t, 0.0001], [t + 0.002, 0.32 * Math.min(1.4, s)], [t + 0.12, 0.12 * s], [t + 0.55, 0.0001]]); },
+    impact(o, t, x) { const s = x.s; const g = gain(0, o.sfx); g.connect(o.rev); noise(t, 0.25, filt('lowpass', 5000, 0.5, g)); const th = osc('sine', 90, t, 0.4, gain(1.2, g)); envAt(th.frequency, [[t, 120], [t + 0.25, 50]]); [[1240, 1], [2930, 0.6], [4870, 0.3]].forEach(([f, a]) => osc('sine', f * (0.95 + hash1(t) * 0.1), t, 0.6, gain(0.12 * a, g))); envAt(g.gain, [[t, 0.0001], [t + 0.002, 0.24 * Math.min(1.4, s)], [t + 0.12, 0.09 * s], [t + 0.55, 0.0001]]); },
     splash(o, t) { const g = gain(0, o.sfx); noise(t, 0.25, filt('bandpass', 1800, 0.8, g)); envAt(g.gain, [[t, 0.0001], [t + 0.01, 0.12], [t + 0.22, 0.0001]]); for (let k = 0; k < 4; k++) { const tt = t + 0.04 + k * 0.05; const d = gain(0, o.sfx); const oo = osc('sine', 1400 + hash1(k + t) * 1600, tt, 0.05, d); envAt(oo.frequency, [[tt, 1200 + k * 400], [tt + 0.04, 2400]]); envAt(d.gain, [[tt, 0.0001], [tt + 0.003, 0.03], [tt + 0.045, 0.0001]]); } },
     skid(o, t, x) { const g = gain(0, o.sfx); noise(t, x.dur, filt('bandpass', 1100, 1.2, g)); envAt(g.gain, [[t, 0.0001], [t + 0.03, 0.12], [t + x.dur, 0.0001]]); },
-    lock(o, t, x) { const g = gain(0, o.sfx); g.connect(o.rev); const bp = filt('bandpass', 1600, 2, g); noise(t, x.dur, bp); osc('square', 23, t, x.dur, gain(0.6, g.gain)); osc('sine', 880, t, x.dur, gain(0.2, g)); osc('sine', 1318, t, x.dur, gain(0.15, g)); adsr(g, t, 0.05, 0.12, 0.2, 0.8, 0.3, t + x.dur - 0.3); },
-    gptDescend(o, t) { ['D5', 'F#5', 'A5', 'D6'].forEach((n, i) => { const g = gain(0, o.sfx); g.connect(o.rev); osc('sine', NOTE(n), t + i * 0.15, 2.2, g); osc('sine', 6, t, 2.4, gain(NOTE(n) * 0.006, g.gain)); adsr(g, t + i * 0.15, 0.6, 0.05, 0.4, 0.8, 0.8, t + 1.6); }); },
+    lock(o, t, x) { const g = gain(0, o.sfx); g.connect(o.rev); const bp = filt('bandpass', 1600, 2, g); noise(t, x.dur, bp); osc('square', 23, t, x.dur, gain(0.05, g.gain)); osc('sine', 880, t, x.dur, gain(0.2, g)); osc('sine', 1318, t, x.dur, gain(0.15, g)); adsr(g, t, 0.05, 0.12, 0.2, 0.8, 0.3, t + x.dur - 0.3); },
+    gptDescend(o, t) { ['D5', 'F#5', 'A5', 'D6'].forEach((n, i) => { const g = gain(0, o.sfx); g.connect(o.rev); const oo = osc('sine', NOTE(n), t + i * 0.15, 2.2, g); osc('sine', 6, t, 2.4, gain(NOTE(n) * 0.006, oo.frequency)); adsr(g, t + i * 0.15, 0.6, 0.05, 0.4, 0.8, 0.8, t + 1.6); }); },
     shock(o, t) { const g = gain(0, o.sfx); g.connect(o.rev); const oo = osc('sine', 70, t, 1.4, g); envAt(oo.frequency, [[t, 110], [t + 1, 40]]); noise(t, 0.6, filt('lowpass', 1500, 0.6, gain(0.6, g))); envAt(g.gain, [[t, 0.0001], [t + 0.01, 0.45], [t + 1.3, 0.0001]]); },
     holo(o, t) { ['E6', 'B6', 'E7'].forEach((n, i) => I.bell(o, t + i * 0.05, NOTE(n), 0.35, 0.7)); },
     buildPass(o, t) { ['C5', 'E5', 'G5', 'C6', 'E6', 'G6'].forEach((n, i) => I.bell(o, t + i * 0.05, NOTE(n), 0.55, 1.6)); },
@@ -3808,8 +3863,8 @@ const Audio = (() => {
       const prog = [['D2', 'D4', 'F4', 'A4'], ['Bb1', 'D4', 'F4', 'Bb4'], ['C2', 'C4', 'E4', 'G4'], ['A1', 'C#4', 'E4', 'A4']];
       for (let bar = 0; bar < bars; bar++) {
         const c = chord(prog[bar % 4]); const b0 = bar * 4;
-        for (let s = 0; s < 16; s++) add(B(b0 + s * 0.25), 0.15, (o, T) => I.bass(o, T, s % 4 === 2 ? c[0] * 2 : c[0], 0.12, 0.9));
-        [0, 1.5, 2.5].forEach((q) => add(B(b0 + q), 0.3, (o, T) => I.kick(o, T, 0.7)));
+        for (let s = 0; s < 16; s++) add(B(b0 + s * 0.25), 0.15, (o, T) => I.bass(o, T, s % 4 === 2 ? c[0] * 2 : c[0], 0.12, 0.6));
+        [0, 1.5, 2.5].forEach((q) => add(B(b0 + q), 0.3, (o, T) => I.kick(o, T, 0.55)));
         add(B(b0 + 1), 0.2, (o, T) => I.snare(o, T, 0.8)); add(B(b0 + 3), 0.2, (o, T) => I.snare(o, T, 0.8));
         for (let h = 0; h < 8; h++) add(B(b0 + h * 0.5), 0.1, (o, T) => I.hat(o, T, 0.35));
         add(B(b0), 0.4, (o, T) => I.stab(o, T, c.slice(1), 1.0)); add(B(b0 + 2.75), 0.4, (o, T) => I.stab(o, T, c.slice(1), 0.7));
@@ -3895,8 +3950,8 @@ const Audio = (() => {
         if (!AC) return;
         ctx = new AC({ latencyHint: 'interactive' });
         AU.ctx = ctx;
-        comp = ctx.createDynamicsCompressor(); comp.threshold.value = -14; comp.ratio.value = 3.5; comp.attack.value = 0.005; comp.release.value = 0.2;
-        master = ctx.createGain(); master.gain.value = AU.muted ? 0 : 0.9;
+        comp = ctx.createDynamicsCompressor(); comp.threshold.value = -12; comp.knee.value = 6; comp.ratio.value = 8; comp.attack.value = 0.005; comp.release.value = 0.2;
+        master = ctx.createGain(); master.gain.value = AU.muted ? 0 : 0.8;
         master.connect(comp); comp.connect(ctx.destination);
         makeBuffers();
         ctx.addEventListener('statechange', () => { if (Film.playing) { Film.anchorFilm = Film.t; Film.anchorClock = AU.clock(); if (ctx.state === 'running') AU.start(Film.t); } });
@@ -3939,8 +3994,9 @@ const Audio = (() => {
       try { ev.fn(sess.o, T); } catch (e) { /* one bad sound must not stop the score */ }
     }
   }
+  AU.debugTap = () => { if (!ctx) return null; const an = ctx.createAnalyser(); an.fftSize = 2048; comp.connect(an); const buf = new Float32Array(an.fftSize); return () => { an.getFloatTimeDomainData(buf); let s = 0, pk = 0; for (const v of buf) { s += v * v; pk = Math.max(pk, Math.abs(v)); } return { rms: Math.sqrt(s / buf.length), peak: pk }; }; };
   AU.stop = () => { clearInterval(timer); timer = null; killSession(); };
-  AU.setMuted = (m) => { AU.muted = m; if (master) { master.gain.cancelScheduledValues(0); master.gain.setTargetAtTime(m ? 0 : 0.9, ctx.currentTime, 0.03); } };
+  AU.setMuted = (m) => { AU.muted = m; if (master) { master.gain.cancelScheduledValues(0); master.gain.setTargetAtTime(m ? 0 : 0.8, ctx.currentTime, 0.03); } };
   return AU;
 })();
 
@@ -4216,12 +4272,19 @@ async function boot() {
   Film.duration = Story.duration;
   Audio.init(Story);
   setupUI();
-  // compile & render the poster frame
+  // pre-warm: render one frame in every set so shaders compile now, not mid-film
   Film.started = true;
+  $('note').textContent = 'Preparing scenes…';
+  const warm = [2, 8, 20, 30, 45, 62, 85, 95, 106, 125, 138, 147, 162];
+  for (let i = 0; i < warm.length; i++) {
+    World.discontinuity = true; renderAt(warm[i], 0);
+    if (!TEST) await new Promise((r) => setTimeout(r, 0));
+  }
   World.discontinuity = true;
-  renderAt(0.0, 0);
+  renderAt(3.0, 0); // poster frame behind the Play button
   if (TEST) console.log('first frame ms', Math.round(performance.now() - _t0));
   Film.started = false;
+  $('title').style.opacity = 0; $('subs').style.opacity = 0; $('chapter').style.opacity = 0;
   window.__ahReady = true;
   $('note').textContent = 'Sound on · ' + fmt(Film.duration) + ' · Subtitles on';
   const pb = $('playbig'); pb.disabled = false; pb.focus({ preventScroll: true });

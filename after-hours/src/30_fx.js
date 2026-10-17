@@ -32,7 +32,7 @@ function buildFX(scene) {
   FX.systems.add = makePSys(6000, true); FX.systems.alpha = makePSys(3000, false);
   scene.add(FX.systems.add.pts); scene.add(FX.systems.alpha.pts);
   // rain
-  const N = 3200;
+  const N = 2200;
   const geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(N * 6), 3).setUsage(THREE.DynamicDrawUsage));
   const rm = new THREE.LineBasicMaterial({ color: new THREE.Color(0x9fc8ff).multiplyScalar(0.9), transparent: true, opacity: 0.45, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false });

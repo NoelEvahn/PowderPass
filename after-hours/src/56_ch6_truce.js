@@ -93,8 +93,9 @@ function drawBuild(u) {
     if (ok) { c.fillStyle = '#9fe39a'; c.font = `700 26px ${FONT_UI}`; c.fillText('Creepers now plant rainbow flowers. Pigs too.', 34, 410); }
   };
 }
-let _shock;
+let _shock, _beam;
 function finaleFX(t, env, info) {
+  if (_beam) _beam.visible = false;
   if (t < 145.9) return;
   const G = A.gpt; show(G, env);
   const yDesc = lerp(4.2, 1.3, EASE.out3(sseg(t, 146.0, 147.4)));
@@ -104,7 +105,12 @@ function finaleFX(t, env, info) {
   // light column + shockwave
   const col = win(t, 145.95, 146.3, 147.2, 148.4);
   if (col > 0) {
-    fxStream('beam', env, [0, 0.0, 0], [0, 6, 0], 0.55 * col, 0xdffff4, { glow: 0.6 * col });
+    if (!_beam) {
+      const bt = canvasTex(64, 256, (c, w, h) => { const g = c.createLinearGradient(0, 0, w, 0); g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(0.5, 'rgba(255,255,255,1)'); g.addColorStop(1, 'rgba(255,255,255,0)'); c.fillStyle = g; c.fillRect(0, 0, w, h); });
+      _beam = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.75, 7, 24, 1, true), new THREE.MeshBasicMaterial({ map: bt, color: new THREE.Color(0.9, 1.6, 1.4), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, toneMapped: false }));
+      env.group.add(_beam);
+    }
+    _beam.position.set(0, 3.5, 0); _beam.material.opacity = 0.45 * col; _beam.visible = true; _beam.rotation.y = t * 0.3;
     info.flash = Math.max(info.flash || 0, win(t, 146.5, 146.6, 146.7, 147.0) * 0.6);
     info.bloom = 1.1;
   }
@@ -116,7 +122,7 @@ function finaleFX(t, env, info) {
   // ticket hologram
   if (t > 149.3 && t < 157.0) {
     const s = EASE.back(sseg(t, 149.3, 149.7)) * (1 - sseg(t, 156.6, 157.0));
-    fxHolo('ticket', env, [0, 1.72, 0.0], 1.1, 0.76, drawTicket, 'ticket', { yaw: -Math.PI / 2, scale: s });
+    fxHolo('ticket', env, [0, 1.6, 0.0], 1.0, 0.69, drawTicket, 'ticket', { yaw: -Math.PI / 2, scale: s });
   }
   // shared build
   if (t > 160.5 && t < 165.5) {
@@ -151,11 +157,11 @@ shot(137.9, 139.4, 'alley', 'alley', camK([[137.9, [1.25, 0.85, 0.35], [0, 0.75,
 shot(139.4, 140.5, 'alley', 'alley', camK([[139.4, [-0.6, 0.5, -3.3], [0, 0.6, 0.6], 44], [140.5, [-0.5, 0.45, -2.9], [0, 0.7, 0.6], 44]]));
 shot(140.5, 141.6, 'alley', 'alley', camK([[140.5, [1.95, 0.3, -0.3], [0, 0.85, 0.3], 48], [141.6, [1.95, 0.32, 0.2], [0, 0.7, 0.9], 48]]));
 shot(141.6, 142.8, 'alley', 'alley', camK([[141.6, [-0.5, 0.9, -1.75], [0, 0.8, 1.2], 42], [142.8, [-0.55, 0.88, -1.9], [0, 0.8, 0.4], 42]]), { hand: 0.5 });
-shot(142.8, 143.35, 'alley', 'alley', camK([[142.8, [0.4, 0.95, -0.5], [0, 0.92, -1.2], 32], [143.35, [0.38, 0.95, -0.52], [0, 0.92, -1.2], 30]]));
-shot(143.35, 143.85, 'alley', 'alley', camK([[143.35, [-0.4, 0.92, 0.5], [0, 0.88, 1.2], 32], [143.85, [-0.38, 0.92, 0.52], [0, 0.88, 1.2], 30]]));
+shot(142.8, 143.35, 'alley', 'alley', camK([[142.8, [0.55, 1.0, -0.2], [0, 0.88, -1.2], 36], [143.35, [0.52, 1.0, -0.25], [0, 0.88, -1.2], 34]]));
+shot(143.35, 143.85, 'alley', 'alley', camK([[143.35, [-0.55, 0.98, 0.2], [0, 0.85, 1.2], 36], [143.85, [-0.52, 0.98, 0.25], [0, 0.85, 1.2], 34]]));
 shot(143.85, 146.0, 'alley', 'alley', (t) => { const a = lerp(0.25, 1.4, sseg(t, 143.85, 146.0)); return { p: [Math.cos(a) * 1.55, 0.8, Math.sin(a) * 1.55], t: [0, 0.82, 0], fov: 40 }; }, { hand: 0.4 });
 shot(146.0, 149.5, 'alley', 'alley', camK([[146, [1.9, 0.55, 1.6], [0, 1.3, 0], 50], [149.5, [1.85, 0.6, 1.4], [0, 1.2, 0], 48]]));
-shot(149.5, 151.7, 'alley', 'alley', camK([[149.5, [-2.05, 1.1, 0.2], [0, 1.3, 0.0], 52], [151.7, [-1.95, 1.1, 0.15], [0, 1.3, 0.0], 50]]));
+shot(149.5, 151.7, 'alley', 'alley', camK([[149.5, [-2.05, 1.05, 0.2], [0, 1.2, 0.0], 54], [151.7, [-1.95, 1.05, 0.15], [0, 1.2, 0.0], 52]]));
 shot(151.7, 153.7, 'alley', 'alley', camK([[151.7, [0.55, 0.95, 0.45], [0, 0.88, 1.4], 34], [153.7, [0.52, 0.95, 0.5], [0, 0.88, 1.4], 32]]));
 shot(153.7, 156.0, 'alley', 'alley', camK([[153.7, [-0.55, 0.97, -0.45], [0, 0.9, -1.4], 34], [156, [-0.52, 0.97, -0.5], [0, 0.9, -1.4], 32]]));
 shot(156.0, 158.7, 'alley', 'alley', camK([[156, [1.95, 1.0, 0], [0, 1.0, 0], 50], [158.7, [1.9, 0.95, 0], [0, 0.95, 0], 46]]));

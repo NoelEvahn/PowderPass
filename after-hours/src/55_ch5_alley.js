@@ -218,7 +218,8 @@ SEQ.alley = (t, env, sh, info, dt) => {
   if (t < 146.3) { headLook(cx, headPos(cc, env), 0.7); headLook(cc, headPos(cx, env), 0.7); }
   // rain, splashes, sparks
   const slow = 1 - 0.75 * win(t, 143.85, 143.95, 145.6, 146.2);
-  fxRain(new THREE.Vector3(camera.position.x, 0, camera.position.z - 0.0).lerp(W(env, [0, 0, 0]), 0.5), t * slow + (1 - slow) * 143.9, { h: 6, sx: 5, sz: 12, speed: 9, floor: env.group.position.y });
+  fxRain(new THREE.Vector3(camera.position.x, 0, camera.position.z - 0.0).lerp(W(env, [0, 0, 0]), 0.5), t * slow + (1 - slow) * 143.9, { h: 7.5, sx: 4.6, sz: 12, speed: 9, floor: env.group.position.y });
+  FX.rain.material.opacity = 0.26 * (1 - sseg(camera.position.y - env.group.position.y, 3, 9) * 0.6);
   for (const [ti, p, s] of IMPACTS) {
     fxSparks(env, p, t, ti, { n: Math.round(40 * s), speed: 2.5 * s, color: ti === 143.9 ? 0xffffff : (ti % 2 > 1 ? 0xb8fff0 : 0xffd29a), color2: ti === 143.9 ? 0x7dffd9 : 0xffb36e, flash: 0.2 * s, life: 0.55 + 0.2 * s });
     const a = t - ti; if (a > 0 && a < 0.25) { info.shake = Math.max(info.shake || 0, s * 1.8 * (1 - a / 0.25)); info.ab = Math.max(info.ab || 0, s * 1.2 * (1 - a / 0.25)); info.flash = Math.max(info.flash || 0, s * 0.12 * (1 - a / 0.18)); }
@@ -232,7 +233,7 @@ SEQ.alley = (t, env, sh, info, dt) => {
   fxSteam(env, [2.0, 0.05, 5.0], t, 121, 180, { rate: 5, size: 0.3, alpha: 0.1, rise: 0.3, life: 3.2, seed: 4 });
   finaleFX(t, env, info);
   info.focus = new THREE.Vector3(0, 0.5, 0);
-  info.bloom = 0.75;
+  info.bloom = Math.max(info.bloom || 0, 0.7); info.bloomTh = 1.3;
 };
 
 let _blade, _staff, _shield;

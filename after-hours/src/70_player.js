@@ -269,12 +269,19 @@ async function boot() {
   Film.duration = Story.duration;
   Audio.init(Story);
   setupUI();
-  // compile & render the poster frame
+  // pre-warm: render one frame in every set so shaders compile now, not mid-film
   Film.started = true;
+  $('note').textContent = 'Preparing scenes…';
+  const warm = [2, 8, 20, 30, 45, 62, 85, 95, 106, 125, 138, 147, 162];
+  for (let i = 0; i < warm.length; i++) {
+    World.discontinuity = true; renderAt(warm[i], 0);
+    if (!TEST) await new Promise((r) => setTimeout(r, 0));
+  }
   World.discontinuity = true;
-  renderAt(0.0, 0);
+  renderAt(3.0, 0); // poster frame behind the Play button
   if (TEST) console.log('first frame ms', Math.round(performance.now() - _t0));
   Film.started = false;
+  $('title').style.opacity = 0; $('subs').style.opacity = 0; $('chapter').style.opacity = 0;
   window.__ahReady = true;
   $('note').textContent = 'Sound on · ' + fmt(Film.duration) + ' · Subtitles on';
   const pb = $('playbig'); pb.disabled = false; pb.focus({ preventScroll: true });

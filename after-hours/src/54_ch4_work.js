@@ -12,14 +12,14 @@ const CX_CODE = [
   '    e.setCancelled(true); // no boom today',
   '    Location at = e.getLocation();',
   '    for (int i = 0; i < 8; i++) {',
-  '        Block b = at.clone().add(r(), 0, r()).getBlock();',
-  '        if (b.getType() == Material.AIR)',
+  '        Block b = at.clone().add(r(),0,r()).getBlock();',
+  '        if (b.getType().isAir())',
   '            b.setType(randomFlower());',
   '    }',
   '    e.getEntity().remove();',
   '}',
 ];
-const CX_FIX = '        if (b != null && b.getType() == Material.AIR)';
+const CX_FIX = '        if (b != null && b.getType().isAir())';
 const CX_RAINBOW = '            b.setType(RAINBOW[i % RAINBOW.length]);';
 const CC_CODE = [
   '# redstone item-sorter calculator',
@@ -30,11 +30,11 @@ const CC_CODE = [
   'def chests_needed(items, stack=64):',
   '    return -(-slots_needed(items, stack) // 27)',
   '',
-  'def test_full_stack():    assert slots_needed(64) == 1',
-  'def test_partial_stack(): assert slots_needed(65) == 2',
-  'def test_ender_pearls():  assert slots_needed(17, 16) == 2',
+  'def test_full():    assert slots_needed(64) == 1',
+  'def test_partial(): assert slots_needed(65) == 2',
+  'def test_pearls():  assert slots_needed(17,16) == 2',
 ];
-const CC_FIX = '    return -(-items // stack)  # partial stacks need a slot';
+const CC_FIX = '    return -(-items // stack)  # ceil division';
 const CX_REQ = 'Make a Minecraft plugin: creepers drop flowers instead of exploding 🌼';
 const CC_REQ = 'My Minecraft redstone sorter says 65 items fit in 1 slot?? Fix it + add tests pls';
 
@@ -56,7 +56,7 @@ function ccScreenState(t) {
   // Claude reads first (code already open), then writes tests
   st.typed = 260 + Math.max(0, (t - 90.4) * 34);
   if (t > 93.8) st.term = [{ text: '$ pytest -q' }];
-  if (t > 94.3 && t < 97.0) { st.term.push({ text: '..F.F.......  2 failed, 10 passed', color: THEMES.an.bad }, { text: 'test_partial_stack: assert 1 == 2', color: THEMES.an.bad }); st.hl = { line: 3, color: 'rgba(255,110,90,0.22)' }; }
+  if (t > 94.3 && t < 97.0) { st.term.push({ text: '..F.F.......  2 failed, 10 passed', color: THEMES.an.bad }, { text: 'test_partial: assert 1 == 2', color: THEMES.an.bad }); st.hl = { line: 3, color: 'rgba(255,110,90,0.22)' }; }
   if (t > 95.9) { const n = Math.floor((t - 95.9) * 30); st.code[3] = n < 4 ? st.code[3] : CC_FIX.slice(0, n); }
   if (t > 97.0) st.term = [{ text: '$ pytest -q' }];
   if (t > 97.5) { st.term.push({ text: '............  12 passed in 0.04s  ✓', color: THEMES.an.ok }); st.hl = { line: 3, color: 'rgba(160,227,154,0.18)' }; }
@@ -177,20 +177,22 @@ SEQ.ccOffice = (t, env, sh, info) => {
 };
 
 // ── shots ──
-const OTS_CX = (a, b) => camK([[a, [0.42, 1.12, -0.42], [0.0, 0.9, -1.78], 40], [b, [0.36, 1.08, -0.5], [0.0, 0.9, -1.78], 36]]);
-const SCREEN = (a, b, side = 1, fov = 50) => camK([[a, [side * 0.27, 0.97, -1.48], [0.0, 0.92, -1.79], fov], [b, [side * 0.25, 0.965, -1.5], [0.0, 0.92, -1.79], fov - 3]]);
+const OTS_CX = (a, b) => camK([[a, [0.62, 1.38, -0.2], [0.0, 0.9, -1.78], 40], [b, [0.55, 1.34, -0.3], [0.0, 0.9, -1.78], 36]]);
+const SCREEN = (a, b, side = 1, fov = 40) => camK([[a, [side * 0.03, 0.93, -0.95], [0.0, 0.92, -1.79], fov], [b, [side * 0.02, 0.93, -1.02], [0.0, 0.92, -1.79], fov - 3]]);
 shot(80.0, 83.5, 'oaOffice', 'cxOffice', camK([[80, [2.6, 1.5, 2.4], [1.0, 0.6, -0.6], 44], [83.5, [1.6, 1.25, 1.0], [0.1, 0.7, -1.2], 40]]), { fadeIn: 0.5 });
 shot(83.5, 86.5, 'oaOffice', 'cxOffice', OTS_CX(83.5, 86.5));
-shot(86.5, 89.0, 'oaOffice', 'cxOffice', SCREEN(86.5, 89.0));
-shot(89.0, 92.5, 'anOffice', 'ccOffice', camK([[89, [-1.0, 1.0, -1.5], [0.0, 0.86, -1.15], 38], [92.5, [-0.95, 0.98, -1.48], [0.0, 0.86, -1.15], 34]]));
-shot(92.5, 95.8, 'anOffice', 'ccOffice', camK([[92.5, [-0.6, 1.22, -0.5], [0.05, 0.9, -1.78], 40], [95.8, [-0.55, 1.18, -0.55], [0.05, 0.9, -1.78], 36]]));
-shot(95.8, 99.0, 'anOffice', 'ccOffice', SCREEN(95.8, 99.0, -1));
+shot(86.5, 89.0, 'oaOffice', 'cxOffice', SCREEN(86.5, 89.0), { hide: ['cx'] });
+shot(89.0, 92.5, 'anOffice', 'ccOffice', camK([[89, [-0.85, 1.02, -1.62], [0.0, 0.88, -1.15], 38], [92.5, [-0.8, 1.0, -1.6], [0.0, 0.88, -1.15], 34]]));
+shot(92.5, 95.8, 'anOffice', 'ccOffice', camK([[92.5, [-0.65, 1.42, -0.22], [0.05, 0.9, -1.78], 40], [95.8, [-0.58, 1.38, -0.32], [0.05, 0.9, -1.78], 36]]));
+shot(95.8, 99.0, 'anOffice', 'ccOffice', SCREEN(95.8, 99.0, -1), { hide: ['cc'] });
 shot(99.0, 101.0, 'oaOffice', 'cxOffice', camK([[99, [0.95, 1.0, -1.5], [0.0, 0.88, -1.15], 36], [101, [0.9, 0.98, -1.48], [0.0, 0.88, -1.15], 32]]));
-shot(101.0, 104.2, 'oaOffice', 'cxOffice', SCREEN(101.0, 104.2));
+shot(101.0, 104.2, 'oaOffice', 'cxOffice', SCREEN(101.0, 104.2), { hide: ['cx'] });
 shot(104.2, 108.4, 'oaOffice', 'cxOffice', camK([[104.2, [1.25, 1.05, -0.35], [0.3, 0.92, -1.35], 36], [108.4, [1.2, 1.02, -0.45], [0.3, 0.92, -1.35], 33]]));
 shot(108.4, 112.8, 'anOffice', 'ccOffice', camK([[108.4, [-1.25, 1.05, -0.35], [-0.3, 0.92, -1.35], 36], [112.8, [-1.2, 1.02, -0.45], [-0.3, 0.92, -1.35], 33]]));
-shot(112.8, 115.4, 'oaOffice', 'cxOffice', camK([[112.8, [0.95, 1.0, -1.5], [0.0, 0.88, -1.15], 34], [114.2, [0.9, 1.0, -1.48], [0.0, 0.88, -1.15], 34], [114.3, [0.27, 0.97, -1.48], [0.0, 0.92, -1.79], 50], [115.4, [0.25, 0.965, -1.5], [0.0, 0.92, -1.79], 47]]));
-shot(115.4, 118.6, 'anOffice', 'ccOffice', camK([[115.4, [-0.27, 0.97, -1.48], [0.0, 0.92, -1.79], 50], [117.2, [-0.25, 0.965, -1.5], [0.0, 0.92, -1.79], 47], [117.3, [-1.0, 1.0, -1.5], [0.0, 0.86, -1.15], 36], [118.6, [-0.95, 0.98, -1.48], [0.0, 0.86, -1.15], 33]]));
+shot(112.8, 114.2, 'oaOffice', 'cxOffice', camK([[112.8, [0.95, 1.0, -1.5], [0.0, 0.88, -1.15], 34], [114.2, [0.9, 1.0, -1.48], [0.0, 0.88, -1.15], 34]]));
+shot(114.2, 115.4, 'oaOffice', 'cxOffice', SCREEN(114.2, 115.4), { hide: ['cx'] });
+shot(115.4, 117.3, 'anOffice', 'ccOffice', SCREEN(115.4, 117.3, -1), { hide: ['cc'] });
+shot(117.3, 118.6, 'anOffice', 'ccOffice', camK([[117.3, [-0.85, 1.02, -1.62], [0.0, 0.88, -1.15], 36], [118.6, [-0.8, 1.0, -1.6], [0.0, 0.88, -1.15], 33]]));
 shot(118.6, 121.0, 'oaOffice', 'cxOffice', camK([[118.6, [0.0, 1.4, 1.6], [0.0, 0.8, -1.3], 36], [121, [0.0, 1.6, 2.6], [0.0, 0.9, -1.5], 40]]), { fadeOut: 0.9 });
 
 say(95.3, 'claude', 'Ah. There you are.', 1.3);

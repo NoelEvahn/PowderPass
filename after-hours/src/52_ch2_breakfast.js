@@ -216,7 +216,7 @@ function setLoupe(R, u) {
 
 // ── shots ──
 shot(27.0, 31.0, 'cxHome', 'cxKitchen', camK([[27, [-0.4, 1.0, 0.9], [0.6, 0.5, -1.8], 42], [31, [0.2, 0.95, 0.2], [1.4, 0.55, -2.3], 40]]), { fadeIn: 0.5 });
-shot(31.0, 35.0, 'cxHome', 'cxKitchen', camK([[31, [3.35, 0.86, -2.33], [1.8, 0.6, -2.38], 40], [35, [3.25, 0.84, -2.3], [1.75, 0.62, -2.35], 38]]));
+shot(31.0, 35.0, 'cxHome', 'cxKitchen', camK([[31, [3.4, 1.05, -1.6], [1.75, 0.6, -2.4], 40], [35, [3.3, 1.02, -1.65], [1.7, 0.62, -2.35], 38]]));
 shot(35.0, 40.0, 'cxHome', 'cxKitchen', camK([[35, [1.7, 0.88, -0.45], [1.45, 0.76, -2.05], 32], [40, [1.66, 0.86, -0.6], [1.45, 0.8, -2.05], 29]]));
 shot(40.0, 44.5, 'ccHome', 'ccKitchen', camK([[40, [-1.55, 0.88, -2.4], [-3.3, 0.62, -2.4], 40], [44.5, [-1.6, 0.86, -2.38], [-3.1, 0.62, -2.35], 38]]));
 shot(44.5, 48.5, 'ccHome', 'ccKitchen', camK([[44.5, [-2.05, 0.86, -2.42], [-2.86, 0.84, -2.2], 32], [48.5, [-2.08, 0.86, -2.4], [-2.86, 0.84, -2.2], 29]]));
@@ -228,7 +228,7 @@ say(37.0, 'codex', 'Espresso. Fast, strong, zero dependencies.', 2.4);
 say(44.9, 'claude', 'Steeping: three minutes.', 1.5);
 say(46.5, 'claude', 'Not two. Not “roughly three.”', 1.5);
 say(52.5, 'claude', 'Mm. Reviewed… and approved.', 1.6);
-say(54.15, 'claude', 'Forty-seven. Lovely.', 0.9);
+say(53.95, 'claude', 'Forty-seven. Lovely.', 0.95);
 say(55.65, 'codex', 'Only forty-seven? Done by lunch.', 1.9);
 sfx(27.0, 'steps', { who: 'cx', mv: cxWalk1 }); sfx(30.3, 'steps', { who: 'cx', mv: cxSide1, soft: true }); sfx(34.4, 'steps', { who: 'cx', mv: cxSide2, soft: true });
 sfx(41.3, 'steps', { who: 'cc', mv: ccSide1, soft: true }); sfx(43.0, 'steps', { who: 'cc', mv: ccSide2, soft: true }); sfx(43.8, 'steps', { who: 'cc', mv: ccSide3, soft: true });

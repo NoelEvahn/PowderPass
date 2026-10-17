@@ -33,14 +33,14 @@ function drawIDE(tex, theme, st, t) {
   ['#ff6b6b', '#ffd27a', '#5ff2a0'].forEach((col, i) => { c.fillStyle = col; c.beginPath(); c.arc(20 + i * 20, 17, 6, 0, TAU); c.fill(); });
   c.font = `600 16px ${FONT_MONO}`; c.fillStyle = th.dim; c.fillText(`${th.name} — ${st.file || ''}`, 90, 23);
   // left: request card
-  const LW = 300;
+  const LW = 280;
   c.fillStyle = th.panel; c.fillRect(0, 34, LW, H - 34);
   c.fillStyle = th.acc; c.font = `700 15px ${FONT_UI}`; c.fillText('INCOMING REQUEST', 18, 64);
   if (st.req) {
     rrect(c, 14, 76, LW - 28, 170, 12); c.fillStyle = th.line; c.fill();
     c.fillStyle = th.dim; c.font = `700 14px ${FONT_UI}`; c.fillText('👤 user', 28, 100);
-    c.fillStyle = th.text; c.font = `600 17px ${FONT_UI}`;
-    wrapText(c, st.req, 28, 126, LW - 56, 23, 5);
+    c.fillStyle = th.text; c.font = `700 19px ${FONT_UI}`;
+    wrapText(c, st.req, 28, 128, LW - 50, 25, 5);
   }
   // chat bubbles (ChatGPT etc.)
   let cy = 266;
@@ -56,9 +56,9 @@ function drawIDE(tex, theme, st, t) {
   }
   // editor
   const ex = LW + 16, ey = 52;
-  c.font = `500 19px ${FONT_MONO}`;
+  c.font = `500 21px ${FONT_MONO}`;
   let remaining = st.typed ?? Infinity;
-  const lh = 27;
+  const lh = 31;
   const termH = st.term ? 170 : 0;
   (st.code || []).forEach((ln, i) => {
     const y = ey + 24 + i * lh;
@@ -99,19 +99,20 @@ function drawDM(tex, theme, msgs, typing, title) {
   const c = tex.userData.ctx, W = tex.userData.canvas.width, H = tex.userData.canvas.height, th = THEMES[theme];
   c.fillStyle = th.bg; c.fillRect(0, 0, W, H);
   c.fillStyle = th.panel; c.fillRect(0, 0, W, 44);
-  c.fillStyle = th.text; c.font = `700 18px ${FONT_UI}`; c.fillText(title, 18, 29);
-  let y = 76;
+  c.fillStyle = th.text; c.font = `700 26px ${FONT_UI}`; c.fillText(title, 24, 31);
+  c.fillStyle = th.panel; c.fillRect(0, H - 64, W, 64); c.fillStyle = th.line; rrect(c, 20, H - 50, W - 40, 38, 19); c.fill();
+  let y = 96;
   for (const m of msgs) {
     const mine = m.mine;
-    c.font = `600 17px ${FONT_UI}`;
-    const lines = wrapLines(c, m.text, W * 0.62);
-    const bw = Math.max(...lines.map((l) => c.measureText(l).width)) + 28, bh = 14 + lines.length * 22;
+    c.font = `700 30px ${FONT_UI}`;
+    const lines = wrapLines(c, m.text, W * 0.66);
+    const bw = Math.max(...lines.map((l) => c.measureText(l).width)) + 40, bh = 22 + lines.length * 36;
     const bx = mine ? W - bw - 16 : 16;
     rrect(c, bx, y, bw, bh, 12); c.fillStyle = mine ? (theme === 'oa' ? '#1d5a50' : '#7a3f20') : th.line; c.fill();
-    c.fillStyle = th.text; lines.forEach((l, i) => c.fillText(l, bx + 14, y + 24 + i * 22));
-    c.font = `700 12px ${FONT_UI}`; c.fillStyle = th.dim; c.fillText(m.from, bx + 4, y - 4);
-    y += bh + 22;
+    c.fillStyle = th.text; lines.forEach((l, i) => c.fillText(l, bx + 20, y + 38 + i * 36));
+    c.font = `700 18px ${FONT_UI}`; c.fillStyle = th.dim; c.fillText(m.from, bx + 6, y - 8);
+    y += bh + 40;
   }
-  if (typing) { c.fillStyle = th.dim; c.font = `600 15px ${FONT_UI}`; c.fillText(typing, 18, H - 18); }
+  if (typing) { c.fillStyle = th.dim; c.font = `600 20px ${FONT_UI}`; c.fillText(typing, 40, H - 24); }
   tex.needsUpdate = true;
 }
