@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#1b1b1b">
+<title>PowderCraft</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+<style>
+  :root { --slot: 44px; --ui: #c6c6c6; --ui-dark: #555; --ui-light: #fff; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #111; color: #fff; font-family: 'VT323', 'Courier New', monospace; font-size: 20px; user-select: none; -webkit-user-select: none; touch-action: none; }
+  #game { position: fixed; inset: 0; width: 100%; height: 100%; display: block; image-rendering: pixelated; }
+  .screen { position: fixed; inset: 0; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 16px; z-index: 20; }
+  .screen.bg { background: linear-gradient(rgba(0,0,0,.35), rgba(0,0,0,.6)), repeating-conic-gradient(#6b4a2f 0% 25%, #5e4129 0% 50%) 0 0/64px 64px; }
+  .screen.dim { background: rgba(0,0,0,.55); }
+  h1 { font-size: 72px; margin: 0 0 6px; letter-spacing: 3px; color: #ddd; text-shadow: 4px 4px 0 #3a3a3a, 0 0 18px rgba(0,0,0,.5); display: flex; align-items: center; gap: 14px; }
+  h1 img { width: 64px; height: 64px; image-rendering: pixelated; }
+  h2 { margin: 0 0 8px; font-weight: normal; font-size: 34px; text-shadow: 2px 2px 0 #333; }
+  .splash { color: #ff0; font-size: 22px; transform: rotate(-12deg); margin: -16px 0 18px 240px; animation: pulse 1s ease-in-out infinite alternate; text-shadow: 2px 2px 0 #3f3f00; }
+  @keyframes pulse { to { transform: rotate(-12deg) scale(1.08); } }
+  button { font-family: inherit; font-size: 22px; color: #fff; min-width: 300px; padding: 8px 16px; background: linear-gradient(#8f8f8f, #6d6d6d); border: 2px solid #000; box-shadow: inset 2px 2px 0 rgba(255,255,255,.35), inset -2px -2px 0 rgba(0,0,0,.35); text-shadow: 2px 2px 0 #3f3f3f; cursor: pointer; }
+  button:hover { background: linear-gradient(#9ea8d8, #7b84b8); }
+  button:active { transform: translateY(1px); }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+  .row button { min-width: 145px; }
+  input[type=text] { font-family: inherit; font-size: 22px; background: #000; color: #fff; border: 2px solid #a0a0a0; padding: 6px 10px; width: 300px; }
+  .small { font-size: 17px; color: #bbb; }
+  .panel { background: rgba(0,0,0,.5); padding: 12px; border: 2px solid #000; max-height: 60vh; overflow-y: auto; width: min(560px, 92vw); }
+  .worldRow { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 8px; border-bottom: 1px solid #333; }
+  .worldRow button { min-width: 80px; font-size: 18px; padding: 4px 8px; }
+  .rowBtns { display: flex; gap: 6px; }
+  .modes { display: flex; gap: 16px; font-size: 22px; }
+  #settingsBody { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; width: min(640px, 94vw); max-height: 66vh; overflow-y: auto; padding: 4px; }
+  #settingsBody button { min-width: 0; width: 100%; }
+  .setRow { display: flex; flex-direction: column; background: linear-gradient(#6d6d6d, #555); border: 2px solid #000; padding: 4px 8px; font-size: 20px; text-shadow: 2px 2px 0 #333; }
+  .setRow input { width: 100%; accent-color: #c0c0c0; }
+  .packbox { display: flex; flex-direction: column; align-items: center; gap: 4px; max-width: 560px; text-align: center; }
+  .filebtn { display: inline-block; font-size: 20px; padding: 6px 14px; background: linear-gradient(#8f8f8f, #6d6d6d); border: 2px solid #000; cursor: pointer; text-shadow: 2px 2px 0 #3f3f3f; }
+  #fatal { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: #300; z-index: 99; padding: 20px; text-align: center; }
+
+  /* HUD */
+  #hud { display: none; position: fixed; inset: 0; pointer-events: none; z-index: 5; }
+  #crosshair { position: absolute; left: 50%; top: 50%; width: 22px; height: 22px; transform: translate(-50%, -50%); mix-blend-mode: difference; }
+  #crosshair::before, #crosshair::after { content: ''; position: absolute; background: #fff; }
+  #crosshair::before { left: 10px; top: 0; width: 2px; height: 22px; }
+  #crosshair::after { top: 10px; left: 0; height: 2px; width: 22px; }
+  #hotbar { position: absolute; bottom: max(8px, env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); display: flex; background: rgba(0,0,0,.45); border: 2px solid #222; padding: 2px; pointer-events: auto; }
+  #hotbar .slot { background: rgba(80,80,80,.35); border: 2px solid #8b8b8b; margin: 1px; }
+  #hotbar .slot.sel { outline: 3px solid #fff; outline-offset: -1px; border-color: #fff; z-index: 2; }
+  .slot { width: var(--slot); height: var(--slot); position: relative; display: flex; align-items: center; justify-content: center; background: #8b8b8b; border: 2px solid; border-color: #373737 #fff #fff #373737; }
+  .slot img { width: 78%; height: 78%; image-rendering: pixelated; pointer-events: none; }
+  .slot.big { width: calc(var(--slot) * 1.3); height: calc(var(--slot) * 1.3); }
+  .slot .count { position: absolute; right: 2px; bottom: -2px; font-size: 20px; text-shadow: 2px 2px 0 #3f3f3f; pointer-events: none; }
+  .slot .dura { position: absolute; left: 4px; right: 4px; bottom: 3px; height: 3px; background: #000; pointer-events: none; }
+  .slot .dura i { display: block; height: 100%; }
+  .slot:hover { filter: brightness(1.15); }
+  .slot.trash { font-size: 24px; background: #7a4040; }
+  #stats { position: absolute; bottom: calc(max(8px, env(safe-area-inset-bottom)) + var(--slot) + 14px); left: 50%; transform: translateX(-50%); width: calc(var(--slot) * 9 + 26px); display: grid; grid-template-columns: 1fr 1fr; row-gap: 2px; }
+  #stats > div { display: flex; gap: 1px; }
+  #stats img { width: 18px; height: 18px; image-rendering: pixelated; }
+  #hunger { justify-content: flex-end; }
+  #air { grid-column: 2; justify-content: flex-end; }
+  #stats img.shake { animation: shake .25s infinite; }
+  @keyframes shake { 50% { transform: translateY(-2px); } }
+  #itemName { position: absolute; bottom: calc(var(--slot) + 70px); left: 50%; transform: translateX(-50%); font-size: 24px; text-shadow: 2px 2px 0 #3f3f3f; transition: opacity .5s; opacity: 0; }
+  #messages { position: absolute; left: 10px; bottom: 120px; display: flex; flex-direction: column; gap: 3px; max-width: 60vw; }
+  .msg { background: rgba(0,0,0,.45); padding: 2px 8px; font-size: 21px; transition: opacity 1s; }
+  .msg.fade { opacity: 0; }
+  #debug { display: none; position: absolute; left: 6px; top: 6px; white-space: pre; background: rgba(0,0,0,.4); padding: 4px 8px; font-size: 19px; line-height: 1.1; }
+  #damage { position: fixed; inset: 0; pointer-events: none; z-index: 4; }
+  #damage.flash { animation: dmg .4s ease-out; }
+  @keyframes dmg { from { box-shadow: inset 0 0 160px rgba(255,0,0,.75); } to { box-shadow: inset 0 0 160px rgba(255,0,0,0); } }
+  #waterOverlay { display: none; position: fixed; inset: 0; background: rgba(20,60,160,.38); z-index: 3; pointer-events: none; }
+  #lavaOverlay { display: none; position: fixed; inset: 0; background: rgba(255,90,0,.8); z-index: 3; pointer-events: none; }
+  #portalOverlay { position: fixed; inset: 0; background: radial-gradient(rgba(160,60,255,.2), rgba(110,20,200,.9)); opacity: 0; z-index: 3; pointer-events: none; }
+
+  /* GUI windows */
+  #gui { display: none; position: fixed; inset: 0; z-index: 15; background: rgba(0,0,0,.55); align-items: center; justify-content: center; }
+  .window { position: relative; background: var(--ui); color: #3f3f3f; border: 3px solid; border-color: #fff #555 #555 #fff; box-shadow: 0 0 0 2px #000; padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 6px; max-width: 98vw; max-height: 96vh; overflow: auto; }
+  .window .label { font-size: 22px; color: #404040; }
+  .grid9 { display: grid; grid-template-columns: repeat(9, var(--slot)); }
+  .grid9.scroll { max-height: calc(var(--slot) * 5 + 4px); overflow-y: auto; overflow-x: hidden; padding-right: 4px; }
+  .hotrow { margin-top: 6px; }
+  .hotwrap { display: flex; gap: 8px; align-items: flex-end; }
+  .gridN { display: grid; }
+  .craft { display: flex; align-items: center; gap: 14px; justify-content: center; padding: 4px 0; }
+  .arrow { font-size: 34px; color: #8b8b8b; }
+  .invTop { display: flex; align-items: center; justify-content: space-around; gap: 12px; }
+  .preview { width: 90px; height: 120px; background: #000; border: 2px solid; border-color: #373737 #fff #fff #373737; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; color: #ccc; }
+  .steveIcon { width: 40px; height: 90px; background: linear-gradient(#c48c64 0 22%, #00aaaa 22% 55%, #373c96 55% 92%, #555 92%); margin-bottom: 4px; box-shadow: -12px 22px 0 -6px #00aaaa, 12px 22px 0 -6px #00aaaa; }
+  .furnace { display: flex; align-items: center; justify-content: center; gap: 18px; padding: 6px; }
+  .fcol { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .flame { width: 20px; height: 20px; background: #8b8b8b; position: relative; overflow: hidden; }
+  .flame i { position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(#ffd34e, #ff6a00); }
+  .progress { width: 56px; height: 18px; background: #8b8b8b; position: relative; }
+  .progress i { position: absolute; left: 0; top: 0; bottom: 0; background: #fff; }
+  .tabs { display: flex; gap: 4px; flex-wrap: wrap; padding-right: 40px; }
+  .tabs button { min-width: 0; font-size: 18px; padding: 4px 10px; }
+  .tabs button.active { background: linear-gradient(#c6c6c6, #a0a0a0); color: #333; text-shadow: none; }
+  .search { width: 100% !important; color: #fff; }
+  .closeBtn { position: absolute; right: 6px; top: 4px; min-width: 0; padding: 0 9px; font-size: 18px; }
+  #cursorItem { position: fixed; width: 40px; height: 40px; pointer-events: none; z-index: 30; display: flex; align-items: center; justify-content: center; }
+  #cursorItem img { width: 34px; height: 34px; image-rendering: pixelated; }
+  #cursorItem .count { position: absolute; right: 0; bottom: -4px; font-size: 20px; text-shadow: 2px 2px 0 #3f3f3f; }
+  #cursorItem .dura { display: none; }
+  #tooltip { display: none; position: fixed; z-index: 31; background: rgba(16,0,16,.94); border: 2px solid #2a0a5e; color: #fff; padding: 2px 8px; pointer-events: none; font-size: 20px; }
+
+  /* touch controls */
+  #touch { display: none; }
+  body.touch #touch { display: block; }
+  #joystick { position: absolute; left: max(24px, env(safe-area-inset-left)); bottom: 110px; width: 140px; height: 140px; border-radius: 50%; background: rgba(255,255,255,.12); border: 2px solid rgba(255,255,255,.3); pointer-events: auto; }
+  #joyKnob { position: absolute; left: 45px; top: 45px; width: 50px; height: 50px; border-radius: 50%; background: rgba(255,255,255,.45); }
+  .tbtn { position: absolute; width: 58px; height: 58px; border-radius: 10px; background: rgba(0,0,0,.3); border: 2px solid rgba(255,255,255,.35); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 22px; pointer-events: auto; text-shadow: 1px 1px 0 #000; }
+  .tbtn.down, .tbtn.on { background: rgba(255,255,255,.35); }
+  #btnJump { right: max(26px, env(safe-area-inset-right)); bottom: 120px; width: 72px; height: 72px; border-radius: 50%; }
+  #btnSneak { right: 110px; bottom: 110px; border-radius: 50%; }
+  #btnAttack { right: 26px; bottom: 210px; border-radius: 50%; }
+  #btnFly { right: 110px; bottom: 182px; font-size: 16px; }
+  #btnDown { right: 176px; bottom: 120px; }
+  #btnSprint { left: 176px; bottom: 170px; font-size: 16px; }
+  #btnInv { right: 10px; top: 10px; }
+  #btnCam { right: 76px; top: 10px; font-size: 16px; }
+  #btnPause { right: 142px; top: 10px; }
+  #btnDrop { right: 208px; top: 10px; font-size: 16px; }
+  body.touch #crosshair { width: 16px; height: 16px; }
+  body.touch #crosshair::before { left: 7px; height: 16px; }
+  body.touch #crosshair::after { top: 7px; width: 16px; }
+  @media (max-width: 700px), (max-height: 500px) {
+    :root { --slot: 34px; }
+    h1 { font-size: 46px; } h1 img { width: 44px; height: 44px; }
+    .splash { margin-left: 140px; font-size: 18px; }
+    button { min-width: 240px; font-size: 20px; padding: 6px 12px; }
+    #settingsBody { grid-template-columns: 1fr; }
+    .slot .count { font-size: 17px; }
+    #stats img { width: 14px; height: 14px; }
+  }
+  @media (max-height: 430px) {
+    :root { --slot: 30px; }
+    .window { padding: 6px 8px; gap: 3px; }
+    .window .label { font-size: 17px; }
+  }
+</style>
+<script type="importmap">
+{ "imports": { "three": "./lib/three.module.min.js" } }
+</script>
+</head>
+<body>
+<canvas id="game"></canvas>
+<div id="damage"></div>
+<div id="waterOverlay"></div>
+<div id="lavaOverlay"></div>
+<div id="portalOverlay"></div>
+
+<div id="hud">
+  <div id="crosshair"></div>
+  <div id="debug"></div>
+  <div id="messages"></div>
+  <div id="itemName"></div>
+  <div id="stats"><div id="hearts"></div><div id="hunger"></div><div id="air"></div></div>
+  <div id="hotbar"></div>
+  <div id="touch">
+    <div id="joystick"><div id="joyKnob"></div></div>
+    <div class="tbtn" id="btnJump">⬆</div>
+    <div class="tbtn" id="btnSneak">⇩</div>
+    <div class="tbtn" id="btnAttack">⚔</div>
+    <div class="tbtn" id="btnFly">FLY</div>
+    <div class="tbtn" id="btnDown">▼</div>
+    <div class="tbtn" id="btnSprint">RUN</div>
+    <div class="tbtn" id="btnInv">▦</div>
+    <div class="tbtn" id="btnCam">CAM</div>
+    <div class="tbtn" id="btnPause">❚❚</div>
+    <div class="tbtn" id="btnDrop">DROP</div>
+  </div>
+</div>
+
+<div id="gui"></div>
+<div id="cursorItem"></div>
+<div id="tooltip"></div>
+
+<div class="screen bg" id="titleScreen">
+  <h1><img id="titleLogoIcon" alt="">PowderCraft</h1>
+  <div class="splash">Now with god rays!</div>
+  <button id="btnPlay">Singleplayer</button>
+  <button id="btnSettingsTitle">Options...</button>
+  <div class="packbox">
+    <label class="filebtn">Load Resource Pack (.zip)<input type="file" id="packFile" accept=".zip" hidden></label>
+    <div class="small" id="packStatus">Uses built-in procedural textures. You can load a Java Edition resource pack zip you own (e.g. one extracted from your own Minecraft install).</div>
+  </div>
+</div>
+
+<div class="screen bg" id="worldsScreen">
+  <h2>Select World</h2>
+  <div class="panel" id="worldList"></div>
+  <div class="row">
+    <button id="btnCreateWorld">Create New World</button>
+    <button id="btnBackWorlds">Back</button>
+  </div>
+</div>
+
+<div class="screen bg" id="createScreen">
+  <h2>Create New World</h2>
+  <div class="small">World Name</div>
+  <input type="text" id="worldName" maxlength="32">
+  <div class="small">Seed (leave blank for random)</div>
+  <input type="text" id="worldSeed" maxlength="40">
+  <div class="modes">
+    <label><input type="radio" name="mode" value="survival" checked> Survival</label>
+    <label><input type="radio" name="mode" value="creative"> Creative</label>
+  </div>
+  <div class="row">
+    <button id="btnCreateGo">Create World</button>
+    <button id="btnCreateCancel">Cancel</button>
+  </div>
+</div>
+
+<div class="screen bg" id="loadingScreen">
+  <h2 id="loadingText">Loading...</h2>
+</div>
+
+<div class="screen dim" id="pauseScreen">
+  <h2>Game Menu</h2>
+  <button id="btnResume">Back to Game</button>
+  <button id="btnCamera">Camera</button>
+  <button id="btnGamemode">Game Mode</button>
+  <button id="btnSettingsPause">Options...</button>
+  <button id="btnQuit">Save and Quit to Title</button>
+</div>
+
+<div class="screen dim" id="settingsScreen">
+  <h2>Options</h2>
+  <div id="settingsBody"></div>
+  <button id="btnSettingsDone">Done</button>
+</div>
+
+<div class="screen" id="death" style="background: rgba(120,0,0,.5); z-index: 25;">
+  <h1 style="font-size: 64px;">You died!</h1>
+  <button id="btnRespawn">Respawn</button>
+  <button id="btnDeathQuit">Title Screen</button>
+</div>
+
+<div id="fatal"></div>
+<script type="module" src="./src/main.js"></script>
+</body>
+</html>
