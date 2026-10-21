@@ -117,7 +117,48 @@ block(73, 'blue_ice', 'Packed Ice', { hardness: 0.5, tool: 'pickaxe', tex: { all
 block(74, 'lily_pad', 'Lily Pad', { solid: false, opaque: false, render: 'flat', hardness: 0, cutout: true, tint: 'lily' });
 block(75, 'emerald_ore', 'Emerald Ore', { hardness: 3, tool: 'pickaxe', level: 3, drop: 'emerald' });
 
-export const BLOCK_COUNT = 76;
+block(76, 'terracotta', 'Terracotta', { hardness: 1.25, tool: 'pickaxe', level: 1 });
+block(77, 'orange_terracotta', 'Orange Terracotta', { hardness: 1.25, tool: 'pickaxe', level: 1 });
+block(78, 'yellow_terracotta', 'Yellow Terracotta', { hardness: 1.25, tool: 'pickaxe', level: 1 });
+block(79, 'red_terracotta', 'Red Terracotta', { hardness: 1.25, tool: 'pickaxe', level: 1 });
+block(80, 'white_terracotta', 'White Terracotta', { hardness: 1.25, tool: 'pickaxe', level: 1 });
+block(81, 'brown_terracotta', 'Brown Terracotta', { hardness: 1.25, tool: 'pickaxe', level: 1 });
+block(82, 'mycelium', 'Mycelium', { hardness: 0.6, tool: 'shovel', drop: 3, tex: { top: 'mycelium_top', side: 'mycelium_side', bottom: 'dirt' } });
+block(83, 'mushroom_stem', 'Mushroom Stem', { hardness: 0.2, tool: 'axe' });
+block(84, 'red_mushroom_block', 'Red Mushroom Block', { hardness: 0.2, tool: 'axe' });
+block(85, 'brown_mushroom_block', 'Brown Mushroom Block', { hardness: 0.2, tool: 'axe' });
+block(86, 'cherry_log', 'Cherry Log', { hardness: 2, tool: 'axe', tex: { top: 'cherry_log_top', side: 'cherry_log' } });
+block(87, 'cherry_leaves', 'Cherry Leaves', { ...leaves });
+block(88, 'cherry_planks', 'Cherry Planks', { hardness: 2, tool: 'axe' });
+block(89, 'dark_oak_log', 'Dark Oak Log', { hardness: 2, tool: 'axe', tex: { top: 'dark_oak_log_top', side: 'dark_oak_log' } });
+block(90, 'dark_oak_leaves', 'Dark Oak Leaves', { ...leaves, tint: 'foliage' });
+block(91, 'dark_oak_planks', 'Dark Oak Planks', { hardness: 2, tool: 'axe' });
+block(92, 'crimson_nylium', 'Crimson Nylium', { hardness: 0.4, tool: 'pickaxe', drop: 35, tex: { top: 'crimson_nylium', side: 'crimson_nylium_side', bottom: 'netherrack' } });
+block(93, 'warped_nylium', 'Warped Nylium', { hardness: 0.4, tool: 'pickaxe', drop: 35, tex: { top: 'warped_nylium', side: 'warped_nylium_side', bottom: 'netherrack' } });
+block(94, 'crimson_stem', 'Crimson Stem', { hardness: 2, tool: 'axe', tex: { top: 'crimson_stem_top', side: 'crimson_stem' } });
+block(95, 'warped_stem', 'Warped Stem', { hardness: 2, tool: 'axe', tex: { top: 'warped_stem_top', side: 'warped_stem' } });
+block(96, 'nether_wart_block', 'Nether Wart Block', { hardness: 1, tool: 'hoe' });
+block(97, 'warped_wart_block', 'Warped Wart Block', { hardness: 1, tool: 'hoe' });
+block(98, 'shroomlight', 'Shroomlight', { hardness: 1, light: 15 });
+block(99, 'soul_soil', 'Soul Soil', { hardness: 0.5, tool: 'shovel' });
+block(100, 'basalt', 'Basalt', { hardness: 1.25, tool: 'pickaxe', level: 1, tex: { top: 'basalt_top', side: 'basalt_side' } });
+block(101, 'blackstone', 'Blackstone', { hardness: 1.5, tool: 'pickaxe', level: 1 });
+block(102, 'red_tulip', 'Red Tulip', { ...plant });
+block(103, 'cornflower', 'Cornflower', { ...plant });
+block(104, 'allium', 'Allium', { ...plant });
+block(105, 'dirt_path', 'Dirt Path', { hardness: 0.65, tool: 'shovel', drop: 3, tex: { top: 'dirt_path_top', side: 'dirt_path_side', bottom: 'dirt' } });
+block(106, 'hay_block', 'Hay Bale', { hardness: 0.5, tex: { top: 'hay_block_top', side: 'hay_block_side' } });
+block(107, 'farmland', 'Farmland', { hardness: 0.6, tool: 'shovel', drop: 3, tex: { top: 'farmland_moist', side: 'dirt', bottom: 'dirt' } });
+block(108, 'wheat_crop', 'Wheat Crops', { ...plant, drop: 'wheat', tex: { all: 'wheat_stage7' } });
+block(109, 'mossy_stone_bricks', 'Mossy Stone Bricks', { hardness: 1.5, tool: 'pickaxe', level: 1 });
+block(110, 'cobweb', 'Cobweb', { ...plant, hardness: 4, drop: 'string', slowing: true });
+block(111, 'crimson_fungus', 'Crimson Fungus', { ...plant });
+block(112, 'warped_fungus', 'Warped Fungus', { ...plant });
+block(113, 'crying_obsidian', 'Crying Obsidian', { hardness: 50, tool: 'pickaxe', level: 4, light: 10 });
+block(114, 'gold_ore_nether', 'Nether Gold Ore', { hardness: 3, tool: 'pickaxe', level: 1, tex: { all: 'nether_gold_ore' }, drop: 'gold_ingot' });
+block(115, 'bell', 'Bell', { hardness: 5, tool: 'pickaxe', tex: { all: 'gold_block' } });
+
+export const BLOCK_COUNT = 116;
 
 // ---------- Items ----------
 function item(id, key, name, opts = {}) {
@@ -205,8 +246,8 @@ export function maxStack(id) {
 }
 
 // ---------- Recipes ----------
-const LOGS = [B.oak_log, B.birch_log, B.spruce_log, B.jungle_log, B.acacia_log];
-const PLANKS = [B.oak_planks, B.birch_planks, B.spruce_planks, B.jungle_planks];
+const LOGS = [B.oak_log, B.birch_log, B.spruce_log, B.jungle_log, B.acacia_log, B.cherry_log, B.dark_oak_log, B.crimson_stem, B.warped_stem];
+const PLANKS = [B.oak_planks, B.birch_planks, B.spruce_planks, B.jungle_planks, B.cherry_planks, B.dark_oak_planks];
 const COBBLE = [B.cobblestone];
 
 export const RECIPES = [];
@@ -222,6 +263,11 @@ shapeless([[B.birch_log]], B.birch_planks, 4);
 shapeless([[B.spruce_log]], B.spruce_planks, 4);
 shapeless([[B.jungle_log]], B.jungle_planks, 4);
 shapeless([[B.acacia_log]], B.oak_planks, 4);
+shapeless([[B.cherry_log]], B.cherry_planks, 4);
+shapeless([[B.dark_oak_log]], B.dark_oak_planks, 4);
+shaped(['###', '###', '###'], { '#': [I.wheat] }, B.hay_block);
+shapeless([[B.hay_block]], 'wheat', 9);
+shapeless([[B.stone_bricks], [B.tall_grass]], B.mossy_stone_bricks);
 shaped(['#', '#'], { '#': PLANKS }, 'stick', 4);
 shaped(['##', '##'], { '#': PLANKS }, B.crafting_table);
 shaped(['###', '# #', '###'], { '#': COBBLE }, B.furnace);
@@ -283,7 +329,7 @@ export const SMELTING = {
   [B.sand]: B.glass,
   [B.red_sand]: B.glass,
   [B.cobblestone]: B.stone,
-  [B.clay]: I.brick,
+  [B.clay]: B.terracotta,
   [B.netherrack]: I.nether_brick,
   [B.cactus]: B.green_wool,
   [I.clay_ball]: I.brick,

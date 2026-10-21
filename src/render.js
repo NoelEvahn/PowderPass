@@ -206,6 +206,7 @@ out vec3 vNormal;
 out vec2 vFlow;
 out vec3 vUv;
 out vec4 vShadowPos;
+out float vViewZ;
 void main() {
   vec3 p = position / ${POS_SCALE.toFixed(1)};
   int face = int(aData.x + 0.5);
@@ -220,7 +221,9 @@ void main() {
   vFlow = aFlow;
   vUv = vec3(aData.z / 16.0, aData.w / 16.0, aLayer);
   vShadowPos = uShadowMatrix * vec4(world.xyz + vec3(0.0, 0.05, 0.0), 1.0);
-  gl_Position = projectionMatrix * viewMatrix * world;
+  vec4 vp = viewMatrix * world;
+  vViewZ = -vp.z;
+  gl_Position = projectionMatrix * vp;
 }
 `;
 
@@ -229,6 +232,10 @@ precision highp float;
 precision highp sampler2DArray;
 uniform sampler2DArray uTex;
 uniform float uWaterLayer;
+uniform sampler2D tScene;
+uniform float uRefract;
+uniform vec2 uResolution;
+uniform mat4 uProj;
 ${COMMON}
 in vec4 vLight;
 in vec4 vTint;
@@ -237,6 +244,7 @@ in vec3 vNormal;
 in vec2 vFlow;
 in vec3 vUv;
 in vec4 vShadowPos;
+in float vViewZ;
 out vec4 fragColor;
 
 float waveH(vec2 p, float t) {
@@ -315,6 +323,62 @@ void main() {
       col += uSunColor * spec * sh * smoothstep(0.6, 0.95, sky) * (top && vNormal.y > 0.0 ? 1.0 : 0.0);
       alpha = clamp(mix(0.55, 0.92, depth) + fres * 0.4, 0.0, 0.97);
       if (!gl_FrontFacing && top) { alpha = 0.65; col = mix(base * lightCol * 1.3, refl * skyB, 0.25); }
+      if (uRefract > 0.5) {
+        // ---- screen-space refraction, absorption, reflections and shore foam ----
+        vec2 suv = gl_FragCoord.xy / uResolution;
+        float pathScale = length(uCamPos - vWorld) / max(vViewZ, 0.001);
+        float sceneZ = texture(tScene, suv).a;
+        float thick = max(sceneZ - vViewZ, 0.0) * pathScale;
+        vec2 offs = (top ? n.xz : n.xy) * 0.035 * clamp(thick, 0.0, 1.5) * (1.0 / (1.0 + vViewZ * 0.03));
+        vec2 ruv = suv + offs;
+        float rz = texture(tScene, ruv).a;
+        if (rz < vViewZ) { ruv = suv; rz = sceneZ; }
+        vec3 behind = texture(tScene, ruv).rgb;
+        float path = min(max(rz - vViewZ, 0.0) * pathScale, 64.0);
+        vec3 absorb = (vec3(1.0) - clamp(vTint.rgb * 1.6, 0.0, 1.0)) * 0.55 + vec3(0.04, 0.02, 0.015);
+        vec3 T = exp(-absorb * path);
+        vec3 scatter = vTint.rgb * lightCol * 0.55 * (1.0 - T) * (0.7 + 0.3 * detail);
+        vec3 refr = behind * T + scatter;
+        // screen-space reflection of terrain, falling back to the sky
+        vec3 rcol = refl * skyB;
+        if (top && gl_FrontFacing && uNether < 0.5) {
+          vec3 Rr = normalize(vec3(R.x, max(R.y, 0.02), R.z));
+          float stepLen = 0.6;
+          vec3 pos = vWorld;
+          for (int i = 0; i < 28; i++) {
+            pos += Rr * stepLen;
+            stepLen *= 1.12;
+            vec4 cp = uProj * viewMatrix * vec4(pos, 1.0);
+            if (cp.w <= 0.0) break;
+            vec2 puv = cp.xy / cp.w * 0.5 + 0.5;
+            if (puv.x < 0.0 || puv.x > 1.0 || puv.y < 0.0 || puv.y > 1.0) break;
+            float sz = texture(tScene, puv).a;
+            float pz = cp.w;
+            if (pz > sz + 0.05 && pz - sz < stepLen * 2.5 + 0.5 && sz < 900.0) {
+              vec2 e = smoothstep(0.0, 0.12, puv) * smoothstep(1.0, 0.88, puv);
+              rcol = mix(rcol, texture(tScene, puv).rgb, e.x * e.y);
+              break;
+            }
+          }
+        }
+        float f2 = top && gl_FrontFacing ? fres : 0.02;
+        col = mix(refr, rcol, f2);
+        col += uSunColor * spec * sh * smoothstep(0.6, 0.95, sky) * (top && gl_FrontFacing ? 1.0 : 0.0);
+        // foam where water meets shore or falls
+        if (top && gl_FrontFacing) {
+          float fn = texture(uTex, vec3(fract(vWorld.xz * 0.37 + uTime * 0.03), uWaterLayer)).r;
+          float foam = smoothstep(0.55, 0.0, path) * smoothstep(0.45, 0.75, fn + 0.25 * sin(uTime * 2.0 + vWorld.x + vWorld.z));
+          col = mix(col, vec3(0.9) * lightCol, foam * 0.7);
+        } else if (!top) {
+          col = mix(col, vec3(0.85) * lightCol, 0.18 * smoothstep(0.5, 0.9, detail));
+        }
+        if (!gl_FrontFacing) {
+          // looking up from underwater: Snell's window
+          float win = smoothstep(0.35, 0.6, ndv);
+          col = mix(base * lightCol * 0.5, behind * vec3(0.7, 0.9, 1.0), win);
+        }
+        alpha = 1.0;
+      }
     } else {
       col = base * lightCol;
       alpha = 0.72;
@@ -514,6 +578,7 @@ export class Renderer {
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera(settings.fov, 1, 0.05, 1000);
     this.camera.rotation.order = 'YXZ';
+    this.camera.layers.enable(2);
     this.tex = getBlockTextureArray();
 
     this.uniforms = {
@@ -539,6 +604,10 @@ export class Renderer {
       uGamma: { value: 1.0 },
       uTex: { value: this.tex },
       uWaterLayer: { value: TEX_INDEX.water_still },
+      tScene: { value: null },
+      uRefract: { value: 0 },
+      uResolution: { value: new THREE.Vector2(1, 1) },
+      uProj: { value: new THREE.Matrix4() },
     };
     const u = this.uniforms;
     this.solidMat = new THREE.ShaderMaterial({ uniforms: u, vertexShader: SOLID_VS, fragmentShader: SOLID_FS, glslVersion: THREE.GLSL3 });
@@ -600,6 +669,20 @@ export class Renderer {
     this.crack.visible = false;
     this.scene.add(this.crack);
 
+    // copy pass: scene colour + linear view depth for water refraction / reflections
+    this.copyUniforms = { tColor: { value: null }, tDepth: { value: null }, uNear: { value: 0.05 }, uFar: { value: 1000 } };
+    this.copyScene = new THREE.Scene();
+    const cq = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), new THREE.ShaderMaterial({
+      uniforms: this.copyUniforms, depthTest: false, depthWrite: false,
+      vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }',
+      fragmentShader: `uniform sampler2D tColor; uniform sampler2D tDepth; uniform float uNear; uniform float uFar; varying vec2 vUv;
+        void main(){ float d = texture2D(tDepth, vUv).r; float z = d * 2.0 - 1.0;
+        float lin = d >= 1.0 ? 1000.0 : (2.0 * uNear * uFar) / (uFar + uNear - z * (uFar - uNear));
+        gl_FragColor = vec4(texture2D(tColor, vUv).rgb, lin); }`,
+    }));
+    cq.frustumCulled = false;
+    this.copyScene.add(cq);
+
     this.applySettings();
     this.resize();
     window.addEventListener('resize', () => this.resize());
@@ -641,10 +724,15 @@ export class Renderer {
     this.rt.depthTexture.type = THREE.UnsignedIntType;
     this.postUniforms.tColor.value = this.rt.texture;
     this.postUniforms.tDepth.value = this.rt.depthTexture;
+    if (this.rtScene) this.rtScene.dispose();
+    this.rtScene = new THREE.WebGLRenderTarget(Math.floor(w * pr), Math.floor(h * pr), { type: THREE.HalfFloatType, depthBuffer: false });
+    this.uniforms.tScene.value = this.rtScene.texture;
+    this.uniforms.uResolution.value.set(Math.floor(w * pr), Math.floor(h * pr));
+    if (this.copyUniforms) { this.copyUniforms.tColor.value = this.rt.texture; this.copyUniforms.tDepth.value = this.rt.depthTexture; }
   }
 
   // Update time-of-day colours. dayTime in [0,1): 0 = sunrise, 0.25 noon, 0.5 sunset, 0.75 midnight.
-  updateEnvironment(dayTime, dim, underwater, renderDist) {
+  updateEnvironment(dayTime, dim, underwater, renderDist, biome) {
     const u = this.uniforms;
     const nether = dim === 'nether';
     u.uNether.value = nether ? 1 : 0;
@@ -664,7 +752,11 @@ export class Renderer {
     u.uSunColor.value.setRGB(1.0, 0.92 - sunset * 0.35, 0.82 - sunset * 0.5).multiplyScalar(day * 1.15);
     const fogDist = renderDist * 16;
     if (nether) {
-      u.uFogColor.value.setRGB(0.24, 0.05, 0.03);
+      const NF = { crimson_forest: [0.3, 0.03, 0.03], warped_forest: [0.06, 0.12, 0.14], soul_sand_valley: [0.1, 0.17, 0.2] };
+      const t = NF[biome] || [0.24, 0.05, 0.03];
+      this.netherFog = this.netherFog || new THREE.Color(t[0], t[1], t[2]);
+      this.netherFog.lerp(new THREE.Color(t[0], t[1], t[2]), 0.02);
+      u.uFogColor.value.copy(this.netherFog);
       u.uFogStart.value = 8;
       u.uFogDensity.value = 1 / Math.min(70, fogDist);
     } else if (underwater) {
@@ -738,10 +830,32 @@ export class Renderer {
 
     const fog = u.uFogColor.value;
     r.setClearColor(fog, 1);
+    const cam = this.camera;
     if (this.postEnabled) {
       r.setRenderTarget(this.rt);
       r.clear();
-      r.render(this.scene, this.camera);
+      const realWater = this.settings.realWater !== false;
+      u.uRefract.value = realWater ? 1 : 0;
+      if (realWater) {
+        // opaque pass, copy colour+depth, then water on top sampling the copy
+        cam.layers.set(0);
+        r.render(this.scene, cam);
+        r.setRenderTarget(this.rtScene);
+        this.copyUniforms.uNear.value = cam.near;
+        this.copyUniforms.uFar.value = cam.far;
+        r.render(this.copyScene, this.postCam);
+        r.setRenderTarget(this.rt);
+        u.uProj.value.copy(cam.projectionMatrix);
+        cam.layers.set(2);
+        const ac = r.autoClear;
+        r.autoClear = false;
+        r.render(this.scene, cam);
+        r.autoClear = ac;
+        cam.layers.set(0);
+        cam.layers.enable(2);
+      } else {
+        r.render(this.scene, cam);
+      }
       r.setRenderTarget(null);
       // sun screen position for god rays
       const sunWorld = this.camera.position.clone().addScaledVector(u.uSunDir.value, 400);

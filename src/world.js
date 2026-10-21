@@ -1,6 +1,7 @@
 // Chunk storage, lighting (BFS sky + block light), fluids, block updates, saving.
 import { BLOCKS, B } from './blocks.js';
 import { CS, CH, idx, OverworldGen, NetherGen } from './worldgen.js';
+import { rollLoot } from './structures.js';
 
 export const FALLING = 8; // meta flag for falling fluid
 
@@ -65,6 +66,14 @@ export class World {
       c.blocks.set(saved.blocks);
       c.meta.set(saved.meta);
       c.modified = true;
+    }
+    // structure loot chests are filled the first time they are generated
+    const looted = this.store.looted || (this.store.looted = {});
+    for (const [x, y, z, table] of c.structChests || []) {
+      const k = this.dim + ':' + x + ',' + y + ',' + z;
+      if (looted[k]) continue;
+      looted[k] = 1;
+      if (!this.tileEntities[k]) this.tileEntities[k] = { type: 'chest', items: rollLoot(table, (x * 73856093) ^ (y * 19349663) ^ (z * 83492791) ^ this.seed) };
     }
     this.chunks.set(this.key(cx, cz), c);
     return c;
@@ -517,10 +526,14 @@ export class World {
   }
 
   supportsPlant(id, below) {
+    if (id === B.cobweb) return true;
+    if (id === B.wheat_crop) return below === B.farmland;
+    if (id === B.crimson_fungus || id === B.warped_fungus) return below === B.crimson_nylium || below === B.warped_nylium || below === B.soul_soil || below === B.netherrack;
     if (id === B.lily_pad) return below === B.water;
     if (id === B.sugar_cane) return below === B.sugar_cane || below === B.grass || below === B.dirt || below === B.sand;
     if (id === B.dead_bush) return below === B.sand || below === B.red_sand || below === B.dirt || below === B.grass;
     if (id === B.red_mushroom || id === B.brown_mushroom) return BLOCKS[below].solid && BLOCKS[below].opaque;
+    if (id === B.dandelion || id === B.poppy || id === B.red_tulip || id === B.cornflower || id === B.allium || id === B.tall_grass) return below === B.grass || below === B.dirt || below === B.snowy_grass || below === B.mycelium;
     return below === B.grass || below === B.dirt || below === B.snowy_grass;
   }
 

@@ -270,6 +270,21 @@ function mobSkin(type) {
     for (let y = 21; y < 32; y += 2) p.fill(20, y, 8, 1, [70, 70, 70], 0);
     p.box(40, 16, 4, 12, 4, bone, 0.06);
     p.box(0, 16, 4, 12, 4, bone, 0.06);
+  } else if (type === 'villager') {
+    p = painter(64, 64, 11);
+    const skin = [180, 125, 95], robe = [110, 75, 50];
+    p.box(0, 0, 8, 8, 8, skin, 0.05);
+    p.fill(8, 0, 8, 8, [90, 60, 40], 0.1);
+    p.fill(9, 11, 2, 1, [255, 255, 255], 0); p.fill(13, 11, 2, 1, [255, 255, 255], 0);
+    p.px(10, 11, [30, 110, 40]); p.px(13, 11, [30, 110, 40]);
+    p.fill(11, 12, 2, 4, [160, 105, 80], 0); // big nose
+    p.fill(10, 9, 4, 1, [70, 45, 30], 0); // unibrow
+    p.box(16, 16, 8, 12, 4, robe, 0.08);
+    p.fill(20, 26, 8, 6, [90, 60, 40], 0.08);
+    p.box(40, 16, 4, 12, 4, robe, 0.08);
+    p.fill(44, 26, 4, 4, skin, 0.05);
+    p.box(0, 16, 4, 12, 4, robe, 0.08);
+    p.fill(0, 29, 16, 3, [60, 40, 25], 0.08);
   } else if (type === 'piglin') {
     p = painter(64, 64, 10);
     const skin = [230, 150, 140];
@@ -287,7 +302,7 @@ function mobSkin(type) {
 }
 
 export function makeMobModel(type) {
-  if (type === 'zombie' || type === 'skeleton' || type === 'piglin') {
+  if (type === 'zombie' || type === 'skeleton' || type === 'piglin' || type === 'villager') {
     const m = makeHumanoid(mobSkin(type), { thin: type === 'skeleton' });
     m.userData.humanoid = true;
     return m;

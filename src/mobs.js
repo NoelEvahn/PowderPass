@@ -14,6 +14,7 @@ export const MOB_TYPES = {
   zombie: { hp: 20, w: 0.6, h: 1.9, speed: 2.4, hostile: true, damage: 3, drops: [[I.rotten_flesh, 0, 2]], dim: 'overworld', burns: true },
   skeleton: { hp: 20, w: 0.6, h: 1.9, speed: 2.4, hostile: true, ranged: true, drops: [[I.bone, 0, 2], [I.arrow, 0, 2]], dim: 'overworld', burns: true },
   creeper: { hp: 20, w: 0.6, h: 1.7, speed: 2.3, hostile: true, creeper: true, drops: [[I.gunpowder, 0, 2]], dim: 'overworld' },
+  villager: { hp: 20, w: 0.6, h: 1.95, speed: 1.2, passive: true, villager: true, drops: [], dim: 'overworld' },
   piglin: { hp: 20, w: 0.6, h: 1.9, speed: 2.3, neutral: true, damage: 5, drops: [[I.rotten_flesh, 0, 1], [I.gold_ingot, 0, 1]], dim: 'nether' },
 };
 
@@ -64,7 +65,7 @@ export class Mob {
     this.hp -= dmg;
     this.hurtTime = 0.5;
     if (knock) { this.body.vel.x += knock.x; this.body.vel.z += knock.z; this.body.vel.y = 5; }
-    this.game.audio.play('hurt', this.body.pos);
+    this.game.audio.play('hurt_' + this.type, this.body.pos);
     if (this.def.passive) { this.state = 'panic'; this.timer = 4; }
     if (this.def.neutral && attacker === this.game.player) {
       this.angry = true;
@@ -111,6 +112,7 @@ export class Mob {
     const canTarget = !player.dead && player.mode !== 'creative';
     let moveX = 0, moveZ = 0, speed = d.speed;
     this.timer -= dt;
+    if (Math.random() < dt * 0.06) g.audio.play('mob_' + this.type, b.pos);
 
     const hostileNow = (d.hostile || (d.neutral && this.angry)) && canTarget && pd < 24;
     if (hostileNow) {
@@ -158,6 +160,9 @@ export class Mob {
       if (this.timer <= 0) {
         if (this.state === 'wander') { this.state = 'idle'; this.timer = 2 + Math.random() * 5; }
         else { this.state = 'wander'; this.timer = 1 + Math.random() * 3; this.wanderYaw = Math.random() * Math.PI * 2; }
+      }
+      if (this.state === 'wander' && this.home && Math.hypot(b.pos.x - this.home.x, b.pos.z - this.home.z) > 14) {
+        this.wanderYaw = Math.atan2(this.home.x - b.pos.x, this.home.z - b.pos.z);
       }
       if (this.state === 'wander') {
         this.yaw = lerpAngle(this.yaw, this.wanderYaw, dt * 4);
@@ -293,7 +298,8 @@ export class MobManager {
     // despawn far mobs
     const p = this.game.player.body.pos;
     for (const m of this.list) {
-      if (dist2(m.body.pos, p) > 96 * 96) { m.remove(); }
+      if (m.def.villager) { if (!this.game.world.isLoaded(Math.floor(m.body.pos.x), Math.floor(m.body.pos.z))) m.remove(); }
+      else if (dist2(m.body.pos, p) > 96 * 96) { m.remove(); }
     }
     this.list = this.list.filter((m) => !m.removed);
     this.spawnTimer -= dt;
@@ -305,7 +311,7 @@ export class MobManager {
   trySpawn() {
     const g = this.game, w = g.world;
     const p = g.player.body.pos;
-    const passive = this.list.filter((m) => m.def.passive).length;
+    const passive = this.list.filter((m) => m.def.passive && !m.def.villager).length;
     const hostile = this.list.filter((m) => !m.def.passive).length;
     const nether = w.dim === 'nether';
     for (let attempt = 0; attempt < 4; attempt++) {

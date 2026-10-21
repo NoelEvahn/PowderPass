@@ -475,6 +475,72 @@ for (let s = 0; s < 10; s++) {
   };
 }
 
+// ---- extra biome / structure textures ----
+function terracotta(col) {
+  return (t) => { t.noise(col, 0.05); t.speck(col.map((v) => v * 0.9), 20); };
+}
+GEN.terracotta = terracotta([152, 94, 67]);
+GEN.orange_terracotta = terracotta([161, 83, 37]);
+GEN.yellow_terracotta = terracotta([186, 133, 35]);
+GEN.red_terracotta = terracotta([143, 61, 46]);
+GEN.white_terracotta = terracotta([209, 178, 161]);
+GEN.brown_terracotta = terracotta([77, 51, 35]);
+GEN.mycelium_top = (t) => { t.noise([111, 99, 105], 0.12); t.speck([140, 120, 140], 30); t.speck([90, 80, 90], 20); };
+GEN.mycelium_side = (t) => {
+  GEN.dirt(t);
+  for (let x = 0; x < S; x++) { const h = 2 + ((t.rand() * 3) | 0); for (let y = 0; y < h; y++) t.set(x, y, vary([111, 99, 105], 0.12, t.rand())); }
+};
+GEN.mushroom_stem = (t) => { t.noise([205, 198, 186], 0.05); for (let i = 0; i < 12; i++) t.set((t.rand() * S) | 0, (t.rand() * S) | 0, [180, 170, 155]); };
+GEN.red_mushroom_block = (t) => { t.noise([200, 46, 45], 0.07); for (let i = 0; i < 5; i++) t.blob([235, 230, 225], 2 + ((t.rand() * 12) | 0), 2 + ((t.rand() * 12) | 0), 6, 0.04); };
+GEN.brown_mushroom_block = (t) => { t.noise([149, 111, 81], 0.07); };
+GEN.cherry_log = (t) => logSide(t, [55, 33, 44], [40, 22, 32]);
+GEN.cherry_log_top = (t) => logTop(t, [55, 33, 44], [218, 162, 154], [190, 130, 125]);
+GEN.cherry_leaves = (t) => {
+  leavesTex(t, [235, 175, 200]);
+  for (let i = 0; i < 20; i++) { const x = (t.rand() * S) | 0, y = (t.rand() * S) | 0; if (t.get(x, y)[3]) t.set(x, y, [250, 205, 225]); }
+};
+GEN.cherry_planks = (t) => planks(t, [226, 178, 172]);
+GEN.dark_oak_log = (t) => logSide(t, [60, 46, 26], [42, 32, 18]);
+GEN.dark_oak_log_top = (t) => logTop(t, [60, 46, 26], [100, 74, 45], [80, 58, 34]);
+GEN.dark_oak_leaves = (t) => leavesTex(t, [150, 150, 150]);
+GEN.dark_oak_planks = (t) => planks(t, [67, 43, 20]);
+GEN.crimson_nylium = (t) => { t.noise([130, 31, 31], 0.15); t.speck([170, 40, 40], 25); t.speck([90, 20, 20], 20); };
+GEN.warped_nylium = (t) => { t.noise([43, 114, 101], 0.15); t.speck([60, 150, 130], 25); t.speck([25, 80, 70], 20); };
+GEN.crimson_nylium_side = (t) => { GEN.netherrack(t); for (let x = 0; x < S; x++) { const h = 3 + ((t.rand() * 3) | 0); for (let y = 0; y < h; y++) t.set(x, y, vary([130, 31, 31], 0.15, t.rand())); } };
+GEN.warped_nylium_side = (t) => { GEN.netherrack(t); for (let x = 0; x < S; x++) { const h = 3 + ((t.rand() * 3) | 0); for (let y = 0; y < h; y++) t.set(x, y, vary([43, 114, 101], 0.15, t.rand())); } };
+GEN.crimson_stem = (t) => { logSide(t, [92, 25, 29], [130, 30, 40]); for (let i = 0; i < 8; i++) t.set((t.rand() * S) | 0, (t.rand() * S) | 0, [210, 90, 60]); };
+GEN.crimson_stem_top = (t) => logTop(t, [92, 25, 29], [120, 50, 70], [100, 40, 58]);
+GEN.warped_stem = (t) => { logSide(t, [58, 58, 77], [40, 100, 100]); for (let i = 0; i < 8; i++) t.set((t.rand() * S) | 0, (t.rand() * S) | 0, [20, 200, 170]); };
+GEN.warped_stem_top = (t) => logTop(t, [58, 58, 77], [55, 120, 115], [45, 100, 95]);
+GEN.nether_wart_block = (t) => { t.noise([115, 3, 3], 0.18); t.speck([150, 20, 20], 25); };
+GEN.warped_wart_block = (t) => { t.noise([22, 119, 121], 0.18); t.speck([40, 150, 150], 25); };
+GEN.shroomlight = (t) => { voronoiCells(t, 8, 0.8, (x, y, r, e) => t.set(x, y, e ? vary([200, 100, 40], 0.1, t.rand()) : vary([255, 190, 100], 0.08, t.rand()))); };
+GEN.soul_soil = (t) => { t.noise([75, 57, 46], 0.12); t.speck([55, 40, 32], 30); };
+GEN.basalt_side = (t) => { t.noise([80, 81, 86], 0.1); for (let x = 0; x < S; x += 3) for (let y = 0; y < S; y++) t.shade(x, y, 0.75); };
+GEN.basalt_top = (t) => { t.noise([90, 90, 96], 0.1); voronoiCells(t, 6, 0.6, (x, y, r, e) => { if (e) t.set(x, y, [55, 55, 60]); }); };
+GEN.blackstone = (t) => { t.noise([42, 36, 41], 0.18); t.speck([70, 62, 70], 20); };
+function smallFlower(t, petal, stem = [60, 130, 40]) {
+  t.clear();
+  for (let y = 8; y < 16; y++) t.set(7, y, stem);
+  t.set(6, 12, stem); t.set(8, 11, stem);
+  t.rect(6, 4, 3, 4, petal, 0.1); t.set(5, 5, petal); t.set(9, 5, petal); t.set(7, 3, petal);
+}
+GEN.red_tulip = (t) => smallFlower(t, [220, 50, 40]);
+GEN.cornflower = (t) => smallFlower(t, [70, 110, 230]);
+GEN.allium = (t) => smallFlower(t, [190, 120, 230]);
+GEN.dirt_path_top = (t) => { t.noise([148, 122, 65], 0.08); t.speck([120, 98, 52], 25); };
+GEN.dirt_path_side = (t) => { GEN.dirt(t); for (let x = 0; x < S; x++) for (let y = 0; y < 2; y++) t.set(x, y, vary([148, 122, 65], 0.08, t.rand())); };
+GEN.hay_block_side = (t) => { t.noise([190, 160, 40], 0.08); for (let y = 0; y < S; y++) for (let x = 0; x < S; x += 2) if (t.rand() < 0.4) t.shade(x, y, 0.85); t.rect(0, 3, 16, 1, [120, 70, 30]); t.rect(0, 12, 16, 1, [120, 70, 30]); };
+GEN.hay_block_top = (t) => { t.noise([180, 150, 40], 0.1); };
+GEN.farmland_moist = (t) => { t.noise([75, 48, 30], 0.08); for (let y = 0; y < S; y += 4) for (let x = 0; x < S; x++) t.set(x, y, [55, 34, 20]); };
+GEN.wheat_stage7 = (t) => { t.clear(); for (const x of [2, 5, 8, 11, 14]) { for (let y = 5; y < 16; y++) t.set(x, y, vary([180, 160, 60], 0.1, t.rand())); t.rect(x - 1, 2, 2, 4, [210, 180, 80], 0.1); } };
+GEN.mossy_stone_bricks = (t) => { GEN.stone_bricks(t); for (let i = 0; i < 6; i++) t.blob([80, 110, 50], (t.rand() * S) | 0, (t.rand() * S) | 0, 8, 0.15); };
+GEN.cobweb = (t) => { t.clear(); for (let i = 0; i < S; i++) { t.set(i, i, [230, 230, 230], 220); t.set(15 - i, i, [230, 230, 230], 220); t.set(7, i, [230, 230, 230], 200); t.set(i, 8, [230, 230, 230], 200); } for (const r of [3, 6]) for (let a = 0; a < 24; a++) t.set(Math.round(7.5 + Math.cos(a / 3.8) * r), Math.round(7.5 + Math.sin(a / 3.8) * r), [220, 220, 220], 200); };
+GEN.crimson_fungus = (t) => mushroom(t, [170, 30, 30], true);
+GEN.warped_fungus = (t) => mushroom(t, [30, 160, 140], true);
+GEN.crying_obsidian = (t) => { GEN.obsidian(t); for (let i = 0; i < 10; i++) t.set((t.rand() * S) | 0, (t.rand() * S) | 0, [150, 50, 255]); };
+GEN.nether_gold_ore = (t) => ore([252, 220, 60], GEN.netherrack, 7)(t);
+
 // Mapping from our texture names to vanilla resource-pack file candidates.
 const PACK_NAMES = {
   grass_top: ['grass_block_top', 'grass_top'],
@@ -488,6 +554,12 @@ const PACK_NAMES = {
   quartz_block_side: ['quartz_block_side'],
   quartz_block_top: ['quartz_block_top'],
   lily_pad: ['lily_pad', 'waterlily'],
+  basalt_side: ['basalt_side'],
+  basalt_top: ['basalt_top'],
+  dirt_path_top: ['dirt_path_top', 'grass_path_top'],
+  dirt_path_side: ['dirt_path_side', 'grass_path_side'],
+  chest_top: ['__none'],
+  water_still: ['water_still'],
 };
 
 // ---------- Texture array ----------

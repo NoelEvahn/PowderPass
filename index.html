@@ -187,8 +187,13 @@
   <button id="btnPlay">Singleplayer</button>
   <button id="btnSettingsTitle">Options...</button>
   <div class="packbox">
-    <label class="filebtn">Load Resource Pack (.zip)<input type="file" id="packFile" accept=".zip" hidden></label>
-    <div class="small" id="packStatus">Uses built-in procedural textures. You can load a Java Edition resource pack zip you own (e.g. one extracted from your own Minecraft install).</div>
+    <div class="row">
+      <label class="filebtn">Use Minecraft Textures<input type="file" id="packFile" accept=".zip,.jar" hidden></label>
+      <label class="filebtn" id="soundBtn">Use Minecraft Sounds &amp; Music<input type="file" id="soundDir" webkitdirectory directory multiple hidden></label>
+    </div>
+    <div class="small" id="packStatus">Textures: pick your Minecraft game file <b>.minecraft/versions/&lt;version&gt;/&lt;version&gt;.jar</b> (or any resource pack .zip).</div>
+    <div class="small" id="soundStatus">Sounds &amp; music: pick your <b>.minecraft/assets</b> folder. Files stay on your device and are remembered.</div>
+    <button id="btnForgetAssets" style="min-width:0;font-size:16px;padding:2px 10px;display:none">Forget loaded Minecraft files</button>
   </div>
 </div>
 

@@ -1,6 +1,6 @@
 // IndexedDB persistence for worlds: metadata + RLE-compressed modified chunks.
 const DB_NAME = 'powdercraft';
-const DB_VER = 1;
+const DB_VER = 2;
 
 function open() {
   return new Promise((resolve, reject) => {
@@ -10,6 +10,7 @@ function open() {
       const db = req.result;
       if (!db.objectStoreNames.contains('worlds')) db.createObjectStore('worlds', { keyPath: 'id' });
       if (!db.objectStoreNames.contains('chunks')) db.createObjectStore('chunks');
+      if (!db.objectStoreNames.contains('assets')) db.createObjectStore('assets');
     };
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);
@@ -108,4 +109,15 @@ export async function deleteWorld(worldId) {
     await tx('worlds', 'readwrite', (s) => s.delete(worldId));
     await tx('chunks', 'readwrite', (s) => s.delete(IDBKeyRange.bound(worldId + '|', worldId + '|￿')));
   } catch (e) { console.warn('delete failed', e); }
+}
+
+// Generic blob storage for user-supplied assets (resource pack, sounds, music).
+export async function putAsset(key, value) {
+  try { await tx('assets', 'readwrite', (s) => s.put(value, key)); return true; } catch (e) { console.warn('asset save failed', e); return false; }
+}
+export async function getAsset(key) {
+  try { return await tx('assets', 'readonly', (s) => s.get(key)); } catch { return undefined; }
+}
+export async function deleteAsset(key) {
+  try { await tx('assets', 'readwrite', (s) => s.delete(key)); } catch { /* ignore */ }
 }

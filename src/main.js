@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { BLOCKS, ITEMS, B, I, SMELTING, maxStack } from './blocks.js';
 import { loadResourcePack, iconURL } from './textures.js';
 import { World } from './world.js';
-import { CS, CH, SEA } from './worldgen.js';
+import { CS, CH, SEA, BIOME_KEYS } from './worldgen.js';
 import { buildChunkMesh } from './mesher.js';
 import { Renderer } from './render.js';
 import { Player } from './player.js';
@@ -24,6 +24,8 @@ const DEFAULT_SETTINGS = {
   quality: isTouch ? 1 : 2, // 0 fast, 1 fancy, 2 shaders
   shadows: true,
   godRays: true,
+  realWater: true,
+  music: 0.35,
   shadowDistance: 64,
   fov: 70,
   sensitivity: 1,
@@ -75,6 +77,7 @@ class Game {
     this.player = new Player(this);
     this.ui = new UI(this);
     this.menus();
+    document.addEventListener('pointerdown', () => this.audio.resume());
     requestAnimationFrame((t) => this.loop(t));
   }
 
@@ -123,19 +126,51 @@ class Game {
       this.saveSettings();
       if (this.settingsFrom === 'pause') show('pauseScreen'); else show('titleScreen');
     });
-    $('packFile').addEventListener('change', async (e) => {
-      const f = e.target.files[0];
-      if (!f) return;
-      $('packStatus').textContent = 'Loading pack...';
+    const applyPack = async (blob, name, save) => {
+      $('packStatus').textContent = 'Loading textures...';
       try {
-        const n = await loadResourcePack(f);
+        const n = await loadResourcePack(blob);
         clearItemCache();
         clearColorCache();
-        $('packStatus').textContent = `Loaded ${n} textures from ${f.name}`;
-        if (this.world) { for (const c of this.world.chunks.values()) c.dirty = true; this.ui.refreshHotbar(); this.player.heldId = -1; }
+        $('packStatus').textContent = `Using ${n} textures from ${name}`;
+        if (this.world) { for (const c of this.world.chunks.values()) c.dirty = true; this.ui.refreshHotbar(); this.player.heldId = -1; this.player.updateHandItem(); }
         $('titleLogoIcon').src = iconURL(B.grass);
+        $('btnForgetAssets').style.display = '';
+        if (save) await Store.putAsset('pack', { blob, name });
       } catch (err) {
         $('packStatus').textContent = 'Failed: ' + err.message;
+      }
+    };
+    $('packFile').addEventListener('change', (e) => {
+      const f = e.target.files[0];
+      if (f) applyPack(f, f.name, true);
+    });
+    $('soundDir').addEventListener('change', async (e) => {
+      const files = e.target.files;
+      if (!files || !files.length) return;
+      this.audio.resume();
+      $('soundStatus').textContent = 'Reading sounds...';
+      try {
+        const r = await this.audio.loadMinecraftAssets(files, (f) => { $('soundStatus').textContent = `Reading sounds... ${Math.round(f * 100)}%`; });
+        $('soundStatus').textContent = `Using ${r.nSounds} sound sets and ${r.nMusic} music tracks from your Minecraft install`;
+        $('btnForgetAssets').style.display = '';
+      } catch (err) {
+        $('soundStatus').textContent = 'Failed: ' + err.message;
+      }
+    });
+    $('btnForgetAssets').addEventListener('click', async () => {
+      await Store.deleteAsset('pack');
+      await this.audio.clearMinecraftAssets();
+      location.reload();
+    });
+    if (!('webkitdirectory' in document.createElement('input'))) $('soundBtn').style.display = 'none';
+    // restore previously chosen files
+    Store.getAsset('pack').then((p) => { if (p && p.blob) applyPack(p.blob, p.name, false); });
+    this.audio.restoreMinecraftAssets().then((ok) => {
+      if (ok) {
+        const m = this.audio.mc;
+        $('soundStatus').textContent = `Using ${Object.keys(m.sounds).length} sound sets and ${Object.values(m.music).reduce((a, b) => a + b.length, 0)} music tracks from your Minecraft install`;
+        $('btnForgetAssets').style.display = '';
       }
     });
     $('titleLogoIcon').src = iconURL(B.grass);
@@ -193,6 +228,7 @@ class Game {
     toggle('Graphics', 'quality', () => { s.quality = (s.quality + 1) % 3; this.renderer.applySettings(); }, (v) => QN[v]);
     toggle('Shadows', 'shadows');
     toggle('God Rays', 'godRays');
+    toggle('Realistic Water', 'realWater');
     slider('Render Distance', 'renderDistance', 2, 16, 1, (v) => v + ' chunks', () => this.buildSpiral());
     slider('Shadow Distance', 'shadowDistance', 32, 128, 8, (v) => v + ' blocks');
     slider('FOV', 'fov', 50, 110, 1, (v) => v, () => this.renderer.applySettings());
@@ -200,6 +236,7 @@ class Game {
     slider('Brightness', 'brightness', 0, 1, 0.05, (v) => (v < 0.05 ? 'Moody' : v > 0.95 ? 'Bright' : Math.round(v * 100) + '%'), () => this.renderer.applySettings());
     slider('Resolution', 'pixelRatio', 0.5, 2, 0.25, (v) => Math.round(v * 100) + '%', () => this.renderer.applySettings());
     slider('Volume', 'volume', 0, 1, 0.05, (v) => Math.round(v * 100) + '%', () => { this.audio.volume = s.volume; });
+    slider('Music', 'music', 0, 1, 0.05, (v) => Math.round(v * 100) + '%', () => this.audio.setMusicVolume(s.music));
     toggle('View Bobbing', 'viewBobbing');
     toggle('Auto-Jump', 'autoJump');
     toggle('Invert Mouse', 'invertY');
@@ -215,7 +252,7 @@ class Game {
     this.meta = meta;
     this.seed = meta.seed;
     const chunks = isNew ? {} : await Store.loadChunks(meta.id, CS * CS * CH);
-    this.store = { chunks, tiles: meta.tiles || {} };
+    this.store = { chunks, tiles: meta.tiles || {}, looted: meta.looted || {} };
     const p = this.player;
     p.inventory = (meta.inventory || new Array(36).fill(null)).map((s) => (s ? { ...s } : null));
     p.health = meta.health ?? 20;
@@ -300,6 +337,7 @@ class Game {
     for (const [dx, dz] of list) {
       const c = this.world.ensureChunk(pcx + dx, pcz + dz);
       this.world.lightChunk(c);
+      this.spawnStructureMobs(c);
       done++;
       if (done % 4 === 0) {
         $('loadingText').textContent = `Generating terrain... ${Math.round((done / total) * 100)}%`;
@@ -319,7 +357,7 @@ class Game {
     Object.assign(m, {
       lastPlayed: Date.now(), dim: this.world.dim, pos: { ...p.body.pos }, yaw: p.yaw, pitch: p.pitch,
       inventory: p.inventory.map((s) => (s ? { ...s } : null)), health: p.health, food: p.food, mode: p.mode,
-      dayTime: this.dayTime, spawn: this.spawnPoint, tiles: this.store.tiles, lastPortal: this.lastPortal,
+      dayTime: this.dayTime, spawn: this.spawnPoint, tiles: this.store.tiles, looted: this.store.looted, lastPortal: this.lastPortal,
     });
     if (p.dead) { m.pos = null; m.health = 20; m.food = 20; }
     Store.saveWorldMeta(JSON.parse(JSON.stringify(m)));
@@ -552,7 +590,7 @@ class Game {
       return m;
     };
     c.mesh = { solid: mk(res.solid, this.renderer.solidMat, true), trans: mk(res.trans, this.renderer.waterMat, false) };
-    if (c.mesh.trans) c.mesh.trans.renderOrder = 2;
+    if (c.mesh.trans) { c.mesh.trans.renderOrder = 2; c.mesh.trans.layers.set(2); }
     c.torches = res.torches;
     c.dirty = false;
     this.meshCount++;
@@ -572,6 +610,7 @@ class Game {
       if (!w.getChunk(pcx + dx, pcz + dz)) {
         const c = w.ensureChunk(pcx + dx, pcz + dz);
         w.lightChunk(c);
+        this.spawnStructureMobs(c);
         if (performance.now() - t0 > genBudget) break;
       }
     }
@@ -605,6 +644,14 @@ class Game {
       const vis = d <= R;
       if (c.mesh.solid) c.mesh.solid.visible = vis;
       if (c.mesh.trans) c.mesh.trans.visible = vis;
+    }
+  }
+
+  spawnStructureMobs(c) {
+    for (const [type, x, y, z] of c.structMobs || []) {
+      if (this.mobs.list.some((m) => m.type === type && Math.hypot(m.body.pos.x - x, m.body.pos.z - z) < 6)) continue;
+      const m = this.mobs.spawn(type, x, y, z);
+      m.home = { x, z };
     }
   }
 
@@ -661,6 +708,8 @@ class Game {
     this.fpsTime += dt;
     if (this.fpsTime >= 1) { this.fps = Math.round(this.frames / this.fpsTime); this.frames = 0; this.fpsTime = 0; }
     const r = this.renderer;
+    this.audio.musicVolume = this.settings.music;
+    this.audio.updateMusic(dt, !this.running ? 'menu' : this.world.dim === 'nether' ? 'nether' : this.player.mode === 'creative' ? 'creative' : 'game');
     if (!this.running) {
       // title background: slow camera pan if a world is not loaded
       r.renderer.setClearColor(0x6a8fd8);
@@ -703,7 +752,10 @@ class Game {
       underwater = cp.y < Math.floor(cp.y) + h;
     }
     const inLava = BLOCKS[cid].liquid === 'lava';
-    r.updateEnvironment(this.dayTime % 1, this.world.dim, underwater, this.settings.renderDistance);
+    const pc = this.world.getChunk(Math.floor(p.body.pos.x) >> 4, Math.floor(p.body.pos.z) >> 4);
+    const biome = pc ? BIOME_KEYS[pc.biome[(Math.floor(p.body.pos.z) & 15) * 16 + (Math.floor(p.body.pos.x) & 15)]] : null;
+    this.currentBiome = biome;
+    r.updateEnvironment(this.dayTime % 1, this.world.dim, underwater, this.settings.renderDistance, biome);
     this.day = r.uniforms.uDay.value;
     r.render(dt, {
       shadowCenter: new THREE.Vector3(p.body.pos.x, p.body.pos.y, p.body.pos.z),

@@ -1,6 +1,7 @@
 // Terrain generation for the Overworld and the Nether.
 import { Simplex, mulberry32, hash3 } from './noise.js';
 import { B } from './blocks.js';
+import { Structures } from './structures.js';
 
 export const CS = 16; // chunk size x/z
 export const CH = 128; // chunk height
@@ -22,7 +23,19 @@ export const BIOMES = {
   mountains: { name: 'Mountains' },
   swamp: { name: 'Swamp' },
   nether: { name: 'Nether Wastes' },
+  badlands: { name: 'Badlands' },
+  mushroom_fields: { name: 'Mushroom Fields' },
+  cherry_grove: { name: 'Cherry Grove' },
+  dark_forest: { name: 'Dark Forest' },
+  ice_spikes: { name: 'Ice Spikes' },
+  flower_forest: { name: 'Flower Forest' },
+  deep_ocean: { name: 'Deep Ocean' },
+  warm_ocean: { name: 'Warm Ocean' },
+  crimson_forest: { name: 'Crimson Forest' },
+  warped_forest: { name: 'Warped Forest' },
+  soul_sand_valley: { name: 'Soul Sand Valley' },
 };
+export const BIOME_KEYS = Object.keys(BIOMES);
 
 export class OverworldGen {
   constructor(seed) {
@@ -36,6 +49,8 @@ export class OverworldGen {
     this.cave2 = new Simplex(seed + 11);
     this.cave3 = new Simplex(seed + 12);
     this.colCache = new Map();
+    this.n6 = new Simplex(seed + 5);
+    this.structures = new Structures(this, seed, 'overworld');
   }
 
   // Continuous climate/height values for a column.
@@ -66,26 +81,42 @@ export class OverworldGen {
       if (hum > 0.45 && temp > -0.2 && temp < 0.45 && m < 0.1) h = SEA + 1 + (h - SEA - 1) * 0.25;
     }
     h = Math.max(4, Math.min(CH - 6, Math.round(h)));
-    const biome = this.pickBiome(h, temp, hum, mnt, cont);
+    const v = this.n6.fbm2(x / 420 + 77, z / 420 - 31, 2) * 1.5;
+    const biome = this.pickBiome(h, temp, hum, mnt, cont, v);
+    if (biome === 'badlands') {
+      // terraced mesa plateaus
+      const p = Math.max(0, this.n6.fbm2(x / 70, z / 70, 3) * 1.6 + 0.1);
+      h += Math.floor((p * 26) / 5) * 5;
+      h = Math.min(CH - 8, h);
+    } else if (biome === 'mushroom_fields') h = Math.max(h, SEA + 1);
     const out = { x, z, h, temp, hum, biome, mnt };
     if (this.colCache.size > 20000) this.colCache.clear();
     this.colCache.set(key, out);
     return out;
   }
 
-  pickBiome(h, temp, hum, mnt, cont) {
-    if (h < SEA - 1) return temp < -0.55 ? 'frozen_ocean' : 'ocean';
+  pickBiome(h, temp, hum, mnt, cont, v = 0) {
+    if (h < SEA - 1) {
+      if (temp < -0.55) return 'frozen_ocean';
+      if (h < SEA - 14) return 'deep_ocean';
+      return temp > 0.45 ? 'warm_ocean' : 'ocean';
+    }
+    if (v > 0.62 && cont < 0.1 && temp > -0.3 && h < SEA + 12) return 'mushroom_fields';
     if (h <= SEA + 1 && cont < 0.0 && temp > -0.4) return temp > 0.5 ? 'desert' : 'beach';
     if (h > 92 || (mnt > 0.35 && h > 80)) return 'mountains';
-    if (temp < -0.45) return hum > 0.0 ? 'taiga' : 'snowy_plains';
+    if (temp < -0.45) return hum > 0.0 ? 'taiga' : v > 0.35 ? 'ice_spikes' : 'snowy_plains';
     if (temp > 0.45) {
-      if (hum < -0.05) return 'desert';
+      if (hum < -0.05) return v < -0.35 ? 'badlands' : 'desert';
       if (hum > 0.3) return 'jungle';
       return 'savanna';
     }
     if (hum > 0.45 && h <= SEA + 3) return 'swamp';
-    if (hum > 0.15) return temp > 0.1 ? 'forest' : 'birch_forest';
-    if (hum < -0.25) return 'plains';
+    if (h > 76 && v > 0.3) return 'cherry_grove';
+    if (hum > 0.15) {
+      if (v < -0.4) return 'dark_forest';
+      return temp > 0.1 ? (v > 0.4 ? 'flower_forest' : 'forest') : 'birch_forest';
+    }
+    if (hum < -0.25) return v > 0.45 ? 'flower_forest' : 'plains';
     return hum > -0.05 ? 'forest' : 'plains';
   }
 
@@ -115,6 +146,11 @@ export class OverworldGen {
         else if (bio === 'beach') { top = B.sand; filler = B.sand; }
         else if (bio === 'ocean' || bio === 'frozen_ocean') { top = h < SEA - 8 ? B.gravel : B.sand; filler = top === B.gravel ? B.gravel : B.sand; if (hash3(x0 + x, 1, z0 + z, this.seed) < 0.06) top = B.clay; }
         else if (bio === 'snowy_plains' || bio === 'taiga') { top = B.snowy_grass; }
+        else if (bio === 'ice_spikes') { top = B.snow; filler = B.dirt; }
+        else if (bio === 'mushroom_fields') { top = B.mycelium; }
+        else if (bio === 'deep_ocean') { top = B.gravel; filler = B.gravel; }
+        else if (bio === 'warm_ocean') { top = B.sand; filler = B.sand; }
+        else if (bio === 'badlands') { top = B.red_sand; filler = B.red_sand; depth = 1; }
         else if (bio === 'mountains') {
           top = h > 100 ? B.snow : h > 88 ? B.stone : B.grass;
           if (c.mnt > 0.5 && h > 84 && h <= 100 && this.n5.noise2((x0 + x) / 20, (z0 + z) / 20) > 0.2) top = B.gravel;
@@ -128,6 +164,7 @@ export class OverworldGen {
           else if (y === h) id = h < SEA ? (top === B.grass || top === B.snowy_grass ? B.dirt : top) : top;
           else if (y > h - depth) id = filler;
           else if (bio === 'desert' && y > h - depth - 3) id = B.sandstone;
+          else if (bio === 'badlands' && y > SEA - 4) id = MESA_BANDS[(y + ((this.n6.noise2((x0 + x) / 90, (z0 + z) / 90) * 3) | 0) + 64) % MESA_BANDS.length];
           else id = B.stone;
           // caves
           if (id !== B.bedrock && id !== B.water && id !== B.air && id !== B.ice && y < h + 1 && y > 3) {
@@ -140,6 +177,7 @@ export class OverworldGen {
 
     this.ores(chunk);
     this.decorate(chunk, cols);
+    this.structures.apply(chunk);
   }
 
   caveGrid(x0, z0) {
@@ -248,7 +286,8 @@ export class OverworldGen {
           const flowerNoise = this.n5.noise2(x / 40, z / 40);
           const grassChance = c.biome === 'plains' ? 0.3 : c.biome === 'jungle' ? 0.45 : c.biome === 'savanna' ? 0.35 : c.biome === 'swamp' ? 0.2 : 0.12;
           if (r < grassChance) chunk.blocks[idx(lx, y, lz)] = B.tall_grass;
-          else if (r < grassChance + 0.03 + Math.max(0, flowerNoise) * 0.06) chunk.blocks[idx(lx, y, lz)] = hash3(x, 4, z, this.seed) < 0.5 ? B.dandelion : B.poppy;
+          else if (c.biome === 'flower_forest' && r < grassChance + 0.3) chunk.blocks[idx(lx, y, lz)] = [B.dandelion, B.poppy, B.red_tulip, B.cornflower, B.allium][(hash3(x, 4, z, this.seed) * 5) | 0];
+          else if (r < grassChance + 0.03 + Math.max(0, flowerNoise) * 0.06) chunk.blocks[idx(lx, y, lz)] = [B.dandelion, B.poppy, B.dandelion, B.poppy, B.cornflower, B.red_tulip][(hash3(x, 4, z, this.seed) * 6) | 0];
           else if (c.biome === 'swamp' && r < grassChance + 0.06) chunk.blocks[idx(lx, y, lz)] = r < grassChance + 0.045 ? B.brown_mushroom : B.red_mushroom;
           else if (r > 0.9993 && flowerNoise < -0.3) chunk.blocks[idx(lx, y, lz)] = B.pumpkin;
           // sugar cane next to water
@@ -264,12 +303,16 @@ export class OverworldGen {
         } else if (ground === B.snowy_grass && r < 0.05) {
           chunk.blocks[idx(lx, y, lz)] = B.tall_grass;
         } else if (ground === B.red_sand && r < 0.02) chunk.blocks[idx(lx, y, lz)] = B.dead_bush;
+        else if (ground === B.red_sand && c.biome === 'badlands' && r > 0.995 && lx > 0 && lx < 15 && lz > 0 && lz < 15) { chunk.blocks[idx(lx, y, lz)] = B.cactus; }
+        else if (ground === B.mycelium && r < 0.02) chunk.blocks[idx(lx, y, lz)] = r < 0.01 ? B.red_mushroom : B.brown_mushroom;
       }
   }
 }
 
+const MESA_BANDS = [B.terracotta, B.orange_terracotta, B.terracotta, B.yellow_terracotta, B.terracotta, B.terracotta, B.red_terracotta, B.white_terracotta, B.orange_terracotta, B.brown_terracotta, B.terracotta, B.red_terracotta];
+
 function isLeaf(id) {
-  return id === B.oak_leaves || id === B.birch_leaves || id === B.spruce_leaves || id === B.jungle_leaves || id === B.acacia_leaves;
+  return id === B.oak_leaves || id === B.birch_leaves || id === B.spruce_leaves || id === B.jungle_leaves || id === B.acacia_leaves || id === B.cherry_leaves || id === B.dark_oak_leaves;
 }
 
 function nearWater(chunk, lx, y, lz) {
@@ -292,6 +335,11 @@ function treeFor(biome, r, r2) {
     case 'savanna': return r < 0.006 ? 'acacia' : null;
     case 'swamp': return r < 0.015 ? 'swamp_oak' : null;
     case 'mountains': return r < 0.006 ? 'spruce' : null;
+    case 'cherry_grove': return r < 0.012 ? 'cherry' : null;
+    case 'dark_forest': return r < 0.09 ? (r2 < 0.07 ? (r2 < 0.035 ? 'huge_red_mushroom' : 'huge_brown_mushroom') : r2 < 0.85 ? 'dark_oak' : 'oak') : null;
+    case 'flower_forest': return r < 0.025 ? (r2 < 0.3 ? 'birch' : 'oak') : null;
+    case 'mushroom_fields': return r < 0.006 ? (r2 < 0.5 ? 'huge_red_mushroom' : 'huge_brown_mushroom') : null;
+    case 'ice_spikes': return r < 0.014 ? 'ice_spike' : null;
     default: return null;
   }
 }
@@ -354,6 +402,44 @@ function placeTree(type, x, y, z, r, set) {
   } else if (type === 'bush') {
     set(x, y, z, B.jungle_log, false);
     leafBall(x, y + 1, z, 2, B.oak_leaves, 0.4);
+  } else if (type === 'cherry') {
+    const h = 5 + ((r * 2) | 0);
+    for (let k = 0; k < h; k++) set(x, y + k, z, B.cherry_log, false);
+    for (const [dx, dz] of [[2, 0], [-2, 1]]) { set(x + dx / 2, y + h - 2, z + dz / 2, B.cherry_log, false); }
+    leafBall(x, y + h, z, 3, B.cherry_leaves, 0.5);
+    leafBall(x + 2, y + h - 1, z + 1, 2, B.cherry_leaves, 0.5);
+    leafBall(x - 2, y + h - 1, z - 1, 2, B.cherry_leaves, 0.5);
+  } else if (type === 'dark_oak') {
+    const h = 6 + ((r * 3) | 0);
+    for (let k = 0; k < h; k++) for (const [dx, dz] of [[0, 0], [1, 0], [0, 1], [1, 1]]) set(x + dx, y + k, z + dz, B.dark_oak_log, false);
+    for (let dy = -1; dy <= 1; dy++) {
+      const rad = dy === 1 ? 2 : 3;
+      for (let dz = -rad; dz <= rad + 1; dz++)
+        for (let dx = -rad; dx <= rad + 1; dx++) {
+          if ((dx === -rad || dx === rad + 1) && (dz === -rad || dz === rad + 1)) continue;
+          set(x + dx, y + h + dy, z + dz, B.dark_oak_leaves);
+        }
+    }
+  } else if (type === 'huge_red_mushroom' || type === 'huge_brown_mushroom') {
+    const h = 5 + ((r * 3) | 0);
+    for (let k = 0; k < h; k++) set(x, y + k, z, B.mushroom_stem, false);
+    if (type === 'huge_brown_mushroom') {
+      for (let dz = -3; dz <= 3; dz++) for (let dx = -3; dx <= 3; dx++) if (!(Math.abs(dx) === 3 && Math.abs(dz) === 3)) set(x + dx, y + h, z + dz, B.brown_mushroom_block);
+    } else {
+      for (let dy = 0; dy <= 3; dy++) {
+        const rad = dy === 3 ? 1 : 2;
+        for (let dz = -rad; dz <= rad; dz++) for (let dx = -rad; dx <= rad; dx++) {
+          const shell = dy === 3 || Math.abs(dx) === rad || Math.abs(dz) === rad;
+          if (shell && !(Math.abs(dx) === rad && Math.abs(dz) === rad && dy < 3)) set(x + dx, y + h - 3 + dy, z + dz, B.red_mushroom_block);
+        }
+      }
+    }
+  } else if (type === 'ice_spike') {
+    const h = 6 + ((r * 18) | 0);
+    for (let k = 0; k < h; k++) {
+      const rad = Math.max(0, Math.round((1 - k / h) * 2.2));
+      for (let dz = -rad; dz <= rad; dz++) for (let dx = -rad; dx <= rad; dx++) if (dx * dx + dz * dz <= rad * rad + 0.5) set(x + dx, y + k, z + dz, B.blue_ice, false);
+    }
   } else if (type === 'acacia') {
     const h = 5 + ((r * 2) | 0);
     const dir = [[1, 0], [-1, 0], [0, 1], [0, -1]][(r * 4) | 0];
@@ -379,14 +465,23 @@ export class NetherGen {
     this.n = new Simplex(seed + 100);
     this.n2 = new Simplex(seed + 101);
     this.n3 = new Simplex(seed + 102);
+    this.nb = new Simplex(seed + 103);
+    this.structures = new Structures(this, seed, 'nether');
   }
-  column() {
-    return { h: 64, biome: 'nether', temp: 2, hum: -1 };
+  netherBiome(x, z) {
+    const a = this.nb.fbm2(x / 220, z / 220, 2), b = this.nb.fbm2(x / 220 + 400, z / 220 + 400, 2);
+    if (a > 0.25) return b > 0 ? 'crimson_forest' : 'warped_forest';
+    if (a < -0.3) return 'soul_sand_valley';
+    return 'nether';
+  }
+  column(x = 0, z = 0) {
+    return { h: 64, biome: this.netherBiome(x, z), temp: 2, hum: -1 };
   }
   generate(chunk) {
     const { cx, cz, blocks } = chunk;
     const x0 = cx * CS, z0 = cz * CS;
-    chunk.biome.fill(Object.keys(BIOMES).indexOf('nether'));
+    const nbio = [];
+    for (let z = 0; z < CS; z++) for (let x = 0; x < CS; x++) { const nbb = this.netherBiome(x0 + x, z0 + z); nbio.push(nbb); chunk.biome[z * CS + x] = BIOME_KEYS.indexOf(nbb); }
     chunk.temp.fill(2);
     chunk.hum.fill(-1);
     const LAVA = 31;
@@ -475,5 +570,53 @@ export class NetherGen {
         }
       }
     }
+    // nether gold ore
+    for (let v = 0; v < 8; v++) {
+      const x = 1 + ((rand() * 14) | 0), y = 10 + ((rand() * 108) | 0), z = 1 + ((rand() * 14) | 0);
+      for (let k = 0; k < 4; k++) { const j = idx(Math.min(15, x + (k & 1)), y + (k >> 1), z); if (blocks[j] === B.netherrack) blocks[j] = B.gold_ore_nether; }
+    }
+    // biome surfaces
+    for (let z = 0; z < CS; z++)
+      for (let x = 0; x < CS; x++) {
+        const bio = nbio[z * CS + x];
+        if (bio === 'nether') continue;
+        for (let y = LAVA; y < CH - 6; y++) {
+          const j = idx(x, y, z);
+          if (blocks[j] !== B.netherrack || blocks[idx(x, y + 1, z)] !== B.air) continue;
+          const r = hash3(x0 + x, y, z0 + z, this.seed + 7);
+          if (bio === 'soul_sand_valley') {
+            blocks[j] = r < 0.5 ? B.soul_sand : B.soul_soil;
+            if (y > 1) blocks[idx(x, y - 1, z)] = B.soul_soil;
+            if (r > 0.993 && x > 1 && x < 14 && z > 1 && z < 14) {
+              const ph = 4 + ((r * 1000) % 14);
+              for (let k = 1; k <= ph && y + k < CH - 5; k++) if (blocks[idx(x, y + k, z)] === B.air) blocks[idx(x, y + k, z)] = B.basalt;
+            }
+          } else {
+            const crimson = bio === 'crimson_forest';
+            blocks[j] = crimson ? B.crimson_nylium : B.warped_nylium;
+            const above = idx(x, y + 1, z);
+            if (r > 0.985 && x > 2 && x < 13 && z > 2 && z < 13) {
+              // huge fungus
+              const fh = 5 + ((r * 1000) % 6) | 0;
+              let ok = true;
+              for (let k = 1; k <= fh + 3; k++) if (y + k >= CH - 5 || blocks[idx(x, y + k, z)] !== B.air) ok = false;
+              if (ok) {
+                for (let k = 1; k <= fh; k++) blocks[idx(x, y + k, z)] = crimson ? B.crimson_stem : B.warped_stem;
+                for (let dy = -2; dy <= 1; dy++) {
+                  const rad = dy === 1 ? 1 : 2;
+                  for (let dz = -rad; dz <= rad; dz++)
+                    for (let dx = -rad; dx <= rad; dx++) {
+                      const jj = idx(x + dx, y + fh + dy, z + dz);
+                      if (blocks[jj] !== B.air) continue;
+                      if (dy < 1 && Math.abs(dx) < rad && Math.abs(dz) < rad) continue;
+                      blocks[jj] = hash3(x0 + x + dx, y + dy, z0 + z + dz, 5) < 0.08 ? B.shroomlight : crimson ? B.nether_wart_block : B.warped_wart_block;
+                    }
+                }
+              }
+            } else if (r > 0.9) blocks[above] = crimson ? B.crimson_fungus : B.warped_fungus;
+          }
+        }
+      }
+    this.structures.apply(chunk);
   }
 }
