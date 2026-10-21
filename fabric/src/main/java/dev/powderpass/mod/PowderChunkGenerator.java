@@ -122,7 +122,7 @@ public final class PowderChunkGenerator extends ChunkGenerator {
         WorldContext ctx = context(rs);
         if (!(biomeSource instanceof PowderBiomeSource pbs)) return super.createBiomes(rs, blender, structureManager, chunk);
         ChunkPos cp = chunk.getPos();
-        int qx0 = cp.x * 4, qz0 = cp.z * 4;
+        int qx0 = cp.x() * 4, qz0 = cp.z() * 4;
         TerrainSampler.Column[] cols = new TerrainSampler.Column[16];
         PBiome[] surf = new PBiome[16];
         for (int j = 0; j < 4; j++) for (int i = 0; i < 4; i++) {
@@ -145,7 +145,7 @@ public final class PowderChunkGenerator extends ChunkGenerator {
     public CompletableFuture<ChunkAccess> fillFromNoise(Blender blender, RandomState rs, StructureManager structureManager, ChunkAccess chunk) {
         WorldContext ctx = context(rs);
         ChunkPos cp = chunk.getPos();
-        ChunkComposer.Result res = ctx.composer.compose(cp.x, cp.z);
+        ChunkComposer.Result res = ctx.composer.compose(cp.x(), cp.z());
         int minY = ctx.composer.minY(), height = ctx.composer.height();
         BlockState[] palette = new BlockState[B.values().length];
         for (int i = 0; i < palette.length; i++) palette[i] = BlockPalette.base(i);
@@ -176,10 +176,6 @@ public final class PowderChunkGenerator extends ChunkGenerator {
             }
         }
         Heightmap.primeHeightmaps(chunk, EnumSet.of(Heightmap.Types.OCEAN_FLOOR_WG, Heightmap.Types.WORLD_SURFACE_WG));
-        // Overflow points of stepped river reaches get a fluid update once the chunk is loaded.
-        for (int t = 0; t < res.tickCount; t++) {
-            chunk.markPosForPostprocessing(new BlockPos(res.tickX[t], res.tickY[t], res.tickZ[t]));
-        }
         return CompletableFuture.completedFuture(chunk);
     }
 
@@ -199,8 +195,12 @@ public final class PowderChunkGenerator extends ChunkGenerator {
         if (!(level instanceof WorldGenRegion region)) return;
         WorldContext ctx = context(region.getLevel().getChunkSource().randomState());
         ChunkPos cp = chunk.getPos();
-        ChunkComposer.Result res = ctx.composer.compose(cp.x, cp.z, false);
-        Placements p = ctx.decorator.decorate(cp.x, cp.z, res);
+        ChunkComposer.Result res = ctx.composer.compose(cp.x(), cp.z(), false);
+        // Overflow points of stepped river reaches get a fluid update once the chunk is placed.
+        for (int t = 0; t < res.tickCount; t++) {
+            level.scheduleTick(new BlockPos(res.tickX[t], res.tickY[t], res.tickZ[t]), Fluids.WATER, 1);
+        }
+        Placements p = ctx.decorator.decorate(cp.x(), cp.z(), res);
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         int cap = settings.terrainCap();
         for (int i = 0; i < p.size; i++) {

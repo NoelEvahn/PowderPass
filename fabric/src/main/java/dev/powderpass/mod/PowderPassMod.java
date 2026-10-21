@@ -5,7 +5,7 @@ import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerWorldEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLevelEvents;
 import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.minecraft.core.BlockPos;
@@ -15,7 +15,7 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.level.ChunkPos;
+import dev.powderpass.core.util.Hash;
 import net.minecraft.world.level.Level;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,7 +47,7 @@ public final class PowderPassMod implements ModInitializer {
         Registry.register(BuiltInRegistries.BIOME_SOURCE, Identifier.fromNamespaceAndPath(MOD_ID, "powderpass"), PowderBiomeSource.CODEC);
 
         // Bind the world context to the biome source as soon as a level exists (before spawn selection).
-        ServerWorldEvents.LOAD.register((server, level) -> {
+        ServerLevelEvents.LOAD.register((server, level) -> {
             if (level.getChunkSource().getGenerator() instanceof PowderChunkGenerator g) {
                 g.context(level.getChunkSource().randomState());
                 LOGGER.info("PowderPass generator active in {} with settings {}", level.dimension(), g.settings().toMap());
@@ -57,7 +57,7 @@ public final class PowderPassMod implements ModInitializer {
 
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> PowderCommands.register(dispatcher));
 
-        ServerTickEvents.END_WORLD_TICK.register(level -> {
+        ServerTickEvents.END_LEVEL_TICK.register(level -> {
             try {
                 VolcanoRuntime.tick(level);
             } catch (RuntimeException e) {
@@ -77,7 +77,7 @@ public final class PowderPassMod implements ModInitializer {
 
     private static void touch(Level world, BlockPos pos) {
         if (world instanceof ServerLevel sl && sl.getChunkSource().getGenerator() instanceof PowderChunkGenerator) {
-            VolcanoRuntime.data(sl).markTouched(ChunkPos.asLong(pos.getX() >> 4, pos.getZ() >> 4));
+            VolcanoRuntime.data(sl).markTouched(Hash.pack(pos.getX() >> 4, pos.getZ() >> 4));
         }
     }
 

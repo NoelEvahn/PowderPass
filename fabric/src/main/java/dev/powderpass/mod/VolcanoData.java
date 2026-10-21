@@ -3,6 +3,7 @@ package dev.powderpass.mod;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import dev.powderpass.core.volcano.Lifecycle;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.saveddata.SavedData;
 import net.minecraft.world.level.saveddata.SavedDataType;
 
@@ -59,7 +60,7 @@ public final class VolcanoData extends SavedData {
             Codec.BOOL.fieldOf("spawn_applied").forGetter(d -> d.spawnApplied)
     ).apply(i, VolcanoData::new));
 
-    public static final SavedDataType<VolcanoData> TYPE = new SavedDataType<>("powderpass_state", VolcanoData::new, CODEC, null);
+    public static final SavedDataType<VolcanoData> TYPE = new SavedDataType<>(Identifier.fromNamespaceAndPath("powderpass", "powderpass_state"), VolcanoData::new, CODEC, null);
 
     final Map<Long, Lifecycle.State> volcanoes = new LinkedHashMap<>();
     final Set<Long> touched = new HashSet<>();

@@ -9,7 +9,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
-import net.minecraft.world.level.ChunkPos;
+import dev.powderpass.core.util.Hash;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
@@ -123,7 +123,7 @@ public final class VolcanoRuntime {
                 LevelChunk ch = level.getChunkSource().getChunkNow(cx, cz);
                 if (ch == null) return "eruption zone not fully loaded";
                 if (cfg.destructiveVolcanism) continue;
-                if (data.touched(ChunkPos.asLong(cx, cz))) return "player modifications recorded in zone";
+                if (data.touched(Hash.pack(cx, cz))) return "player modifications recorded in zone";
                 if (ch.getInhabitedTime() > cfg.inhabitedTicksThreshold) return "zone inhabited too long (possible builds)";
             }
         }
