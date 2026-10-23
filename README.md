@@ -215,3 +215,7 @@ Manually checked in a browser: the editor dashboard, page editing with drag-and-
 - **Rate limiting** is per server instance (see Deployment).
 - **Announcement expiry** is checked when a page is rendered; with caching, an expired banner can remain for up to an hour unless content is republished.
 - **Scheduled publishing** is not enabled (it requires a background job runner).
+
+## Design brief
+
+`docs/MASTER-WEBSITE-DESIGN-BRIEF.pdf` (source: `docs/brief/master-website-design-brief.html`) is the reusable design brief distilled from the research, this build and owner review. Re-render it with Chromium's print-to-PDF after editing the HTML.
