@@ -41,3 +41,8 @@
 }
 
 .statement strong { font-weight: 700; }
+
+/* Letters (signed text with a portrait): a compact heading and a taller opening for the letter, so the
+   heading and portrait column is always shorter than the text and rides down beside it (sticky). */
+.grid[data-letter] .heading { font-size: clamp(1.75rem, 1.2rem + 1.6vw, 2.5rem); max-width: 16ch; }
+.grid[data-letter] .body { --readmore-h: 36rem; }

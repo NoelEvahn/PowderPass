@@ -15,12 +15,12 @@ export function RichTextBlock({ eyebrow, heading, content, layout, size, signatu
   const text = <RichText data={content} className={size === 'statement' ? styles.statement : undefined} />
   return (
     <section id={anchorId ?? undefined} className={styles.section} aria-labelledby={heading ? headingId : undefined}>
-      <div className={`container ${styles.grid}`} data-layout={layout ?? 'aside'}>
+      <div className={`container ${styles.grid}`} data-layout={layout ?? 'aside'} data-letter={signature ? '' : undefined}>
         {(eyebrow || heading) && (
           <div className={styles.aside}>
             {eyebrow && <p className="eyebrow">{eyebrow}</p>}
             {heading && (
-              <h2 id={headingId} className={styles.heading} data-reveal="words" data-drift>
+              <h2 id={headingId} className={styles.heading} data-reveal="words">
                 <Words text={heading} />
               </h2>
             )}

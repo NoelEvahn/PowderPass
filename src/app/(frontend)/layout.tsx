@@ -8,7 +8,6 @@ import { CookieBanner } from '@/components/consent/CookieBanner'
 import { SiteFooter } from '@/components/layout/SiteFooter'
 import { SiteHeader } from '@/components/layout/SiteHeader'
 import { MobileCta } from '@/components/layout/MobileCta'
-import { HeadingDrift } from '@/components/motion/HeadingDrift'
 import { ParallaxObserver } from '@/components/motion/ParallaxObserver'
 import { ScrollProgress } from '@/components/motion/ScrollProgress'
 import { RevealObserver } from '@/components/motion/RevealObserver'
@@ -71,7 +70,6 @@ export default async function FrontendLayout({ children }: { children: ReactNode
           <Analytics measurementId={process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID} />
           <RevealObserver />
           <ParallaxObserver />
-          <HeadingDrift />
           <ScrollProgress />
         </ConsentProvider>
       </body>

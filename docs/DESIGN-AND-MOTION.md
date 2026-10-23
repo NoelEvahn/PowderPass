@@ -44,7 +44,7 @@ Headings use `text-wrap: balance` and a maximum width in their own `ch` units, s
 
 ### Layout and shape
 
-- Container 1440px; gutters 20 → 64px; gaps 16 → 24px; section spacing 56 → 144px.
+- Container 1440px; gutters 20 → 64px; gaps 16 → 24px; section spacing 48 → 104px.
 - 4px spacing scale (`--s-1` … `--s-10`).
 - Radii: 8px small, 12px buttons/cards, 16–20px photographs. Pills only for chips.
 - Shadows only on raised layers (menus, dialogs, cookie banner).

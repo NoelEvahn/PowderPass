@@ -65,7 +65,7 @@ export function HeroBlock(props: HeroProps & { isFirst?: boolean }) {
       <section className={styles.compact} aria-labelledby="page-title">
         <div className="container">
           {eyebrow && <p className="eyebrow">{eyebrow}</p>}
-          <h1 id="page-title" className={styles.pageTitle} data-drift>
+          <h1 id="page-title" className={styles.pageTitle}>
             <HeadingLines text={heading} reveal={!isFirst} />
           </h1>
           {intro && <p className={`lead ${styles.pageIntro}`}>{intro}</p>}
@@ -83,7 +83,7 @@ export function HeroBlock(props: HeroProps & { isFirst?: boolean }) {
           {isStage && stageLabel && <p className={styles.stageLabel}>{stageLabel}</p>}
           {!isStage && eyebrow && <p className="eyebrow">{eyebrow}</p>}
           {isStage && eyebrow && <p className="eyebrow">{eyebrow}</p>}
-          <h1 id="page-title" className={styles.pageTitle} data-drift>
+          <h1 id="page-title" className={styles.pageTitle}>
             <HeadingLines text={heading} reveal={!isFirst} />
           </h1>
           {intro && <p className={`lead ${styles.pageIntro}`}>{intro}</p>}

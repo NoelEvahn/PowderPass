@@ -143,8 +143,8 @@ button { cursor: pointer; }
     transform: scale(1.035);
   }
 
-  /* Word reveal: each word rises out of its own line box, staggered. The heading
-     element itself never animates, so scroll-driven drift can move it freely. */
+  /* Word reveal: words fade up softly, once, with a short stagger. The heading
+     element itself stays still. */
   .js [data-reveal='words'],
   .js [data-reveal='words']:not([data-revealed]) {
     opacity: 1;
@@ -153,48 +153,21 @@ button { cursor: pointer; }
   }
 
   .js [data-reveal='words'] .word-inner {
-    transition: transform 760ms var(--ease-out), opacity 760ms var(--ease-out);
-    transition-delay: calc(var(--w, 0) * 55ms);
+    transition: transform 900ms var(--ease-out), opacity 900ms var(--ease-out);
+    transition-delay: calc(var(--w, 0) * 40ms);
   }
 
   .js [data-reveal='words']:not([data-revealed]) .word-inner {
-    transform: translate3d(0, 105%, 0) rotate(4deg);
+    transform: translate3d(0, 0.25em, 0);
     opacity: 0;
   }
-
-  /* Curtain: the photo is uncovered from the bottom edge upward */
-  .js [data-reveal='clip'] {
-    transition: clip-path 900ms var(--ease-out);
-    transition-delay: calc(var(--reveal-index, 0) * 90ms);
-  }
-
-  .js [data-reveal='clip']:not([data-revealed]) {
-    opacity: 1;
-    transform: none;
-    clip-path: inset(100% 0 0 0 round var(--r-lg));
-  }
-
-  .js [data-reveal='clip'][data-revealed] {
-    clip-path: inset(0 0 0 0 round var(--r-lg));
-  }
 }
 
-/* Words keep their own clipping box so the reveal reads as rising from a line */
-.word {
-  display: inline-block;
-  overflow: clip;
-  overflow-clip-margin: 0.12em;
-  padding-bottom: 0.08em;
-  margin-bottom: -0.08em;
-  vertical-align: top;
-}
-
+.word,
 .word-inner { display: inline-block; }
 
-/* Sideways heading drift must never widen the page */
+/* Decorative background text must never widen the page */
 main { overflow-x: clip; }
-
-[data-drift] { will-change: transform; }
 
 /* Parallax wrapper: fills its frame; ParallaxObserver moves it */
 [data-parallax] {
@@ -245,22 +218,4 @@ html { --mobile-cta-h: 68px; }
   transform: scaleX(0);
   transform-origin: left;
   pointer-events: none;
-}
-
-/* Page enter: content settles into place on every page load (transform only, so the hero still paints at once) */
-@media (prefers-reduced-motion: no-preference) {
-  main { animation: page-enter 700ms var(--ease-out) backwards; } /* no fill afterwards: a lasting transform would break fixed and sticky children */
-
-  @keyframes page-enter {
-    from { transform: translate3d(0, 14px, 0); }
-  }
-
-  /* Cross-document page transitions where the browser supports them */
-  @view-transition { navigation: auto; }
-
-  ::view-transition-old(root) { animation: vt-out 260ms var(--ease-out) both; }
-  ::view-transition-new(root) { animation: vt-in 420ms var(--ease-out) both; }
-
-  @keyframes vt-out { to { opacity: 0; transform: translate3d(0, -12px, 0); } }
-  @keyframes vt-in { from { opacity: 0; transform: translate3d(0, 18px, 0); } }
 }

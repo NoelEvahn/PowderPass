@@ -16,10 +16,14 @@ export function SectionHeader({ id, eyebrow, heading, intro, align = 'start', ch
   if (!heading && !eyebrow) return null
   return (
     <header className={[styles.header, styles[align]].join(' ')}>
+      {eyebrow && (
+        // Large, faint copy of the label that slides slowly with the scroll: background texture only.
+        <span className={styles.ghost} aria-hidden="true" data-parallax-x="70" data-text={eyebrow} />
+      )}
       <div className={styles.titles}>
         {eyebrow && <p className="eyebrow">{eyebrow}</p>}
         {heading && (
-          <h2 id={id} className={styles.heading} data-reveal="words" data-drift>
+          <h2 id={id} className={styles.heading} data-reveal="words">
             <Words text={heading} />
           </h2>
         )}
