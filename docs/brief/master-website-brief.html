@@ -1,0 +1,494 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<title>Master Website Brief</title>
+<style>
+@font-face { font-family: "Quicksand"; src: url(fonts/quicksand-latin.woff2) format("woff2"); font-weight: 300 700; }
+@font-face { font-family: "Inter"; src: url(fonts/inter-latin.woff2) format("woff2"); font-weight: 100 900; }
+@page { size: A4; margin: 16mm 15mm 18mm; }
+@page :first { margin: 0; }
+/* Neutral document palette: this brief is brand-agnostic */
+:root {
+  --ink: #16151c; --text: #24232b; --muted: #61606b; --accent: #5b3fd1; --accent-soft: #ece8fb;
+  --warm: #e7a33a; --tint: #f3f2f6; --line: #dfdde6; --red: #b4232f; --green: #2f7d3a;
+  --display: "Quicksand", "Helvetica Neue", Arial, sans-serif; --body: "Inter", "Helvetica Neue", Arial, sans-serif;
+}
+* { box-sizing: border-box }
+html { -webkit-print-color-adjust: exact; print-color-adjust: exact }
+body { margin: 0; font: 9.5pt/1.5 var(--body); color: var(--text) }
+h1, h2, h3, h4 { font-family: var(--display); color: var(--ink); margin: 0; line-height: 1.12; text-wrap: balance }
+h2 { font-size: 21pt; margin: 2mm 0 4mm }
+h3 { font-size: 12.3pt; margin: 5mm 0 2mm; break-after: avoid }
+p { margin: 0 0 2.4mm; max-width: 176mm }
+ul, ol { margin: 0 0 3mm; padding-left: 5mm }
+li { margin: 0 0 1.2mm }
+strong { color: var(--ink) }
+code { font-family: "DejaVu Sans Mono", Menlo, monospace; font-size: 8pt; background: var(--tint); padding: .3mm 1.2mm; border-radius: 1mm }
+pre { font-family: "DejaVu Sans Mono", Menlo, monospace; font-size: 7.8pt; line-height: 1.45; background: var(--tint); padding: 4mm; border-radius: 2mm; white-space: pre-wrap; margin: 0 0 3mm; break-inside: avoid }
+.chapter { break-before: page }
+.kicker { font-size: 8pt; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--accent) }
+.lede { font-size: 11.2pt; color: var(--muted); max-width: 168mm }
+table { width: 100%; border-collapse: collapse; margin: 1mm 0 4mm; font-size: 8.3pt }
+th, td { text-align: left; vertical-align: top; padding: 1.9mm 2.3mm; border-bottom: .3mm solid var(--line) }
+th { font-family: var(--display); font-size: 8.7pt; color: var(--ink); background: var(--tint) }
+tr { break-inside: avoid }
+td:first-child { font-weight: 600; color: var(--ink) }
+.rule { display: grid; grid-template-columns: 9mm 1fr; gap: 3mm; padding: 2mm 0; border-bottom: .3mm solid var(--line); break-inside: avoid }
+.rule b { font-family: var(--display); font-size: 14pt; color: var(--accent); line-height: 1 }
+.note { border-left: 1.2mm solid var(--warm); background: var(--tint); padding: 3mm 4mm; border-radius: 0 2mm 2mm 0; margin: 2mm 0 4mm; break-inside: avoid }
+.note.red { border-left-color: var(--red) }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 6mm }
+.frames { gap: 3mm 6mm }
+.frames img { height: 44mm; object-fit: cover; object-position: top }
+.frames figure { margin: 0 }
+figure { margin: 0 0 4mm; break-inside: avoid }
+figure img { width: 100%; display: block; border: .3mm solid var(--line); border-radius: 2mm }
+figcaption { font-size: 7.7pt; color: var(--muted); margin-top: 1.4mm }
+.tag { display: inline-block; font-size: 6.8pt; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; padding: .4mm 1.6mm; border-radius: 1mm; background: var(--tint); color: var(--ink); white-space: nowrap }
+.keep { background: #dcefdc; color: #1f5a28 } .chg { background: #fbecd2; color: #7a4a06 } .drop { background: #f6d6d9; color: #8c1823 } .new { background: var(--accent-soft); color: #3a2596 }
+.cover { height: 297mm; padding: 26mm 22mm; background: var(--ink); color: #fff; display: grid; grid-template-rows: auto 1fr auto; position: relative; overflow: hidden }
+.cover h1 { color: #fff; font-size: 42pt; line-height: 1.02; margin-top: 40mm }
+.cover .sub { font-size: 13pt; color: #c9c7d4; max-width: 140mm; margin-top: 7mm }
+.cover .meta { font-size: 8.5pt; color: #c9c7d4; display: grid; gap: 1.5mm; max-width: 160mm }
+.cover .bar { height: 2mm; width: 60mm; background: var(--warm); margin-top: 8mm }
+.cover .ring { position: absolute; right: -70mm; bottom: -70mm; width: 230mm; height: 230mm; border-radius: 50%; border: 1mm solid rgba(91, 63, 209, .55) }
+.cover .ring.b { right: -40mm; bottom: -40mm; width: 170mm; height: 170mm; border-color: rgba(231, 163, 58, .45) }
+.toc { columns: 2; column-gap: 10mm; font-size: 9.5pt }
+.toc div { break-inside: avoid; padding: 1.5mm 0; border-bottom: .3mm solid var(--line) }
+.toc b { color: var(--accent); font-family: var(--display); margin-right: 2mm }
+.slots { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3mm; margin: 2mm 0 4mm }
+.slot { border: .3mm solid var(--line); border-radius: 2mm; padding: 2.4mm; font-size: 7.6pt; break-inside: avoid }
+.slot i { display: block; height: 9mm; border-radius: 1.4mm; margin-bottom: 1.6mm }
+</style>
+</head>
+<body>
+
+<section class="cover">
+  <div class="kicker" style="color:var(--warm)">Master brief · Version 1.0 · 23 October 2026</div>
+  <div>
+    <h1>Master<br>Website Brief</h1>
+    <div class="bar"></div>
+    <p class="sub">How to plan, design, build, edit and prove a professional website: calm editorial clarity, purposeful spatial motion and an editor anyone can use. For any designer, developer or AI.</p>
+  </div>
+  <div class="meta">
+    <span><strong style="color:#fff">Starting point:</strong> <em>Website Design Research: Editorial clarity, spatial motion, purposeful products</em> (22 October 2026), five live references, observed and proposed.</span>
+    <span><strong style="color:#fff">Proven on:</strong> a complete 31-page website and content editor built and reviewed in one project, with every motion value measured, tested and corrected by the site owner.</span>
+    <span><strong style="color:#fff">Status words:</strong> RULE = must follow · DEFAULT = start here, change with a reason · AVOID = tried and rejected · CHECK = verify before launch.</span>
+  </div>
+  <div class="ring"></div><div class="ring b"></div>
+</section>
+
+<section class="chapter">
+  <span class="kicker">00 / Contents</span>
+  <h2>What is in this brief</h2>
+  <div class="toc">
+    <div><b>01</b>How to use this brief</div>
+    <div><b>02</b>Decisions: what survived the build</div>
+    <div><b>03</b>Ten principles</div>
+    <div><b>04</b>Lessons taught in review</div>
+    <div><b>05</b>Discovery, facts and content</div>
+    <div><b>06</b>Visual system</div>
+    <div><b>07</b>Page architecture and storytelling</div>
+    <div><b>08</b>Motion system</div>
+    <div><b>09</b>Layout stability</div>
+    <div><b>10</b>The content editor (CMS)</div>
+    <div><b>11</b>Responsive behaviour</div>
+    <div><b>12</b>Accessibility and reduced motion</div>
+    <div><b>13</b>Performance, security, hosting and previews</div>
+    <div><b>14</b>Implementation contract</div>
+    <div><b>15</b>Process and review rounds</div>
+    <div><b>16</b>Acceptance checklist</div>
+    <div><b>17</b>Paste-ready prompt for an AI</div>
+    <div><b>18</b>Sources and limits</div>
+  </div>
+
+  <h3 style="margin-top:8mm">01 / How to use this brief</h3>
+  <p><strong>Order of authority.</strong> (1) The client's words in the current request. (2) The client's brand system and approved facts. (3) This brief. (4) The builder's own taste. When two instructions conflict, name the conflict and ask which wins. Never pick one silently.</p>
+  <p><strong>Fits:</strong> any site that has to explain something real (an organisation, a product range, a service, a school, a studio) and still feel memorable. <strong>Does not fit:</strong> pure web apps, dashboards or long documentation, which need utility over atmosphere.</p>
+  <p><strong>Deliver with every build:</strong> a responsive implementation; design tokens in one file; a component map; a motion trigger table (effect, trigger, values, fallback); a content editor with drafts, preview, roles and versions; database migrations; an editor guide; a sources register for facts and images; disclosure of anything unfinished, placeholder or unverified; and evidence for every item in chapter 16.</p>
+  <div class="note"><strong>Never invent facts.</strong> Names, numbers, prices, dates, results, awards and claims come only from client-supplied sources. Anything awaiting confirmation is labelled in the content and listed in the sources register. Use the client's real photographs. Stock or generated images are used only when the client approves them, and are labelled as such.</div>
+
+  <h3>How to read the status words</h3>
+  <p>Each rule carries a status. <span class="tag">Rule</span> means it must be followed, <span class="tag">Default</span> means start here and change it with a reason, <span class="tag drop">Avoid</span> means it was tried and rejected, and <span class="tag">Check</span> means verify it before launch. In chapter 02, <span class="tag keep">Keep</span>, <span class="tag chg">Changed</span>, <span class="tag drop">Dropped</span> and <span class="tag new">New</span> mark what happened to each research idea once it was built.</p>
+</section>
+
+<section class="chapter">
+  <span class="kicker">02 / Decisions</span>
+  <h2>What survived contact with a real build</h2>
+  <p class="lede">The research recommended a combination: Floema's clarity, Inertia's interaction language and selected signature effects. Each idea was then built, shown to the site owner and kept, changed or dropped.</p>
+  <table>
+    <thead><tr><th style="width:17%">Reference idea</th><th style="width:28%">Research proposal</th><th style="width:11%">Verdict</th><th>What to do now</th></tr></thead>
+    <tbody>
+      <tr><td>Spatial explorer (spiral of images)</td><td>6–10 images on a shallow helix; wheel and drag; prev/next and a list mode.</td><td><span class="tag chg">Changed</span></td><td>Keep the helix. Drive it by <em>reading</em> page scroll plus drag and arrow keys; no visible prev/next or list buttons (owner: "just make the picture interactive"). Caption in a fixed two-line slot.</td></tr>
+      <tr><td>Same, for text items</td><td>None.</td><td><span class="tag new">New</span></td><td>A "term spiral" turns cards of icon + term + one-line tagline as the section pins. Useful for values, principles and features.</td></tr>
+      <tr><td>Titles stack, separate, exit sideways</td><td>Stack → spread → side exit → settle over 1.5–2 viewports.</td><td><span class="tag drop">Dropped</span></td><td>Built and rejected as too fast and busy. Replace with a <strong>lit statement</strong>: the section holds still while each word brightens in turn with an underline.</td></tr>
+      <tr><td>Down → across → down chapter</td><td>Native scroll pin; x = −D·p; skip link; stack on mobile.</td><td><span class="tag keep">Keep</span></td><td>Keep the model. Measure D against the content box, align to the content edge, pin only when D &gt; 0, and use a native snap-scrolling row (not a stack) when not pinned.</td></tr>
+      <tr><td>Shared small responses</td><td>One text roll, one arrow swap, one image emphasis, one headline reveal.</td><td><span class="tag keep">Keep</span></td><td>As proposed. Headline reveal is a soft word fade, once. Nothing re-animates on every scroll.</td></tr>
+      <tr><td>Moving text band</td><td>Slow loop with pause.</td><td><span class="tag keep">Keep</span></td><td>Only for decorative repetition, never essential information; pause control; static with reduced motion.</td></tr>
+      <tr><td>Masked / clip reveals</td><td>Clip-path reveals for media.</td><td><span class="tag drop">Dropped</span></td><td>A full clip hid images so lazy loading never fired (blank spaces in Safari). Use opacity and scale reveals.</td></tr>
+      <tr><td>Purpose-led storytelling</td><td>Outcome → object in environment → name and benefit → route → detail → evidence.</td><td><span class="tag keep">Keep</span></td><td>The backbone of every page (chapter 07).</td></tr>
+      <tr><td>Warm off-white palette, one acid accent</td><td>Ink, cream canvas, one light accent.</td><td><span class="tag chg">Changed</span></td><td>Palette comes from the client's brand file, by role (chapter 06). Cream is not a default.</td></tr>
+      <tr><td>Generous spacing (to 144px)</td><td>8px base up to 144.</td><td><span class="tag chg">Changed</span></td><td>The owner found it too empty. Section spacing 48–104px.</td></tr>
+      <tr><td>Ambient atmosphere</td><td>Not specified.</td><td><span class="tag new">New</span></td><td>When the owner wants the site to "feel alive", add <em>background</em> motion: faint oversized labels drifting slowly, gentle photo parallax, sticky asides. Do not move the text being read.</td></tr>
+      <tr><td>Long text</td><td>Not specified.</td><td><span class="tag new">New</span></td><td>"Read more" with a round down arrow for long passages; a scroll-cue arrow under the hero.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section class="chapter">
+  <span class="kicker">03 / Principles</span>
+  <h2>Ten principles</h2>
+  <div class="rule"><b>1</b><div><strong>Understand before spectacle.</strong> A calm grid, clear words and real photographs carry the information. Motion adds meaning or atmosphere and is never the only route to content.</div></div>
+  <div class="rule"><b>2</b><div><strong>Few signatures, well made.</strong> At most one signature scene per page (a spatial gallery, a sideways chapter or a lit statement), separated by calm content. On small sites, choose one main signature.</div></div>
+  <div class="rule"><b>3</b><div><strong>Motion lives in the background.</strong> Text stays still once it is read. Energy comes from slow ambient layers, image depth and well-made reveals, not from moving headings.</div></div>
+  <div class="rule"><b>4</b><div><strong>Nothing jumps.</strong> Animated components reserve their space. Swapping a caption, card or counter must never move the rest of the page.</div></div>
+  <div class="rule"><b>5</b><div><strong>Everything visible, everything loaded.</strong> No content depends on a reveal firing. No image is left unloaded because an effect hid it.</div></div>
+  <div class="rule"><b>6</b><div><strong>Every control goes somewhere.</strong> No dead links and no "page not found" from navigation. Features that need a server explain themselves in previews.</div></div>
+  <div class="rule"><b>7</b><div><strong>Less text, better text.</strong> Lead with what the reader needs. Scanned lists get icon + name + one line. Long passages get "Read more".</div></div>
+  <div class="rule"><b>8</b><div><strong>Accessible by construction.</strong> Semantic HTML first; keyboard and screen-reader parity; a designed reduced-motion version of every scene.</div></div>
+  <div class="rule"><b>9</b><div><strong>Editors are users too.</strong> Every visual option is a plain choice in the editor, with drafts, live preview, roles and version history.</div></div>
+  <div class="rule"><b>10</b><div><strong>Prove it, then show it.</strong> Automated tests, accessibility scans, overflow checks at every width, and link and image crawls before anything is shared. Report results honestly, failures included.</div></div>
+  <div class="two" style="margin-top:6mm">
+    <figure><img src="img/ref-interaction-language.jpg" alt=""><figcaption>Research reference: a shared language of small responses (text roll, arrow swap, image emphasis, moving band).</figcaption></figure>
+    <figure><img src="img/ref-purpose-storytelling.jpg" alt=""><figcaption>Research reference: purpose-led storytelling. The object in its environment, then name, purpose and action.</figcaption></figure>
+  </div>
+</section>
+
+<section class="chapter">
+  <span class="kicker">04 / Lessons taught in review</span>
+  <h2>What the site owner taught, as rules</h2>
+  <p class="lede">Each row is feedback a site owner gave while reviewing a live build, why it happened, and the rule that now applies to every project.</p>
+  <table>
+    <thead><tr><th style="width:24%">Owner said</th><th style="width:30%">Why it happened</th><th>Rule from now on</th></tr></thead>
+    <tbody>
+      <tr><td>"Why are there arrows and an All photos button? Just make the picture interactive."</td><td>Visible controls made the signature feel like a widget.</td><td><span class="tag">Rule</span> Spatial galleries are driven by scroll and drag, with keyboard arrows when focused. Show a one-line hint, not buttons.</td></tr>
+      <tr><td>"The description goes to two lines and shifts the whole page."</td><td>Variable-length text inside an animated component.</td><td><span class="tag">Rule</span> Captions and counters sit in fixed-height slots (line clamp) on fixed grid rows. Test by cycling every state.</td></tr>
+      <tr><td>"Use the spiral, less text and icons for each."</td><td>Lists were read as paragraphs, not scanned.</td><td><span class="tag">Rule</span> Values, features and principles: icon + term + one line. Full descriptions stay in the editor for a grid view.</td></tr>
+      <tr><td>"Make part of the page scroll right instead of down."</td><td>Wants a directional change.</td><td><span class="tag">Default</span> One sideways chapter per page, for 3–6 comparable items.</td></tr>
+      <tr><td>"The left part is cut off and isn't a real way to scroll."</td><td>Overflow was measured against the padded box; on wide screens the row neither pinned nor scrolled.</td><td><span class="tag">Rule</span> Measure against the content box, align to the content edge, pin only if it overflows, otherwise a native snap row.</td></tr>
+      <tr><td>"Add more animations, make the page feel alive."</td><td>Static pages felt flat.</td><td>Add ambient and reveal motion in the background (chapter 08), never by moving the text being read.</td></tr>
+      <tr><td>"Too much animation; headings move randomly to the side."</td><td>Scroll-linked sideways headings strain the eyes.</td><td><span class="tag drop">Avoid</span> Moving headings with scroll. <span class="tag">Rule</span> Headings fade up once; ambient motion goes to faint background labels.</td></tr>
+      <tr><td>"The word animation isn't good and plays too fast."</td><td>Stack, spread and exit choreography was busy and short.</td><td><span class="tag">Rule</span> Lit statements: words brighten in turn over about 1.6 extra viewport heights; nothing slides.</td></tr>
+      <tr><td>"There's a lot of empty space." / "Some images don't load."</td><td>A clip-path curtain kept lazy images unloaded in Safari; the spacing scale was too generous.</td><td><span class="tag drop">Avoid</span> Fully clipping or hiding images. <span class="tag">Rule</span> Eager-load images inside moving scenes; section spacing 48–104px.</td></tr>
+      <tr><td>"I'm stuck on a full white page."</td><td>Page transitions and page-enter animations stall in embedded viewers.</td><td><span class="tag drop">Avoid</span> View transitions and whole-page enter animations unless tested in every container the client uses.</td></tr>
+      <tr><td>"Many buttons just say no page exists."</td><td>Links drawn by script pointed to server routes the preview lacked.</td><td><span class="tag">Rule</span> Crawl every link, including script-opened menus and search results. Previews map routes; server-only features explain themselves.</td></tr>
+      <tr><td>"Some buttons don't work and it loads too slowly."</td><td>Script paths broke in the hosted copy; many parallel image requests.</td><td><span class="tag">Check</span> Test the exact shared link, not just localhost. Retry dropped images; size images responsively.</td></tr>
+      <tr><td>"The top scroll indicator colour is ugly, muted and dark."</td><td>A multi-hue gradient turned muddy between hues.</td><td><span class="tag">Rule</span> Indicators use one saturated brand colour, optionally with a soft glow.</td></tr>
+      <tr><td>"There's a collision" (lines across a button)</td><td>The focus ring of an invisible jump target was drawn.</td><td><span class="tag">Rule</span> Programmatic jump and skip targets: zero height, <code>outline: none</code>.</td></tr>
+      <tr><td>"Clicking at the bottom should open the new page at the top."</td><td>Scroll position carried over between page loads.</td><td><span class="tag">Rule</span> New pages open at the top unless the link names a section.</td></tr>
+      <tr><td>"Like how some people's heads move down" (a sticky portrait)</td><td>Sticky asides felt calm and alive, but only worked where the aside was shorter than the text.</td><td><span class="tag">Rule</span> Sticky aside columns must be shorter than the text beside them: compact heading, longer text opening.</td></tr>
+      <tr><td>"Have down arrows when there's a lot of text."</td><td>Long passages needed a cue and a choice.</td><td><span class="tag">Rule</span> "Read more" with a round down arrow over about 1,100 characters; a scroll cue under the hero.</td></tr>
+      <tr><td>"Give me the editor's version" / "Can't anyone just go to /admin?"</td><td>Owners need to see and trust the editor.</td><td><span class="tag">Rule</span> Ship an editor tour of real screens, plus a plain explanation of sign-in, roles, lockout and how to restrict access.</td></tr>
+      <tr><td>"I want to actually see the site, not images."</td><td>Screenshots don't let people test anything.</td><td><span class="tag">Rule</span> Always give a working, clickable preview (a hosted build or a verified static copy) as well as screenshots.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section class="chapter">
+  <span class="kicker">05 / Discovery, facts and content</span>
+  <h2>Start from what is true</h2>
+  <h3>Inputs to request before designing</h3>
+  <table>
+    <tbody>
+      <tr><td>Brand</td><td>Official logo files (SVG), colour values, typefaces and licences, existing guidelines.</td></tr>
+      <tr><td>Facts</td><td>Every claim the site may make, with its source and owner: names, numbers, prices, dates, results, addresses, contacts.</td></tr>
+      <tr><td>Structure</td><td>Audiences and their top tasks; the information architecture (pages, parents, navigation labels); legacy URLs to redirect.</td></tr>
+      <tr><td>Media</td><td>Real photographs with release status and alt-text context; video if any; documents (PDFs).</td></tr>
+      <tr><td>Operations</td><td>Who edits what (roles); where forms should go (email, CRM webhook); analytics and consent requirements; hosting constraints.</td></tr>
+      <tr><td>Direction</td><td>Reference sites and what the client likes in each; any visual "don'ts"; the devices and viewers they will review on (for example an iPad inside an app).</td></tr>
+    </tbody>
+  </table>
+  <h3>Facts register</h3>
+  <p><span class="tag">Rule</span> Keep a sources document listing every fact, where it came from, its owner and its status (approved, awaiting confirmation). Content awaiting confirmation is visibly labelled on the page. Results and figures carry a year label.</p>
+  <h3>Writing for the site</h3>
+  <ul>
+    <li>Headings describe the content ("How to apply", not "Your journey begins"). Link text makes sense on its own.</li>
+    <li>Lead with the reader's need; short paragraphs; scanned lists are icon + name + one line; long passages get "Read more".</li>
+    <li>Dates and times in one human format ("Saturday 14 November 2026", "9:00am – 11:00am").</li>
+    <li>Alternative text describes what is happening and never names private individuals or children.</li>
+    <li>No personal data of minors or clients in content.</li>
+  </ul>
+  <h3>Questions to ask, and when not to</h3>
+  <p>Ask when the answer changes what gets built (a missing fact, a brand rule, a conflict between instructions). Don't ask for things with a sensible default; state the default and proceed. When the owner says "your call", choose, explain briefly and keep the choice reversible in the editor.</p>
+</section>
+
+<section class="chapter">
+  <span class="kicker">06 / Visual system</span>
+  <h2>Tokens by role, filled from the brand</h2>
+  <p class="lede">Define tokens once and derive everything from them. Colours are defined by <em>role</em>; the client's brand fills the roles. Take values from the official logo file, not from screenshots.</p>
+  <div class="slots">
+    <div class="slot"><i style="background:#16151c"></i><strong>Ink / primary</strong><br>Headings, primary buttons, dark bands.</div>
+    <div class="slot"><i style="background:#5b3fd1"></i><strong>Accent</strong><br>Eyebrows, focus ring, progress, links.</div>
+    <div class="slot"><i style="background:#e7a33a"></i><strong>Highlight</strong><br>Banners, underlines, focus on dark.</div>
+    <div class="slot"><i style="background:#2f7d3a"></i><strong>Secondary accents</strong><br>Category cues, always with a text label.</div>
+    <div class="slot"><i style="background:#24232b"></i><strong>Text / muted</strong><br>Body and secondary text.</div>
+    <div class="slot"><i style="background:#f3f2f6"></i><strong>Tint</strong><br>Alternate bands; avoid default cream.</div>
+    <div class="slot"><i style="background:#dfdde6"></i><strong>Lines</strong><br>Hairlines and borders.</div>
+    <div class="slot"><i style="background:#b4232f"></i><strong>Error</strong><br>Error text and borders only.</div>
+  </div>
+  <p><span class="tag">Rule</span> Body text at least 4.5:1, large text at least 3:1, including text over photographs. Muted text on dark bands stays at least 4.5:1, so check it as you dim. Never convey meaning by colour alone. Light accents (yellow, lime) are for graphics or carry dark text.</p>
+  <table>
+    <thead><tr><th>Token</th><th>Default</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td>Typefaces</td><td>Brand display face (600–700) + neutral sans for body (400–600).</td><td>Self-host at build time; no runtime font requests; licensed or open fonts only.</td></tr>
+      <tr><td>Type scale</td><td>Display 40→104px · H1 36→72 · H2 30→56 · H3 20→28 · Lead 18→22 · Body 16→18 (line 1.6) · Meta at least 13.</td><td>Fluid <code>clamp()</code> from 320 to 1440px; headings use <code>text-wrap: balance</code> and a <code>ch</code> max width.</td></tr>
+      <tr><td>Container and gutters</td><td>Max 1440px; gutters clamp(20px, 4vw, 64px); gaps 16→24px.</td><td>12 columns on desktop, 4 on mobile; split headers 7/5; asides 4/7.</td></tr>
+      <tr><td>Section spacing</td><td>48→104px.</td><td>Alternate plain and tinted bands to separate chapters without extra space.</td></tr>
+      <tr><td>Spacing scale</td><td>4px base: 4, 8, 12, 16, 24, 32, 48, 64, 96.</td><td>Use layout gap, not stacked margins.</td></tr>
+      <tr><td>Shape</td><td>Radius 8 small, 12 buttons and cards, 16–20 photographs; pills only for chips.</td><td>Shadows only on raised layers (menus, dialogs, banners).</td></tr>
+      <tr><td>Buttons</td><td>Primary (ink), secondary (outline), light (on dark); joined icon and label.</td><td>At least 44px tall; the label states the action.</td></tr>
+    </tbody>
+  </table>
+  <h3>Originality</h3>
+  <p>Use the client's own images, words and proportions. Extract <em>relationships</em> from references (stable labels against moving imagery, compressed text against open space, objects in their environment) rather than copying branded layouts, fonts or code.</p>
+</section>
+
+<section class="chapter">
+  <span class="kicker">07 / Page architecture</span>
+  <h2>Explain, show, prove, act</h2>
+  <h3>Home page flow</h3>
+  <ol>
+    <li><strong>Promise + spatial hero.</strong> One sentence of outcome, two actions, the spiral gallery of real photographs, and a down-arrow scroll cue. About one viewport tall.</li>
+    <li><strong>Fact strip.</strong> Three or four verified facts.</li>
+    <li><strong>Progression chapter.</strong> The one sideways chapter: a real sequence (stages, product family, process).</li>
+    <li><strong>Purposeful showcases.</strong> A feature mosaic of three to five areas, each linking to its page.</li>
+    <li><strong>Lit statement.</strong> Two to four words that define the brand.</li>
+    <li><strong>Evidence.</strong> Stories, results, testimonials, process.</li>
+    <li><strong>Direct action.</strong> Visit, enquire, buy or contact, with addresses.</li>
+  </ol>
+  <h3>Interior page template</h3>
+  <p>Hero (page, compact or category variant) → introduction → two to five content sections from the block library → related links → one call-to-action band. Breadcrumbs below the top level. Each audience reaches its top task within one click of the home page.</p>
+  <h3>Block library (default set)</h3>
+  <table>
+    <tbody>
+      <tr><td>Openers</td><td>Hero (home with spatial gallery, page with photo, category with label and colour, compact); Fact strip; Notice.</td></tr>
+      <tr><td>Narrative</td><td>Text (aside, narrow or statement; becomes a sticky letter with a signature and portrait); Image and text; Feature mosaic; Lit statement; Word band.</td></tr>
+      <tr><td>Lists</td><td>Terms (grid with descriptions, or spiral of icon + term + tagline); Link cards (grid or sideways row); Numbered steps (list or sideways row); Grouped lists; Table.</td></tr>
+      <tr><td>Media and people</td><td>Gallery with accessible viewer; People; Documents and resources.</td></tr>
+      <tr><td>Dynamic</td><td>Latest stories; Upcoming events (auto-hide when past); FAQ list (deep links); Locations with consent-gated maps; Pricing or admissions information from one source.</td></tr>
+      <tr><td>Action</td><td>Enquiry form; Call-to-action band; Reusable section (edited once, placed many times).</td></tr>
+    </tbody>
+  </table>
+  <h3>Site-wide essentials</h3>
+  <p>Sticky header with click-to-open menus, a mobile menu dialog and search; a footer with contacts and policies; a sticky mobile primary action; a cookie banner with Accept, Reject and Customise; a search results page that works without JavaScript; a helpful 404; a sitemap, robots file, metadata and structured data; redirects from legacy URLs.</p>
+</section>
+
+<section class="chapter">
+  <span class="kicker">08 / Motion system</span>
+  <h2>Three levels, one owner, calm by default</h2>
+  <p class="lede"><strong>Level 1</strong> is feedback (150–300ms). <strong>Level 2</strong> is reveals and ambient motion (450–900ms, or tied to scroll position). <strong>Level 3</strong> is the signature scenes: at most one per page. One frame-throttled scroll listener owns every scroll-driven effect. Native scrolling only: no smooth-scroll libraries and no wheel capture.</p>
+  <table>
+    <thead><tr><th style="width:16%">Effect</th><th style="width:29%">Trigger</th><th style="width:31%">Starting values (proven)</th><th>Fallback</th></tr></thead>
+    <tbody>
+      <tr><td>Spatial gallery</td><td>Reads page scroll (1 item per ~160px while on screen); drag (8px threshold); arrow keys when focused.</td><td>6–10 items on a helix: radius 50% of stage, ~36° apart, rise 3%; damping time constant ~90ms; cards 40% wide; depth dims and desaturates; tilt ≤2°.</td><td>Reduced motion: keys and drag, instant. A semantic list with alt text and a live caption.</td></tr>
+      <tr><td>Term spiral</td><td>Section pins; 0.5 viewport heights per card; counter, progress, Skip.</td><td>Radius 75% of stage, ~30° apart; damping ~110ms; cards with icon, number, term, tagline.</td><td>Below ~900×640 or reduced motion: keyboard-focusable snap row.</td></tr>
+      <tr><td>Sideways chapter</td><td>Outer height 100vh + D; x = −D·p.</td><td>Cards clamp(280px, 27vw, 400px) from the content edge; no easing on the track; progress line, Skip.</td><td>D ≤ 0, below 1024×640, or reduced motion: native snap row.</td></tr>
+      <tr><td>Lit statement</td><td>Section holds; words light between 10% and 80% of travel.</td><td>Total travel ~260vh; muted (still ≥4.5:1) → full colour; underline scaleX 0→1; one decorative shape turns ≤6°.</td><td>All lit, not pinned.</td></tr>
+      <tr><td>Heading reveal</td><td>Once, on entry.</td><td>Words fade and rise 0.25em, 900ms, 40ms stagger; the heading box never moves.</td><td>Static.</td></tr>
+      <tr><td>Media reveal</td><td>Once, on entry.</td><td>Opacity 0→1, scale 1.035→1, 560ms, 70ms stagger; images stay laid out and loaded.</td><td>Immediate.</td></tr>
+      <tr><td>Photo parallax</td><td>While on screen.</td><td>±28–48px against scroll; image enlarged 12% so edges never show.</td><td>None.</td></tr>
+      <tr><td>Background label</td><td>While on screen.</td><td>Section label at 3.5–10rem, ~4.5% opacity, behind the heading, ±70px sideways; CSS-generated.</td><td>Hidden under 768px; static with reduced motion.</td></tr>
+      <tr><td>Sticky aside</td><td>Native sticky.</td><td>Top = header height + 24px; aside shorter than the text.</td><td>Stacked on mobile.</td></tr>
+      <tr><td>Read more / scroll cue</td><td>Text over ~1,100 characters; under the hero.</td><td>Opens at ~26rem with a fade mask; 44px round arrow nudges every ~2s; <code>aria-expanded</code>.</td><td>Without JavaScript: full text.</td></tr>
+      <tr><td>Progress line</td><td>Page scroll.</td><td>4px, one saturated accent, soft glow.</td><td>Same.</td></tr>
+      <tr><td>Links, buttons, cards</td><td>Hover = focus.</td><td>Text roll and arrow swap 220–320ms cubic-bezier(.22,1,.36,1); icon nudge 3px; image ≤1.03.</td><td>Colour and underline.</td></tr>
+      <tr><td>Band</td><td>On screen; pause on hover, focus, button.</td><td>20–35px/s; duplicate hidden from assistive technology.</td><td>One static line.</td></tr>
+      <tr><td>Overlays</td><td>Menu, search, settings, viewer.</td><td>Native modal dialog; 320ms fade and 12px rise; Escape closes; focus returns.</td><td>Instant.</td></tr>
+    </tbody>
+  </table>
+  <div class="note red"><strong>Avoid list.</strong> Scroll-linked sideways headings; stack, spread and exit title choreography; clip-path curtains that fully hide images; reveals that leave content hidden if a script fails; cross-document page transitions and page-enter transforms; multi-hue progress bars; visible gallery control clutter; autoplay without a pause control; custom cursors that hide the native one; WebGL where CSS 3D is enough.</div>
+</section>
+
+<section class="chapter">
+  <span class="kicker">08 / Motion: reference frames</span>
+  <h2>From research reference to built scene</h2>
+  <div class="two frames">
+    <figure><img src="img/ref-spatial-explorer.jpg" alt=""><figcaption>Research: spatial explorer (wheel, drag, depth).</figcaption></figure>
+    <figure><img src="img/hero-spiral.jpg" alt=""><figcaption>Built: scroll- and drag-driven helix, no visible controls, fixed caption.</figcaption></figure>
+    <figure><img src="img/ref-title-stack.jpg" alt=""><figcaption>Research: stacked titles exiting sideways. Built, then dropped.</figcaption></figure>
+    <figure><img src="img/lit-statement.jpg" alt=""><figcaption>Built replacement: lit statement, words brighten in turn.</figcaption></figure>
+    <figure><img src="img/sideways-chapter.jpg" alt=""><figcaption>Sideways chapter aligned to the content edge; pins only when it overflows.</figcaption></figure>
+    <figure><img src="img/values-spiral.jpg" alt=""><figcaption>New: term spiral (icon, term, tagline).</figcaption></figure>
+    <figure><img src="img/background-label.jpg" alt=""><figcaption>New: faint background label drifting behind a still heading.</figcaption></figure>
+    <figure><img src="img/sticky-letter.jpg" alt=""><figcaption>New: sticky aside and Read more.</figcaption></figure>
+  </div>
+</section>
+
+<section class="chapter">
+  <span class="kicker">09 / Layout stability</span>
+  <h2>Nothing jumps, nothing is lost</h2>
+  <ul>
+    <li><span class="tag">Rule</span> Variable text in animated components sits in fixed slots (height, line clamp, fixed rows). Cycling every state must not move the next section.</li>
+    <li><span class="tag">Rule</span> Images declare width and height and sit in aspect-ratio frames, with a focal point for crops. Media frames are never empty.</li>
+    <li><span class="tag">Rule</span> Pinned scenes compute their length from measured overflow, re-measure on resize, fonts and images, and never pin when there is nothing to move.</li>
+    <li><span class="tag">Rule</span> No horizontal page scroll at any width: clip decorative overflow on <code>main</code>; only tables and code scroll inside their own boxes.</li>
+    <li><span class="tag">Rule</span> Server and browser render identical markup (no hydration mismatch). Components that read the URL also accept static-file addresses (<code>/page.html</code>).</li>
+    <li><span class="tag">Rule</span> The first hero never animates in, and its main image is preloaded (fast largest paint).</li>
+  </ul>
+
+  <span class="kicker" style="display:block;margin-top:8mm">10 / The content editor</span>
+  <h2>Editors are users too</h2>
+  <ul>
+    <li><strong>Block-based pages:</strong> add, reorder (drag), duplicate and remove sections; every visual option (spiral or grid, sideways row or grid, letter or plain text) is a labelled choice.</li>
+    <li><strong>Drafts and publishing:</strong> autosave drafts; an explicit Publish; version history with restore; expiry dates for banners and events.</li>
+    <li><strong>Live preview:</strong> the real page beside the form at phone, tablet and desktop sizes; drafts visible only to signed-in staff.</li>
+    <li><strong>Roles:</strong> Contributor (drafts only), Editor (publish, menus), Specialist (for example admissions or sales: enquiries, events, prices), Administrator (everything, staff). The last administrator cannot be demoted.</li>
+    <li><strong>Media library:</strong> alt text, approval status, release reference, focal point, automatic web sizes.</li>
+    <li><strong>Shared settings:</strong> edited once and reused (contacts, locations, prices, menus, announcement).</li>
+    <li><strong>Enquiries:</strong> created only by the site's forms; a status workflow; never readable through the public API.</li>
+    <li><strong>Security:</strong> no public sign-up; lockout after 5 failures for 15 minutes; 8-hour sessions; optional single sign-on or network restriction for <code>/admin</code>.</li>
+    <li><strong>Hand-over:</strong> a plain-English editor guide, a visual tour of real screens, and a "who approves what" table.</li>
+  </ul>
+  <figure style="max-width:78mm"><img src="img/editor-live-preview.jpg" alt=""><figcaption>Editor live preview: the form on the left, the real page on the right.</figcaption></figure>
+</section>
+
+<section class="chapter">
+  <span class="kicker">11 / Responsive</span>
+  <h2>Every width designed, not squeezed</h2>
+  <table>
+    <thead><tr><th>Width</th><th>Behaviour (defaults)</th></tr></thead>
+    <tbody>
+      <tr><td>≥ ~1360px</td><td>Full navigation with click-to-open menus. Pinned scenes active when they overflow.</td></tr>
+      <tr><td>1024–1359px</td><td>Menu button before any label wraps (find the exact breakpoint by testing the longest labels). Pinned scenes still active if the window is at least ~640px tall.</td></tr>
+      <tr><td>768–1023px</td><td>Snap swipe rows instead of pins; two-column grids.</td></tr>
+      <tr><td>&lt; 768px</td><td>Single column; sticky bottom primary action with space reserved; tighter spiral; no background labels; swipe rows from the content edge.</td></tr>
+    </tbody>
+  </table>
+  <p><span class="tag">Check</span> 320, 390, 412, 768, 820, 1024, 1366, 1440 and 1920–2000px; portrait and landscape tablets; long titles; 200% zoom; the client's own device <em>and</em> viewer (for example an iPad inside a chat or email app).</p>
+
+  <span class="kicker" style="display:block;margin-top:8mm">12 / Accessibility and reduced motion</span>
+  <h2>Same content, every way in</h2>
+  <ul>
+    <li>Honour <code>prefers-reduced-motion</code> in CSS and JavaScript, live: no pinning, parallax, spiral turning, drifting labels or bands. Everything stays in normal flow.</li>
+    <li>Buttons for actions, links for navigation; 44×44px targets; a visible 3px focus ring (a highlight colour on dark bands).</li>
+    <li>Signature scenes keep a semantic list; galleries are keyboard reachable; skip links pass every pinned section; scrollable regions are focusable.</li>
+    <li>Decorative duplicates (rolling text, background labels, ornaments) are hidden from assistive technology and drawn as CSS-generated content where scanners would read them as text.</li>
+    <li>Dialogs: native modal, inert background, Escape closes, focus restored. Live regions for changing captions and form status.</li>
+    <li>Forms: real labels, validation on blur, an error summary, answers kept on error, spam controls without CAPTCHAs, consent-gated analytics and maps.</li>
+    <li>Zero serious or critical axe violations on representative pages after reveals settle.</li>
+  </ul>
+</section>
+
+<section class="chapter">
+  <span class="kicker">13 / Performance, security, hosting and previews</span>
+  <h2>Fast first, then rich</h2>
+  <ul>
+    <li>Responsive WebP sizes (about 400/800/1400/2200) and a 1200×630 share image; <code>sizes</code> per component; preload only the first hero image.</li>
+    <li>Lazy-load below the fold, <strong>except</strong> inside moving or pinned scenes (load eagerly there).</li>
+    <li>Animate transform and opacity only; requestAnimationFrame loops stop when settled; one scroll owner.</li>
+    <li>Ship only the icons used; share one small validation schema between browser and server.</li>
+    <li>Cache published content and invalidate it on publish; drafts bypass the cache.</li>
+    <li>Security headers: a content security policy listing only the third parties actually used (consent-gated); <code>frame-ancestors 'self'</code>; force https and HSTS only when served over https; remove framework banners; validate and rate-limit every form and API.</li>
+    <li>Targets: Lighthouse accessibility, best practices and SEO 100; performance at least 85 on mobile for key pages.</li>
+  </ul>
+  <h3>Hosting</h3>
+  <p>A Node host, a PostgreSQL database, persistent or S3-type file storage, https, environment variables for secrets, a migration step on every deploy, backups, and staging before production. Document every setting in the README.</p>
+  <h3>Static previews for review</h3>
+  <p>When a build is shared as plain files (review links, artifact viewers): map server routes to files; build search from an exported index; make server-only features explain themselves; open every page at the top; retry dropped images; keep structured data byte-identical to avoid hydration mismatches; then crawl every link and image <em>in the copy</em> before sharing it.</p>
+
+  <span class="kicker" style="display:block;margin-top:7mm">14 / Implementation contract</span>
+  <h2>Build it this way</h2>
+  <ul>
+    <li>Semantic, server-rendered HTML first; progressive enhancement; content visible without JavaScript.</li>
+    <li>One source of truth per scene (progress, selected item); the renderer is separate from the data.</li>
+    <li>Tokens in one file; one component per block (schema + renderer); migrations for every schema change.</li>
+    <li>Default stack (proven): Next.js with an embedded headless CMS (Payload), PostgreSQL, CSS modules, Playwright with axe, and Vitest. Any equivalent stack must meet the same contract.</li>
+  </ul>
+<pre>// Sideways chapter
+inner  = viewport.clientWidth - paddingLeft - paddingRight
+D      = max(0, track.scrollWidth - inner)            // re-measure on resize, fonts, images
+pinned = largeEnough && !reducedMotion && D > 0
+outer.height = 100vh + D;   p = clamp((scrollY - outerTop) / D, 0, 1);   track.x = -D * p
+
+// Helix position for item i, continuous position pos
+d = shortestRingDistance(i, pos, count)              // 0 = front
+x = sin(d*step)*R;  z = (cos(d*step) - 1)*R;  y = d*rise;  rotateY = d*step
+current += (target - current) * (1 - exp(-dt / tau))  // tau 90-110ms; stop the loop when settled</pre>
+</section>
+
+<section class="chapter">
+  <span class="kicker">15 / Process</span>
+  <h2>From brief to launch</h2>
+  <table>
+    <thead><tr><th style="width:20%">Phase</th><th>Output</th></tr></thead>
+    <tbody>
+      <tr><td>1. Analyse</td><td>Read every input; list facts, gaps and conflicts; ask only what changes the build.</td></tr>
+      <tr><td>2. Architecture</td><td>Content model, block library, routes, roles and the motion trigger table, written down before building.</td></tr>
+      <tr><td>3. System</td><td>Tokens, type, layout, primitives, interaction language.</td></tr>
+      <tr><td>4. Build</td><td>Blocks, pages, signature scenes with fallbacks, forms, search, consent, SEO, 404.</td></tr>
+      <tr><td>5. Content</td><td>Seed real content and images from sources; sources register; placeholders labelled.</td></tr>
+      <tr><td>6. Prove</td><td>Run the full checklist (chapter 16) on a production build.</td></tr>
+      <tr><td>7. Show</td><td>A clickable preview the owner can open on their own device, plus an editor tour. Report results honestly.</td></tr>
+      <tr><td>8. Review rounds</td><td>Treat each round of owner feedback as rules: fix the cause rather than the symptom, re-run the checklist, re-publish to the same link, and summarise what changed and why.</td></tr>
+      <tr><td>9. Launch</td><td>Hosting, domain, https, backups, redirects, analytics consent, approvals of facts and photos, staff accounts, and an editor training session.</td></tr>
+    </tbody>
+  </table>
+  <div class="note"><strong>Review etiquette.</strong> When feedback is short ("too much animation"), find the specific cause, remove it and replace it with a calmer alternative that keeps the intent. Don't just delete. When the owner reports something you can't reproduce (a white page on their device), remove the most likely causes, say plainly what couldn't be verified, and ask them to re-check.</div>
+
+</section>
+
+<section class="chapter">
+  <span class="kicker">16 / Acceptance checklist</span>
+  <h2>Done means proven</h2>
+  <table>
+    <tbody>
+      <tr><td>Static analysis</td><td>Lint and type-check clean.</td></tr>
+      <tr><td>Unit tests</td><td>Validation, consent, rate limiting, search, slugs and redirects.</td></tr>
+      <tr><td>End-to-end</td><td>Navigation, menus, search, forms, consent, gallery keys, Read more, editor roles and preview, on desktop and mobile, against a production build.</td></tr>
+      <tr><td>Accessibility</td><td>Axe: zero serious or critical issues on representative pages.</td></tr>
+      <tr><td>Overflow and stability</td><td>No horizontal scroll at any listed width; cycling animated states moves nothing outside the component.</td></tr>
+      <tr><td>Link and image crawl</td><td>Every link (including script-opened menus) resolves; every image loads at desktop and phone widths, on the exact link being shared.</td></tr>
+      <tr><td>Hydration</td><td>No hydration warnings in production or previews.</td></tr>
+      <tr><td>Reduced motion</td><td>Every scene readable and usable.</td></tr>
+      <tr><td>Real devices</td><td>iOS Safari, Android Chrome, and the owner's viewer.</td></tr>
+      <tr><td>Editor</td><td>Draft, preview, publish, restore; each role can do exactly what it should.</td></tr>
+      <tr><td>Disclosure</td><td>Unfinished items, placeholders and unverified facts listed.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section class="chapter">
+  <span class="kicker">17 / Paste-ready prompt</span>
+  <h2>Give an AI this</h2>
+<pre>Build a professional website and a block-based content editor for [CLIENT] using the attached facts, brand
+assets, information architecture and reference notes. Follow the attached Master Website Brief; my own words
+override it. Never invent facts: label anything unconfirmed and keep a sources register.
+
+Direction: calm, editorial and purposeful. Make the subject understandable before it is spectacular. Use the
+client's real photographs and brand colours by role. The site should feel alive, with motion in the
+background: headings fade up once and then stay still; ambient motion comes from faint oversized background
+labels, gentle photo parallax and sticky asides.
+
+Signature scenes, at most one per page:
+1. Hero spiral gallery turned by page scroll, drag and arrow keys; no visible gallery buttons; fixed two-line
+   caption; a scroll-cue arrow.
+2. One sideways chapter that pins only when its row overflows, aligned to the content edge; otherwise a
+   native snap-scrolling row.
+3. A lit statement where words brighten in turn with an underline, slowly; nothing slides sideways.
+Lists of values or features: icon + term + one line (optional term spiral). Long text: "Read more" with a down
+arrow. Sticky portrait beside letters. A single-colour reading progress line.
+
+Never: move headings sideways with scroll; hide images behind clip-path curtains; use page transitions; use
+multi-hue progress bars; let any link reach a missing page; let animated text change the page layout.
+
+Deliver: tokens, component map, motion trigger table, editor (drafts, live preview, roles, versions, media
+approvals), migrations, editor guide and tour, sources register, a clickable preview I can open on my own
+device, and evidence of every acceptance check. Tell me plainly what is unfinished or unverified.</pre>
+
+</section>
+
+<section class="chapter">
+  <span class="kicker">18 / Sources and limits</span>
+  <h2>Where this comes from</h2>
+  <ul>
+    <li><strong>Website Design Research: Editorial clarity, spatial motion, purposeful products</strong> (22 October 2026): five live references, the storytelling model, three motion levels, the horizontal-chapter model and access requirements. The starting point for chapters 02, 03, 07, 08, 12 and 14.</li>
+    <li><strong>A full build</strong> (Next.js, Payload CMS, PostgreSQL; 31 pages, 25 block types), October 2026: every "proven" value is implemented and covered by 74 automated end-to-end tests with axe scans, overflow checks at nine widths, and link and image crawls of a shared static preview.</li>
+    <li><strong>Owner review rounds</strong>, 23 October 2026: the rules in chapter 04.</li>
+  </ul>
+  <div class="note red"><strong>Limits.</strong> Device-specific problems reported by the owner (a white page and missing images on an iPad viewer) were fixed by removing their likely causes; they were not reproduced in automation. Reference sites were studied from rendered behaviour, not their code. Every value here is a proven starting point: tune it to each brand and re-test.</div>
+  <p style="margin-top:6mm;color:var(--muted);font-size:8.2pt">Typefaces in this document: Quicksand and Inter (SIL Open Font License). Reference images: <em>Website Design Research</em>, 22 October 2026. Build images: example implementation, 23 October 2026.</p>
+</section>
+
+</body>
+</html>

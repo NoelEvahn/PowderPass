@@ -218,4 +218,4 @@ Manually checked in a browser: the editor dashboard, page editing with drag-and-
 
 ## Design brief
 
-`docs/MASTER-WEBSITE-DESIGN-BRIEF.pdf` (source: `docs/brief/master-website-design-brief.html`) is the reusable design brief distilled from the research, this build and owner review. Re-render it with Chromium's print-to-PDF after editing the HTML.
+`docs/MASTER-WEBSITE-BRIEF.pdf` (source: `docs/brief/master-website-brief.html`) is a general, brand-agnostic brief for building professional websites, developed from the website design research, this build and owner review. Re-render it with Chromium's print-to-PDF after editing the HTML.
