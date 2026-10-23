@@ -1,0 +1,87 @@
+.panel { display: grid; gap: var(--s-5); margin-top: calc(-1 * 44px); }
+
+.form {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-right: 56px;
+}
+
+.icon { position: absolute; left: var(--s-4); color: var(--c-text-muted); pointer-events: none; }
+
+.input {
+  width: 100%;
+  min-height: 56px;
+  padding: 0 var(--s-7) 0 calc(var(--s-4) + 32px);
+  border: 1.5px solid var(--c-line-strong);
+  border-radius: var(--r-md);
+  background: var(--c-surface);
+  font-size: 1.125rem;
+}
+
+.input:focus-visible { outline-offset: 0; border-color: var(--c-violet); }
+
+.spinner { position: absolute; right: var(--s-4); color: var(--c-purple); }
+
+@media (prefers-reduced-motion: no-preference) {
+  .spinner { animation: spin 0.9s linear infinite; }
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.label {
+  margin-bottom: var(--s-3);
+  font-size: var(--fs-meta);
+  font-weight: 600;
+  letter-spacing: var(--tracking-meta);
+  text-transform: uppercase;
+  color: var(--c-text-muted);
+}
+
+.shortcuts ul { display: flex; flex-wrap: wrap; gap: var(--s-2); margin: 0; padding: 0; list-style: none; }
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 0 var(--s-4);
+  border: 1px solid var(--c-line);
+  border-radius: var(--r-pill);
+  font-size: var(--fs-small);
+  font-weight: 500;
+  text-decoration: none;
+  color: var(--c-violet);
+  transition: background-color var(--dur-1) var(--ease-out);
+}
+
+.chip:hover { background: var(--c-tint); }
+
+.results { display: grid; gap: var(--s-1); margin: 0; padding: 0; list-style: none; }
+
+.result {
+  display: grid;
+  gap: 2px;
+  padding: var(--s-3) var(--s-4);
+  border-radius: var(--r-md);
+  text-decoration: none;
+}
+
+.result:hover,
+.result[data-active] { background: var(--c-tint); }
+
+.type { font-size: var(--fs-meta); font-weight: 600; color: var(--c-purple); }
+.title { font-weight: 650; color: var(--c-violet); }
+.excerpt { font-size: var(--fs-small); color: var(--c-text-muted); }
+
+.message { color: var(--c-text-muted); }
+.message a { color: var(--c-violet); font-weight: 600; }
+
+.all {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  justify-self: start;
+  min-height: 44px;
+  font-weight: 600;
+  color: var(--c-violet);
+}

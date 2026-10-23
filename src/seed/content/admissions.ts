@@ -1,0 +1,212 @@
+import { rt, ul } from '../lexical'
+import { cta, type PageDef } from './context'
+
+const AGE_ROWS = [
+  ['3', 'Nursery', 'Early Years'], ['4', 'Reception', 'Early Years'], ['5', 'Year 1', 'Primary'], ['6', 'Year 2', 'Primary'],
+  ['7', 'Year 3', 'Primary'], ['8', 'Year 4', 'Primary'], ['9', 'Year 5', 'Primary'], ['10', 'Year 6', 'Primary'],
+  ['11', 'Year 7', 'Secondary'], ['12', 'Year 8', 'Secondary'], ['13', 'Year 9', 'Secondary'], ['14', 'Year 10 (IGCSE)', 'Secondary'],
+  ['15', 'Year 11 (IGCSE)', 'Secondary'], ['16', 'Year 12 (AS Level)', 'Sixth Form'], ['17', 'Year 13 (A Level)', 'Sixth Form'],
+]
+
+export const admissionsPages: PageDef[] = [
+  {
+    path: 'admissions',
+    title: 'Admissions',
+    owner: 'Admissions',
+    description: 'How to join The International School @ ParkCity: enquire and visit, apply online, assessment and meeting, and offer. Fees, visas and year groups explained.',
+    layout: (ctx) => [
+      {
+        blockType: 'hero',
+        variant: 'page',
+        eyebrow: 'Admissions',
+        heading: 'Your family’s\nnext step.',
+        intro: 'Whether you are relocating to Kuala Lumpur or moving from another school, our Admissions team will guide you from your first question to your child’s first day.',
+        media: ctx.img('secondaryCorridor'),
+        links: ctx.links(['Visit & Enquire', '/admissions/visit', 'primary'], ['How to apply', '/admissions/apply', 'secondary']),
+      },
+      {
+        blockType: 'steps',
+        eyebrow: 'The process',
+        heading: 'From enquiry to offer',
+        intro: 'An enquiry or a visit does not commit you to anything. A place is only confirmed by an offer letter after the formal application and assessment.',
+        steps: [
+          { title: 'Enquire and visit', body: 'Tell us about your child and arrange a private tour or attend an open day.', link: ctx.link('Visit & Enquire', '/admissions/visit') },
+          { title: 'Apply', body: 'Complete the online Application for Admission, the Medical & Health Record and the Home-School Agreement.', link: ctx.link('How to apply', '/admissions/apply') },
+          { title: 'Assessment and meeting', body: 'Once all documents are received, an assessment is arranged, including a meeting with the Head of the section your child will join.' },
+          { title: 'Offer', body: 'An offer letter is issued to successful applicants.' },
+        ],
+      },
+      {
+        blockType: 'linkCards',
+        heading: 'Plan ahead',
+        style: 'list',
+        cards: [
+          { title: 'Fees', meta: 'Academic year 2026/27', text: 'The official fee schedule and the Desa ParkCity registration fee waiver.', accent: 'gold', link: ctx.link('Fees and scholarships', '/admissions/fees') },
+          { title: 'Visit & Enquire', meta: 'Tours and open days', text: 'Private tours by appointment and upcoming open mornings.', accent: 'lime', link: ctx.link('Plan a visit', '/admissions/visit') },
+          { title: 'How to apply', meta: 'Online application', text: 'Forms, documents and what happens after you apply.', accent: 'purple', link: ctx.link('Apply', '/admissions/apply') },
+          { title: 'Parent questions', meta: 'FAQs', text: 'Year groups, class sizes, languages, buses, visas and more.', accent: 'violet', link: ctx.link('Read the FAQs', '/admissions/faqs') },
+        ],
+      },
+      {
+        blockType: 'dataTable',
+        eyebrow: 'Year groups',
+        heading: 'Which year group?',
+        intro: 'Students are placed by date of birth; the academic year starts in September. Placement also depends on previous school reports and a successful assessment.',
+        caption: 'ISP year group by age on 1 September',
+        columns: [{ label: 'Age on 1 September' }, { label: 'Year group' }, { label: 'Stage' }],
+        rows: AGE_ROWS.map((row) => ({ cells: row.map((value) => ({ value })) })),
+        note: 'Children entering Nursery must be 3 years old and toilet independent.',
+      },
+      {
+        blockType: 'notice',
+        tone: 'info',
+        title: 'Moving to Malaysia?',
+        body: 'Students who do not hold a Malaysian passport must have a valid visa (for example a Dependent Pass or a Student Pass) before starting school. The Admissions team can guide you through the process.',
+        link: ctx.link('Visa questions', '/admissions/faqs'),
+      },
+      cta(ctx),
+    ],
+  },
+  {
+    path: 'admissions/fees',
+    title: 'Fees and scholarships',
+    navLabel: 'Fees',
+    owner: 'Admissions & Finance',
+    description: 'ISP fees for 2026/27: the official fee schedule, the 25% registration fee waiver for Desa ParkCity families, and A-Level scholarships.',
+    layout: (ctx) => [
+      {
+        blockType: 'hero',
+        variant: 'compact',
+        eyebrow: 'Admissions · Fees',
+        heading: 'Fees and\nscholarships.',
+        intro: 'Fees are set for each academic year and published in the school’s official fee schedule, so you always see the current, approved figures.',
+      },
+      { blockType: 'admissionsInfo', show: 'fees', heading: 'Fees for 2026/27', intro: 'The official schedule sets out tuition, registration and other fees, what they include and how to pay.' },
+      {
+        blockType: 'richText',
+        eyebrow: 'Scholarships',
+        heading: 'A-Level scholarships',
+        layout: 'aside',
+        content: rt(
+          'As part of its commitment to academic excellence, ISP offers a limited number of scholarships for the full duration of the A-Level course.',
+          '**The ISP Scholarship Programme** is for Year 11 students currently studying at ISP for their IGCSEs who intend to continue into the ISP Sixth Form:',
+          ul([
+            '**Partial 75%** — The Yaw Teck Seng Foundation Scholarship, for the best overall IGCSE results.',
+            '**Partial 50%** — for the second-best overall IGCSE results.',
+            '**Partial 25%** — for the third-best overall IGCSE results.',
+            '**Partial 25% Principal’s Scholarships** — for outstanding contribution to non-academic areas such as music, art, drama, sport or community.',
+          ]),
+          'Academic scholarships are based on nine IGCSEs and the initial results published by the examination boards in August. Principal’s Scholarship applicants write a letter of application (maximum two sides of A4) to [principal@isp.edu.my](mailto:principal@isp.edu.my) by 31 May, with their most recent report and two references; shortlisted candidates are interviewed in June.',
+          'Partial scholarship funding is based on published tuition fees. No two concurrent discounts can be redeemed, except sibling discounts.',
+        ),
+      },
+      {
+        blockType: 'resources',
+        heading: 'Fee documents',
+        items: [
+          { title: 'Fee Schedule 2026/2027', description: 'Official schedule', kind: 'document', url: 'https://drive.google.com/file/d/1zA5wuacCu5o0be2_2cM9Gzyfoozx4fIR/view' },
+          { title: 'Payment methods', kind: 'document', url: 'https://isp.edu.my/wp-content/uploads/2019/11/Payment-Methods.pdf' },
+          { title: 'Terms & Conditions Governing Enrolment & Admissions', kind: 'document', url: 'https://isp.edu.my/wp-content/uploads/2026/04/Terms-and-Conditions-Governing-Enrolment-and-Admissions.pdf' },
+        ],
+      },
+      cta(ctx, 'Questions about fees?', 'The Admissions team can explain the fee schedule, payment terms and the waiver in more detail.'),
+    ],
+  },
+  {
+    path: 'admissions/visit',
+    title: 'Visit & Enquire',
+    owner: 'Admissions',
+    description: 'Book a private tour of ISP, register for an open morning, or send an admissions enquiry to The International School @ ParkCity, Kuala Lumpur.',
+    layout: (ctx) => [
+      {
+        blockType: 'hero',
+        variant: 'compact',
+        eyebrow: 'Visit & Enquire',
+        heading: 'Come and\nexperience ISP.',
+        intro: 'We would be delighted to welcome you for a private tour. All tours are arranged in advance: send us an enquiry and the Admissions team will be in touch to schedule a time.',
+        links: ctx.links(['Send an enquiry', '#enquire', 'primary'], ['Upcoming open days', '#open-days', 'arrow']),
+      },
+      {
+        blockType: 'eventsList',
+        eyebrow: 'Open days',
+        heading: 'Upcoming open days',
+        intro: 'We host two to three Open Days each academic year. Main Campus Open Days for Primary, Secondary and Sixth Form are typically held in Term 2; register your interest below to hear when dates are confirmed.',
+        campus: 'all',
+        limit: 4,
+        anchorId: 'open-days',
+      },
+      {
+        blockType: 'formBlock',
+        eyebrow: 'Enquire',
+        heading: 'Request a tour or ask a question',
+        intro: 'Tell us a little about your family. There is no obligation, and we only use your details to respond.',
+        formType: 'visit',
+        anchorId: 'enquire',
+        aside: rt(
+          '**What happens next**',
+          ul(['A member of the Admissions team replies by email to arrange a time.', 'You visit the school and ask any questions you have.', 'You can then decide whether to begin a formal application.']),
+          'Prefer to talk? Call the Main Campus on [+603 6280 8880](tel:+60362808880) or email [info@isp.edu.my](mailto:info@isp.edu.my).',
+        ),
+      },
+      { blockType: 'campuses', eyebrow: 'Where to find us', heading: 'Two campuses', showMaps: true },
+    ],
+  },
+  {
+    path: 'admissions/apply',
+    title: 'How to apply',
+    navLabel: 'Apply',
+    owner: 'Admissions',
+    description: 'How to apply to ISP: the online Application for Admission, Medical & Health Record and Home-School Agreement, assessment, meeting and offer.',
+    layout: (ctx) => [
+      {
+        blockType: 'hero',
+        variant: 'compact',
+        eyebrow: 'Admissions · Apply',
+        heading: 'How to apply.',
+        intro: 'Thank you for your interest in The International School @ ParkCity. Please follow the steps below to submit your application.',
+      },
+      {
+        blockType: 'steps',
+        heading: 'Three steps',
+        steps: [
+          { title: 'Submit the application', body: 'Complete the Application for Admission form, the Medical & Health Record and the Home-School Agreement.' },
+          { title: 'Assessment and meeting', body: 'An assessment is arranged once all relevant documentation is received. It includes a meeting with a Head from the section of school your child will enter.' },
+          { title: 'Offer letter', body: 'An offer letter is issued to successful students.' },
+        ],
+      },
+      { blockType: 'admissionsInfo', show: 'apply', heading: 'Start your application', intro: 'The application is completed online through the school’s application system, not through this website.' },
+      {
+        blockType: 'richText',
+        eyebrow: 'Choosing the right route',
+        heading: 'Enquiry, visit or application?',
+        layout: 'aside',
+        content: rt(
+          '**An enquiry** is a question. Use it to ask about places, fees, visas or anything else — there is no commitment.',
+          '**A visit** lets you see the school before deciding. Tours are arranged in advance.',
+          '**An application** is the formal start of admissions and involves documents, an assessment and a meeting. Parents are advised to apply early; for current availability, contact Admissions with your child’s name and date of birth.',
+          'Please share all relevant information about your child’s learning needs during the application. The school assesses every applicant to make sure it can meet their needs before a place is offered.',
+        ),
+      },
+      { blockType: 'faqs', heading: 'Visas and enrolment rules', source: 'categories', categories: ['visas'] },
+      cta(ctx),
+    ],
+  },
+  {
+    path: 'admissions/faqs',
+    title: 'Parent questions',
+    navLabel: 'FAQs',
+    owner: 'Admissions',
+    description: 'Answers to common questions about ISP: curriculum, year groups, class sizes, languages, school buses, uniform, the school day, support and visas.',
+    layout: (ctx) => [
+      {
+        blockType: 'hero',
+        variant: 'compact',
+        eyebrow: 'Admissions · FAQs',
+        heading: 'Parent questions.',
+        intro: 'Answers to the questions families ask most often. Can’t find what you need? Contact the Admissions team or join us at an open day.',
+      },
+      { blockType: 'faqs', heading: 'Frequently asked questions', source: 'categories', categories: [], searchable: true },
+      cta(ctx, 'Still have a question?', 'The Admissions team is happy to help by email, phone or during a visit.'),
+    ],
+  },
+]

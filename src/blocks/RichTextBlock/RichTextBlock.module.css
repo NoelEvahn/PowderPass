@@ -1,0 +1,31 @@
+.section { padding-block: calc(var(--section-y) * 0.7); }
+
+.grid { display: grid; gap: var(--s-6); }
+
+@media (min-width: 1024px) {
+  .grid[data-layout='aside'] { grid-template-columns: minmax(0, 4fr) minmax(0, 7fr); gap: var(--s-9); }
+  .grid[data-layout='aside'] .aside { position: sticky; top: calc(var(--header-h) + var(--s-6)); align-self: start; }
+}
+
+.grid[data-layout='narrow'] { max-width: calc(var(--measure) + 2 * var(--gutter)); }
+
+.aside { display: grid; gap: var(--s-3); align-content: start; }
+
+.heading { font-size: var(--fs-h2); max-width: 14ch; }
+
+.portrait {
+  width: min(220px, 60%);
+  margin-top: var(--s-5);
+  overflow: hidden;
+  border-radius: var(--r-lg);
+  aspect-ratio: 4 / 5;
+  background: var(--c-tint);
+}
+
+.portraitImage { width: 100%; height: 100%; object-fit: cover; }
+
+.body { display: grid; gap: var(--s-6); }
+
+.signature { display: grid; gap: 2px; padding-top: var(--s-4); border-top: 1px solid var(--c-line); max-width: var(--measure); }
+.name { font-family: var(--font-display); font-weight: 700; font-size: 1.25rem; color: var(--c-violet); }
+.role { color: var(--c-text-muted); font-size: var(--fs-small); }

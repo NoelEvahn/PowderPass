@@ -1,0 +1,61 @@
+.actions { display: flex; flex-wrap: wrap; gap: var(--s-3) var(--s-5); align-items: center; }
+
+.hero { margin-bottom: var(--s-7); overflow: hidden; border-radius: var(--r-xl); aspect-ratio: 21 / 9; background: var(--c-tint); }
+.heroImage { width: 100%; height: 100%; object-fit: cover; }
+
+.grid { display: grid; gap: var(--gap); margin: 0; padding: 0; list-style: none; }
+
+@media (min-width: 900px) {
+  .grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+.campus { overflow: hidden; border: 1px solid var(--c-line); border-radius: var(--r-xl); background: var(--c-surface); }
+
+.media { aspect-ratio: 16 / 9; background: var(--c-tint); }
+.image { width: 100%; height: 100%; object-fit: cover; }
+
+.body { display: grid; gap: var(--s-4); padding: clamp(1.5rem, 1rem + 1.5vw, 2.5rem); }
+
+.name { font-size: var(--fs-h3); }
+.ages { margin-top: calc(-1 * var(--s-3)); font-weight: 600; color: var(--c-purple); }
+
+.address { display: flex; gap: var(--s-3); font-style: normal; white-space: pre-line; }
+.address svg { flex: none; margin-top: 3px; color: var(--c-purple); }
+
+.contacts { display: grid; gap: var(--s-2); margin: 0; padding: 0; list-style: none; font-size: var(--fs-small); }
+.contacts li { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); }
+.contacts svg { color: var(--c-purple); flex: none; }
+.contacts a { display: inline-flex; align-items: center; min-height: 32px; font-weight: 650; color: var(--c-violet); }
+.phoneLabel { min-width: 9ch; color: var(--c-text-muted); }
+.note { color: var(--c-text-muted); }
+
+.directions { color: var(--c-text-muted); font-size: var(--fs-small); }
+.verified { font-size: var(--fs-meta); color: var(--c-text-muted); }
+
+.map { width: 100%; aspect-ratio: 4 / 3; border: 0; border-radius: var(--r-md); }
+
+.mapPlaceholder {
+  display: grid;
+  justify-items: start;
+  gap: var(--s-3);
+  padding: var(--s-5);
+  border: 1px dashed var(--c-line-strong);
+  border-radius: var(--r-md);
+  background: var(--c-tint);
+  color: var(--c-text-muted);
+  font-size: var(--fs-small);
+}
+
+.mapPlaceholder svg { color: var(--c-violet); }
+
+.mapButton {
+  min-height: 44px;
+  padding: 0 var(--s-4);
+  border: 1.5px solid var(--c-violet);
+  border-radius: var(--r-md);
+  background: var(--c-surface);
+  color: var(--c-violet);
+  font-weight: 600;
+}
+
+.mapButton:hover { background: var(--c-tint-strong); }

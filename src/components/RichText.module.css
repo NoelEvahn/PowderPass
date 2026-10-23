@@ -1,0 +1,39 @@
+.prose {
+  max-width: var(--measure);
+  color: var(--c-text);
+}
+
+[data-tone='ink'] .prose { color: var(--c-on-ink); }
+
+.prose > * + * { margin-top: 1em; }
+
+.prose :is(h2, h3, h4) { margin-top: 1.6em; }
+.prose h2 { font-size: var(--fs-h3); }
+.prose h3 { font-size: 1.25rem; }
+.prose h4 { font-size: 1.0625rem; }
+
+.prose :is(ul, ol) { padding-left: 1.25em; }
+.prose li + li { margin-top: 0.4em; }
+.prose li::marker { color: var(--c-purple); }
+
+.prose a {
+  color: var(--c-violet);
+  font-weight: 600;
+  text-decoration-color: var(--c-purple);
+  text-decoration-thickness: 2px;
+}
+
+[data-tone='ink'] .prose a { color: #fff; text-decoration-color: var(--c-gold); }
+
+.prose a:hover { text-decoration-thickness: 3px; }
+
+.prose blockquote {
+  padding-left: var(--s-5);
+  border-left: 3px solid var(--c-purple);
+  font-size: var(--fs-lead);
+  color: var(--c-text-muted);
+}
+
+.prose strong { font-weight: 650; }
+
+.lead { font-size: var(--fs-lead); line-height: 1.55; }

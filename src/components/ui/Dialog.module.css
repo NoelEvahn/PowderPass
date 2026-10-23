@@ -1,0 +1,116 @@
+.dialog {
+  max-width: none;
+  max-height: none;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--c-text);
+  overflow: visible;
+}
+
+.dialog::backdrop {
+  background: rgb(23 15 51 / 0.55);
+  backdrop-filter: blur(2px);
+}
+
+.inner {
+  position: relative;
+  background: var(--c-surface);
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-4);
+}
+
+.title { font-size: 1.5rem; }
+
+.close {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  margin-left: auto;
+  border: 1px solid var(--c-line);
+  border-radius: var(--r-md);
+  background: var(--c-surface);
+  color: var(--c-violet);
+  transition: background-color var(--dur-1) var(--ease-out);
+}
+
+.close:hover { background: var(--c-tint); }
+
+/* Centred panel (cookie preferences) */
+.panel {
+  width: min(640px, calc(100vw - 2rem));
+  margin: auto;
+}
+
+.panel .inner {
+  max-height: calc(100dvh - 2rem);
+  padding: var(--s-6);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-raised);
+}
+
+.panel .head { margin-bottom: var(--s-4); }
+
+/* Top sheet (search) */
+.sheet {
+  width: min(880px, calc(100vw - 2rem));
+  margin: clamp(1rem, 8vh, 6rem) auto auto;
+}
+
+.sheet .inner {
+  max-height: calc(100dvh - clamp(2rem, 16vh, 12rem));
+  padding: var(--s-5);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-raised);
+}
+
+/* Full screen (mobile menu) */
+.fullscreen {
+  width: 100vw;
+  height: 100dvh;
+  margin: 0;
+}
+
+.fullscreen .inner {
+  height: 100%;
+  padding: var(--s-4) var(--gutter) calc(var(--s-6) + env(safe-area-inset-bottom));
+}
+
+/* Media viewer */
+.media { width: 100vw; height: 100dvh; margin: 0; }
+
+.media .inner {
+  height: 100%;
+  background: #0f0a22;
+  color: #fff;
+  padding: var(--s-4);
+  display: grid;
+  grid-template-rows: auto 1fr;
+}
+
+.media .title { color: #fff; font-size: 1rem; font-family: var(--font-body); font-weight: 600; }
+.media .close { background: transparent; border-color: rgb(255 255 255 / 0.3); color: #fff; }
+.media .close:hover { background: rgb(255 255 255 / 0.1); }
+.media .close:focus-visible { outline-color: var(--c-gold); }
+
+@media (prefers-reduced-motion: no-preference) {
+  .dialog[open] { animation: dialog-in 320ms var(--ease-out); }
+  .dialog[open]::backdrop { animation: backdrop-in 320ms var(--ease-out); }
+}
+
+@keyframes dialog-in {
+  from { opacity: 0; transform: translateY(12px) scale(0.985); }
+}
+
+@keyframes backdrop-in {
+  from { opacity: 0; }
+}

@@ -1,0 +1,18 @@
+.badge {
+  position: fixed;
+  top: var(--s-3);
+  left: 50%;
+  z-index: 90;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding: var(--s-2) var(--s-4);
+  border-radius: var(--r-pill);
+  background: var(--c-gold);
+  color: var(--c-violet);
+  font-size: var(--fs-meta);
+  font-weight: 700;
+  text-decoration: none;
+  transform: translateX(-50%);
+  box-shadow: var(--shadow-raised);
+}

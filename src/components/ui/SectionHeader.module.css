@@ -1,0 +1,27 @@
+.header {
+  display: grid;
+  gap: var(--s-5);
+  margin-bottom: clamp(2rem, 1.4rem + 2.4vw, 4rem);
+}
+
+.titles {
+  display: grid;
+  gap: var(--s-3);
+}
+
+/* Measured in the heading's own font size, so long titles wrap at a readable length. */
+.heading { max-width: 18ch; }
+
+.aside {
+  display: grid;
+  gap: var(--s-4);
+  align-content: end;
+}
+
+@media (min-width: 1024px) {
+  .split {
+    grid-template-columns: 7fr 5fr;
+    align-items: end;
+    gap: var(--s-8);
+  }
+}

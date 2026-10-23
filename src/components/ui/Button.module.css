@@ -1,0 +1,80 @@
+.button {
+  --btn-bg: var(--c-violet);
+  --btn-fg: #fff;
+  --btn-bg-hover: var(--c-violet-900);
+  --btn-border: transparent;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-3);
+  min-height: 52px;
+  padding: 0 var(--s-5);
+  border: 1.5px solid var(--btn-border);
+  border-radius: var(--r-md);
+  background: var(--btn-bg);
+  color: var(--btn-fg);
+  font-family: var(--font-body);
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.2;
+  text-decoration: none;
+  white-space: nowrap;
+  transition:
+    background-color var(--dur-1) var(--ease-out),
+    color var(--dur-1) var(--ease-out),
+    border-color var(--dur-1) var(--ease-out),
+    transform var(--dur-1) var(--ease-out);
+}
+
+.button:hover { background: var(--btn-bg-hover); }
+.button:active { transform: translateY(1px); }
+
+/* On deep violet sections the primary action inverts to white for contrast. */
+[data-tone='ink'] .primary {
+  --btn-bg: #fff;
+  --btn-fg: var(--c-violet);
+  --btn-bg-hover: var(--c-tint);
+}
+
+.secondary {
+  --btn-bg: transparent;
+  --btn-fg: var(--c-violet);
+  --btn-bg-hover: var(--c-tint);
+  --btn-border: var(--c-line-strong);
+}
+
+.light {
+  --btn-bg: #fff;
+  --btn-fg: var(--c-violet);
+  --btn-bg-hover: var(--c-tint);
+}
+
+[data-tone='ink'] .secondary {
+  --btn-fg: #fff;
+  --btn-bg-hover: rgb(255 255 255 / 0.1);
+  --btn-border: rgb(255 255 255 / 0.45);
+}
+
+/* Joined icon + label: the icon sits in its own cell that slides on hover */
+.joined {
+  padding-left: 6px;
+}
+
+.iconCell {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--r-sm);
+  background: rgb(255 255 255 / 0.14);
+  transition: transform var(--dur-1) var(--ease-out);
+}
+
+.secondary .iconCell,
+.light .iconCell { background: var(--c-tint-strong); }
+
+.button:hover .iconCell,
+.button:focus-visible .iconCell { transform: translateX(3px); }
+
+.text { display: block; }

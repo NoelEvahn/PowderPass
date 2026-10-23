@@ -1,0 +1,31 @@
+.grid { display: grid; gap: var(--gap); }
+
+@media (min-width: 900px) {
+  .grid { grid-template-columns: 7fr 5fr; }
+}
+
+.card {
+  display: grid;
+  gap: var(--s-4);
+  align-content: start;
+  justify-items: start;
+  padding: clamp(1.5rem, 1rem + 2vw, 3rem);
+  border-radius: var(--r-xl);
+  background: var(--c-surface);
+}
+
+.accent { border-top: 6px solid var(--c-lime); }
+
+.kicker { font-size: var(--fs-meta); font-weight: 700; letter-spacing: var(--tracking-meta); text-transform: uppercase; color: var(--c-purple); }
+.title { font-size: var(--fs-h3); }
+.preline { white-space: pre-line; }
+.small { font-size: var(--fs-small); color: var(--c-text-muted); }
+
+.table { width: 100%; border-collapse: collapse; font-size: var(--fs-small); }
+.table th, .table td { padding: var(--s-3) 0; border-bottom: 1px solid var(--c-line); text-align: left; vertical-align: top; }
+.table td { text-align: right; font-weight: 650; }
+.rowNote { display: block; font-weight: 400; color: var(--c-text-muted); }
+
+.checklist { display: grid; gap: var(--s-3); margin: 0; padding: 0; list-style: none; }
+.checklist li { display: flex; gap: var(--s-3); }
+.checklist svg { flex: none; color: var(--c-success); margin-top: 2px; }

@@ -1,0 +1,21 @@
+.section {
+  position: relative;
+  padding-block: var(--section-y);
+}
+
+.tight { padding-block: calc(var(--section-y) * 0.55); }
+.none { padding-block: 0; }
+
+.plain { background: var(--c-surface); }
+.tint { background: var(--c-tint); }
+
+.ink {
+  background: var(--c-violet);
+  color: var(--c-on-ink);
+}
+
+.ink :is(h2, h3, h4) { color: #fff; }
+
+/* Two consecutive sections with the same tint read as one band. */
+.tint + .tint,
+.plain + .plain { padding-top: 0; }

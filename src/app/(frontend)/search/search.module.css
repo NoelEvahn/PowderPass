@@ -1,0 +1,69 @@
+.page { display: grid; gap: var(--s-6); padding-block: var(--s-8) var(--section-y); max-width: calc(900px + 2 * var(--gutter)); }
+.title { font-size: var(--fs-h2); }
+
+.form { display: flex; flex-wrap: wrap; gap: var(--s-3); }
+
+.input {
+  flex: 1 1 260px;
+  min-height: 56px;
+  padding: 0 var(--s-4);
+  border: 1.5px solid var(--c-line-strong);
+  border-radius: var(--r-md);
+  font-size: 1.125rem;
+}
+
+.input:focus-visible { border-color: var(--c-violet); outline-offset: 1px; }
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  min-height: 56px;
+  padding: 0 var(--s-6);
+  border: 0;
+  border-radius: var(--r-md);
+  background: var(--c-violet);
+  color: #fff;
+  font-weight: 600;
+}
+
+.button:hover { background: var(--c-violet-900); }
+
+.message { color: var(--c-text-muted); }
+
+.results { display: grid; gap: var(--s-2); margin: 0; padding: 0; list-style: none; }
+
+.result {
+  display: grid;
+  gap: var(--s-1);
+  padding: var(--s-4) var(--s-5);
+  border: 1px solid var(--c-line);
+  border-radius: var(--r-md);
+  text-decoration: none;
+  transition: border-color var(--dur-1) var(--ease-out), background-color var(--dur-1) var(--ease-out);
+}
+
+.result:hover,
+.result:focus-visible { border-color: var(--c-violet); background: var(--c-tint); }
+
+.type { font-size: var(--fs-meta); font-weight: 700; color: var(--c-purple); }
+.resultTitle { font-size: 1.125rem; font-weight: 650; color: var(--c-violet); }
+.excerpt { font-size: var(--fs-small); color: var(--c-text-muted); }
+
+.suggestions { display: grid; gap: var(--s-3); }
+.suggestTitle { font-size: 1.25rem; }
+.suggestions ul { display: flex; flex-wrap: wrap; gap: var(--s-2); margin: 0; padding: 0; list-style: none; }
+
+.suggestions a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 var(--s-4);
+  border: 1px solid var(--c-line-strong);
+  border-radius: var(--r-pill);
+  font-weight: 500;
+  text-decoration: none;
+  color: var(--c-violet);
+}
+
+.suggestions a:hover { background: var(--c-tint); }

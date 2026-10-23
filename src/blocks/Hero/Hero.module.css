@@ -1,0 +1,139 @@
+.line { display: block; }
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-3) var(--s-5);
+}
+
+.factLine {
+  font-size: var(--fs-meta);
+  font-weight: 600;
+  letter-spacing: var(--tracking-meta);
+  text-transform: uppercase;
+  color: var(--c-text-muted);
+}
+
+/* ── Home: stable promise left, image explorer right ─────────────── */
+.home {
+  padding-block: clamp(1.5rem, 0.5rem + 3vw, 3.5rem) clamp(3rem, 2rem + 4vw, 6rem);
+  overflow: clip;
+}
+
+.homeGrid {
+  display: grid;
+  gap: var(--s-7);
+  align-items: center;
+}
+
+@media (min-width: 1024px) {
+  .homeGrid { grid-template-columns: minmax(0, 6fr) minmax(0, 6fr); gap: var(--s-7); }
+}
+
+.homeText {
+  display: grid;
+  gap: var(--s-5);
+  align-content: center;
+}
+
+.homeTitle {
+  font-size: clamp(2.5rem, 1.4rem + 3vw, 4rem);
+  line-height: var(--lh-display);
+  letter-spacing: var(--tracking-display);
+}
+
+.homeIntro {
+  font-size: var(--fs-lead);
+  line-height: 1.5;
+  color: var(--c-text-muted);
+  max-width: 34ch;
+}
+
+.homeMedia { position: relative; z-index: 0; min-width: 0; }
+.homeText { position: relative; z-index: 1; }
+
+/* ── Page & stage heroes ──────────────────────────────────────────── */
+.page,
+.compact {
+  padding-block: clamp(1.5rem, 1rem + 2vw, 3rem) clamp(3rem, 2rem + 4vw, 6rem);
+}
+
+.pageGrid {
+  display: grid;
+  gap: var(--s-7);
+}
+
+@media (min-width: 1024px) {
+  .pageGrid {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    align-items: end;
+    gap: var(--s-8);
+  }
+}
+
+.pageText {
+  display: grid;
+  gap: var(--s-5);
+  align-content: end;
+}
+
+.pageTitle {
+  font-size: var(--fs-h1);
+  line-height: 1.04;
+  letter-spacing: -0.028em;
+  max-width: 16ch;
+}
+
+.compact .pageTitle { max-width: 22ch; }
+
+.pageIntro { max-width: 46ch; }
+
+.pageMedia {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--r-xl);
+  aspect-ratio: 4 / 3;
+  background: var(--c-tint);
+}
+
+@media (min-width: 1024px) {
+  .pageMedia { aspect-ratio: 7 / 5; }
+}
+
+.pageImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Stage accent: a coloured rule plus the age label (colour never stands alone) */
+.page[data-accent='gold'] { --accent: var(--c-gold); }
+.page[data-accent='lime'] { --accent: var(--c-lime); }
+.page[data-accent='purple'] { --accent: var(--c-purple); }
+.page[data-accent='violet'] { --accent: var(--c-violet); }
+
+.stageLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-3);
+  justify-self: start;
+  font-weight: 650;
+  color: var(--c-violet);
+}
+
+.stageLabel::before {
+  content: '';
+  width: 40px;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--accent);
+}
+
+.stage .pageMedia::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 0;
+  height: 8px;
+  background: var(--accent);
+}

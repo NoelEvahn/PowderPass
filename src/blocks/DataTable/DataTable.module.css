@@ -1,0 +1,34 @@
+.scroller {
+  max-width: 980px;
+  overflow-x: auto;
+  border: 1px solid var(--c-line);
+  border-radius: var(--r-md);
+}
+
+.table {
+  width: 100%;
+  min-width: 480px;
+  border-collapse: collapse;
+  font-size: var(--fs-small);
+}
+
+.table th,
+.table td {
+  padding: var(--s-3) var(--s-4);
+  border-bottom: 1px solid var(--c-line);
+  text-align: left;
+  vertical-align: top;
+}
+
+.table thead th {
+  background: var(--c-violet);
+  color: #fff;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.table tbody th { font-weight: 600; color: var(--c-violet); }
+.table tbody tr:nth-child(even) { background: var(--c-tint); }
+.table tbody tr:last-child :is(th, td) { border-bottom: 0; }
+
+.note { max-width: 80ch; margin-top: var(--s-4); font-size: var(--fs-small); color: var(--c-text-muted); }

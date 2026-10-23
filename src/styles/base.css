@@ -1,0 +1,175 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  scroll-padding-top: calc(var(--header-h) + var(--s-4));
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html:focus-within {
+    scroll-behavior: smooth;
+  }
+}
+
+body {
+  margin: 0;
+  background: var(--c-surface);
+  color: var(--c-text);
+  font-family: var(--font-body);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+  font-feature-settings: 'ss01', 'cv11';
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: clip;
+}
+
+h1, h2, h3, h4 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  line-height: var(--lh-heading);
+  color: var(--c-violet);
+  text-wrap: balance;
+}
+
+h1 { font-size: var(--fs-h1); letter-spacing: -0.025em; }
+h2 { font-size: var(--fs-h2); letter-spacing: -0.02em; }
+h3 { font-size: var(--fs-h3); letter-spacing: -0.01em; }
+
+p, ul, ol, dl, figure, blockquote {
+  margin: 0;
+}
+
+p { text-wrap: pretty; }
+
+img, svg, video {
+  display: block;
+  max-width: 100%;
+}
+
+img { height: auto; }
+
+a {
+  color: inherit;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+}
+
+button, input, select, textarea {
+  font: inherit;
+  color: inherit;
+}
+
+button { cursor: pointer; }
+
+:focus-visible {
+  outline: 3px solid var(--c-focus);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+[data-tone='ink'] { --c-focus: var(--c-gold); }
+
+::selection {
+  background: var(--c-violet);
+  color: #fff;
+}
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.container {
+  width: 100%;
+  max-width: var(--container);
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+
+/* Eyebrow label: small uppercase category text above headings */
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  font-family: var(--font-body);
+  font-size: var(--fs-meta);
+  font-weight: 600;
+  letter-spacing: var(--tracking-meta);
+  text-transform: uppercase;
+  color: var(--c-purple);
+}
+
+[data-tone='ink'] .eyebrow { color: var(--c-gold); }
+
+.lead {
+  font-size: var(--fs-lead);
+  line-height: 1.5;
+  color: var(--c-text-muted);
+  max-width: 60ch;
+}
+
+/*
+ * Reveal-on-enter (motion level 2). Content is visible by default; the hidden
+ * start state only applies once JS has marked the document and motion is allowed.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  .js [data-reveal]:not([data-revealed]) {
+    opacity: 0;
+    transform: translate3d(0, 18px, 0);
+  }
+
+  .js [data-reveal] {
+    transition:
+      opacity var(--dur-2) var(--ease-out),
+      transform var(--dur-2) var(--ease-out);
+    transition-delay: calc(var(--reveal-index, 0) * 70ms);
+  }
+
+  .js [data-reveal='media']:not([data-revealed]) {
+    transform: scale(1.035);
+  }
+}
+
+/* Skip link */
+.skip-link {
+  position: fixed;
+  top: var(--s-3);
+  left: var(--s-3);
+  z-index: 1000;
+  padding: var(--s-3) var(--s-4);
+  border-radius: var(--r-md);
+  background: var(--c-violet);
+  color: #fff;
+  font-weight: 600;
+  transform: translateY(-200%);
+  transition: transform var(--dur-1) var(--ease-out);
+}
+
+.skip-link:focus-visible {
+  transform: none;
+  outline-color: var(--c-gold);
+}
+
+/* Lock page scroll while a modal dialog is open. */
+html[data-dialog-open] { overflow: hidden; }
+
+/* Height reserved for the mobile "Visit & Enquire" bar (see MobileCta). */
+html { --mobile-cta-h: 68px; }
+
+@media (min-width: 768px) {
+  html { --mobile-cta-h: 0px; }
+}

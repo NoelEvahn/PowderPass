@@ -1,0 +1,30 @@
+.bar {
+  position: fixed;
+  inset: auto 0 0;
+  z-index: 45;
+  padding: var(--s-2) var(--gutter) calc(var(--s-2) + env(safe-area-inset-bottom));
+  background: rgb(255 255 255 / 0.94);
+  backdrop-filter: blur(10px);
+  border-top: 1px solid var(--c-line);
+}
+
+@media (min-width: 768px) {
+  .bar { display: none; }
+}
+
+:global(html[data-dialog-open]) .bar { display: none; }
+
+.button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-2);
+  min-height: 52px;
+  border-radius: var(--r-md);
+  background: var(--c-violet);
+  color: #fff;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.button:focus-visible { outline-color: var(--c-gold); }

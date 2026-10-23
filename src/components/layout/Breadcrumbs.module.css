@@ -1,0 +1,27 @@
+.nav { padding-top: var(--s-5); }
+
+.list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-1) var(--s-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--fs-meta);
+  color: var(--c-text-muted);
+}
+
+.list li { display: inline-flex; align-items: center; gap: var(--s-2); }
+
+.list a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  color: var(--c-text-muted);
+  font-weight: 500;
+}
+
+.list a:hover { color: var(--c-violet); }
+
+.list [aria-current] { color: var(--c-violet); font-weight: 600; }

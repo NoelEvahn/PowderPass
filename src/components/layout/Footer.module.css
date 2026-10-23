@@ -1,0 +1,154 @@
+.footer {
+  background: var(--c-tint);
+  border-top: 1px solid var(--c-line);
+  font-size: var(--fs-small);
+  padding-top: var(--s-9);
+}
+
+.top {
+  display: grid;
+  gap: var(--s-7);
+  padding-bottom: var(--s-7);
+  border-bottom: 1px solid var(--c-line-strong);
+}
+
+@media (min-width: 1024px) {
+  .top { grid-template-columns: 5fr 7fr; }
+}
+
+.identity { display: grid; gap: var(--s-3); align-content: start; }
+
+.logo { width: min(320px, 100%); height: auto; }
+
+.location { color: var(--c-text-muted); }
+
+.email,
+.phone,
+.address {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: var(--s-2);
+}
+
+.email,
+.phone {
+  min-height: 32px;
+  align-items: center;
+  color: var(--c-violet);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.email:hover,
+.phone:hover { text-decoration: underline; }
+
+.address svg,
+.email svg,
+.phone svg { flex: none; color: var(--c-purple); }
+
+.address svg { margin-top: 3px; }
+
+.address span { white-space: pre-line; }
+
+.campuses {
+  display: grid;
+  gap: var(--s-6);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 640px) {
+  .campuses { grid-template-columns: 1fr 1fr; }
+}
+
+.campus { display: grid; gap: var(--s-2); align-content: start; }
+
+.campusName {
+  font-family: var(--font-display);
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--c-violet);
+}
+
+.campusName span { font-family: var(--font-body); font-size: var(--fs-small); font-weight: 500; color: var(--c-text-muted); }
+
+.map { display: inline-flex; min-height: 32px; align-items: center; font-weight: 600; color: var(--c-violet); }
+
+.columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--s-6) var(--s-5);
+  padding-block: var(--s-7);
+}
+
+@media (min-width: 768px) {
+  .columns { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+.columnTitle {
+  margin-bottom: var(--s-3);
+  font-size: var(--fs-meta);
+  font-weight: 700;
+  letter-spacing: var(--tracking-meta);
+  text-transform: uppercase;
+  color: var(--c-violet);
+}
+
+.column ul,
+.memberships ul,
+.legal {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.column li a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  color: var(--c-text);
+  text-decoration: none;
+}
+
+.column li a:hover { color: var(--c-violet); text-decoration: underline; }
+
+.memberships { padding-bottom: var(--s-6); }
+
+.memberships ul { display: flex; flex-wrap: wrap; gap: var(--s-1) var(--s-5); }
+
+.memberships a { display: inline-flex; align-items: center; min-height: 32px; color: var(--c-text-muted); }
+
+.bottom {
+  border-top: 1px solid var(--c-line-strong);
+  /* Room for the mobile Visit & Enquire bar so it never covers footer links. */
+  padding-bottom: calc(var(--mobile-cta-h, 0px) + env(safe-area-inset-bottom));
+}
+
+.bottomInner {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--s-3) var(--s-5);
+  padding-block: var(--s-5);
+  color: var(--c-text-muted);
+}
+
+.legal { display: flex; flex-wrap: wrap; gap: var(--s-1) var(--s-5); }
+
+.legal a,
+.cookieButton {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--c-text-muted);
+  font-size: inherit;
+  text-decoration: underline;
+  text-decoration-color: var(--c-line-strong);
+}
+
+.legal a:hover,
+.cookieButton:hover { color: var(--c-violet); }
