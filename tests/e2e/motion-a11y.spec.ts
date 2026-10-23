@@ -28,7 +28,7 @@ test('the learning journey pins and scrolls sideways on large screens', async ({
   await expect(section.getByRole('link', { name: 'Skip the learning journey' })).toBeVisible()
 })
 
-for (const path of ['/', '/learning/primary', '/admissions/visit', '/admissions/faqs', '/discover/results-accreditation', '/contact']) {
+for (const path of ['/', '/learning/primary', '/admissions/visit', '/admissions/faqs', '/discover/results-accreditation', '/contact', '/discover/vision-values', '/admissions', '/community']) {
   test(`no serious accessibility violations on ${path}`, async ({ page }) => {
     await page.goto(path)
     await waitForHydration(page)

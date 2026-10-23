@@ -19,8 +19,10 @@ export function FeatureMosaicBlock({ eyebrow, heading, intro, items, anchorId, i
             const link = resolveLink(item.link)
             const content = (
               <>
-                <div className={styles.media}>
-                  <Media media={item.media} maxSize="feature" sizes="(min-width: 1024px) 45vw, 100vw" className={styles.image} />
+                <div className={styles.media} data-reveal="clip">
+                  <span data-parallax="28">
+                    <Media media={item.media} maxSize="feature" sizes="(min-width: 1024px) 45vw, 100vw" className={styles.image} />
+                  </span>
                 </div>
                 <div className={styles.caption}>
                   {item.category && <p className={styles.category}>{item.category}</p>}

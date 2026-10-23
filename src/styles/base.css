@@ -142,6 +142,30 @@ button { cursor: pointer; }
   .js [data-reveal='media']:not([data-revealed]) {
     transform: scale(1.035);
   }
+
+  /* Curtain: the photo is uncovered from the bottom edge upward */
+  .js [data-reveal='clip'] {
+    transition: clip-path 900ms var(--ease-out);
+    transition-delay: calc(var(--reveal-index, 0) * 90ms);
+  }
+
+  .js [data-reveal='clip']:not([data-revealed]) {
+    opacity: 1;
+    transform: none;
+    clip-path: inset(100% 0 0 0 round var(--r-lg));
+  }
+
+  .js [data-reveal='clip'][data-revealed] {
+    clip-path: inset(0 0 0 0 round var(--r-lg));
+  }
+}
+
+/* Parallax wrapper: fills its frame; ParallaxObserver moves it */
+[data-parallax] {
+  display: block;
+  width: 100%;
+  height: 100%;
+  will-change: transform;
 }
 
 /* Skip link */

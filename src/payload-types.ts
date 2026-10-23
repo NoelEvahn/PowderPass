@@ -686,6 +686,7 @@ export interface LinkCardsBlock {
   heading: string;
   intro?: string | null;
   style?: ('image' | 'list') | null;
+  layout?: ('grid' | 'horizontal') | null;
   cards?:
     | {
         title: string;
@@ -726,10 +727,41 @@ export interface DefinitionGridBlock {
     | {
         term: string;
         tagline?: string | null;
+        /**
+         * Shown in the grid display. The spiral shows only the icon, term and tagline.
+         */
         description?: string | null;
+        /**
+         * Optional icon shown with the term.
+         */
+        icon?:
+          | (
+              | 'scale'
+              | 'shield-check'
+              | 'clipboard-check'
+              | 'earth'
+              | 'party-popper'
+              | 'lightbulb'
+              | 'flame'
+              | 'heart-handshake'
+              | 'mountain'
+              | 'users'
+              | 'refresh-ccw'
+              | 'handshake'
+              | 'search'
+              | 'footprints'
+              | 'rocket'
+              | 'messages-square'
+              | 'compass'
+              | 'book-open'
+              | 'sparkles'
+              | 'star'
+            )
+          | null;
         id?: string | null;
       }[]
     | null;
+  display?: ('grid' | 'spiral') | null;
   columns?: ('2' | '3' | '4') | null;
   /**
    * Colour cue only. Text labels always carry the meaning.
@@ -830,6 +862,7 @@ export interface StepsBlock {
   eyebrow?: string | null;
   heading: string;
   intro?: string | null;
+  layout?: ('stack' | 'horizontal') | null;
   steps?:
     | {
         title: string;
@@ -1665,6 +1698,7 @@ export interface LinkCardsBlockSelect<T extends boolean = true> {
   heading?: T;
   intro?: T;
   style?: T;
+  layout?: T;
   cards?:
     | T
     | {
@@ -1694,8 +1728,10 @@ export interface DefinitionGridBlockSelect<T extends boolean = true> {
         term?: T;
         tagline?: T;
         description?: T;
+        icon?: T;
         id?: T;
       };
+  display?: T;
   columns?: T;
   accent?: T;
   background?: T;
@@ -1763,6 +1799,7 @@ export interface StepsBlockSelect<T extends boolean = true> {
   eyebrow?: T;
   heading?: T;
   intro?: T;
+  layout?: T;
   steps?:
     | T
     | {

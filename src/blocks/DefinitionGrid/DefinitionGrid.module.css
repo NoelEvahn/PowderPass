@@ -46,3 +46,5 @@
 
 .description { margin: 0; color: var(--c-text-muted); font-size: var(--fs-small); }
 [data-tone='ink'] .description { color: var(--c-on-ink-muted); }
+.icon { flex: none; align-self: center; color: var(--accent); }
+[data-tone='ink'] .icon { color: var(--c-gold); }

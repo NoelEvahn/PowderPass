@@ -1,0 +1,50 @@
+import {
+  BookOpen,
+  ClipboardCheck,
+  Compass,
+  Earth,
+  Flame,
+  Footprints,
+  Handshake,
+  HeartHandshake,
+  Lightbulb,
+  MessagesSquare,
+  Mountain,
+  PartyPopper,
+  RefreshCcw,
+  Rocket,
+  Scale,
+  Search,
+  ShieldCheck,
+  Sparkles,
+  Star,
+  Users,
+  type LucideIcon,
+} from 'lucide-react'
+import type { IconKey } from './icon-options'
+
+const ICONS: Record<IconKey, LucideIcon> = {
+  scale: Scale,
+  'shield-check': ShieldCheck,
+  'clipboard-check': ClipboardCheck,
+  earth: Earth,
+  'party-popper': PartyPopper,
+  lightbulb: Lightbulb,
+  flame: Flame,
+  'heart-handshake': HeartHandshake,
+  mountain: Mountain,
+  users: Users,
+  'refresh-ccw': RefreshCcw,
+  handshake: Handshake,
+  search: Search,
+  footprints: Footprints,
+  rocket: Rocket,
+  'messages-square': MessagesSquare,
+  compass: Compass,
+  'book-open': BookOpen,
+  sparkles: Sparkles,
+  star: Star,
+}
+
+export const iconFor = (key: string | null | undefined): LucideIcon | null =>
+  key && key in ICONS ? ICONS[key as IconKey] : null

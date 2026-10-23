@@ -33,6 +33,7 @@ export const communityPages: PageDef[] = [
         blockType: 'linkCards',
         heading: 'Around the community',
         style: 'image',
+        layout: 'horizontal',
         cards: [
           { title: 'News and stories', text: 'Announcements, achievements and articles from across the school.', media: ctx.img('primaryProduction'), accent: 'purple', link: ctx.link('Read the latest', '/community/stories') },
           { title: 'Current families', text: 'Calendar, handbook, parent portal and everyday information.', media: ctx.img('canteen'), accent: 'lime', link: ctx.link('Family information', '/families') },

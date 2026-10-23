@@ -28,6 +28,7 @@ export const admissionsPages: PageDef[] = [
         blockType: 'steps',
         eyebrow: 'The process',
         heading: 'From enquiry to offer',
+        layout: 'horizontal',
         intro: 'An enquiry or a visit does not commit you to anything. A place is only confirmed by an offer letter after the formal application and assessment.',
         steps: [
           { title: 'Enquire and visit', body: 'Tell us about your child and arrange a private tour or attend an open day.', link: ctx.link('Visit & Enquire', '/admissions/visit') },

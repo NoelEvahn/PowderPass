@@ -1,0 +1,181 @@
+.outer {
+  --accent: var(--c-violet);
+
+  position: relative;
+  padding-block: var(--section-y);
+}
+
+.outer[data-accent='gold'] { --accent: var(--c-gold); }
+.outer[data-accent='lime'] { --accent: var(--c-lime); }
+.outer[data-accent='purple'] { --accent: var(--c-purple); }
+
+.outer[data-pinned] { padding-block: 0; }
+
+.sticky { position: relative; }
+
+.outer[data-pinned] .sticky {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  display: grid;
+  align-items: center;
+  padding-block: calc(var(--header-h) + var(--s-4)) var(--s-4);
+  overflow: hidden;
+}
+
+.layout {
+  display: grid;
+  gap: var(--s-6);
+}
+
+.outer[data-pinned] .layout {
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+  align-items: center;
+  gap: var(--s-8);
+}
+
+.head { display: grid; gap: var(--s-5); align-content: center; min-width: 0; }
+
+/* ---------- Spiral stage (pinned) ---------- */
+
+.stage {
+  position: relative;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.outer[data-pinned] .stage {
+  height: min(62vh, 520px);
+  perspective: 1500px;
+  perspective-origin: 50% 35%;
+}
+
+.card {
+  --dim: 0;
+
+  display: grid;
+  align-content: start;
+  gap: var(--s-2);
+  padding: var(--s-6);
+  border-radius: var(--r-lg);
+  background: var(--c-surface);
+  color: var(--c-text);
+  box-shadow: 0 24px 48px -28px rgb(33 22 70 / 0.45);
+  border-top: 4px solid var(--accent);
+}
+
+.outer[data-pinned] .card {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: min(340px, 70%);
+  min-height: 300px;
+  translate: -50% -50%;
+  will-change: transform, opacity;
+  filter: saturate(calc(1 - var(--dim) * 0.5));
+}
+
+.outer[data-pinned] .card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--c-violet);
+  opacity: calc(var(--dim) * 0.12);
+  pointer-events: none;
+}
+
+.badge {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  margin-bottom: var(--s-3);
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 700;
+  transition: transform var(--dur-2) var(--ease-out);
+}
+
+.outer[data-accent='gold'] .badge,
+.outer[data-accent='lime'] .badge { color: var(--c-violet); }
+
+.card[data-active] .badge { transform: scale(1.08) rotate(-6deg); }
+
+.number {
+  font-size: var(--fs-meta);
+  font-weight: 600;
+  color: var(--c-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.term {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.6rem, 1.2rem + 1vw, 2.1rem);
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--c-violet);
+}
+
+.tagline {
+  margin: 0;
+  font-size: var(--fs-lead);
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--c-purple);
+}
+
+/* ---------- Progress ---------- */
+
+.progressRow {
+  display: flex;
+  align-items: center;
+  gap: var(--s-4);
+  font-size: var(--fs-meta);
+}
+
+.count { font-weight: 700; font-variant-numeric: tabular-nums; color: var(--c-purple); }
+[data-tone='ink'] .count { color: var(--c-gold); }
+
+.progress {
+  position: relative;
+  flex: 1;
+  max-width: 220px;
+  height: 3px;
+  background: var(--c-line);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progressBar {
+  position: absolute;
+  inset: 0;
+  background: var(--accent);
+  transform: scaleX(0);
+  transform-origin: left;
+}
+
+.skip { font-weight: 600; color: inherit; }
+
+.after { display: block; height: 0; }
+
+/* ---------- Swipe row (small screens, short screens, reduced motion) ---------- */
+
+.outer:not([data-pinned]) .stage {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: min(78%, 300px);
+  gap: var(--gap);
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding-block: var(--s-2) var(--s-5);
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+}
+
+.outer:not([data-pinned]) .card { scroll-snap-align: start; }
+
+.stage:focus-visible { outline: 3px solid var(--c-purple); outline-offset: 4px; border-radius: var(--r-lg); }

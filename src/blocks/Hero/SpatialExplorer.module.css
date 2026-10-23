@@ -8,20 +8,24 @@
   --tilt-y: 0deg;
 
   position: relative;
-  container-type: size;
-  aspect-ratio: 16 / 10;
-  perspective: 1400px;
-  touch-action: pan-y; /* vertical page scroll always wins; horizontal drags explore */
+  aspect-ratio: 16 / 11;
+  perspective: 1600px;
+  perspective-origin: 50% 40%;
+  touch-action: pan-y; /* vertical page scroll always wins; horizontal drags turn the spiral */
   user-select: none;
   cursor: grab;
+  border-radius: var(--r-lg);
 }
 
 .stage:active { cursor: grabbing; }
 
-[data-mode='flat'] .stage { cursor: default; }
+.stage:focus-visible {
+  outline: 3px solid var(--c-purple);
+  outline-offset: 6px;
+}
 
 @media (max-width: 767px) {
-  .stage { aspect-ratio: 3 / 2; cursor: default; }
+  .stage { aspect-ratio: 4 / 3; }
 }
 
 .ring {
@@ -30,60 +34,49 @@
   margin: 0;
   padding: 0;
   list-style: none;
-  transform-style: preserve-3d;
+  /* No preserve-3d: cards are flattened and stacked by z-index, so they never slice through each other */
   transform: rotateX(var(--tilt-x)) rotateY(var(--tilt-y));
   transition: transform 600ms var(--ease-out);
+  perspective: 1600px; /* applies to the cards, its direct children */
+  perspective-origin: 50% 40%;
 }
 
 .card {
+  --dim: 1;
+
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 64cqw;
-  aspect-ratio: 3 / 2;
-  margin: calc(-64cqw / 3) 0 0 -32cqw; /* centre the card: half its height and width */
-  transition:
-    transform var(--dur-3) var(--ease-out),
-    opacity var(--dur-3) var(--ease-out);
-  will-change: transform;
+  width: 40%;
+  aspect-ratio: 4 / 5;
+  translate: -50% -50%;
+  will-change: transform, opacity;
 }
 
 @media (max-width: 767px) {
-  .card { width: 100cqw; margin: -50cqh 0 0 -50cqw; height: 100cqh; aspect-ratio: auto; }
+  .card { width: 50%; }
 }
 
-.cardButton {
+.frame {
   position: relative;
   display: block;
   width: 100%;
   height: 100%;
-  padding: 0;
-  border: 0;
   border-radius: var(--r-lg);
   overflow: hidden;
   background: var(--c-tint);
-  box-shadow: 0 30px 60px -30px rgb(33 22 70 / 0.45);
-  cursor: inherit;
+  box-shadow: 0 30px 60px -30px rgb(33 22 70 / 0.5);
 }
 
-/* Receding cards are dimmed so depth reads without blur or heavy filters */
-.cardButton::after {
+/* Cards away from the front are dimmed and desaturated so depth reads without blur */
+.frame::after {
   content: '';
   position: absolute;
   inset: 0;
   background: var(--c-violet);
-  opacity: 0.28;
-  transition: opacity var(--dur-3) var(--ease-out);
+  opacity: calc(var(--dim) * 0.38);
   pointer-events: none;
 }
-
-.card[data-active] .cardButton::after,
-[data-mode='flat'] .cardButton::after { opacity: 0; }
-
-[data-mode='flat'] .cardButton { cursor: pointer; }
-
-[data-mode='flat'] .cardButton:hover::after,
-[data-mode='flat'] .cardButton:focus-visible::after { opacity: 0.12; }
 
 .image {
   width: 100%;
@@ -91,17 +84,16 @@
   object-fit: cover;
   pointer-events: none;
   -webkit-user-drag: none;
-  transition: transform 220ms var(--ease-out);
+  filter: saturate(calc(1 - var(--dim) * 0.6));
+  transform: scale(calc(1.06 - (1 - var(--dim)) * 0.06));
 }
-
-.card[data-active] .cardButton:hover .image { transform: scale(1.025); }
 
 .controls {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
+  align-items: baseline;
   justify-content: space-between;
-  gap: var(--s-3) var(--s-5);
+  gap: var(--s-2) var(--s-5);
 }
 
 .caption {
@@ -121,26 +113,12 @@
   color: var(--c-purple);
 }
 
-.buttons { display: flex; gap: var(--s-2); }
-
-.control {
+.hint {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
   gap: var(--s-2);
-  min-width: 44px;
-  height: 44px;
-  padding: 0 var(--s-2);
-  border: 1px solid var(--c-line-strong);
-  border-radius: var(--r-md);
-  background: var(--c-surface);
-  color: var(--c-violet);
-  font-size: var(--fs-small);
+  font-size: var(--fs-meta);
   font-weight: 600;
-  transition: background-color var(--dur-1) var(--ease-out), opacity var(--dur-1);
+  letter-spacing: 0.02em;
+  color: var(--c-text-muted);
 }
-
-.control:hover:not(:disabled) { background: var(--c-tint); }
-.control:disabled { opacity: 0.4; cursor: not-allowed; }
-.modeToggle { padding: 0 var(--s-3); }
-.modeToggle[aria-pressed='true'] { background: var(--c-violet); color: #fff; border-color: var(--c-violet); }

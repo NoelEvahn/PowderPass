@@ -12,6 +12,15 @@ export const StepsBlock: Block = {
     headingField(),
     introField,
     {
+      name: 'layout',
+      type: 'select',
+      defaultValue: 'stack',
+      options: [
+        { label: 'Numbered list', value: 'stack' },
+        { label: 'Sideways row (turns sideways as visitors scroll on large screens; swipe on phones)', value: 'horizontal' },
+      ],
+    },
+    {
       name: 'steps',
       type: 'array',
       minRows: 1,

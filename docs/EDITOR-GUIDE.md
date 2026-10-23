@@ -56,11 +56,11 @@ The **Search & sharing** tab sets the title and description shown in Google and 
 | Learning journey | The four learning stages; scrolls sideways on large screens. Edit the stages under *Academic → Learning stages*. |
 | Feature mosaic | Large and tall photos with captions, each linking to a page. |
 | Kinetic statement | Two to four short words that move as visitors scroll (home page values). |
-| Link cards | Cards linking to other pages, with or without photos. |
-| Terms and descriptions | Values, habits, programmes — a term, short tagline and description. |
+| Link cards | Cards linking to other pages, with or without photos. *Sideways row* layout makes photo cards move sideways as visitors scroll. |
+| Terms and descriptions | Values, habits, programmes — a term, short tagline, description and optional icon. *Spiral* display turns the cards as visitors scroll and shows only icon, term and tagline. |
 | Grouped lists | Subject lists, activity lists. One item per line. |
 | Table | Times, year groups, curriculum overviews. Enter cells in column order. |
-| Numbered steps | Processes such as how to apply. |
+| Numbered steps | Processes such as how to apply. *Sideways row* layout works like link cards. |
 | Image gallery | Photos that open full-screen. *Portrait posters* suits results graphics. |
 | People | Staff profiles. |
 | Documents and resources | Links to PDFs, Google Docs, portals and email addresses. |

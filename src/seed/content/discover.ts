@@ -23,7 +23,11 @@ const LEARNING_HABITS = [
   ['Communication', 'Give and take ideas and information', 'Exchanging and expressing ideas or information confidently and creatively in a variety of ways.'],
 ]
 
-const toItems = (rows: string[][]) => rows.map(([term, tagline, description]) => ({ term, tagline, description }))
+const VALUE_ICONS = ['scale', 'shield-check', 'clipboard-check', 'earth', 'party-popper', 'lightbulb', 'flame', 'heart-handshake']
+const HABIT_ICONS = ['mountain', 'users', 'refresh-ccw', 'handshake', 'search', 'footprints', 'rocket', 'messages-square']
+
+const toItems = (rows: string[][], icons: string[]) =>
+  rows.map(([term, tagline, description], index) => ({ term, tagline, description, icon: icons[index] }))
 
 export const discoverPages: PageDef[] = [
   {
@@ -58,6 +62,7 @@ export const discoverPages: PageDef[] = [
         eyebrow: 'Get to know us',
         heading: 'More about ISP',
         style: 'image',
+        layout: 'horizontal',
         cards: [
           { title: 'Vision, mission and values', text: 'Our published vision and mission, eight Core Values and eight Learning Habits.', media: ctx.img('globe'), accent: 'purple', link: ctx.link('Read our values', '/discover/vision-values') },
           { title: 'Leadership', text: 'Welcome messages from our Principal and Group Director – Education.', media: ctx.img('community'), accent: 'violet', link: ctx.link('Meet the leadership', '/discover/leadership') },
@@ -111,7 +116,8 @@ export const discoverPages: PageDef[] = [
         eyebrow: 'ISP Core Values',
         heading: 'Eight Core Values',
         intro: 'How we treat one another and the world around us.',
-        items: toItems(CORE_VALUES),
+        items: toItems(CORE_VALUES, VALUE_ICONS),
+        display: 'spiral',
         columns: '4',
         accent: 'purple',
         background: 'tint',
@@ -121,7 +127,8 @@ export const discoverPages: PageDef[] = [
         eyebrow: 'ISP Learning Habits',
         heading: 'Eight Learning Habits',
         intro: 'The habits that help every student become a confident, independent learner.',
-        items: toItems(LEARNING_HABITS),
+        items: toItems(LEARNING_HABITS, HABIT_ICONS),
+        display: 'spiral',
         columns: '4',
         accent: 'lime',
         background: 'plain',

@@ -1,73 +1,118 @@
 'use client'
-import { ChevronLeft, ChevronRight, LayoutGrid, Layers } from 'lucide-react'
-import { useCallback, useEffect, useId, useRef, useState } from 'react'
+import { MoveHorizontal } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
 import { Media } from '@/components/ui/Media'
+import { damp, helixStyle, ringDistance } from '@/components/motion/helix'
+import { subscribeScroll } from '@/components/motion/scroll'
 import { useMediaQuery, useReducedMotion } from '@/components/motion/useReducedMotion'
 import type { Media as MediaDoc } from '@/payload-types'
 import styles from './SpatialExplorer.module.css'
 
 type Slide = { id: string; image: MediaDoc; caption: string }
-type Mode = 'spatial' | 'flat'
 
 const DRAG_THRESHOLD = 8 // px before a press counts as a drag rather than a tap
-const DRAG_STEP = 90 // px of drag per image
+const SCROLL_STEP = 160 // px of page scroll per photo while the hero is on screen
 const MAX_TILT = 2 // degrees
 
-/** Shortest signed distance from `active` to `index` around the ring. */
-const ringOffset = (index: number, active: number, count: number) => {
-  let d = index - active
-  if (d > count / 2) d -= count
-  if (d < -count / 2) d += count
-  return d
-}
-
-/** Card transform for each mode. Values are in container-query units so they scale with the stage. */
-function cardStyle(d: number, mode: Mode, index: number, count: number, compact: boolean): React.CSSProperties {
-  if (mode === 'flat') {
-    const cols = count > 6 ? 4 : 3
-    const rows = Math.ceil(count / cols)
-    const col = index % cols
-    const row = Math.floor(index / cols)
-    const x = ((col + 0.5) / cols - 0.5) * 100
-    const y = ((row + 0.5) / rows - 0.5) * 100
-    const scale = (1 / cols) * 1.42
-    return { transform: `translate3d(calc(${x} * 1cqw), calc(${y} * 1cqh), 0) scale(${scale})`, opacity: 1, zIndex: 1 }
-  }
-  const abs = Math.abs(d)
-  if (compact) {
-    return { transform: `translate3d(calc(${d * 104} * 1cqw), 0, 0)`, opacity: abs === 0 ? 1 : 0, zIndex: 10 - abs }
-  }
-  // Shallow helix: neighbours recede, turn slightly and rise. Only three images are
-  // prominent; the next pair sits faintly behind them to suggest the rest of the set.
-  const x = d * (abs > 1 ? 22 : 27)
-  const y = d * -3.5
-  const z = -abs * 180
-  const rotY = -d * 12
-  const rotZ = d * 1.2
-  return {
-    transform: `translate3d(calc(${x} * 1cqw), calc(${y} * 1cqh), ${z}px) rotateY(${rotY}deg) rotateZ(${rotZ}deg)`,
-    opacity: abs > 2 ? 0 : abs === 2 ? 0.45 : 1,
-    zIndex: 10 - abs,
-  }
-}
-
+/**
+ * Spiral photo gallery. Photos sit on a shallow helix that turns as the page
+ * scrolls and as the visitor drags or uses the arrow keys. Native scrolling is
+ * never intercepted: the page scroll position is only read. Positions are
+ * written straight to the DOM each frame; React state changes only when the
+ * focused photo changes (for the caption).
+ */
 export function SpatialExplorer({ slides }: { slides: Slide[] }) {
   const count = slides.length
   const [active, setActive] = useState(0)
-  const [mode, setMode] = useState<Mode>('spatial')
   const reduced = useReducedMotion()
   const compact = useMediaQuery('(max-width: 767px)', true)
   const finePointer = useMediaQuery('(pointer: fine)')
   const stageRef = useRef<HTMLDivElement>(null)
-  const drag = useRef<{ x: number; startActive: number; dragging: boolean; pointerId: number } | null>(null)
-  const regionId = useId()
+  const cardRefs = useRef<(HTMLLIElement | null)[]>([])
+  const motion = useRef({ manual: 0, scroll: 0, current: 0, width: 0, frame: 0, last: 0, active: 0 })
+  const kickRef = useRef<() => void>(() => undefined)
+  const drag = useRef<{ x: number; start: number; dragging: boolean; pointerId: number } | null>(null)
 
-  const go = useCallback((next: number) => setActive(((next % count) + count) % count), [count])
+  // Render loop: ease the current position toward manual + scroll, then lay out cards.
+  useEffect(() => {
+    const m = motion.current
+    const stage = stageRef.current
+    if (!stage || !count) return
+
+    const layout = () => {
+      const w = m.width || stage.clientWidth
+      const options = compact
+        ? { radius: w * 0.7, step: 34, rise: -w * 0.02, visible: 2.2 }
+        : { radius: w * 0.5, step: 36, rise: -w * 0.03, visible: 2.6 }
+      cardRefs.current.forEach((card, index) => {
+        if (!card) return
+        const s = helixStyle(ringDistance(index, m.current, count), options)
+        card.style.transform = s.transform
+        card.style.opacity = String(s.opacity)
+        card.style.zIndex = s.zIndex
+        card.style.setProperty('--dim', s.dim.toFixed(3))
+        card.style.visibility = s.opacity === 0 ? 'hidden' : 'visible'
+      })
+      const nearest = ((Math.round(m.current) % count) + count) % count
+      if (nearest !== m.active) {
+        m.active = nearest
+        setActive(nearest)
+      }
+    }
+
+    const tick = (time: number) => {
+      const dt = m.last ? Math.min(64, time - m.last) : 16
+      m.last = time
+      const target = m.manual + m.scroll
+      m.current = reduced ? target : damp(m.current, target, dt, 90)
+      layout()
+      if (Math.abs(target - m.current) > 0.001) m.frame = requestAnimationFrame(tick)
+      else {
+        m.current = target
+        m.frame = 0
+        m.last = 0
+      }
+    }
+    const kick = () => {
+      if (!m.frame) m.frame = requestAnimationFrame(tick)
+    }
+    kickRef.current = kick
+
+    const ro = new ResizeObserver(() => {
+      m.width = stage.clientWidth
+      layout()
+    })
+    ro.observe(stage)
+
+    // Page scroll turns the spiral while the hero is on screen (read-only, never intercepted).
+    const unsubscribe = reduced
+      ? undefined
+      : subscribeScroll(() => {
+          const rect = stage.getBoundingClientRect()
+          if (rect.bottom < -200 || rect.top > window.innerHeight + 200) return
+          m.scroll = Math.max(0, window.scrollY) / SCROLL_STEP
+          kick()
+        })
+    if (reduced) m.scroll = 0
+    layout()
+    return () => {
+      ro.disconnect()
+      unsubscribe?.()
+      cancelAnimationFrame(m.frame)
+      m.frame = 0
+    }
+  }, [count, compact, reduced])
+
+  const nudge = (delta: number) => {
+    const m = motion.current
+    m.manual = Math.round(m.manual + m.scroll + delta) - m.scroll
+    kickRef.current()
+  }
 
   // Pointer tilt (fine pointers only, never with reduced motion).
   useEffect(() => {
     const stage = stageRef.current
-    if (!stage || reduced || !finePointer || mode !== 'spatial') return
+    if (!stage || reduced || !finePointer) return
     const onMove = (event: PointerEvent) => {
       const rect = stage.getBoundingClientRect()
       const px = (event.clientX - rect.left) / rect.width - 0.5
@@ -86,11 +131,11 @@ export function SpatialExplorer({ slides }: { slides: Slide[] }) {
       stage.removeEventListener('pointerleave', onLeave)
       onLeave()
     }
-  }, [reduced, finePointer, mode])
+  }, [reduced, finePointer])
 
   const onPointerDown = (event: React.PointerEvent) => {
-    if (mode !== 'spatial' || event.button !== 0) return
-    drag.current = { x: event.clientX, startActive: active, dragging: false, pointerId: event.pointerId }
+    if (event.button !== 0) return
+    drag.current = { x: event.clientX, start: motion.current.manual, dragging: false, pointerId: event.pointerId }
   }
   const onPointerMove = (event: React.PointerEvent) => {
     const d = drag.current
@@ -100,88 +145,66 @@ export function SpatialExplorer({ slides }: { slides: Slide[] }) {
       d.dragging = true
       stageRef.current?.setPointerCapture(d.pointerId)
     }
-    if (d.dragging) go(d.startActive - Math.round(dx / DRAG_STEP))
+    if (d.dragging) {
+      const width = motion.current.width || 600
+      motion.current.manual = d.start - dx / (width * (compact ? 0.6 : 0.32))
+      kickRef.current()
+    }
   }
   const endDrag = (event: React.PointerEvent) => {
     const d = drag.current
     drag.current = null
     if (d?.dragging) {
-      // Swallow the click that follows a drag so it does not select a card.
-      const swallow = (e: MouseEvent) => {
-        e.stopPropagation()
-        e.preventDefault()
-      }
-      window.addEventListener('click', swallow, { capture: true, once: true })
-      setTimeout(() => window.removeEventListener('click', swallow, { capture: true }), 0)
+      nudge(0) // settle on the nearest photo
       if (stageRef.current?.hasPointerCapture(event.pointerId)) stageRef.current.releasePointerCapture(event.pointerId)
     }
   }
 
   const onKeyDown = (event: React.KeyboardEvent) => {
-    if (mode !== 'spatial') return
-    if (event.key === 'ArrowRight') {
+    if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {
       event.preventDefault()
-      go(active + 1)
-    } else if (event.key === 'ArrowLeft') {
-      event.preventDefault()
-      go(active - 1)
+      nudge(event.key === 'ArrowRight' ? 1 : -1)
     }
   }
 
   const current = slides[active]
 
   return (
-    <div
-      className={styles.explorer}
-      role="region"
-      aria-roledescription="image explorer"
-      aria-label="Life at ISP in photographs"
-      data-mode={mode}
-      onKeyDown={onKeyDown}
-    >
+    <div className={styles.explorer} role="region" aria-roledescription="photo gallery" aria-label="Life at ISP in photographs">
       <div
         ref={stageRef}
         className={styles.stage}
+        tabIndex={0}
+        aria-describedby="hero-gallery-hint"
+        onKeyDown={onKeyDown}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={endDrag}
         onPointerCancel={endDrag}
       >
-        <ul className={styles.ring} id={regionId}>
-          {slides.map((slide, index) => {
-            const d = ringOffset(index, active, count)
-            const isActive = index === active
-            return (
-              <li
-                key={slide.id}
-                className={styles.card}
-                style={cardStyle(d, mode, index, count, compact)}
-                data-active={isActive || undefined}
-                aria-current={isActive ? 'true' : undefined}
-                aria-hidden={mode === 'spatial' && !isActive && Math.abs(d) > 1 ? true : undefined}
-              >
-                <button
-                  type="button"
-                  className={styles.cardButton}
-                  tabIndex={mode === 'flat' ? 0 : -1}
-                  aria-label={`Show photo ${index + 1}: ${slide.caption}`}
-                  onClick={() => {
-                    setActive(index)
-                    if (mode === 'flat') setMode('spatial')
-                  }}
-                >
-                  <Media
-                    media={slide.image}
-                    priority={index === 0}
-                    maxSize="feature"
-                    sizes="(min-width: 1024px) 40vw, 90vw"
-                    className={styles.image}
-                    alt={slide.image.alt}
-                  />
-                </button>
-              </li>
-            )
-          })}
+        <ul className={styles.ring}>
+          {slides.map((slide, index) => (
+            <li
+              key={slide.id}
+              ref={(el) => {
+                cardRefs.current[index] = el
+              }}
+              className={styles.card}
+              data-active={index === active || undefined}
+              aria-current={index === active ? 'true' : undefined}
+            >
+              <span className={styles.frame}>
+                <Media
+                  media={slide.image}
+                  priority={index === 0}
+                  maxSize="feature"
+                  sizes="(min-width: 1024px) 34vw, 80vw"
+                  className={styles.image}
+                  alt={slide.image.alt}
+                />
+              </span>
+            </li>
+          ))}
         </ul>
       </div>
 
@@ -192,25 +215,11 @@ export function SpatialExplorer({ slides }: { slides: Slide[] }) {
           </span>
           <span>{current?.caption}</span>
         </p>
-        <div className={styles.buttons}>
-          <button type="button" className={styles.control} onClick={() => go(active - 1)} aria-controls={regionId} disabled={mode === 'flat'}>
-            <ChevronLeft size={20} aria-hidden="true" />
-            <span className="visually-hidden">Previous photo</span>
-          </button>
-          <button type="button" className={styles.control} onClick={() => go(active + 1)} aria-controls={regionId} disabled={mode === 'flat'}>
-            <ChevronRight size={20} aria-hidden="true" />
-            <span className="visually-hidden">Next photo</span>
-          </button>
-          <button
-            type="button"
-            className={`${styles.control} ${styles.modeToggle}`}
-            aria-pressed={mode === 'flat'}
-            onClick={() => setMode(mode === 'flat' ? 'spatial' : 'flat')}
-          >
-            {mode === 'flat' ? <Layers size={18} aria-hidden="true" /> : <LayoutGrid size={18} aria-hidden="true" />}
-            <span>{mode === 'flat' ? 'Explorer view' : 'All photos'}</span>
-          </button>
-        </div>
+        <p id="hero-gallery-hint" className={styles.hint}>
+          <MoveHorizontal size={16} aria-hidden="true" />
+          <span>Scroll or drag to explore</span>
+          <span className="visually-hidden">. When the gallery is focused, use the left and right arrow keys.</span>
+        </p>
       </div>
     </div>
   )

@@ -21,6 +21,15 @@ export const LinkCardsBlock: Block = {
       ],
     },
     {
+      name: 'layout',
+      type: 'select',
+      defaultValue: 'grid',
+      options: [
+        { label: 'Grid', value: 'grid' },
+        { label: 'Sideways row (turns sideways as visitors scroll on large screens; swipe on phones)', value: 'horizontal' },
+      ],
+    },
+    {
       name: 'cards',
       type: 'array',
       minRows: 1,

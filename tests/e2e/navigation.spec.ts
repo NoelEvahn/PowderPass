@@ -91,14 +91,29 @@ test('image gallery opens an accessible viewer', async ({ page }) => {
   await expect(viewer).toBeHidden()
 })
 
-test('hero explorer has working previous/next and flat view', async ({ page }) => {
+test('hero gallery turns with arrow keys and page scroll', async ({ page }) => {
   await page.goto('/')
   await waitForHydration(page)
-  const explorer = page.getByRole('region', { name: 'Life at ISP in photographs' })
-  await expect(explorer).toContainText('01 / 07')
-  await explorer.getByRole('button', { name: 'Next photo' }).click()
-  await expect(explorer).toContainText('02 / 07')
-  await explorer.getByRole('button', { name: 'All photos' }).click()
-  await explorer.getByRole('button', { name: /Show photo 5/ }).click()
-  await expect(explorer).toContainText('05 / 07')
+  const gallery = page.getByRole('region', { name: 'Life at ISP in photographs' })
+  await expect(gallery).toContainText('01 / 07')
+  await expect(gallery.getByText('Scroll or drag to explore')).toBeVisible()
+  const stage = gallery.locator('[tabindex="0"]')
+  await stage.focus()
+  await page.keyboard.press('ArrowRight')
+  await expect(gallery).toContainText('02 / 07')
+  await page.keyboard.press('ArrowLeft')
+  await expect(gallery).toContainText('01 / 07')
+  const reduced = await page.evaluate(() => matchMedia('(prefers-reduced-motion: reduce)').matches)
+  if (!reduced) {
+    await page.evaluate(() => window.scrollTo(0, 330))
+    await expect(gallery).not.toContainText('01 / 07')
+  }
+})
+
+test('values spiral shows every value with its tagline and no descriptions', async ({ page }) => {
+  await page.goto('/discover/vision-values')
+  const values = page.getByRole('list', { name: 'Eight Core Values' })
+  await expect(values.getByRole('listitem')).toHaveCount(8)
+  await expect(values).toContainText('Treat everybody the same way')
+  await expect(values).not.toContainText('Respecting the rights and status of others')
 })

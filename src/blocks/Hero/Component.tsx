@@ -82,13 +82,15 @@ export function HeroBlock(props: HeroProps & { isFirst?: boolean }) {
         </div>
         {media && (
           <figure className={styles.pageMedia} data-reveal={isFirst ? undefined : 'media'}>
-            <Media
-              media={media}
-              priority={isFirst}
-              maxSize="hero"
-              sizes="(min-width: 1024px) 58vw, 100vw"
-              className={styles.pageImage}
-            />
+            <span data-parallax="48">
+              <Media
+                media={media}
+                priority={isFirst}
+                maxSize="hero"
+                sizes="(min-width: 1024px) 58vw, 100vw"
+                className={styles.pageImage}
+              />
+            </span>
           </figure>
         )}
       </div>

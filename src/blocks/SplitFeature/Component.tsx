@@ -10,8 +10,10 @@ export function SplitFeatureBlock({ eyebrow, heading, body, media, mediaPosition
   return (
     <Section tone={background} id={anchorId} labelledBy={headingId}>
       <div className={`container ${styles.grid}`} data-media={mediaPosition ?? 'right'}>
-        <figure className={styles.media} data-reveal="media">
-          <Media media={media} maxSize="feature" sizes="(min-width: 1024px) 50vw, 100vw" className={styles.image} />
+        <figure className={styles.media} data-reveal="clip">
+          <span data-parallax>
+            <Media media={media} maxSize="feature" sizes="(min-width: 1024px) 50vw, 100vw" className={styles.image} />
+          </span>
         </figure>
         <div className={styles.text}>
           {eyebrow && <p className="eyebrow">{eyebrow}</p>}

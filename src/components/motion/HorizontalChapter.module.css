@@ -1,0 +1,100 @@
+.outer {
+  position: relative;
+  padding-block: var(--section-y);
+}
+
+.outer[data-pinned] { padding-block: 0; }
+
+.outer[data-pinned] .sticky {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  align-content: center;
+  gap: var(--s-6);
+  padding-block: calc(var(--header-h) + var(--s-5)) var(--s-6);
+  overflow: hidden;
+}
+
+.head { display: grid; gap: var(--s-4); }
+
+.outer:not([data-pinned]) .head { margin-bottom: var(--s-6); }
+
+.progressRow { display: flex; align-items: center; gap: var(--s-4); font-size: var(--fs-meta); }
+
+.progress {
+  position: relative;
+  flex: 1;
+  max-width: 240px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--c-line);
+  overflow: hidden;
+}
+
+.progressBar {
+  position: absolute;
+  inset: 0;
+  background: var(--c-purple);
+  transform: scaleX(0);
+  transform-origin: left;
+}
+
+[data-tone='ink'] .progressBar { background: var(--c-gold); }
+
+.skip { font-weight: 600; color: inherit; }
+
+.viewport {
+  min-width: 0;
+  padding-inline: var(--gutter);
+}
+
+.outer[data-pinned] .viewport {
+  overflow: visible;
+  align-self: center;
+}
+
+.track {
+  --p: 0;
+
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: min(82vw, 400px);
+  gap: var(--gap);
+  margin: 0 auto;
+  padding: 0;
+  list-style: none;
+  max-width: calc(var(--container) - 2 * var(--gutter));
+  will-change: transform;
+}
+
+.outer[data-pinned] .track {
+  grid-auto-columns: clamp(320px, 30vw, 440px);
+  max-width: none;
+  width: max-content;
+  margin-inline: max(0px, calc((100vw - var(--container)) / 2));
+}
+
+/* Each card leans in slightly as the row travels, for a sense of depth */
+.outer[data-pinned] .item {
+  transition: transform var(--dur-1) var(--ease-out);
+}
+
+.outer[data-pinned] .item:nth-child(odd) { transform: translateY(calc((0.5 - var(--p)) * 32px)); }
+.outer[data-pinned] .item:nth-child(even) { transform: translateY(calc((var(--p) - 0.5) * 32px)); }
+
+.item { display: grid; min-width: 0; }
+
+/* Native swipe row everywhere the chapter does not pin */
+.outer:not([data-pinned]) .viewport {
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  overscroll-behavior-x: contain;
+  padding-bottom: var(--s-4);
+  scrollbar-width: thin;
+}
+
+.outer:not([data-pinned]) .item { scroll-snap-align: start; }
+
+.after { display: block; height: 0; }
