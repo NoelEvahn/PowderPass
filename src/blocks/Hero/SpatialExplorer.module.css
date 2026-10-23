@@ -89,18 +89,19 @@
 }
 
 .controls {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--s-2) var(--s-5);
+  /* Fixed rows (caption, then hint): nothing reflows when the caption changes */
+  display: grid;
+  gap: var(--s-2);
 }
 
 .caption {
   display: flex;
   align-items: baseline;
   gap: var(--s-3);
-  min-height: 3em;
+  /* Always exactly two lines tall, so longer captions never push the page up or down */
+  height: calc(2 * 1.5em);
+  line-height: 1.5;
+  overflow: hidden;
   max-width: 46ch;
   font-size: var(--fs-small);
   color: var(--c-text);
@@ -121,4 +122,12 @@
   font-weight: 600;
   letter-spacing: 0.02em;
   color: var(--c-text-muted);
+}
+
+/* Caption text: at most two lines, ellipsis if longer */
+.caption > span:last-child {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
 }

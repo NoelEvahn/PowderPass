@@ -10,9 +10,9 @@
   top: 0;
   height: 100vh;
   display: grid;
-  grid-template-rows: auto 1fr;
+  grid-template-rows: auto auto;
   align-content: center;
-  gap: var(--s-6);
+  gap: var(--s-7);
   padding-block: calc(var(--header-h) + var(--s-5)) var(--s-6);
   overflow: hidden;
 }
@@ -46,8 +46,11 @@
 .skip { font-weight: 600; color: inherit; }
 
 .viewport {
+  /* Same left edge as the page content at every width */
+  --edge: max(var(--gutter), calc((100vw - var(--container)) / 2 + var(--gutter)));
+
   min-width: 0;
-  padding-inline: var(--gutter);
+  padding-inline: var(--edge);
 }
 
 .outer[data-pinned] .viewport {
@@ -56,40 +59,25 @@
 }
 
 .track {
-  --p: 0;
-
   display: grid;
   grid-auto-flow: column;
-  grid-auto-columns: min(82vw, 400px);
+  grid-auto-columns: clamp(280px, 27vw, 400px);
   gap: var(--gap);
-  margin: 0 auto;
+  width: max-content;
+  margin: 0;
   padding: 0;
   list-style: none;
-  max-width: calc(var(--container) - 2 * var(--gutter));
   will-change: transform;
 }
 
-.outer[data-pinned] .track {
-  grid-auto-columns: clamp(320px, 30vw, 440px);
-  max-width: none;
-  width: max-content;
-  margin-inline: max(0px, calc((100vw - var(--container)) / 2));
-}
-
-/* Each card leans in slightly as the row travels, for a sense of depth */
-.outer[data-pinned] .item {
-  transition: transform var(--dur-1) var(--ease-out);
-}
-
-.outer[data-pinned] .item:nth-child(odd) { transform: translateY(calc((0.5 - var(--p)) * 32px)); }
-.outer[data-pinned] .item:nth-child(even) { transform: translateY(calc((var(--p) - 0.5) * 32px)); }
-
 .item { display: grid; min-width: 0; }
 
-/* Native swipe row everywhere the chapter does not pin */
+/* Not pinned (it fits, small screen, short screen or reduced motion): a native swipe row
+   that starts at the page edge, scrolls with a finger or trackpad and snaps to each card */
 .outer:not([data-pinned]) .viewport {
   overflow-x: auto;
   scroll-snap-type: x mandatory;
+  scroll-padding-inline: var(--edge);
   overscroll-behavior-x: contain;
   padding-bottom: var(--s-4);
   scrollbar-width: thin;

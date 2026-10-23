@@ -15,18 +15,13 @@ type Props = {
   link: ResolvedLink | null
 }
 
-/** How far the words close up in the stacked phase (1 = fully overlapping). */
-const BUNCH = 0.6
-/** Lowest opacity of the outer words; keeps white-on-violet contrast above 3:1 for large text. */
-const MIN_OPACITY = 0.62
-
-/** Settled indents (vw) — the composition shown at rest and with reduced motion. */
-const SETTLED = [-7, 6, -1, 4]
-
 /**
- * Scroll choreography over the section's travel (progress p from 0 to 1):
- * stack 0–.15 → separate .15–.5 → move outward .5–.75 (≤ 20vw) → settle by .9.
- * The moving spans are the real heading text, so it is read once, in order.
+ * Calm, scroll-lit statement. The section holds still while the visitor scrolls
+ * (about 1.6 extra viewport heights, so it never feels rushed); each word in turn
+ * brightens from the muted ink colour to white and a gold underline draws in
+ * beneath it. Nothing moves sideways. The decorative "@" turns a few degrees.
+ * Unlit words keep the muted ink colour (about 10:1 on violet), so every word is
+ * always readable. Reduced motion: all words lit, no pinning.
  */
 export function KineticWords({ headingId, anchorId, eyebrow, words, supporting, link }: Props) {
   const reduced = useReducedMotion()
@@ -37,35 +32,25 @@ export function KineticWords({ headingId, anchorId, eyebrow, words, supporting, 
   useEffect(() => {
     const spans = wordRefs.current
     if (reduced) {
-      spans.forEach((el) => el && (el.style.cssText = ''))
-      if (atRef.current) atRef.current.style.cssText = ''
+      spans.forEach((el) => el?.style.removeProperty('--lit'))
+      if (atRef.current) atRef.current.style.transform = ''
       return
     }
-    const mid = (words.length - 1) / 2
+    const count = Math.max(1, words.length)
     return subscribeScroll(() => {
       const outer = outerRef.current
       if (!outer) return
       const rect = outer.getBoundingClientRect()
       const travel = rect.height - window.innerHeight
       const p = travel > 0 ? Math.min(1, Math.max(0, -rect.top / travel)) : 1
-      const sep = easeInOut(segment(p, 0.15, 0.5))
-      const out = easeInOut(segment(p, 0.5, 0.75))
-      const settle = easeInOut(segment(p, 0.75, 0.9))
-      const maxSide = window.innerWidth < 768 ? 12 : 20
-
+      // Words light one after another between 10% and 80% of the travel.
+      const span = 0.7 / count
       spans.forEach((el, i) => {
         if (!el) return
-        const lineHeight = el.offsetHeight
-        // Bunched rather than fully overlapping, so every word stays legible.
-        const y = (1 - sep) * (mid - i) * lineHeight * BUNCH
-        const outward = (i % 2 === 0 ? -1 : 1) * maxSide * out
-        const x = outward + ((SETTLED[i] ?? 0) - outward) * settle
-        const opacity = i === Math.round(mid) ? 1 : MIN_OPACITY + (1 - MIN_OPACITY) * sep
-        el.style.transform = `translate3d(${x.toFixed(2)}vw, ${y.toFixed(1)}px, 0)`
-        el.style.opacity = opacity.toFixed(3)
-        el.style.letterSpacing = `${(-0.07 + 0.04 * sep).toFixed(4)}em`
+        const start = 0.1 + i * span
+        el.style.setProperty('--lit', easeInOut(segment(p, start, start + span * 0.9)).toFixed(3))
       })
-      if (atRef.current) atRef.current.style.transform = `translate(-50%, -50%) rotate(${(p * 36 - 18).toFixed(2)}deg) scale(${(0.92 + p * 0.16).toFixed(3)})`
+      if (atRef.current) atRef.current.style.transform = `translate(-50%, -50%) rotate(${(p * 12 - 6).toFixed(2)}deg)`
     })
   }, [reduced, words.length])
 
@@ -86,7 +71,6 @@ export function KineticWords({ headingId, anchorId, eyebrow, words, supporting, 
                     wordRefs.current[i] = el
                   }}
                   className={styles.word}
-                  style={{ '--settled': `${SETTLED[i] ?? 0}vw` } as React.CSSProperties}
                 >
                   {word}
                   {i < words.length - 1 ? ' ' : ''}

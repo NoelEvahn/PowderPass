@@ -7,8 +7,8 @@
 
 .outer { position: relative; }
 
-/* Animated: about one extra viewport of scroll travel for the choreography */
-.section[data-animated] .outer { height: 210vh; }
+/* Animated: about 1.6 extra viewports of scroll travel, so the words light slowly */
+.section[data-animated] .outer { height: 260vh; }
 
 .sticky {
   position: relative;
@@ -35,7 +35,7 @@
   font-weight: 700;
   line-height: 1;
   color: transparent;
-  -webkit-text-stroke: 2px rgb(159 38 181 / 0.55);
+  -webkit-text-stroke: 2px rgb(159 38 181 / 0.28);
   transform: translate(-50%, -50%);
   pointer-events: none;
   user-select: none;
@@ -61,10 +61,30 @@
 }
 
 .word {
+  --lit: 1; /* 0 = muted, 1 = lit; set per word while scrolling */
+
+  position: relative;
   display: block;
-  transform: translate3d(var(--settled), 0, 0);
-  will-change: transform, opacity;
   white-space: nowrap;
+  /* Unlit: dimmed lilac, still above 4.5:1 on violet; lit: white */
+  color: color-mix(in srgb, #fff calc(var(--lit) * 100%), #9a91b4);
+  transition: color 160ms linear;
+}
+
+.section[data-animated] .word { --lit: 0; }
+
+/* Gold underline that draws in as the word lights */
+.word::after {
+  content: '';
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  bottom: 0.04em;
+  height: 0.06em;
+  border-radius: 0.03em;
+  background: var(--c-gold);
+  transform: scaleX(var(--lit));
+  transform-origin: left;
 }
 
 .footer {

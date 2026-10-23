@@ -23,28 +23,32 @@ export function HorizontalChapter({ headingId, header, children, as: List = 'ul'
   const reduced = useReducedMotion()
   const largeEnough = useMediaQuery('(min-width: 1024px) and (min-height: 640px)')
   const items = Children.toArray(children)
-  const pinned = largeEnough && !reduced && items.length > 1
   const outerRef = useRef<HTMLDivElement>(null)
   const viewportRef = useRef<HTMLDivElement>(null)
   const trackRef = useRef<HTMLOListElement & HTMLUListElement>(null)
   const barRef = useRef<HTMLSpanElement>(null)
-  const [measured, setMeasured] = useState(0)
-  const distance = pinned ? measured : 0
+  const [overflow, setOverflow] = useState(0)
+  // Pin only when the row really is wider than the space for it; otherwise it simply sits in the page.
+  const pinned = largeEnough && !reduced && items.length > 1 && overflow > 0
+  const distance = pinned ? overflow : 0
   const afterId = `${headingId}-after`
 
+  // Overflow = row width minus the content box of the viewport (its side padding aligns the row with the page).
   useEffect(() => {
-    if (!pinned) return
     const measure = () => {
       const track = trackRef.current
       const viewport = viewportRef.current
-      if (track && viewport) setMeasured(Math.max(0, track.scrollWidth - viewport.clientWidth))
+      if (!track || !viewport) return
+      const style = getComputedStyle(viewport)
+      const inner = viewport.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight)
+      setOverflow(Math.max(0, Math.ceil(track.scrollWidth - inner)))
     }
     measure()
     const ro = new ResizeObserver(measure)
     if (trackRef.current) ro.observe(trackRef.current)
     if (viewportRef.current) ro.observe(viewportRef.current)
     return () => ro.disconnect()
-  }, [pinned, items.length])
+  }, [items.length])
 
   useEffect(() => {
     const track = trackRef.current
@@ -58,7 +62,6 @@ export function HorizontalChapter({ headingId, header, children, as: List = 'ul'
       const start = outer.getBoundingClientRect().top + window.scrollY
       const p = clamp((window.scrollY - start) / distance)
       track.style.transform = `translate3d(${(-distance * p).toFixed(1)}px, 0, 0)`
-      track.style.setProperty('--p', p.toFixed(4))
       if (barRef.current) barRef.current.style.transform = `scaleX(${p.toFixed(4)})`
     })
   }, [pinned, distance])
@@ -79,12 +82,12 @@ export function HorizontalChapter({ headingId, header, children, as: List = 'ul'
       ref={outerRef}
       className={styles.outer}
       data-pinned={pinned || undefined}
-      style={pinned && distance > 0 ? { height: `calc(100vh + ${distance}px)` } : undefined}
+      style={pinned ? { height: `calc(100vh + ${distance}px)` } : undefined}
     >
       <div className={styles.sticky}>
         <div className={`container ${styles.head}`}>
           {header}
-          {pinned && distance > 0 && (
+          {pinned && (
             <div className={styles.progressRow}>
               <span className={styles.progress} aria-hidden="true">
                 <span ref={barRef} className={styles.progressBar} />
