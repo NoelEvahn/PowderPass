@@ -143,3 +143,41 @@
   height: 8px;
   background: var(--accent);
 }
+
+/* Down-arrow cue under the home hero */
+.cueRow { display: flex; margin-top: var(--s-5); }
+
+.scrollCue {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-3);
+  font-size: var(--fs-meta);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--c-violet);
+  text-decoration: none;
+}
+
+.cueArrow {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--c-line-strong);
+  border-radius: 50%;
+  transition: background-color var(--dur-1), color var(--dur-1), border-color var(--dur-1);
+}
+
+.scrollCue:hover .cueArrow { background: var(--c-violet); border-color: var(--c-violet); color: #fff; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .cueArrow svg { animation: cue-bounce 2s var(--ease-out) infinite; }
+}
+
+@keyframes cue-bounce {
+  0%, 55%, 100% { transform: translateY(0); opacity: 1; }
+  25% { transform: translateY(7px); opacity: 0.6; }
+}
+
+.afterHero { display: block; height: 0; scroll-margin-top: var(--header-h); }

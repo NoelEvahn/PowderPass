@@ -136,7 +136,7 @@ export function JourneyTrack({ headingId, anchorId, eyebrow, heading, intro, pan
               {panels.map((panel, index) => (
                 <li key={panel.id} className={styles.panel} data-panel-index={index} data-accent={panel.accent}>
                   <div className={styles.media}>
-                    <Media media={panel.image} maxSize="feature" sizes="(min-width: 1024px) 34vw, 100vw" className={styles.image} />
+                    <Media eager media={panel.image} maxSize="feature" sizes="(min-width: 1024px) 34vw, 100vw" className={styles.image} />
                   </div>
                   <div className={styles.body}>
                     <p className={styles.stage}>

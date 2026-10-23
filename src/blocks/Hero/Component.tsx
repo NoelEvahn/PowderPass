@@ -1,3 +1,4 @@
+import { ChevronDown } from 'lucide-react'
 import type { HeroBlock as HeroProps } from '@/payload-types'
 import { CmsLinks } from '@/components/ui/CmsLink'
 import { Media } from '@/components/ui/Media'
@@ -46,6 +47,15 @@ export function HeroBlock(props: HeroProps & { isFirst?: boolean }) {
             </div>
           )}
         </div>
+        <div className={`container ${styles.cueRow}`}>
+          <a href="#after-hero" className={styles.scrollCue}>
+            <span className={styles.cueArrow} aria-hidden="true">
+              <ChevronDown size={22} />
+            </span>
+            <span>Scroll to discover</span>
+          </a>
+        </div>
+        <span id="after-hero" className={styles.afterHero} tabIndex={-1} />
       </section>
     )
   }
@@ -55,7 +65,7 @@ export function HeroBlock(props: HeroProps & { isFirst?: boolean }) {
       <section className={styles.compact} aria-labelledby="page-title">
         <div className="container">
           {eyebrow && <p className="eyebrow">{eyebrow}</p>}
-          <h1 id="page-title" className={styles.pageTitle}>
+          <h1 id="page-title" className={styles.pageTitle} data-drift>
             <HeadingLines text={heading} reveal={!isFirst} />
           </h1>
           {intro && <p className={`lead ${styles.pageIntro}`}>{intro}</p>}
@@ -73,7 +83,7 @@ export function HeroBlock(props: HeroProps & { isFirst?: boolean }) {
           {isStage && stageLabel && <p className={styles.stageLabel}>{stageLabel}</p>}
           {!isStage && eyebrow && <p className="eyebrow">{eyebrow}</p>}
           {isStage && eyebrow && <p className="eyebrow">{eyebrow}</p>}
-          <h1 id="page-title" className={styles.pageTitle}>
+          <h1 id="page-title" className={styles.pageTitle} data-drift>
             <HeadingLines text={heading} reveal={!isFirst} />
           </h1>
           {intro && <p className={`lead ${styles.pageIntro}`}>{intro}</p>}

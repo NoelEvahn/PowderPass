@@ -14,6 +14,9 @@ type Props = {
   className?: string
   alt?: string
   fill?: boolean
+  /** Load immediately without raising priority. For images inside scroll-driven or moving scenes, where
+   *  some browsers (notably Safari) never trigger lazy loading because the image starts off screen or hidden. */
+  eager?: boolean
 }
 
 const ORDER: SizeName[] = ['thumbnail', 'card', 'feature', 'hero']
@@ -22,7 +25,7 @@ const ORDER: SizeName[] = ['thumbnail', 'card', 'feature', 'hero']
  * Responsive image from the media library. Uses focal point for cropping,
  * explicit dimensions to prevent layout shift, and lazy loading below the fold.
  */
-export function Media({ media, sizes = '100vw', maxSize = 'feature', priority, className, alt, fill }: Props) {
+export function Media({ media, sizes = '100vw', maxSize = 'feature', priority, className, alt, fill, eager }: Props) {
   if (!media || typeof media !== 'object' || !media.url) return null
   const isImage = media.mimeType?.startsWith('image/')
   if (!isImage) return null
@@ -46,7 +49,7 @@ export function Media({ media, sizes = '100vw', maxSize = 'feature', priority, c
       width={media.width ?? undefined}
       height={media.height ?? undefined}
       alt={alt ?? (decorative ? '' : media.alt)}
-      loading={priority ? 'eager' : 'lazy'}
+      loading={priority || eager ? 'eager' : 'lazy'}
       decoding={priority ? 'sync' : 'async'}
       fetchPriority={priority ? 'high' : undefined}
       className={className}

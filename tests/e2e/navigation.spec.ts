@@ -117,3 +117,12 @@ test('values spiral shows every value with its tagline and no descriptions', asy
   await expect(values).toContainText('Treat everybody the same way')
   await expect(values).not.toContainText('Respecting the rights and status of others')
 })
+
+test('long text opens with a Read more control that expands it', async ({ page }) => {
+  await page.goto('/discover/leadership')
+  await waitForHydration(page)
+  const toggle = page.getByRole('button', { name: /Read more/ }).first()
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false')
+  await toggle.click()
+  await expect(page.getByRole('button', { name: 'Show less' }).first()).toHaveAttribute('aria-expanded', 'true')
+})

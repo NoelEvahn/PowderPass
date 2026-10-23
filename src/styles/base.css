@@ -143,6 +143,25 @@ button { cursor: pointer; }
     transform: scale(1.035);
   }
 
+  /* Word reveal: each word rises out of its own line box, staggered. The heading
+     element itself never animates, so scroll-driven drift can move it freely. */
+  .js [data-reveal='words'],
+  .js [data-reveal='words']:not([data-revealed]) {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  .js [data-reveal='words'] .word-inner {
+    transition: transform 760ms var(--ease-out), opacity 760ms var(--ease-out);
+    transition-delay: calc(var(--w, 0) * 55ms);
+  }
+
+  .js [data-reveal='words']:not([data-revealed]) .word-inner {
+    transform: translate3d(0, 105%, 0) rotate(4deg);
+    opacity: 0;
+  }
+
   /* Curtain: the photo is uncovered from the bottom edge upward */
   .js [data-reveal='clip'] {
     transition: clip-path 900ms var(--ease-out);
@@ -159,6 +178,23 @@ button { cursor: pointer; }
     clip-path: inset(0 0 0 0 round var(--r-lg));
   }
 }
+
+/* Words keep their own clipping box so the reveal reads as rising from a line */
+.word {
+  display: inline-block;
+  overflow: clip;
+  overflow-clip-margin: 0.12em;
+  padding-bottom: 0.08em;
+  margin-bottom: -0.08em;
+  vertical-align: top;
+}
+
+.word-inner { display: inline-block; }
+
+/* Sideways heading drift must never widen the page */
+main { overflow-x: clip; }
+
+[data-drift] { will-change: transform; }
 
 /* Parallax wrapper: fills its frame; ParallaxObserver moves it */
 [data-parallax] {
@@ -196,4 +232,34 @@ html { --mobile-cta-h: 68px; }
 
 @media (min-width: 768px) {
   html { --mobile-cta-h: 0px; }
+}
+
+/* Reading progress line along the top edge */
+.scroll-progress {
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: 60;
+  height: 3px;
+  background: linear-gradient(90deg, var(--c-gold), var(--c-lime) 35%, var(--c-purple) 70%, var(--c-violet));
+  transform: scaleX(0);
+  transform-origin: left;
+  pointer-events: none;
+}
+
+/* Page enter: content settles into place on every page load (transform only, so the hero still paints at once) */
+@media (prefers-reduced-motion: no-preference) {
+  main { animation: page-enter 700ms var(--ease-out) backwards; } /* no fill afterwards: a lasting transform would break fixed and sticky children */
+
+  @keyframes page-enter {
+    from { transform: translate3d(0, 14px, 0); }
+  }
+
+  /* Cross-document page transitions where the browser supports them */
+  @view-transition { navigation: auto; }
+
+  ::view-transition-old(root) { animation: vt-out 260ms var(--ease-out) both; }
+  ::view-transition-new(root) { animation: vt-in 420ms var(--ease-out) both; }
+
+  @keyframes vt-out { to { opacity: 0; transform: translate3d(0, -12px, 0); } }
+  @keyframes vt-in { from { opacity: 0; transform: translate3d(0, 18px, 0); } }
 }

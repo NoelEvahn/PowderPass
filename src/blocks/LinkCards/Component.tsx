@@ -11,14 +11,14 @@ import styles from './LinkCards.module.css'
 /** Whole-card links (no nested controls). Hover and keyboard focus share the same emphasis. */
 type Card = NonNullable<Props['cards']>[number]
 
-function CardLink({ card, isList }: { card: Card; isList: boolean }) {
+function CardLink({ card, isList, eager }: { card: Card; isList: boolean; eager?: boolean }) {
   const link = resolveLink(card.link)
   if (!link) return null
   return (
     <SmartLink href={link.href} newTab={link.newTab} className={isList ? styles.row : styles.card} data-accent={card.accent ?? 'violet'}>
       {!isList && card.media && (
         <span className={styles.media}>
-          <Media media={card.media} maxSize="card" sizes="(min-width: 1024px) 30vw, 100vw" className={styles.image} />
+          <Media eager={eager} media={card.media} maxSize="card" sizes="(min-width: 1024px) 30vw, 100vw" className={styles.image} />
         </span>
       )}
       <span className={styles.body}>
@@ -44,7 +44,7 @@ export function LinkCardsBlock({ eyebrow, heading, intro, style, layout, cards, 
       <Section id={anchorId} labelledBy={headingId} spacing="none">
         <HorizontalChapter headingId={headingId} header={<SectionHeader id={headingId} eyebrow={eyebrow} heading={heading} intro={intro} align="split" />}>
           {visible.map((card, index) => (
-            <CardLink key={card.id ?? index} card={card} isList={false} />
+            <CardLink key={card.id ?? index} card={card} isList={false} eager />
           ))}
         </HorizontalChapter>
       </Section>

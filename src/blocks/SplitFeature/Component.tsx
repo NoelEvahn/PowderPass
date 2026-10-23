@@ -4,6 +4,7 @@ import { CmsLinks } from '@/components/ui/CmsLink'
 import { Media } from '@/components/ui/Media'
 import { Section } from '@/components/ui/Section'
 import styles from './SplitFeature.module.css'
+import { Words } from '@/components/motion/Words'
 
 export function SplitFeatureBlock({ eyebrow, heading, body, media, mediaPosition, background, links, anchorId, id }: Props) {
   const headingId = `split-${id}`
@@ -17,8 +18,8 @@ export function SplitFeatureBlock({ eyebrow, heading, body, media, mediaPosition
         </figure>
         <div className={styles.text}>
           {eyebrow && <p className="eyebrow">{eyebrow}</p>}
-          <h2 id={headingId} className={styles.heading} data-reveal>
-            {heading}
+          <h2 id={headingId} className={styles.heading} data-reveal="words" data-drift>
+            <Words text={heading} />
           </h2>
           <RichText data={body} />
           <CmsLinks links={links} className={styles.actions} />

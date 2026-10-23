@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import styles from './SectionHeader.module.css'
+import { Words } from '@/components/motion/Words'
 
 type Props = {
   id: string
@@ -18,8 +19,8 @@ export function SectionHeader({ id, eyebrow, heading, intro, align = 'start', ch
       <div className={styles.titles}>
         {eyebrow && <p className="eyebrow">{eyebrow}</p>}
         {heading && (
-          <h2 id={id} className={styles.heading} data-reveal>
-            {heading}
+          <h2 id={id} className={styles.heading} data-reveal="words" data-drift>
+            <Words text={heading} />
           </h2>
         )}
       </div>

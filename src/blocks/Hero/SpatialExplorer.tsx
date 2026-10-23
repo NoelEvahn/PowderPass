@@ -197,6 +197,7 @@ export function SpatialExplorer({ slides }: { slides: Slide[] }) {
                 <Media
                   media={slide.image}
                   priority={index === 0}
+                  eager
                   maxSize="feature"
                   sizes="(min-width: 1024px) 34vw, 80vw"
                   className={styles.image}

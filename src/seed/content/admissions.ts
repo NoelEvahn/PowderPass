@@ -169,6 +169,7 @@ export const admissionsPages: PageDef[] = [
       {
         blockType: 'steps',
         heading: 'Three steps',
+        layout: 'horizontal',
         steps: [
           { title: 'Submit the application', body: 'Complete the Application for Admission form, the Medical & Health Record and the Home-School Agreement.' },
           { title: 'Assessment and meeting', body: 'An assessment is arranged once all relevant documentation is received. It includes a meeting with a Head from the section of school your child will enter.' },

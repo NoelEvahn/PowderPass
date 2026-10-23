@@ -1,0 +1,50 @@
+.wrap { display: grid; gap: var(--s-4); justify-items: start; }
+
+.content { scroll-margin-top: calc(var(--header-h) + var(--s-6)); }
+
+/* Collapsed only once scripts run; the fade hints there is more below */
+:global(.js) .wrap:not([data-open]) .content {
+  max-height: 26rem;
+  overflow: hidden;
+  mask-image: linear-gradient(to bottom, #000 62%, transparent);
+}
+
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-3);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--c-violet);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+:global(html:not(.js)) .toggle { display: none; }
+
+.arrow {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--c-violet);
+  color: #fff;
+  transition: transform var(--dur-1) var(--ease-out), background-color var(--dur-1);
+}
+
+.toggle:hover .arrow { background: var(--c-purple); }
+.wrap[data-open] .arrow { transform: rotate(180deg); }
+
+@media (prefers-reduced-motion: no-preference) {
+  .wrap:not([data-open]) .arrow { animation: nudge 1.8s var(--ease-out) infinite; }
+}
+
+@keyframes nudge {
+  0%, 60%, 100% { translate: 0 0; }
+  30% { translate: 0 5px; }
+}
+
+[data-tone='ink'] .toggle { color: #fff; }
+[data-tone='ink'] .arrow { background: var(--c-gold); color: var(--c-violet); }
