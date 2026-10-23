@@ -17,9 +17,11 @@
   font-family: var(--font-body);
   font-size: 1rem;
   font-weight: 600;
+  max-width: 100%;
   line-height: 1.2;
+  text-align: center;
   text-decoration: none;
-  white-space: nowrap;
+  text-wrap: balance; /* long labels wrap on narrow screens instead of overflowing */
   transition:
     background-color var(--dur-1) var(--ease-out),
     color var(--dur-1) var(--ease-out),
@@ -77,4 +79,4 @@
 .button:hover .iconCell,
 .button:focus-visible .iconCell { transform: translateX(3px); }
 
-.text { display: block; }
+.text { display: block; padding-block: var(--s-2); }

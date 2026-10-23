@@ -128,13 +128,12 @@
 
 .media {
   position: relative;
-  min-height: 240px;
   aspect-ratio: 4 / 3;
   background: var(--c-tint-strong);
 }
 
 @media (min-width: 768px) {
-  .media { aspect-ratio: auto; }
+  .media { aspect-ratio: auto; min-height: 240px; }
 }
 
 .image {

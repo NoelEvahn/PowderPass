@@ -9,7 +9,7 @@
 
   position: relative;
   container-type: size;
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 16 / 10;
   perspective: 1400px;
   touch-action: pan-y; /* vertical page scroll always wins; horizontal drags explore */
   user-select: none;

@@ -1,0 +1,14 @@
+# Local Postgres for development: `docker compose up -d`
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: isp
+      POSTGRES_PASSWORD: isp
+      POSTGRES_DB: isp
+    ports:
+      - '5432:5432'
+    volumes:
+      - isp-postgres:/var/lib/postgresql/data
+volumes:
+  isp-postgres:

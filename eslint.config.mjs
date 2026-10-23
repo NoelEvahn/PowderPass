@@ -10,7 +10,7 @@ const eslintConfig = [
     },
   },
   {
-    ignores: ['.next/', 'media/', '.seed-cache/', 'test-results/', 'playwright-report/', 'src/payload-types.ts', 'src/app/(payload)/admin/importMap.js'],
+    ignores: ['.next/', 'media/', 'src/migrations/', '.seed-cache/', 'test-results/', 'playwright-report/', 'src/payload-types.ts', 'src/app/(payload)/admin/importMap.js'],
   },
 ]
 
