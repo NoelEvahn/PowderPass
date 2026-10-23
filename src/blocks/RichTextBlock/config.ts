@@ -19,6 +19,16 @@ export const RichTextBlockConfig: Block = {
         { label: 'Single reading column', value: 'narrow' },
       ],
     },
+    {
+      name: 'size',
+      type: 'select',
+      defaultValue: 'body',
+      options: [
+        { label: 'Body text', value: 'body' },
+        { label: 'Lead statement (large)', value: 'statement' },
+      ],
+      admin: { description: 'Use "Lead statement" sparingly, for a single key sentence such as the school vision.' },
+    },
     { name: 'signature', type: 'text', admin: { description: 'Optional name line, e.g. for a welcome message.' } },
     { name: 'signatureRole', type: 'text', admin: { condition: (_, s) => Boolean(s?.signature) } },
     { name: 'portrait', type: 'upload', relationTo: 'media', admin: { condition: (_, s) => Boolean(s?.signature) } },

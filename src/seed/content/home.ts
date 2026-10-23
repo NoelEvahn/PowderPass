@@ -40,7 +40,7 @@ export const homePage: PageDef = {
       blockType: 'learningJourney',
       eyebrow: 'The learning journey',
       heading: 'Find their next chapter.',
-      intro: 'Each stage builds on the last, from play-based Early Years to A Levels and university guidance. Scroll to move through the four stages.',
+      intro: 'Each stage builds on the last, from play-based Early Years to A Levels and university guidance.',
       programmes: ctx.programmes(),
       horizontal: true,
       anchorId: 'learning-journey',

@@ -88,7 +88,8 @@ export const discoverPages: PageDef[] = [
         eyebrow: 'Vision',
         heading: 'Our vision',
         layout: 'aside',
-        content: rt(p('**To facilitate a thriving school community where all individuals can flourish and positively impact the world around them.**')),
+        size: 'statement',
+        content: rt(p('To facilitate a thriving school community where all individuals can flourish and positively impact the world around them.')),
       },
       {
         blockType: 'richText',

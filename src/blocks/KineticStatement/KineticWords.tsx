@@ -15,6 +15,11 @@ type Props = {
   link: ResolvedLink | null
 }
 
+/** How far the words close up in the stacked phase (1 = fully overlapping). */
+const BUNCH = 0.6
+/** Lowest opacity of the outer words; keeps white-on-violet contrast above 3:1 for large text. */
+const MIN_OPACITY = 0.62
+
 /** Settled indents (vw) — the composition shown at rest and with reduced motion. */
 const SETTLED = [-7, 6, -1, 4]
 
@@ -51,10 +56,11 @@ export function KineticWords({ headingId, anchorId, eyebrow, words, supporting, 
       spans.forEach((el, i) => {
         if (!el) return
         const lineHeight = el.offsetHeight
-        const y = (1 - sep) * (mid - i) * lineHeight
+        // Bunched rather than fully overlapping, so every word stays legible.
+        const y = (1 - sep) * (mid - i) * lineHeight * BUNCH
         const outward = (i % 2 === 0 ? -1 : 1) * maxSide * out
         const x = outward + ((SETTLED[i] ?? 0) - outward) * settle
-        const opacity = i === Math.round(mid) ? 1 : 0.12 + 0.88 * sep
+        const opacity = i === Math.round(mid) ? 1 : MIN_OPACITY + (1 - MIN_OPACITY) * sep
         el.style.transform = `translate3d(${x.toFixed(2)}vw, ${y.toFixed(1)}px, 0)`
         el.style.opacity = opacity.toFixed(3)
         el.style.letterSpacing = `${(-0.07 + 0.04 * sep).toFixed(4)}em`

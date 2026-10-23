@@ -7,10 +7,12 @@
 
 .table {
   width: 100%;
-  min-width: 480px;
+  min-width: 520px;
   border-collapse: collapse;
   font-size: var(--fs-small);
 }
+
+.table[data-columns='2'] { min-width: 0; }
 
 .table th,
 .table td {

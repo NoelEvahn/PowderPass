@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import { Inter, Quicksand } from 'next/font/google'
+import Script from 'next/script'
 import type { ReactNode } from 'react'
 import { Analytics } from '@/components/consent/Analytics'
 import { ConsentProvider } from '@/components/consent/ConsentProvider'
@@ -49,10 +50,10 @@ export default async function FrontendLayout({ children }: { children: ReactNode
 
   return (
     <html lang="en-GB" className={`${quicksand.variable} ${inter.variable}`} suppressHydrationWarning>
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: bootScript }} />
-      </head>
       <body>
+        <Script id="isp-boot" strategy="beforeInteractive">
+          {bootScript}
+        </Script>
         <ConsentProvider>
           <a className="skip-link" href="#main">
             Skip to main content

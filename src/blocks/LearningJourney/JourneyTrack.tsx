@@ -124,6 +124,7 @@ export function JourneyTrack({ headingId, anchorId, eyebrow, heading, intro, pan
                   <span className={styles.progress} aria-hidden="true">
                     <span ref={barRef} className={styles.progressBar} />
                   </span>
+                  <span className="visually-hidden">Scroll down to move through the stages.</span>
                   <a href={`#${skipTargetId}`} className={styles.skip}>
                     Skip the learning journey
                   </a>

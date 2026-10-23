@@ -507,6 +507,10 @@ export interface RichTextBlock {
   };
   layout?: ('aside' | 'narrow') | null;
   /**
+   * Use "Lead statement" sparingly, for a single key sentence such as the school vision.
+   */
+  size?: ('body' | 'statement') | null;
+  /**
    * Optional name line, e.g. for a welcome message.
    */
   signature?: string | null;
@@ -1552,6 +1556,7 @@ export interface RichTextBlockSelect<T extends boolean = true> {
   heading?: T;
   content?: T;
   layout?: T;
+  size?: T;
   signature?: T;
   signatureRole?: T;
   portrait?: T;

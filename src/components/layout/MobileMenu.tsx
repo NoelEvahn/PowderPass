@@ -1,6 +1,6 @@
 'use client'
 import { ChevronDown, Search } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { ResolvedLink } from '@/lib/links'
 import { Button } from '../ui/Button'
 import { Dialog } from '../ui/Dialog'
@@ -19,6 +19,11 @@ type Props = {
 
 export function MobileMenu({ open, onClose, onSearch, groups, utility, cta }: Props) {
   const [expanded, setExpanded] = useState<string | null>(null)
+
+  // Start each visit to the menu with every group collapsed.
+  useEffect(() => {
+    if (!open) setExpanded(null)
+  }, [open])
 
   return (
     <Dialog open={open} onClose={onClose} title="Menu" hideTitle variant="fullscreen" className={styles.dialog}>

@@ -12,7 +12,7 @@ export function DataTableBlock({ eyebrow, heading, intro, caption, columns, rows
         <SectionHeader id={headingId} eyebrow={eyebrow} heading={heading} intro={intro} />
         {/* The wrapper scrolls horizontally on narrow screens instead of the page. */}
         <div className={styles.scroller} role="region" aria-label={caption} tabIndex={0}>
-          <table className={styles.table}>
+          <table className={styles.table} data-columns={cols.length}>
             <caption className="visually-hidden">{caption}</caption>
             <thead>
               <tr>

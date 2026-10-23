@@ -3,7 +3,7 @@ import { RichText } from '@/components/RichText'
 import { Media } from '@/components/ui/Media'
 import styles from './RichTextBlock.module.css'
 
-export function RichTextBlock({ eyebrow, heading, content, layout, signature, signatureRole, portrait, anchorId, id }: Props) {
+export function RichTextBlock({ eyebrow, heading, content, layout, size, signature, signatureRole, portrait, anchorId, id }: Props) {
   const headingId = `text-${id}`
   return (
     <section id={anchorId ?? undefined} className={styles.section} aria-labelledby={heading ? headingId : undefined}>
@@ -24,7 +24,7 @@ export function RichTextBlock({ eyebrow, heading, content, layout, signature, si
           </div>
         )}
         <div className={styles.body}>
-          <RichText data={content} />
+          <RichText data={content} className={size === 'statement' ? styles.statement : undefined} />
           {signature && (
             <p className={styles.signature}>
               <span className={styles.name}>{signature}</span>

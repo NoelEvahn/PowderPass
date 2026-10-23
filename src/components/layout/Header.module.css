@@ -169,8 +169,16 @@
   .menuButton { display: none; }
 }
 
+/* On very small screens the label is visually hidden but still names the button. */
 @media (max-width: 420px) {
-  .menuButton span { display: none; }
+  .menuButton span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
 }
 
 .cta {

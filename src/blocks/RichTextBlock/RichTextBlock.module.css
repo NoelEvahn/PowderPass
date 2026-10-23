@@ -29,3 +29,15 @@
 .signature { display: grid; gap: 2px; padding-top: var(--s-4); border-top: 1px solid var(--c-line); max-width: var(--measure); }
 .name { font-family: var(--font-display); font-weight: 700; font-size: 1.25rem; color: var(--c-violet); }
 .role { color: var(--c-text-muted); font-size: var(--fs-small); }
+
+.statement {
+  font-family: var(--font-display);
+  font-size: clamp(1.75rem, 1.2rem + 2vw, 3rem);
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: var(--c-violet);
+  max-width: 24ch;
+}
+
+.statement strong { font-weight: 700; }
