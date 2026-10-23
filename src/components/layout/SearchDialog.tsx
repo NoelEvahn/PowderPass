@@ -2,7 +2,7 @@
 import { ArrowRight, Loader2, Search } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useEffect, useId, useRef, useState } from 'react'
+import { useEffect, useId, useState } from 'react'
 import { Dialog } from '../ui/Dialog'
 import styles from './SearchDialog.module.css'
 
@@ -32,13 +32,10 @@ export function SearchDialog({ open, onClose }: { open: boolean; onClose: () => 
 /** Live search with keyboard navigation (arrow keys + Enter) over the results list. */
 function SearchPanel({ onNavigate }: { onNavigate: () => void }) {
   const router = useRouter()
-  const inputRef = useRef<HTMLInputElement>(null)
   const listId = useId()
   const [query, setQuery] = useState('')
   const [state, setState] = useState<State>({ status: 'idle', results: [] })
   const [active, setActive] = useState(-1)
-
-  useEffect(() => inputRef.current?.focus(), [])
 
   useEffect(() => {
     const q = query.trim()
@@ -102,7 +99,7 @@ function SearchPanel({ onNavigate }: { onNavigate: () => void }) {
         </label>
         <Search size={22} aria-hidden="true" className={styles.icon} />
         <input
-          ref={inputRef}
+          data-autofocus
           id={`${listId}-input`}
           name="q"
           type="search"

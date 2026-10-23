@@ -3,7 +3,8 @@ import { getPayloadClient } from '@/lib/payload'
 import { STORIES_BASE_PATH } from '@/lib/routes'
 import { siteUrl } from '@/lib/seo'
 
-export const revalidate = 3600
+// Rendered on request so builds never need a database connection.
+export const dynamic = 'force-dynamic'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const payload = await getPayloadClient()

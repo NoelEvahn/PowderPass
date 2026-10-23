@@ -35,7 +35,9 @@ export function Dialog({ open, onClose, title, hideTitle, children, variant = 'p
       opener.current = document.activeElement
       dialog.showModal()
       document.documentElement.dataset.dialogOpen = ''
-      initialFocus?.current?.focus()
+      // showModal() focuses the first focusable element; content can request a better target.
+      const target = initialFocus?.current ?? dialog.querySelector<HTMLElement>('[data-autofocus]')
+      target?.focus()
     } else if (!open && dialog.open) {
       dialog.close()
     }

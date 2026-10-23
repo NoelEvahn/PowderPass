@@ -39,6 +39,8 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  // Import only the icons actually used instead of the whole Lucide set.
+  experimental: { optimizePackageImports: ['lucide-react'] },
   async headers() {
     return [{ source: '/:path*', headers: securityHeaders }]
   },

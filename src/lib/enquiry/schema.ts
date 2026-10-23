@@ -1,4 +1,4 @@
-import { z } from 'zod'
+import * as z from 'zod/mini'
 
 export const FORM_TYPES = ['enquiry', 'visit', 'open-day', 'contact'] as const
 export const STAGES = ['early-years', 'primary', 'secondary', 'sixth-form', 'unsure'] as const
@@ -19,32 +19,48 @@ export function intendedStartOptions(now = new Date()): string[] {
   return [`As soon as possible (${label(y)})`, `Academic year ${label(y + 1)}`, `Academic year ${label(y + 2)}`, 'Later / not sure yet']
 }
 
-const trimmed = (max: number) => z.string().trim().max(max, `Please keep this under ${max} characters.`)
+const MAX = (n: number) => z.maxLength(n, `Please keep this under ${n} characters.`)
+const optionalText = (max: number) => z._default(z.optional(z.string().check(z.trim(), MAX(max))), '')
 
-/** One schema validates in the browser (for instant feedback) and again on the server (authoritative). */
+/**
+ * One schema validates in the browser (for instant feedback) and again on the
+ * server (authoritative). zod/mini keeps the browser bundle small.
+ */
 export const enquirySchema = z
   .object({
     formType: z.enum(FORM_TYPES),
-    name: trimmed(120).min(2, 'Please enter your name.'),
-    email: trimmed(200).min(1, 'Please enter your email address.').pipe(z.email('Please enter a valid email address, like name@example.com.')),
-    phone: trimmed(25)
-      .refine((v) => v === '' || /^[+()\d\s-]{6,25}$/.test(v), 'Please enter a valid phone number, including the country code if outside Malaysia.')
-      .optional()
-      .default(''),
-    stage: z.union([z.enum(STAGES), z.literal('')]).optional().default(''),
-    intendedStart: trimmed(80).optional().default(''),
-    message: trimmed(2000).optional().default(''),
-    consentPrivacy: z.literal('on', { message: 'Please confirm you have read the privacy notice.' }),
-    consentUpdates: z.literal('on').optional(),
+    name: z.string().check(z.trim(), MAX(120), z.minLength(2, 'Please enter your name.')),
+    email: z
+      .string()
+      .check(z.trim(), MAX(200), z.minLength(1, 'Please enter your email address.'), z.email('Please enter a valid email address, like name@example.com.')),
+    phone: z._default(
+      z.optional(
+        z
+          .string()
+          .check(
+            z.trim(),
+            MAX(25),
+            z.refine((v) => v === '' || /^[+()\d\s-]{6,25}$/.test(v), 'Please enter a valid phone number, including the country code if outside Malaysia.'),
+          ),
+      ),
+      '',
+    ),
+    stage: z._default(z.optional(z.union([z.enum(STAGES), z.literal('')])), ''),
+    intendedStart: optionalText(80),
+    message: optionalText(2000),
+    consentPrivacy: z.literal('on', 'Please confirm you have read the privacy notice.'),
+    consentUpdates: z.optional(z.literal('on')),
   })
-  .superRefine((data, ctx) => {
-    if (data.formType !== 'contact' && !data.stage) {
-      ctx.addIssue({ code: 'custom', path: ['stage'], message: 'Please choose the stage you are interested in.' })
-    }
-    if (data.formType === 'contact' && data.message.length < 10) {
-      ctx.addIssue({ code: 'custom', path: ['message'], message: 'Please tell us how we can help (at least 10 characters).' })
-    }
-  })
+  .check(
+    z.superRefine((data, ctx) => {
+      if (data.formType !== 'contact' && !data.stage) {
+        ctx.issues.push({ code: 'custom', path: ['stage'], message: 'Please choose the stage you are interested in.', input: data.stage })
+      }
+      if (data.formType === 'contact' && data.message.length < 10) {
+        ctx.issues.push({ code: 'custom', path: ['message'], message: 'Please tell us how we can help (at least 10 characters).', input: data.message })
+      }
+    }),
+  )
 
 export type EnquiryInput = z.infer<typeof enquirySchema>
 export type FieldName = 'name' | 'email' | 'phone' | 'stage' | 'intendedStart' | 'message' | 'consentPrivacy'

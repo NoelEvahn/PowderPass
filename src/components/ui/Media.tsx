@@ -1,4 +1,5 @@
 /* eslint-disable @next/next/no-img-element -- Payload generates responsive WebP sizes; next/image would re-encode them. */
+import { preload } from 'react-dom'
 import type { Media as MediaDoc } from '@/payload-types'
 
 type SizeName = 'thumbnail' | 'card' | 'feature' | 'hero'
@@ -33,6 +34,9 @@ export function Media({ media, sizes = '100vw', maxSize = 'feature', priority, c
   const fallback = candidates.at(-1)?.url ?? media.url
   const objectPosition = `${media.focalX ?? 50}% ${media.focalY ?? 50}%`
   const decorative = media.alt?.trim().toLowerCase() === 'decorative'
+
+  // Above-the-fold images are requested from the document head, before scripts and styles finish.
+  if (priority) preload(fallback, { as: 'image', imageSrcSet: srcSet || undefined, imageSizes: srcSet ? sizes : undefined, fetchPriority: 'high' })
 
   return (
     <img

@@ -4,13 +4,17 @@ import { Media } from '@/components/ui/Media'
 import { SpatialExplorer } from './SpatialExplorer'
 import styles from './Hero.module.css'
 
-const HeadingLines = ({ text }: { text: string }) => (
+/**
+ * Heading split into lines. Only heroes further down a page animate in: the first
+ * hero is above the fold and must paint immediately (it is usually the LCP element).
+ */
+const HeadingLines = ({ text, reveal }: { text: string; reveal: boolean }) => (
   <>
     {text
       .split('\n')
       .filter(Boolean)
       .map((line, index) => (
-        <span key={index} className={styles.line} data-reveal style={{ '--reveal-index': index } as React.CSSProperties}>
+        <span key={index} className={styles.line} data-reveal={reveal || undefined} style={{ '--reveal-index': index } as React.CSSProperties}>
           {line}
         </span>
       ))}
@@ -30,7 +34,7 @@ export function HeroBlock(props: HeroProps & { isFirst?: boolean }) {
           <div className={styles.homeText}>
             {eyebrow && <p className="eyebrow">{eyebrow}</p>}
             <h1 id="page-title" className={styles.homeTitle}>
-              <HeadingLines text={heading} />
+              <HeadingLines text={heading} reveal={!isFirst} />
             </h1>
             {intro && <p className={styles.homeIntro}>{intro}</p>}
             <CmsLinks links={links} className={styles.actions} />
@@ -52,7 +56,7 @@ export function HeroBlock(props: HeroProps & { isFirst?: boolean }) {
         <div className="container">
           {eyebrow && <p className="eyebrow">{eyebrow}</p>}
           <h1 id="page-title" className={styles.pageTitle}>
-            <HeadingLines text={heading} />
+            <HeadingLines text={heading} reveal={!isFirst} />
           </h1>
           {intro && <p className={`lead ${styles.pageIntro}`}>{intro}</p>}
           <CmsLinks links={links} className={styles.actions} />
@@ -70,14 +74,14 @@ export function HeroBlock(props: HeroProps & { isFirst?: boolean }) {
           {!isStage && eyebrow && <p className="eyebrow">{eyebrow}</p>}
           {isStage && eyebrow && <p className="eyebrow">{eyebrow}</p>}
           <h1 id="page-title" className={styles.pageTitle}>
-            <HeadingLines text={heading} />
+            <HeadingLines text={heading} reveal={!isFirst} />
           </h1>
           {intro && <p className={`lead ${styles.pageIntro}`}>{intro}</p>}
           <CmsLinks links={links} className={styles.actions} />
           {factLine && <p className={styles.factLine}>{factLine}</p>}
         </div>
         {media && (
-          <figure className={styles.pageMedia} data-reveal="media">
+          <figure className={styles.pageMedia} data-reveal={isFirst ? undefined : 'media'}>
             <Media
               media={media}
               priority={isFirst}
