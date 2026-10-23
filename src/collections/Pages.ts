@@ -27,6 +27,18 @@ const computePath: CollectionBeforeChangeHook = async ({ data, req, originalDoc 
   return data
 }
 
+/** Give each section a readable name in the editor (from its heading) unless an editor has named it. */
+const nameSections: CollectionBeforeChangeHook = ({ data }) => {
+  if (Array.isArray(data.layout)) {
+    data.layout = data.layout.map((block: Record<string, unknown>) => {
+      if (block.blockName) return block
+      const source = [block.heading, block.title, block.eyebrow, block.label].find((v) => typeof v === 'string' && v.trim())
+      return source ? { ...block, blockName: String(source).split('\n')[0].slice(0, 60) } : block
+    })
+  }
+  return data
+}
+
 /** When a page moves, re-save its children so their paths follow. */
 const updateChildPaths: CollectionAfterChangeHook = async ({ doc, previousDoc, req }) => {
   if (!previousDoc || previousDoc.path === doc.path) return doc
@@ -83,6 +95,8 @@ export const Pages: CollectionConfig = {
           fields: [
             {
               name: 'layout',
+              label: 'Sections',
+              labels: { singular: 'Section', plural: 'Sections' },
               type: 'blocks',
               blocks: pageBlocks(),
               admin: { initCollapsed: true, description: 'Add, remove and drag sections to reorder them.' },
@@ -129,7 +143,7 @@ export const Pages: CollectionConfig = {
     },
   ],
   hooks: {
-    beforeChange: [computePath, searchIndexHook('layout', 'meta'), preventContributorPublish],
+    beforeChange: [computePath, nameSections, searchIndexHook('layout', 'meta'), preventContributorPublish],
     afterChange: [updateChildPaths, revalidateAfterChange],
     afterDelete: [revalidateAfterDelete],
   },

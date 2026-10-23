@@ -1,6 +1,6 @@
 .badge {
   position: fixed;
-  top: var(--s-3);
+  bottom: calc(var(--mobile-cta-h) + var(--s-3));
   left: 50%;
   z-index: 90;
   display: inline-flex;

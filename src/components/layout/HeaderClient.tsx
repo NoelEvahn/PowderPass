@@ -28,11 +28,13 @@ export function HeaderClient({ groups, utility, cta, schoolName }: Props) {
   const navRef = useRef<HTMLDivElement>(null)
   const baseId = useId()
 
-  // Close panels on navigation.
-  useEffect(() => {
+  // Close panels on navigation (adjusting state during render, as React recommends).
+  const [lastPath, setLastPath] = useState(pathname)
+  if (pathname !== lastPath) {
+    setLastPath(pathname)
     setOpenId(null)
     setMenuOpen(false)
-  }, [pathname])
+  }
 
   useEffect(() => {
     const onScroll = () => setCompact(window.scrollY > COMPACT_AFTER)

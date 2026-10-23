@@ -1,3 +1,4 @@
+import 'dotenv/config'
 import { defineConfig, devices } from '@playwright/test'
 
 /**
@@ -21,6 +22,7 @@ export default defineConfig({
   },
   projects: [
     { name: 'desktop', use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 900 }, launchOptions } },
-    { name: 'mobile', use: { ...devices['Pixel 7'], launchOptions } },
+    // API-level role checks are device-independent and share test accounts, so they run once.
+    { name: 'mobile', use: { ...devices['Pixel 7'], launchOptions }, testIgnore: /cms-roles/ },
   ],
 })

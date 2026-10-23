@@ -42,10 +42,7 @@ function SearchPanel({ onNavigate }: { onNavigate: () => void }) {
 
   useEffect(() => {
     const q = query.trim()
-    if (q.length < 2) {
-      setState({ status: 'idle', results: [] })
-      return
-    }
+    if (q.length < 2) return
     const controller = new AbortController()
     const timer = setTimeout(async () => {
       setState((s) => ({ ...s, status: 'loading' }))
@@ -71,20 +68,23 @@ function SearchPanel({ onNavigate }: { onNavigate: () => void }) {
   }
 
   const onKeyDown = (event: React.KeyboardEvent) => {
-    const count = state.results.length
+    const results = query.trim().length < 2 ? [] : state.results
+    const count = results.length
     if (event.key === 'ArrowDown' && count) {
       event.preventDefault()
       setActive((i) => (i + 1) % count)
     } else if (event.key === 'ArrowUp' && count) {
       event.preventDefault()
       setActive((i) => (i <= 0 ? count - 1 : i - 1))
-    } else if (event.key === 'Enter' && active >= 0 && state.results[active]) {
+    } else if (event.key === 'Enter' && active >= 0 && results[active]) {
       event.preventDefault()
-      go(state.results[active].href)
+      go(results[active].href)
     }
   }
 
   const q = query.trim()
+  // Short queries always show the shortcuts, whatever the last response was.
+  const view: State = q.length < 2 ? { status: 'idle', results: [] } : state
 
   return (
     <div className={styles.panel}>
@@ -112,16 +112,16 @@ function SearchPanel({ onNavigate }: { onNavigate: () => void }) {
           onChange={(event) => setQuery(event.target.value)}
           onKeyDown={onKeyDown}
           role="combobox"
-          aria-expanded={state.results.length > 0}
+          aria-expanded={view.results.length > 0}
           aria-controls={listId}
           aria-activedescendant={active >= 0 ? `${listId}-opt-${active}` : undefined}
           className={styles.input}
         />
-        {state.status === 'loading' && <Loader2 size={20} className={styles.spinner} aria-hidden="true" />}
+        {view.status === 'loading' && <Loader2 size={20} className={styles.spinner} aria-hidden="true" />}
       </form>
 
       <p className="visually-hidden" role="status" aria-live="polite">
-        {state.status === 'done' ? `${state.results.length} results` : state.status === 'error' ? state.message : ''}
+        {view.status === 'done' ? `${view.results.length} results` : view.status === 'error' ? view.message : ''}
       </p>
 
       {q.length < 2 && (
@@ -139,9 +139,9 @@ function SearchPanel({ onNavigate }: { onNavigate: () => void }) {
         </div>
       )}
 
-      {state.status === 'error' && <p className={styles.message}>{state.message} Try again, or use the menu.</p>}
+      {view.status === 'error' && <p className={styles.message}>{view.message} Try again, or use the menu.</p>}
 
-      {state.status === 'done' && state.results.length === 0 && (
+      {view.status === 'done' && view.results.length === 0 && (
         <div className={styles.message}>
           <p>
             No results for “{q}”. Try a broader word such as “fees”, “Primary” or “visit”, or{' '}
@@ -153,10 +153,10 @@ function SearchPanel({ onNavigate }: { onNavigate: () => void }) {
         </div>
       )}
 
-      {state.results.length > 0 && (
+      {view.results.length > 0 && (
         <>
           <ul id={listId} role="listbox" aria-label="Search results" className={styles.results}>
-            {state.results.map((result, index) => (
+            {view.results.map((result, index) => (
               <li key={result.href} id={`${listId}-opt-${index}`} role="option" aria-selected={index === active}>
                 <Link href={result.href} onClick={onNavigate} className={styles.result} tabIndex={-1} data-active={index === active || undefined}>
                   <span className={styles.type}>{result.type}</span>

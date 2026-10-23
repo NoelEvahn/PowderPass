@@ -45,20 +45,18 @@ export function JourneyTrack({ headingId, anchorId, eyebrow, heading, intro, pan
   const viewportRef = useRef<HTMLDivElement>(null)
   const trackRef = useRef<HTMLOListElement>(null)
   const barRef = useRef<HTMLSpanElement>(null)
-  const [distance, setDistance] = useState(0)
+  const [measured, setMeasured] = useState(0)
+  const distance = pinned ? measured : 0
   const [activeIndex, setActiveIndex] = useState(0)
   const skipTargetId = `${headingId}-after`
 
   // Measure overflow; re-measure when layout, fonts or images change size.
   useEffect(() => {
-    if (!pinned) {
-      setDistance(0)
-      return
-    }
+    if (!pinned) return
     const measure = () => {
       const track = trackRef.current
       const viewport = viewportRef.current
-      if (track && viewport) setDistance(Math.max(0, track.scrollWidth - viewport.clientWidth))
+      if (track && viewport) setMeasured(Math.max(0, track.scrollWidth - viewport.clientWidth))
     }
     measure()
     const ro = new ResizeObserver(measure)

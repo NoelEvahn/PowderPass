@@ -20,7 +20,7 @@ const csp = [
   "img-src 'self' data: blob: https://www.google-analytics.com https://www.googletagmanager.com",
   "font-src 'self' data:",
   "connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com",
-  'frame-src https://www.google.com https://maps.google.com',
+  "frame-src 'self' https://www.google.com https://maps.google.com",
   "frame-ancestors 'self'",
   "base-uri 'self'",
   "form-action 'self'",

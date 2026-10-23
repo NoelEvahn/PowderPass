@@ -24,45 +24,55 @@ const FIELD_ORDER: FieldName[] = ['name', 'email', 'phone', 'stage', 'intendedSt
  * on submit, preserved values after failure, and a pending state that blocks
  * duplicate submissions. Works without JavaScript via the server action.
  */
+function FieldError({ id, message }: { id: string; message?: string }) {
+  if (!message) return null
+  return (
+    <p id={id} className={styles.error}>
+      <AlertCircle size={16} aria-hidden="true" /> {message}
+    </p>
+  )
+}
+
+const valuesOf = (form: HTMLFormElement | null) => {
+  if (!form) return {}
+  const data = new FormData(form)
+  return Object.fromEntries(['formType', ...FIELD_ORDER].map((k) => [k, (data.get(k) as string | null) ?? undefined]))
+}
+
 export function EnquiryForm({ formType, startOptions, fallbackEmail }: Props) {
   const [state, action, pending] = useActionState<EnquiryState, FormData>(submitEnquiry, { status: 'idle' })
   const pathname = usePathname()
   const uid = useId()
-  const formRef = useRef<HTMLFormElement>(null)
   const summaryRef = useRef<HTMLDivElement>(null)
   const successRef = useRef<HTMLDivElement>(null)
+  const startedAtRef = useRef<HTMLInputElement>(null)
   const [clientErrors, setClientErrors] = useState<Partial<Record<FieldName, string>>>({})
   const [touched, setTouched] = useState<Set<FieldName>>(new Set())
-  const [showSummary, setShowSummary] = useState(false)
-  const [startedAt, setStartedAt] = useState(0)
-  const startedTracking = useRef(false)
+  const [submitted, setSubmitted] = useState(false)
+  const [interacted, setInteracted] = useState(false)
 
-  useEffect(() => setStartedAt(Date.now()), [])
+  // Record when the form appeared; the server rejects implausibly fast (automated) submissions.
+  useEffect(() => {
+    if (startedAtRef.current) startedAtRef.current.value = String(Date.now())
+  }, [])
 
   const serverErrors = state.status === 'invalid' ? state.errors : {}
   const errors: Partial<Record<FieldName, string>> = { ...serverErrors, ...clientErrors }
   const values = state.status === 'invalid' || state.status === 'error' ? state.values : {}
+  const errorIds = FIELD_ORDER.filter((name) => errors[name])
+  const showSummary = submitted && (errorIds.length > 0 || state.status === 'error')
 
+  // Move focus to the outcome so screen-reader and keyboard users hear it immediately.
   useEffect(() => {
-    if (state.status === 'invalid' || state.status === 'error') {
-      setShowSummary(true)
-      requestAnimationFrame(() => summaryRef.current?.focus())
-    }
+    if (state.status === 'invalid' || state.status === 'error') summaryRef.current?.focus()
     if (state.status === 'success') {
       successRef.current?.focus()
       trackEvent('enquiry_submitted', { form_type: formType })
     }
   }, [state, formType])
 
-  const currentValues = () => {
-    const form = formRef.current
-    if (!form) return {}
-    const data = new FormData(form)
-    return Object.fromEntries(['formType', ...FIELD_ORDER].map((k) => [k, (data.get(k) as string | null) ?? undefined]))
-  }
-
-  const revalidateField = (name: FieldName) => {
-    const { errors: next } = validate(currentValues())
+  const revalidateField = (name: FieldName, form: HTMLFormElement | null) => {
+    const { errors: next } = validate(valuesOf(form))
     setClientErrors((prev) => {
       const copy = { ...prev }
       if (next?.[name]) copy[name] = next[name]
@@ -71,26 +81,26 @@ export function EnquiryForm({ formType, startOptions, fallbackEmail }: Props) {
     })
   }
 
-  const onBlur = (name: FieldName) => {
+  const onBlur = (name: FieldName, form: HTMLFormElement | null) => {
     setTouched((prev) => new Set(prev).add(name))
-    revalidateField(name)
+    revalidateField(name, form)
   }
 
-  const onChange = (name: FieldName) => {
-    if (!startedTracking.current) {
-      startedTracking.current = true
+  const onChange = (name: FieldName, form: HTMLFormElement | null) => {
+    if (!interacted) {
+      setInteracted(true)
       trackEvent('enquiry_started', { form_type: formType })
     }
-    if (touched.has(name) || errors[name]) revalidateField(name)
+    if (touched.has(name) || errors[name]) revalidateField(name, form)
   }
 
   const onSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    const { errors: next } = validate(currentValues())
+    setSubmitted(true)
+    const { errors: next } = validate(valuesOf(event.currentTarget))
     if (next) {
       event.preventDefault()
       setClientErrors(next)
       setTouched(new Set(FIELD_ORDER))
-      setShowSummary(true)
       requestAnimationFrame(() => summaryRef.current?.focus())
     } else {
       setClientErrors({})
@@ -113,22 +123,16 @@ export function EnquiryForm({ formType, startOptions, fallbackEmail }: Props) {
   }
 
   const id = (name: string) => `${uid}-${name}`
-  const errorIds = FIELD_ORDER.filter((name) => errors[name])
+  type Control = HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
   const fieldProps = (name: FieldName) => ({
     id: id(name),
     name,
     'aria-invalid': errors[name] ? true : undefined,
     'aria-describedby': [errors[name] ? id(`${name}-error`) : '', id(`${name}-hint`)].filter(Boolean).join(' ') || undefined,
-    onBlur: () => onBlur(name),
-    onChange: () => onChange(name),
+    onBlur: (event: React.FocusEvent<Control>) => onBlur(name, event.currentTarget.form),
+    onChange: (event: React.ChangeEvent<Control>) => onChange(name, event.currentTarget.form),
     defaultValue: values[name],
   })
-  const ErrorText = ({ name }: { name: FieldName }) =>
-    errors[name] ? (
-      <p id={id(`${name}-error`)} className={styles.error}>
-        <AlertCircle size={16} aria-hidden="true" /> {errors[name]}
-      </p>
-    ) : null
 
   const needsStage = formType !== 'contact'
   const labels: Record<FieldName, string> = {
@@ -142,12 +146,12 @@ export function EnquiryForm({ formType, startOptions, fallbackEmail }: Props) {
   }
 
   return (
-    <form ref={formRef} action={action} onSubmit={onSubmit} noValidate className={styles.form} aria-describedby={id('intro')}>
+    <form action={action} onSubmit={onSubmit} noValidate className={styles.form} aria-describedby={id('intro')}>
       <p id={id('intro')} className={styles.small}>
         All fields are required unless marked optional. Please do not include medical details, reports or passport information here.
       </p>
 
-      {showSummary && (errorIds.length > 0 || state.status === 'error') && (
+      {showSummary && (
         <div ref={summaryRef} tabIndex={-1} className={styles.summary} role="alert">
           {state.status === 'error' && errorIds.length === 0 ? (
             <p>{state.message}</p>
@@ -176,7 +180,7 @@ export function EnquiryForm({ formType, startOptions, fallbackEmail }: Props) {
 
       <input type="hidden" name="formType" value={formType} />
       <input type="hidden" name="sourcePath" value={pathname} />
-      <input type="hidden" name="startedAt" value={startedAt} />
+      <input ref={startedAtRef} type="hidden" name="startedAt" defaultValue="" />
       {/* Honeypot: hidden from people and assistive tech; bots tend to fill it. */}
       <div className={styles.honeypot} aria-hidden="true">
         <label htmlFor={id('company_website')}>Leave this empty</label>
@@ -187,12 +191,12 @@ export function EnquiryForm({ formType, startOptions, fallbackEmail }: Props) {
         <div className={styles.field}>
           <label htmlFor={id('name')}>{labels.name}</label>
           <input type="text" autoComplete="name" {...fieldProps('name')} />
-          <ErrorText name="name" />
+          <FieldError id={id('name-error')} message={errors.name} />
         </div>
         <div className={styles.field}>
           <label htmlFor={id('email')}>{labels.email}</label>
           <input type="email" autoComplete="email" inputMode="email" {...fieldProps('email')} />
-          <ErrorText name="email" />
+          <FieldError id={id('email-error')} message={errors.email} />
         </div>
       </div>
 
@@ -205,7 +209,7 @@ export function EnquiryForm({ formType, startOptions, fallbackEmail }: Props) {
           <p id={id('phone-hint')} className={styles.hint}>
             Include the country code if outside Malaysia.
           </p>
-          <ErrorText name="phone" />
+          <FieldError id={id('phone-error')} message={errors.phone} />
         </div>
         {needsStage && (
           <div className={styles.field}>
@@ -218,7 +222,7 @@ export function EnquiryForm({ formType, startOptions, fallbackEmail }: Props) {
                 </option>
               ))}
             </select>
-            <ErrorText name="stage" />
+            <FieldError id={id('stage-error')} message={errors.stage} />
           </div>
         )}
       </div>
@@ -236,7 +240,7 @@ export function EnquiryForm({ formType, startOptions, fallbackEmail }: Props) {
               </option>
             ))}
           </select>
-          <ErrorText name="intendedStart" />
+          <FieldError id={id('intendedStart-error')} message={errors.intendedStart} />
         </div>
       )}
 
@@ -248,7 +252,7 @@ export function EnquiryForm({ formType, startOptions, fallbackEmail }: Props) {
         <p id={id('message-hint')} className={styles.hint}>
           {formType === 'visit' ? 'Tell us which days or times usually suit you for a tour.' : 'Up to 2,000 characters.'}
         </p>
-        <ErrorText name="message" />
+        <FieldError id={id('message-error')} message={errors.message} />
       </div>
 
       <div className={styles.checks}>
@@ -260,14 +264,14 @@ export function EnquiryForm({ formType, startOptions, fallbackEmail }: Props) {
             aria-invalid={errors.consentPrivacy ? true : undefined}
             aria-describedby={errors.consentPrivacy ? id('consentPrivacy-error') : undefined}
             defaultChecked={values.consentPrivacy === 'on'}
-            onChange={() => onChange('consentPrivacy')}
-            onBlur={() => onBlur('consentPrivacy')}
+            onChange={(event) => onChange('consentPrivacy', event.currentTarget.form)}
+            onBlur={(event) => onBlur('consentPrivacy', event.currentTarget.form)}
           />
           <label htmlFor={id('consentPrivacy')}>
             I have read the <Link href="/privacy">privacy notice</Link> and agree that ISP may use these details to respond to my enquiry.
           </label>
         </div>
-        <ErrorText name="consentPrivacy" />
+        <FieldError id={id('consentPrivacy-error')} message={errors.consentPrivacy} />
         <div className={styles.check}>
           <input type="checkbox" id={id('consentUpdates')} name="consentUpdates" defaultChecked={values.consentUpdates === 'on'} />
           <label htmlFor={id('consentUpdates')}>

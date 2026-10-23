@@ -1,5 +1,5 @@
 import type { CollectionConfig } from 'payload'
-import { canEditContent, canPublishContent } from '@/access'
+import { canPublishContent } from '@/access'
 import { contentBlocks } from '@/blocks'
 import { revalidateAfterChange, revalidateAfterDelete } from '@/hooks/revalidate'
 
@@ -20,7 +20,7 @@ export const ReusableSections: CollectionConfig = {
   },
   fields: [
     { name: 'title', type: 'text', required: true, admin: { description: 'For editors only.' } },
-    { name: 'layout', type: 'blocks', blocks: contentBlocks(), minRows: 1, admin: { initCollapsed: true } },
+    { name: 'layout', label: 'Sections', labels: { singular: 'Section', plural: 'Sections' }, type: 'blocks', blocks: contentBlocks(), minRows: 1, admin: { initCollapsed: true } },
   ],
   hooks: {
     afterChange: [revalidateAfterChange],

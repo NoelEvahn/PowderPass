@@ -24,7 +24,9 @@ export function Dialog({ open, onClose, title, hideTitle, children, variant = 'p
   const ref = useRef<HTMLDialogElement>(null)
   const opener = useRef<Element | null>(null)
   const onCloseRef = useRef(onClose)
-  onCloseRef.current = onClose
+  useEffect(() => {
+    onCloseRef.current = onClose
+  }, [onClose])
 
   useEffect(() => {
     const dialog = ref.current

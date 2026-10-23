@@ -56,6 +56,7 @@ export default buildConfig({
   secret: process.env.PAYLOAD_SECRET || 'dev-only-insecure-secret',
   admin: {
     user: Users.slug,
+    avatar: 'default',
     importMap: { baseDir: path.resolve(dirname) },
     meta: {
       titleSuffix: ' · ISP Website Editor',
