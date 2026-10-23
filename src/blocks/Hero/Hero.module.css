@@ -145,7 +145,7 @@
 }
 
 /* Down-arrow cue under the home hero */
-.cueRow { display: flex; margin-top: var(--s-5); }
+.cueRow { display: flex; margin-top: var(--s-5); padding-bottom: var(--s-6); }
 
 .scrollCue {
   display: inline-flex;
@@ -169,7 +169,9 @@
   transition: background-color var(--dur-1), color var(--dur-1), border-color var(--dur-1);
 }
 
-.scrollCue:hover .cueArrow { background: var(--c-violet); border-color: var(--c-violet); color: #fff; }
+@media (hover: hover) {
+  .scrollCue:hover .cueArrow { background: var(--c-violet); border-color: var(--c-violet); color: #fff; }
+}
 
 @media (prefers-reduced-motion: no-preference) {
   .cueArrow svg { animation: cue-bounce 2s var(--ease-out) infinite; }
@@ -180,4 +182,4 @@
   25% { transform: translateY(7px); opacity: 0.6; }
 }
 
-.afterHero { display: block; height: 0; scroll-margin-top: var(--header-h); }
+.afterHero { display: block; height: 0; outline: none; scroll-margin-top: var(--header-h); } /* jump target only: no focus ring */

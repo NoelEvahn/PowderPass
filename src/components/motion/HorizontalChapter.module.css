@@ -97,4 +97,4 @@
 
 .outer:not([data-pinned]) .item { scroll-snap-align: start; }
 
-.after { display: block; height: 0; }
+.after { display: block; height: 0; outline: none; } /* skip target: receives focus, never shows a ring */

@@ -90,8 +90,8 @@ All scroll-driven scenes subscribe to one shared, `requestAnimationFrame`-thrott
 
 | Width | Behaviour |
 | --- | --- |
-| ≥ 1200px | Full navigation with mega-menu panels and utility row |
-| 1024–1199px | Menu button; horizontal journey still active if the window is at least 680px tall |
+| ≥ 1360px | Full navigation with mega-menu panels and utility row (labels never wrap) |
+| 1024–1359px | Menu button; horizontal journey still active if the window is at least 680px tall |
 | 768–1023px | Stacked journey; two-column grids |
 | < 768px | Single column; sticky bottom “Visit & Enquire” bar (space reserved so nothing is covered); compact announcement; simplified explorer |
 

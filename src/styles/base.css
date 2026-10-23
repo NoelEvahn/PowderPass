@@ -239,8 +239,9 @@ html { --mobile-cta-h: 68px; }
   position: fixed;
   inset: 0 0 auto;
   z-index: 60;
-  height: 3px;
-  background: linear-gradient(90deg, var(--c-gold), var(--c-lime) 35%, var(--c-purple) 70%, var(--c-violet));
+  height: 4px;
+  background: var(--c-purple);
+  box-shadow: 0 0 10px rgb(159 38 181 / 0.55);
   transform: scaleX(0);
   transform-origin: left;
   pointer-events: none;

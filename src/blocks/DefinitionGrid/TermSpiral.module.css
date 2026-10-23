@@ -160,7 +160,7 @@
 
 .skip { font-weight: 600; color: inherit; }
 
-.after { display: block; height: 0; }
+.after { display: block; height: 0; outline: none; } /* skip target: receives focus, never shows a ring */
 
 /* ---------- Swipe row (small screens, short screens, reduced motion) ---------- */
 

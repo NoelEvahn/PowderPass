@@ -23,7 +23,7 @@
 
 .header[data-compact] { box-shadow: 0 8px 24px -18px rgb(33 22 70 / 0.35); }
 
-@media (min-width: 1200px) {
+@media (min-width: 1360px) {
   .header { --utility-h: 32px; --bar-h: 72px; }
 }
 
@@ -36,7 +36,7 @@
   font-size: var(--fs-meta);
 }
 
-@media (min-width: 1200px) {
+@media (min-width: 1360px) {
   .utility { display: block; }
 }
 
@@ -89,7 +89,7 @@
   margin-left: auto;
 }
 
-@media (min-width: 1200px) {
+@media (min-width: 1360px) {
   .nav { display: block; }
 }
 
@@ -141,7 +141,7 @@
   margin-left: auto;
 }
 
-@media (min-width: 1200px) {
+@media (min-width: 1360px) {
   .actions { margin-left: var(--s-3); }
 }
 
@@ -165,7 +165,7 @@
 
 .menuButton { padding: 0 var(--s-3); }
 
-@media (min-width: 1200px) {
+@media (min-width: 1360px) {
   .menuButton { display: none; }
 }
 
