@@ -345,7 +345,18 @@ public final class Match implements BallContext {
                     }
                 }
             }
-            case RALLY -> checkPlayers();
+            case RALLY -> {
+                if (ball == null || ball.removed()) {
+                    // the ball left the world (fell into the void, chunk unloaded...)
+                    ball = null;
+                    faultAgainstLastTouch(Fault.OBJECT);
+                } else if (stateTicks > 90 * 20) {
+                    Msg.send(audience(), "<yellow>Rally took too long, replaying it.");
+                    beginRallySetup();
+                } else {
+                    checkPlayers();
+                }
+            }
             case POINT_END -> {
                 if (stateTicks >= stateDuration) {
                     beginRallySetup();
