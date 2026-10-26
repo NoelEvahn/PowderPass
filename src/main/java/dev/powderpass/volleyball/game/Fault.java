@@ -20,6 +20,9 @@ public enum Fault {
     FOOT_FAULT("Foot fault"),
     TOSS_DROP("Service toss dropped"),
     SERVE_DELAY("Serve took too long"),
+    POSITIONAL("Positional fault"),
+    LIBERO_ATTACK("Libero attack"),
+    LIBERO_BLOCK("Libero block"),
     REFEREE("Referee decision"),
     FORFEIT("Forfeit");
 

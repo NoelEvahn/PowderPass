@@ -71,7 +71,7 @@ public final class Match implements BallContext {
     private TeamId lastPointTeam;
     private boolean ended;
 
-    public Match(PowderPassPlugin plugin, Court court, MatchSettings settings, List<UUID> teamA, List<UUID> teamB,
+    public Match(PowderPassPlugin plugin, Court court, MatchSettings settings, Lineup teamA, Lineup teamB,
                  UUID host) {
         this.plugin = plugin;
         this.court = court;
@@ -80,8 +80,8 @@ public final class Match implements BallContext {
         Settings s = plugin.settings();
         teams[0] = new Team(TeamId.A, s.teamA, -1);
         teams[1] = new Team(TeamId.B, s.teamB, 1);
-        teams[0].order().addAll(teamA);
-        teams[1].order().addAll(teamB);
+        teams[0].applyLineup(teamA);
+        teams[1].applyLineup(teamB);
         TeamId first = ThreadLocalRandom.current().nextBoolean() ? TeamId.A : TeamId.B;
         this.score = new ScoreKeeper(settings, first);
     }
@@ -197,6 +197,16 @@ public final class Match implements BallContext {
         return Math.max(teams[0].size(), teams[1].size());
     }
 
+    public Role roleOf(UUID player) {
+        Team t = teamOf(player);
+        return t == null ? Role.ANY : t.role(player);
+    }
+
+    public boolean onCourt(UUID player) {
+        Team t = teamOf(player);
+        return t != null && t.onCourt(player);
+    }
+
     public int positionOf(UUID player) {
         Team t = teamOf(player);
         return t == null ? -1 : t.positionOf(player, score.rotation(t.id()));
@@ -247,6 +257,11 @@ public final class Match implements BallContext {
         if (p.getUniqueId().equals(referee) || p.getUniqueId().equals(host)) {
             inv.setItem(8, plugin.items().create(ItemType.WHISTLE));
         }
+        Team t = teamOf(p.getUniqueId());
+        if (t != null) {
+            boolean libero = t.isLibero(p.getUniqueId());
+            inv.setArmorContents(plugin.items().jersey(libero ? plugin.settings().liberoColor : t.color()));
+        }
         inv.setHeldItemSlot(0);
     }
 
@@ -279,7 +294,14 @@ public final class Match implements BallContext {
         if (t == null) {
             return;
         }
-        t.order().remove(p.getUniqueId());
+        if (t.isLibero(p.getUniqueId())) {
+            t.clearLibero();
+        } else {
+            t.order().remove(p.getUniqueId());
+            if (p.getUniqueId().equals(t.benched())) {
+                t.setBenched(null);
+            }
+        }
         if (!quit) {
             release(p);
         } else {
@@ -421,21 +443,77 @@ public final class Match implements BallContext {
         }
     }
 
-    private void positionPlayers() {
-        if (!settings.flag(MatchSettings.Option.AUTO_POSITION)) {
+    /** Decides who the libero replaces this rally: a back-row middle blocker if possible (never the server). */
+    private void assignLibero(Team t) {
+        t.setBenched(null);
+        if (t.libero() == null || Bukkit.getPlayer(t.libero()) == null) {
             return;
         }
+        int rot = score.rotation(t.id());
+        int n = t.size();
+        UUID best = null;
+        int bestScore = -1;
+        for (int pos = 1; pos <= n; pos++) {
+            if (!Positions.isBackRow(n, pos) || (pos == 1 && t.id() == score.serving())) {
+                continue;
+            }
+            UUID id = t.atPosition(pos, rot);
+            if (id == null || Bukkit.getPlayer(id) == null) {
+                continue;
+            }
+            int sc = (t.role(id) == Role.MIDDLE ? 100 : 0) + pos;
+            if (sc > bestScore) {
+                bestScore = sc;
+                best = id;
+            }
+        }
+        // only swap in for a middle; teams without one use the libero for the deepest back-row spot
+        boolean hasMiddle = t.order().stream().anyMatch(id -> t.role(id) == Role.MIDDLE);
+        if (best != null && (!hasMiddle || t.role(best) == Role.MIDDLE)) {
+            t.setBenched(best);
+        }
+    }
+
+    /** Bench spot along the side line, away from the referee stand. */
+    private Location benchSpot(Team t, int index) {
+        double u = t.side() * (Math.min(court.halfLength() - 1, 2.0 + index * 1.0));
+        double w = -(court.halfWidth() + Math.min(court.freeZone(), 3.0) * 0.7);
+        Location l = court.location(u, 0.01, w);
+        l.setYaw(court.frame().yawOf(0, 1));
+        return l;
+    }
+
+    private void positionPlayers() {
+        for (Team t : teams) {
+            assignLibero(t);
+        }
+        boolean auto = settings.flag(MatchSettings.Option.AUTO_POSITION);
         for (Team t : teams) {
             int rot = score.rotation(t.id());
             int n = t.size();
+            int benchIndex = 0;
+            for (Player p : t.online()) {
+                if (!t.onCourt(p.getUniqueId())) {
+                    p.teleport(benchSpot(t, benchIndex++));
+                }
+            }
+            if (!auto) {
+                continue;
+            }
             for (int pos = 1; pos <= n; pos++) {
                 UUID id = t.atPosition(pos, rot);
-                Player p = id == null ? null : Bukkit.getPlayer(id);
+                if (id == null) {
+                    continue;
+                }
+                if (id.equals(t.benched())) {
+                    id = t.libero();
+                }
+                Player p = Bukkit.getPlayer(id);
                 if (p == null) {
                     continue;
                 }
                 Location target;
-                if (id.equals(server) || (pos == 1 && t.id() == score.serving())) {
+                if (pos == 1 && t.id() == score.serving()) {
                     target = court.facingNet(t.side() * (court.halfLength() + 1.2), -t.side() * court.halfWidth() * 0.6);
                 } else {
                     double[] spot = Positions.spot(n, pos);
@@ -447,6 +525,61 @@ public final class Match implements BallContext {
                 p.setVelocity(new org.bukkit.util.Vector());
             }
         }
+    }
+
+    /**
+     * 6v6 positional fault at the moment of the serve: front-row players must be nearer the net than their
+     * back-row counterparts, and each row must keep its left-to-right order. The server is exempt.
+     *
+     * @return the offending positions, or null when everyone is in order
+     */
+    private String rotationFault(Team t) {
+        if (t.size() != 6) {
+            return null;
+        }
+        int rot = score.rotation(t.id());
+        double[] depth = new double[7];
+        double[] lateral = new double[7];
+        boolean[] known = new boolean[7];
+        CourtFrame f = court.frame();
+        for (int pos = 1; pos <= 6; pos++) {
+            UUID id = t.atPosition(pos, rot);
+            if (id != null && id.equals(t.benched())) {
+                id = t.libero();
+            }
+            Player p = id == null ? null : Bukkit.getPlayer(id);
+            if (p == null) {
+                continue;
+            }
+            Location l = p.getLocation();
+            depth[pos] = Math.abs(f.toU(l.getX(), l.getZ()));
+            lateral[pos] = -t.side() * f.toW(l.getX(), l.getZ());
+            known[pos] = true;
+        }
+        boolean serving = t.id() == score.serving();
+        int[][] frontBack = {{4, 5}, {3, 6}, {2, 1}};
+        for (int[] fb : frontBack) {
+            if (fb[1] == 1 && serving) {
+                continue;
+            }
+            if (known[fb[0]] && known[fb[1]] && depth[fb[0]] >= depth[fb[1]]) {
+                return "P" + fb[0] + "/P" + fb[1];
+            }
+        }
+        int[][] rows = {{4, 3, 2}, {5, 6, 1}};
+        for (int[] row : rows) {
+            for (int i = 0; i + 1 < row.length; i++) {
+                int left = row[i];
+                int right = row[i + 1];
+                if (right == 1 && serving) {
+                    continue;
+                }
+                if (known[left] && known[right] && lateral[left] >= lateral[right]) {
+                    return "P" + left + "/P" + right;
+                }
+            }
+        }
+        return null;
     }
 
     private Location refereeSpot() {
@@ -518,7 +651,7 @@ public final class Match implements BallContext {
             return false;
         }
         Team t = teamOf(player.getUniqueId());
-        if (t == null) {
+        if (t == null || !t.onCourt(player.getUniqueId())) {
             return false;
         }
         UUID tossedBy = b.tossedBy();
@@ -568,6 +701,16 @@ public final class Match implements BallContext {
 
         int position = t.positionOf(player.getUniqueId(), score.rotation(t.id()));
         boolean backRow = !Positions.isFrontRow(t.size(), position);
+        if (t.isLibero(player.getUniqueId()) && settings.rule(Rule.LIBERO)) {
+            if (r.type() == HitType.BLOCK) {
+                fault(t.id(), Fault.LIBERO_BLOCK, player);
+                return;
+            }
+            if (r.type().attack() && contactY > court.netHeight()) {
+                fault(t.id(), Fault.LIBERO_ATTACK, player);
+                return;
+            }
+        }
         if (r.type() == HitType.BLOCK) {
             if (backRow && settings.rule(Rule.BACK_ROW_ATTACK)) {
                 fault(t.id(), Fault.BACK_ROW_BLOCK, player);
@@ -633,6 +776,19 @@ public final class Match implements BallContext {
             boolean outsideZone = Math.abs(w) > court.halfWidth() + 0.05;
             if (onLine || wrongSide || outsideZone) {
                 fault(t.id(), Fault.FOOT_FAULT, player);
+                return;
+            }
+        }
+        if (settings.rule(Rule.ROTATION_ORDER)) {
+            for (Team team : teams) {
+                String bad = rotationFault(team);
+                if (bad != null) {
+                    lastPointText = "";
+                    Msg.send(audience(), team.displayName().append(Component.text(" out of rotation order (" + bad + ")",
+                            NamedTextColor.GRAY)));
+                    fault(team.id(), Fault.POSITIONAL, null);
+                    return;
+                }
             }
         }
     }
@@ -731,7 +887,7 @@ public final class Match implements BallContext {
         CourtFrame f = court.frame();
         NetRenderer net = plugin.courts().netRenderer(court);
         for (Team t : teams) {
-            for (Player p : t.online()) {
+            for (Player p : t.onCourt()) {
                 Location l = p.getLocation();
                 double u = f.toU(l.getX(), l.getZ());
                 double w = f.toW(l.getX(), l.getZ());

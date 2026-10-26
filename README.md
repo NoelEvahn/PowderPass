@@ -6,11 +6,12 @@ A complete, multiplayer volleyball game for **Paper 1.21.11**. It works with the
 - **A real net.** It has a mesh, a top tape (net-cord rolls), antennas, side bands and posts. A mass-spring simulation animates the net when the ball or a player hits it.
 - **Every touch.** You can bump, dig, dive, set, quick set, spike, tip, use a standing "down ball" and block. Serves include the float, standing topspin, jump topspin, jump float and underhand serve.
 - **Skill-based input.** Contact quality comes from timing and position, and it drives power and accuracy. You aim with your view, and an aim marker shows the target. Lag compensation and input buffering keep the game fair at real-world ping.
+- **Positions.** Players pick a role: setter, outside hitter, middle blocker, opposite or libero. 6v6 lineups follow the 5-1 system, and smaller teams use a shortened template. The libero wears a contrasting jersey and swaps in for a back-row middle each rally. Rotation spot and role show above heads and in the sidebar, teams wear coloured jerseys, and players no longer push each other.
 - **Proper matches, 1v1 through 6v6.** Matches use rally-point scoring, sets, and a deciding set to 15. Teams switch sides, including at 8 points in the deciding set. The match tracks rotations, side-outs, timeouts and a referee with undo.
 - **Toggleable rules.** Rules are enforced automatically, and each one can be switched on or off: foot fault, net touch, centre line, four hits, double contact, antenna, reaching over, back-row attack, serve block, serve screening, dropped toss, ceiling/objects and the serve clock.
-- **Courts in one command.** Courts are built from presets or custom sizes. The plugin places the floor and keeps an undo copy. Lines, posts and the net are display entities, so removing a court restores the world.
+- **Courts in one command.** Courts are built from presets or custom sizes. The plugin places the floor and keeps an undo copy. Lines, padded posts, antennas, the net, a referee stand, team benches and a scorer's table are display entities, so removing a court restores the world.
 - **Live HUD and scoreboards.** Each player gets a sidebar, a boss bar serve clock and action-bar hit grades. You can place physical **TextDisplay scoreboards** in the world and link them to any court.
-- **A ball made of block displays.** The in-world ball is a voxel sphere of `BlockDisplay`s in volleyball colours, so everyone sees the same ball with or without the pack. Spin is visible as it rotates.
+- **A ball made of block displays.** The in-world ball is a voxel sphere of `BlockDisplay`s painted as a classic 18-panel volleyball (6 groups of 3 yellow/white/blue strips), so everyone sees the same ball with or without the pack. Spin is visible as it rotates.
 - **Custom items and menus.** The volleyball is a sunflower, the referee whistle an iron nugget and the "hands" leather. Chest menus cover the rules editor and the referee panel. An in-game guide book is also included.
 - **Sound for every action.** Each touch, serve, bounce, net and antenna contact has its own sound, as do dives, approach jumps and missed swings. The whistle, countdown and crowd (cheer, "ooh" on net cords, applause, match win) are covered too. Players with the pack hear custom sounds and everyone else hears mapped vanilla sounds, decided per player.
 
@@ -69,7 +70,8 @@ Hold the **Volleyball Hands** item, which fills your hotbar during a match. Clic
 | Command | Permission | Description |
 |---|---|---|
 | `/vb help`, `/vb guide` | — | Help and the in-game guide book |
-| `/vb join [court] [red\|blue]` | `powderpass.play` | Join a court lobby; the court defaults to the nearest one |
+| `/vb join [court] [red\|blue] [position]` | `powderpass.play` | Join a court lobby; the court defaults to the nearest one |
+| `/vb role [setter\|outside\|middle\|opposite\|libero\|any]` | — | Pick your playing position for the next match |
 | `/vb leave` | — | Leave the lobby or match. Your inventory is restored |
 | `/vb practice` | `powderpass.practice` | Practice kit (ball + hands) |
 | `/vb ball spawn\|clear` | `powderpass.practice` | Spawn or clear your free-play balls |
@@ -90,7 +92,7 @@ Hold the **Volleyball Hands** item, which fills your hotbar during a match. Clic
 | `/vb scoreboard link\|move\|scale\|billboard\|remove\|list` | `powderpass.admin` | Manage scoreboards |
 | `/vb give <player> <volleyball\|whistle\|hands>` | `powderpass.admin` | Custom items |
 | `/vb reload` | `powderpass.admin` | Reload config.yml |
-| `/vb debug stats\|launch\|cleanup` | `powderpass.admin` | Performance stats, a test launcher, and stray-entity cleanup |
+| `/vb debug stats\|launch\|dump\|cleanup` | `powderpass.admin` | Performance stats, a test launcher, a JSON dump of a court's displays (for offline previews), and stray-entity cleanup |
 
 Aliases: `/vb`, `/volleyball`, `/powderpass`.
 
@@ -125,6 +127,8 @@ All rules are on by default and can be toggled per court with `/vb rules`. Rules
 | `toss-drop` | The service toss falls untouched |
 | `ceiling-out` | The ball touches walls, ceiling, posts or other objects |
 | `serve-delay` | The server does not serve within the serve clock (8 s) |
+| `libero` | The libero blocks, or attacks a ball entirely above the net |
+| `rotation-order` | 6v6 positional fault: at the serve a front-row player is not nearer the net than their back-row partner, or a row is out of left-to-right order. Off by default; the "All rules on" button enables it |
 
 **Format options:**
 - `sets-to-win`: 1, 2 = best of 3, 3 = best of 5.
@@ -145,7 +149,7 @@ The match host gets a whistle automatically.
 
 ## How it works within Minecraft's limits
 
-- **The ball** is a voxel sphere split into about a dozen coloured cuboids (13 block displays at the default `ball.detail: 10`). One display is the root and the others ride it as passengers, so a single interpolated teleport moves the whole ball smoothly. Spin rotates every part's transformation around the ball centre, refreshed every other tick and interpolated on the client. The root casts a shadow that helps players judge where the ball will land.
+- **The ball** is a voxel sphere split into coloured cuboids (29 block displays for the default classic style at `ball.detail: 12`; the `caps` style at 10 uses 13). One display is the root and the others ride it as passengers, so a single interpolated teleport moves the whole ball smoothly. Spin rotates every part's transformation around the ball centre, refreshed every other tick and interpolated on the client. The root casts a shadow that helps players judge where the ball will land.
 - **Physics** runs on the server only. Every tick is split into adaptive sub-steps (up to 32), so fast spikes never tunnel through the net, players or blocks. The ball collides with the real collision shapes of blocks, such as slabs, fences and barriers.
 - **Input.** Minecraft only reports clicks, not arm movement. A click therefore *arms* the chosen technique for a few ticks (input buffering). The server then compares the ball's path with the ideal contact point of that technique. That path is rewound by the player's ping for lag compensation, and the distance becomes the contact quality.
 - **Animations.** Players can't be posed by the server, so touches play the arm-swing animation (one or both arms), sounds and particles. Blocks lift both arms.
@@ -166,7 +170,9 @@ Performance was measured on a live 1.21.11 server with bots. A 6v6 match with 12
 - `teams` and `hud`: team names and colours, and HUD toggles.
 - `sounds.*`: every sound has a `vanilla` entry and a `pack` entry (any sound event key, volume and pitch).
 - `resource-pack.*`: `mode` (`auto` uses the client's pack status plus `/vb pack on`, `everyone`, `nobody`), and optionally `url`/`sha1`/`required` so the plugin offers the pack itself.
-- `ball.*`: `detail` (6, 8, 10 or 12 voxels across), panel `colors`, size and interpolation.
+- `ball.*`: `style` (`classic` 18-panel or `caps`), `detail` (6 to 14 voxels across), panel `colors`, size and interpolation.
+- `court-defaults.furniture`: referee stand, benches and scorer's table on or off. `net-columns`/`net-rows` set the mesh density.
+- `teams.libero-color`: the libero's jersey colour.
 
 ## Resource pack (optional)
 

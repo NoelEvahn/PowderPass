@@ -21,7 +21,7 @@ public final class Settings {
     public record ResourcePack(PackMode mode, String url, String sha1, boolean required, String prompt) {
     }
 
-    public record Ball(int detail, Material[] colors, double visualSize, int teleportInterpolation,
+    public record Ball(int detail, dev.powderpass.volleyball.ball.BallModel.Style style, Material[] colors, double visualSize, int teleportInterpolation,
                        int rotationInterpolation, boolean shadow, boolean trail, int idleDespawnSeconds,
                        int maxPracticeBalls) {
     }
@@ -59,7 +59,7 @@ public final class Settings {
     public record CourtDefaults(double freeZone, double netBandHeight, double antennaAboveNet, double postOffset,
                                 Material courtFloor, Material freeZoneFloor, Material beachFloor,
                                 Material beachFreeZoneFloor, int netColumns, int netRows, int netInterpolation,
-                                Material lineMaterial, float viewRange) {
+                                Material lineMaterial, float viewRange, boolean furniture) {
     }
 
     public record TeamStyle(String name, TextColor color) {
@@ -133,6 +133,8 @@ public final class Settings {
     public final MatchSettings matchDefaults;
     public final TeamStyle teamA;
     public final TeamStyle teamB;
+    /** Jersey colour of liberos (contrasting, as the rules require). */
+    public final TextColor liberoColor;
     public final Map<SoundId, SoundPair> sounds = new EnumMap<>(SoundId.class);
     public final Hud hud;
     public final double trailMinSpeed;
@@ -155,9 +157,18 @@ public final class Settings {
         for (int i = 0; i < Math.min(3, colorNames.size()); i++) {
             colors[i] = material(colorNames.get(i), colors[i], log);
         }
-        int detail = (int) clamp(c.getInt("ball.detail", 10), 6, 12);
+        int detail = (int) clamp(c.getInt("ball.detail", 12), 6, 14);
+        dev.powderpass.volleyball.ball.BallModel.Style style;
+        try {
+            style = dev.powderpass.volleyball.ball.BallModel.Style.valueOf(
+                    c.getString("ball.style", "classic").toUpperCase(java.util.Locale.ROOT));
+        } catch (IllegalArgumentException e) {
+            log.warning("ball.style must be classic or caps");
+            style = dev.powderpass.volleyball.ball.BallModel.Style.CLASSIC;
+        }
         ball = new Ball(
                 detail + detail % 2,
+                style,
                 colors,
                 clamp(c.getDouble("ball.visual-size", 0.3), 0.1, 2),
                 (int) clamp(c.getInt("ball.teleport-interpolation", 2), 0, 59),
@@ -248,15 +259,18 @@ public final class Settings {
                 material(c.getString(cd + "floor.free-zone"), Material.BLUE_TERRACOTTA, log),
                 material(c.getString(cd + "floor.beach-court"), Material.SAND, log),
                 material(c.getString(cd + "floor.beach-free-zone"), Material.SAND, log),
-                (int) clamp(c.getInt(cd + "net-columns", 16), 4, 48),
-                (int) clamp(c.getInt(cd + "net-rows", 4), 2, 12),
+                (int) clamp(c.getInt(cd + "net-columns", 20), 4, 48),
+                (int) clamp(c.getInt(cd + "net-rows", 6), 2, 12),
                 (int) clamp(c.getInt(cd + "net-interpolation", 2), 0, 10),
                 material(c.getString(cd + "line-material"), Material.WHITE_CONCRETE, log),
-                (float) clamp(c.getDouble(cd + "view-range", 1.5), 0.1, 10));
+                (float) clamp(c.getDouble(cd + "view-range", 1.5), 0.1, 10),
+                c.getBoolean(cd + "furniture", true));
 
         matchDefaults = MatchSettings.load(c.getConfigurationSection("match-defaults"), MatchSettings.standard());
         teamA = team(c.getConfigurationSection("teams.a"), "Red", "#ff5555");
         teamB = team(c.getConfigurationSection("teams.b"), "Blue", "#55aaff");
+        TextColor lib = TextColor.fromHexString(c.getString("teams.libero-color", "#f2f2f2"));
+        liberoColor = lib == null ? TextColor.color(0xf2f2f2) : lib;
 
         for (SoundId id : SoundId.values()) {
             ConfigurationSection sec = c.getConfigurationSection("sounds." + id.path());

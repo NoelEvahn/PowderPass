@@ -34,6 +34,14 @@ public final class Positions {
         return position >= 2 && position <= 4;
     }
 
+    /** Back-row spot (deeper half of the court). For 6v6 these are positions 1, 5 and 6. */
+    public static boolean isBackRow(int size, int position) {
+        if (size == 6) {
+            return position == 1 || position == 5 || position == 6;
+        }
+        return spot(size, position)[0] > 0.5;
+    }
+
     public static String label(int size, int position) {
         if (size == 6) {
             return switch (position) {

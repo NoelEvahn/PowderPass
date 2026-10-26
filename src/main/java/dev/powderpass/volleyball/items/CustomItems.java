@@ -80,6 +80,33 @@ public final class CustomItems {
         return item;
     }
 
+    private final Map<Integer, ItemStack[]> jerseys = new java.util.HashMap<>();
+
+    /**
+     * Team kit: dyed leather boots, leggings and chestplate (armor slot order). Cached per colour.
+     */
+    public ItemStack[] jersey(net.kyori.adventure.text.format.TextColor color) {
+        ItemStack[] cached = jerseys.computeIfAbsent(color.value(), v -> new ItemStack[]{
+                dyed(Material.LEATHER_BOOTS, v), dyed(Material.LEATHER_LEGGINGS, v), dyed(Material.LEATHER_CHESTPLATE, v), null});
+        ItemStack[] out = new ItemStack[4];
+        for (int i = 0; i < 3; i++) {
+            out[i] = cached[i].clone();
+        }
+        return out;
+    }
+
+    private static ItemStack dyed(Material m, int rgb) {
+        ItemStack it = new ItemStack(m);
+        org.bukkit.inventory.meta.LeatherArmorMeta meta = (org.bukkit.inventory.meta.LeatherArmorMeta) it.getItemMeta();
+        meta.setColor(org.bukkit.Color.fromRGB(rgb));
+        meta.setUnbreakable(true);
+        meta.displayName(Component.text("Team jersey", NamedTextColor.WHITE).decoration(TextDecoration.ITALIC, false));
+        meta.addItemFlags(org.bukkit.inventory.ItemFlag.values());
+        meta.setEnchantmentGlintOverride(false);
+        it.setItemMeta(meta);
+        return it;
+    }
+
     /** Identifies a custom item. Called every tick, so it avoids copying item meta. */
     public static ItemType typeOf(ItemStack item) {
         if (item == null) {

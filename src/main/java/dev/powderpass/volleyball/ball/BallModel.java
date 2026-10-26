@@ -30,6 +30,14 @@ public final class BallModel {
         }
     }
 
+    /** Panel layouts. */
+    public enum Style {
+        /** 18 panels in 6 groups of 3 strips, three colours: the classic indoor volleyball. */
+        CLASSIC,
+        /** Three colour caps by axis: fewest block displays. */
+        CAPS
+    }
+
     private final int resolution;
     private final List<Part> parts;
 
@@ -46,8 +54,12 @@ public final class BallModel {
         return parts;
     }
 
-    /** Builds a ball {@code resolution} voxels across. Odd sizes merge badly, so they are rounded up to even. */
     public static BallModel build(int resolution) {
+        return build(resolution, Style.CAPS);
+    }
+
+    /** Builds a ball {@code resolution} voxels across. Odd sizes merge badly, so they are rounded up to even. */
+    public static BallModel build(int resolution, Style style) {
         int n = Math.max(4, Math.min(24, resolution));
         n += n % 2;
         double c = (n - 1) / 2.0;
@@ -73,20 +85,33 @@ public final class BallModel {
                     }
                     if (exposed(inside, n, x, y, z)) {
                         surface[x][y][z] = true;
-                        double ax = Math.abs(x - c);
-                        double ay = Math.abs(y - c);
-                        double az = Math.abs(z - c);
-                        color[x][y][z] = ax >= ay && ax >= az ? 0 : (ay >= az ? 1 : 2);
+                        color[x][y][z] = panel(style, x - c, y - c, z - c);
                     }
                 }
             }
         }
+        // the greedy merge depends on sweep and growth order: try all six and keep the fewest parts
+        List<Part> best = null;
+        int[][] orders = {{1, 0, 2}, {0, 1, 2}, {2, 1, 0}, {0, 2, 1}, {1, 2, 0}, {2, 0, 1}};
+        for (int[] order : orders) {
+            List<Part> parts = merge(n, inside, surface, color, order);
+            if (best == null || parts.size() < best.size()) {
+                best = parts;
+            }
+        }
+        return new BallModel(n, best);
+    }
+
+    private static List<Part> merge(int n, boolean[][][] inside, boolean[][][] surface, int[][][] color, int[] order) {
         boolean[][][] used = new boolean[n][n][n];
         List<Part> parts = new ArrayList<>();
-        // sweep bottom-up so caps merge into tall columns
-        for (int y = 0; y < n; y++) {
-            for (int x = 0; x < n; x++) {
-                for (int z = 0; z < n; z++) {
+        int[] v = new int[3];
+        for (v[order[0]] = 0; v[order[0]] < n; v[order[0]]++) {
+            for (v[order[1]] = 0; v[order[1]] < n; v[order[1]]++) {
+                for (v[order[2]] = 0; v[order[2]] < n; v[order[2]]++) {
+                    int x = v[0];
+                    int y = v[1];
+                    int z = v[2];
                     if (!surface[x][y][z] || used[x][y][z]) {
                         continue;
                     }
@@ -95,7 +120,7 @@ public final class BallModel {
                     boolean grew = true;
                     while (grew) {
                         grew = false;
-                        for (int axis = 0; axis < 3; axis++) {
+                        for (int axis : order) {
                             for (int dir = 0; dir < 2; dir++) {
                                 int[] t = b.clone();
                                 if (dir == 0) {
@@ -127,7 +152,28 @@ public final class BallModel {
                 }
             }
         }
-        return new BallModel(n, parts);
+        return parts;
+    }
+
+    /** Colour index (0..2) of a surface voxel at offset (x, y, z) from the centre. */
+    static int panel(Style style, double x, double y, double z) {
+        double ax = Math.abs(x);
+        double ay = Math.abs(y);
+        double az = Math.abs(z);
+        int axis = ax >= ay && ax >= az ? 0 : (ay >= az ? 1 : 2);
+        if (style == Style.CAPS) {
+            return axis;
+        }
+        // each face holds three parallel strips; neighbouring faces run perpendicular, like a real ball
+        double major = axis == 0 ? ax : axis == 1 ? ay : az;
+        double across = switch (axis) {
+            case 0 -> z;
+            case 1 -> x;
+            default -> y;
+        };
+        double t = across / major;
+        int strip = t < -1.0 / 3 ? 0 : (t <= 1.0 / 3 ? 1 : 2);
+        return (strip + axis) % 3;
     }
 
     private static boolean exposed(boolean[][][] inside, int n, int x, int y, int z) {

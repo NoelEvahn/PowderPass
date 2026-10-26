@@ -97,7 +97,7 @@ public final class PowderPassPlugin extends JavaPlugin {
         settings = new Settings(getConfig(), getLogger());
         items = new CustomItems();
         fx = new Fx(this, settings, packs);
-        ballModel = BallModel.build(settings.ball.detail());
+        ballModel = BallModel.build(settings.ball.detail(), settings.ball.style());
         String prefix = getConfig().getString("prefix");
         if (prefix != null && !prefix.isBlank()) {
             Msg.setPrefix(prefix);

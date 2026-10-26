@@ -71,6 +71,8 @@ public final class MatchSettings {
         s.set(Option.AUTO_POSITION, 1);
         s.set(Option.REFEREE_WHISTLE, 0);
         s.rules.addAll(EnumSet.allOf(Rule.class));
+        // positional faults surprise casual players: opt in (the official preset turns it on)
+        s.rules.remove(Rule.ROTATION_ORDER);
         return s;
     }
 

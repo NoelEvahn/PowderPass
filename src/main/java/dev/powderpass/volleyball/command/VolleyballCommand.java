@@ -7,6 +7,7 @@ import dev.powderpass.volleyball.court.CourtPreset;
 import dev.powderpass.volleyball.game.Match;
 import dev.powderpass.volleyball.game.MatchManager;
 import dev.powderpass.volleyball.game.MatchSettings;
+import dev.powderpass.volleyball.game.Role;
 import dev.powderpass.volleyball.game.Rule;
 import dev.powderpass.volleyball.game.TeamId;
 import dev.powderpass.volleyball.items.ItemType;
@@ -67,6 +68,7 @@ public final class VolleyballCommand implements TabExecutor {
                 case "practice" -> practice(sender);
                 case "aim" -> aim(sender);
                 case "pack" -> pack(sender, rest);
+                case "role", "position" -> role(sender, rest);
                 case "referee", "ref" -> referee(sender, rest);
                 case "timeout" -> timeout(sender);
                 case "status" -> status(sender, rest);
@@ -133,7 +135,8 @@ public final class VolleyballCommand implements TabExecutor {
         String c = "/" + label;
         s.sendMessage(Msg.mm("<gradient:#ffd34d:#4da6ff><b>━━━━━━ Volleyball ━━━━━━</b></gradient>"));
         line(s, c + " guide", "Open the illustrated guide (controls, rules)");
-        line(s, c + " join [court] [red|blue]", "Join a court's lobby");
+        line(s, c + " join [court] [red|blue] [position]", "Join a court's lobby");
+        line(s, c + " role [setter|outside|middle|opposite|libero|any]", "Pick your playing position");
         line(s, c + " leave", "Leave the lobby or match");
         line(s, c + " practice", "Get a ball + hands to practice anywhere");
         line(s, c + " aim", "Toggle the aim target marker");
@@ -177,6 +180,13 @@ public final class VolleyballCommand implements TabExecutor {
         perm(s, "powderpass.play");
         TeamId pref = null;
         String[] a = args;
+        if (a.length > 0 && plugin.courts().get(a[a.length - 1]) == null) {
+            Role r = Role.byName(a[a.length - 1]);
+            if (r != null) {
+                plugin.matches().setRole(p, r);
+                a = Arrays.copyOf(a, a.length - 1);
+            }
+        }
         if (a.length > 0) {
             TeamId t = parseTeam(a[a.length - 1]);
             if (t != null) {
@@ -195,7 +205,8 @@ public final class VolleyballCommand implements TabExecutor {
             case FULL -> throw new CommandError("That lobby is full (12 players).");
             default -> {
                 Map<UUID, TeamId> lobby = plugin.matches().lobby(c);
-                String team = pref == null ? "any team" : teamName(pref);
+                String team = (pref == null ? "any team" : teamName(pref)) + ", "
+                        + plugin.matches().role(p.getUniqueId()).displayName().toLowerCase(Locale.ROOT);
                 Msg.send(p, "<green>Joined <white>" + Msg.escape(c.name()) + "</white> lobby (" + team + "). "
                         + "<gray>" + lobby.size() + " waiting.");
                 for (UUID id : lobby.keySet()) {
@@ -325,6 +336,30 @@ public final class VolleyballCommand implements TabExecutor {
         Msg.send(p, "<gray>Aim marker " + (on ? "<green>on" : "<red>off"));
     }
 
+    private void role(CommandSender s, String[] args) {
+        Player p = player(s);
+        if (args.length == 0) {
+            Role current = plugin.matches().role(p.getUniqueId());
+            Msg.send(p, "<white>Your position: <yellow>" + current.displayName());
+            p.sendMessage(Msg.mm("<gray>Pick one: " + java.util.Arrays.stream(Role.values())
+                    .map(r -> "<yellow><click:run_command:'/vb role " + r.name().toLowerCase(Locale.ROOT) + "'>"
+                            + r.name().toLowerCase(Locale.ROOT) + "</click></yellow>")
+                    .collect(Collectors.joining(" <dark_gray>·</dark_gray> "))));
+            p.sendMessage(Msg.mm("<dark_gray>6v6 lineups use the 5-1 system (S OH MB OPP OH MB). A libero replaces a back-row middle "
+                    + "and may not block, attack above the net or serve."));
+            return;
+        }
+        Role r = Role.byName(args[0]);
+        if (r == null) {
+            throw new CommandError("Unknown position. Use setter, outside, middle, opposite, libero or any.");
+        }
+        if (plugin.matches().byPlayer(p) != null) {
+            throw new CommandError("Positions are locked during a match.");
+        }
+        plugin.matches().setRole(p, r);
+        Msg.send(p, "<green>Position set: <white>" + r.displayName() + "</white>.</green> <gray>It is used in your next match.");
+    }
+
     private void pack(CommandSender s, String[] args) {
         Player p = player(s);
         var mode = plugin.settings().resourcePack.mode();
@@ -395,13 +430,36 @@ public final class VolleyballCommand implements TabExecutor {
             Map<UUID, TeamId> lobby = plugin.matches().lobby(c);
             String names = lobby.entrySet().stream().map(e -> {
                 Player p = Bukkit.getPlayer(e.getKey());
-                return (p == null ? "?" : p.getName()) + (e.getValue() == null ? "" : " (" + teamName(e.getValue()) + ")");
+                Role r = plugin.matches().role(e.getKey());
+                return (p == null ? "?" : p.getName()) + (e.getValue() == null ? "" : " (" + teamName(e.getValue()) + ")")
+                        + (r == Role.ANY ? "" : " [" + r.shortName() + "]");
             }).collect(Collectors.joining(", "));
             Msg.send(s, "<gray>Lobby (" + lobby.size() + "): <white>" + Msg.escape(names.isEmpty() ? "empty" : names));
         } else {
             Msg.send(s, "<gray>Match: <white>" + m.team(TeamId.A).name() + " " + m.score().points(TeamId.A) + " - "
                     + m.score().points(TeamId.B) + " " + m.team(TeamId.B).name() + "<gray> · set " + m.score().setNumber()
                     + " · sets " + m.score().sets(TeamId.A) + "-" + m.score().sets(TeamId.B) + " · " + m.state().label());
+            for (TeamId id : TeamId.values()) {
+                var t = m.team(id);
+                StringBuilder sb = new StringBuilder();
+                int rot = m.score().rotation(id);
+                for (int pos = 1; pos <= t.size(); pos++) {
+                    UUID pid = t.atPosition(pos, rot);
+                    if (pid == null) {
+                        continue;
+                    }
+                    Player pl = Bukkit.getPlayer(pid);
+                    Role r = t.role(pid);
+                    sb.append("P").append(pos).append(' ').append(pl == null ? "?" : pl.getName())
+                            .append(r == Role.ANY ? "" : "(" + r.shortName() + ")")
+                            .append(pid.equals(t.benched()) ? "[bench]" : "").append("  ");
+                }
+                if (t.libero() != null) {
+                    Player lib = Bukkit.getPlayer(t.libero());
+                    sb.append("L ").append(lib == null ? "?" : lib.getName()).append(t.benched() == null ? "[bench]" : "[on]");
+                }
+                Msg.send(s, "<gray>" + Msg.escape(t.name()) + ": <white>" + Msg.escape(sb.toString().trim()));
+            }
         }
     }
 
@@ -713,6 +771,38 @@ public final class VolleyballCommand implements TabExecutor {
                 Msg.send(s, "<gray>Launched ball from " + pos + " predicted landing (no net) u="
                         + String.format(Locale.ROOT, "%.2f w=%.2f", c.frame().toU(landing.x, landing.z), c.frame().toW(landing.x, landing.z)));
             }
+            case "dump" -> {
+                // writes every plugin block display near a court as JSON (location, matrix, block) for previews
+                Court c = courtArg(s, args, 1);
+                java.io.File out = new java.io.File(plugin.getDataFolder(), "dump-" + c.name() + ".json");
+                StringBuilder sb = new StringBuilder("[");
+                Location center = c.center();
+                for (Entity e : c.world().getNearbyEntities(center, 30, 12, 30)) {
+                    if (!(e instanceof org.bukkit.entity.BlockDisplay d)
+                            || !e.getPersistentDataContainer().has(Keys.ENTITY, PersistentDataType.STRING)) {
+                        continue;
+                    }
+                    org.bukkit.util.Transformation t = d.getTransformation();
+                    org.joml.Matrix4f m = new org.joml.Matrix4f().translate(t.getTranslation()).rotate(t.getLeftRotation())
+                            .scale(t.getScale()).rotate(t.getRightRotation());
+                    float[] f = new float[16];
+                    m.get(f);
+                    Location l = d.getLocation();
+                    if (sb.length() > 1) {
+                        sb.append(',');
+                    }
+                    sb.append(String.format(Locale.ROOT, "{\"x\":%.4f,\"y\":%.4f,\"z\":%.4f,\"block\":\"%s\",\"m\":%s}",
+                            l.getX() - center.getX(), l.getY() - center.getY(), l.getZ() - center.getZ(),
+                            d.getBlock().getMaterial().getKey().getKey(), java.util.Arrays.toString(f)));
+                }
+                sb.append(']');
+                try {
+                    java.nio.file.Files.writeString(out.toPath(), sb);
+                } catch (java.io.IOException e) {
+                    throw new CommandError("Could not write " + out);
+                }
+                Msg.send(s, "<gray>Wrote " + out.getName());
+            }
             case "cleanup" -> {
                 int n = 0;
                 for (World w : Bukkit.getWorlds()) {
@@ -728,7 +818,7 @@ public final class VolleyballCommand implements TabExecutor {
                 plugin.boards().spawnAll();
                 Msg.send(s, "<gray>Removed " + n + " plugin entities and respawned courts and scoreboards.");
             }
-            default -> throw new CommandError("Usage: /vb debug <stats|launch|cleanup>");
+            default -> throw new CommandError("Usage: /vb debug <stats|launch|dump|cleanup>");
         }
     }
 
@@ -738,7 +828,7 @@ public final class VolleyballCommand implements TabExecutor {
     public List<String> onTabComplete(CommandSender s, Command command, String alias, String[] args) {
         List<String> out = new ArrayList<>();
         if (args.length == 1) {
-            out.addAll(List.of("help", "guide", "join", "leave", "practice", "aim", "pack", "timeout", "status"));
+            out.addAll(List.of("help", "guide", "join", "leave", "role", "practice", "aim", "pack", "timeout", "status"));
             if (s.hasPermission("powderpass.host")) {
                 out.addAll(List.of("start", "stop", "rules", "referee"));
             }
@@ -755,11 +845,22 @@ public final class VolleyballCommand implements TabExecutor {
             case "join" -> {
                 if (args.length == 2) {
                     out.addAll(courts);
+                }
+                if (args.length >= 2 && args.length <= 3) {
                     out.add(plugin.settings().teamA.name().toLowerCase(Locale.ROOT));
                     out.add(plugin.settings().teamB.name().toLowerCase(Locale.ROOT));
-                } else if (args.length == 3) {
-                    out.add(plugin.settings().teamA.name().toLowerCase(Locale.ROOT));
-                    out.add(plugin.settings().teamB.name().toLowerCase(Locale.ROOT));
+                }
+                if (args.length >= 3) {
+                    for (Role r : Role.values()) {
+                        out.add(r.name().toLowerCase(Locale.ROOT));
+                    }
+                }
+            }
+            case "role", "position" -> {
+                if (args.length == 2) {
+                    for (Role r : Role.values()) {
+                        out.add(r.name().toLowerCase(Locale.ROOT));
+                    }
                 }
             }
             case "start", "stop", "status" -> {
@@ -843,7 +944,7 @@ public final class VolleyballCommand implements TabExecutor {
             }
             case "debug" -> {
                 if (args.length == 2) {
-                    out.addAll(List.of("stats", "launch", "cleanup"));
+                    out.addAll(List.of("stats", "launch", "dump", "cleanup"));
                 } else if (args.length == 3 && args[1].equalsIgnoreCase("launch")) {
                     out.addAll(courts);
                 }

@@ -29,7 +29,11 @@ public enum Rule {
     CEILING_OUT("ceiling-out", "Ceiling & objects", Material.GLASS,
             "Ball touching walls, ceiling or objects is out."),
     SERVE_DELAY("serve-delay", "Serve clock", Material.REPEATER,
-            "The server must serve within the serve time.");
+            "The server must serve within the serve time."),
+    ROTATION_ORDER("rotation-order", "Rotation order", Material.COMPASS,
+            "6v6: at the serve, every player must be in", "rotation order (front/back, left/right)."),
+    LIBERO("libero", "Libero restrictions", Material.LEATHER_CHESTPLATE,
+            "The libero may not block or attack", "a ball that is entirely above the net.");
 
     private final String key;
     private final String displayName;

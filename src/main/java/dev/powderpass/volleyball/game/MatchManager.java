@@ -22,6 +22,20 @@ public final class MatchManager {
     /** court name (lower case) -> player -> preferred team (null = any) */
     private final Map<String, LinkedHashMap<UUID, TeamId>> lobbies = new HashMap<>();
     private final Map<String, Match> matches = new HashMap<>();
+    /** Preferred playing position of each player (kept between matches). */
+    private final Map<UUID, Role> roles = new HashMap<>();
+
+    public void setRole(Player p, Role role) {
+        if (role == null || role == Role.ANY) {
+            roles.remove(p.getUniqueId());
+        } else {
+            roles.put(p.getUniqueId(), role);
+        }
+    }
+
+    public Role role(UUID id) {
+        return roles.getOrDefault(id, Role.ANY);
+    }
 
     public MatchManager(PowderPassPlugin plugin) {
         this.plugin = plugin;
@@ -41,7 +55,7 @@ public final class MatchManager {
         }
         LinkedHashMap<UUID, TeamId> lobby = lobbies.computeIfAbsent(key(court), k -> new LinkedHashMap<>());
         boolean had = lobby.containsKey(p.getUniqueId());
-        if (!had && lobby.size() >= 12) {
+        if (!had && lobby.size() >= 14) {
             return JoinResult.FULL;
         }
         leaveLobby(p);
@@ -92,9 +106,9 @@ public final class MatchManager {
         List<UUID> b = new ArrayList<>();
         List<UUID> any = new ArrayList<>();
         for (Map.Entry<UUID, TeamId> e : lobby.entrySet()) {
-            if (e.getValue() == TeamId.A && a.size() < 6) {
+            if (e.getValue() == TeamId.A && fits(a, e.getKey())) {
                 a.add(e.getKey());
-            } else if (e.getValue() == TeamId.B && b.size() < 6) {
+            } else if (e.getValue() == TeamId.B && fits(b, e.getKey())) {
                 b.add(e.getKey());
             } else {
                 any.add(e.getKey());
@@ -102,10 +116,13 @@ public final class MatchManager {
         }
         Collections.shuffle(any);
         for (UUID id : any) {
-            if (a.size() <= b.size() && a.size() < 6) {
+            boolean preferA = a.size() <= b.size();
+            if (preferA && fits(a, id)) {
                 a.add(id);
-            } else if (b.size() < 6) {
+            } else if (fits(b, id)) {
                 b.add(id);
+            } else if (fits(a, id)) {
+                a.add(id);
             }
         }
         if (a.isEmpty() || b.isEmpty()) {
@@ -115,7 +132,8 @@ public final class MatchManager {
         lobbies.remove(key(court));
         // clear free-play balls from the court
         plugin.balls().removeIf(ball -> ball.context() == plugin.balls().practice() && court.inArea(ball.location(), 2));
-        Match m = new Match(plugin, court, court.settings().copy(), a, b, host == null ? null : host.getUniqueId());
+        Match m = new Match(plugin, court, court.settings().copy(), Lineup.build(a, roles), Lineup.build(b, roles),
+                host == null ? null : host.getUniqueId());
         matches.put(key(court), m);
         m.start();
         for (Player p : m.players()) {
@@ -125,6 +143,16 @@ public final class MatchManager {
             Msg.send(m.audience(), "<yellow>Uneven teams: " + a.size() + "v" + b.size() + ".");
         }
         return null;
+    }
+
+    /** Six on the court plus one libero per team. */
+    private boolean fits(List<UUID> team, UUID candidate) {
+        long liberos = team.stream().filter(id -> role(id) == Role.LIBERO).count();
+        long field = team.size() - Math.min(1, liberos);
+        if (role(candidate) == Role.LIBERO && liberos == 0) {
+            return true;
+        }
+        return field < 6;
     }
 
     public boolean stop(Court court, String reason) {

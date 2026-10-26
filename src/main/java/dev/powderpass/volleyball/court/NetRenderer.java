@@ -18,7 +18,7 @@ import java.util.List;
  */
 public final class NetRenderer {
 
-    private static final float MESH_THICKNESS = 0.018f;
+    private static final float MESH_THICKNESS = 0.012f;
     private static final float TAPE_HEIGHT = 0.07f;
     private static final float TAPE_THICKNESS = 0.02f;
     private static final float BOTTOM_HEIGHT = 0.05f;

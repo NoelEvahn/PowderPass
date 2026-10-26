@@ -24,9 +24,13 @@ resource-pack:
 
 ball:
   # The in-world ball is a voxel sphere of block displays.
-  # detail = voxels across (6, 8, 10 or 12). 10 uses 13 block displays, 12 uses 21.
-  detail: 10
-  # Three panel colours (any blocks), like the three panel groups of a volleyball.
+  #  style classic - 18 panels in 6 groups of 3 strips (the classic indoor ball)
+  #  style caps    - three colour caps, fewest entities
+  # detail = voxels across (6 - 14, even). Block displays used:
+  #   classic: 10 -> 21, 12 -> 29, 14 -> 48      caps: 10 -> 13, 12 -> 21
+  style: classic
+  detail: 12
+  # The three panel colours (any blocks).
   colors: [YELLOW_CONCRETE, WHITE_CONCRETE, BLUE_CONCRETE]
   # Rendered size in blocks. A real ball is 0.21 m; slightly larger reads better on screen.
   visual-size: 0.30
@@ -156,13 +160,16 @@ court-defaults:
     free-zone: BLUE_TERRACOTTA
     beach-court: SAND
     beach-free-zone: SAND
-  net-columns: 16
-  net-rows: 4
+  # net mesh resolution (more = finer netting, more display entities)
+  net-columns: 20
+  net-rows: 6
   # ticks of client interpolation for net animation
   net-interpolation: 2
   # Lines are display entities, so they never break and can be removed cleanly.
   line-material: WHITE_CONCRETE
   view-range: 1.5
+  # Referee stand, team benches and scorer's table (display entities).
+  furniture: true
 
 # Default match settings. Every court can override them with /vb rules <court>.
 match-defaults:
@@ -192,10 +199,14 @@ match-defaults:
     toss-drop: true
     ceiling-out: true
     serve-delay: true
+    libero: true            # libero may not block or attack above the net
+    rotation-order: false   # 6v6 positional (overlap) fault at the serve
 
 teams:
   a: { name: "Red", color: "#ff5555" }
   b: { name: "Blue", color: "#55aaff" }
+  # Liberos wear a contrasting jersey.
+  libero-color: "#f2f2f2"
 
 # Every sound has a vanilla version (heard by players without the pack) and a pack version.
 # Keys may be any sound event; set a key to "" to silence it. volume / pitch per entry.

@@ -42,12 +42,23 @@ public final class GuideBook {
                 page("<b>Spiking</b>\n\n<black>Sprint at the net and jump for an approach jump (extra height). "
                         + "Hit at the peak. Look down steeply for a sharp angle, ahead for deep shots.\n\n"
                         + "<b>Blocking</b>\n<black>Jump at the net and right-click as the attacker hits."),
+                page("<b>Positions</b>\n\n<black>Pick one with /vb role:\n"
+                        + "<dark_aqua>S</dark_aqua> setter\n<dark_aqua>OH</dark_aqua> outside hitter\n"
+                        + "<dark_aqua>MB</dark_aqua> middle blocker\n<dark_aqua>OPP</dark_aqua> opposite\n"
+                        + "<dark_aqua>L</dark_aqua> libero\n\n<black>6v6 uses the 5-1 system. Your rotation spot "
+                        + "and role show above your head and in the sidebar."),
+                page("<b>Libero</b>\n\n<black>Wears a white jersey and swaps in for a back-row middle "
+                        + "blocker each rally. The libero may not serve, block, or attack a ball that is "
+                        + "completely above the net."),
                 page("<b>Rules</b>\n\n<black>Rally point scoring, sets to 25 (win by 2), deciding set to 15. "
                         + "Max 3 touches, no double touches, no net touches, stay behind the end line when serving. "
                         + "Hosts change rules with /vb rules <court>."),
                 page("<b>Hosting</b>\n\n<black>/vb court create\n/vb scoreboard create\n/vb rules <court>\n"
                         + "/vb start <court>\n/vb referee <court>\n\n"
-                        + "<black>The whistle opens the referee menu (sneak + right-click)."));
+                        + "<black>The whistle opens the referee menu (sneak + right-click)."),
+                page("<b>Sounds</b>\n\n<black>Every action has its own sound. With the PowderPass resource "
+                        + "pack you hear custom sounds and see custom items. Installed it yourself? "
+                        + "Run /vb pack on."));
         p.openBook(Book.book(Component.text("Volleyball Guide"), Component.text("PowderPass"), pages));
     }
 
