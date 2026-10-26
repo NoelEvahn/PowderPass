@@ -28,6 +28,19 @@ public interface BallContext {
     default void onTick(Volleyball ball) {
     }
 
+    /**
+     * Aim assist: a floor point the touch should go to instead of the player's free aim (null = free aim).
+     * Contact quality still adds its error on top.
+     */
+    default Vec3 assistTarget(Player player, Volleyball ball, dev.powderpass.volleyball.hit.HitType type) {
+        return null;
+    }
+
+    /** Maximum outgoing speed (m/s) for a touch type, e.g. controlled hits in a pepper drill. */
+    default double speedCap(dev.powderpass.volleyball.hit.HitType type) {
+        return Double.MAX_VALUE;
+    }
+
     /** True if the ball should be removed (e.g. idle practice ball). */
     default boolean shouldDespawn(Volleyball ball) {
         return false;

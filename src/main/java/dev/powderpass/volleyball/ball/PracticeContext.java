@@ -10,7 +10,6 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.Bukkit;
-import org.bukkit.Color;
 import org.bukkit.entity.Player;
 
 import java.util.HashMap;
@@ -60,11 +59,13 @@ public final class PracticeContext implements BallContext {
         if (c == null) {
             return;
         }
-        double u = c.frame().toU(position.x, position.z);
-        double w = c.frame().toW(position.x, position.z);
-        boolean in = c.isIn(u, w, plugin.settings().physics.radius());
-        plugin.fx().ring(ball.world(), position.x, position.y, position.z, 0.3,
-                in ? Color.fromRGB(80, 255, 80) : Color.fromRGB(255, 70, 70), 14);
+        if (Math.abs(position.y - c.centerY()) > 0.6) {
+            return;
+        }
+        var visuals = plugin.courts().visuals(c);
+        double r = plugin.settings().physics.radius();
+        boolean in = visuals != null ? visuals.callLanding(position, r)
+                : c.isIn(c.frame().toU(position.x, position.z), c.frame().toW(position.x, position.z), r);
         Player p = Bukkit.getPlayer(ball.lastToucher());
         if (p != null && p.getWorld() == ball.world() && p.getLocation().distanceSquared(ball.location()) < 60 * 60) {
             p.sendActionBar(Component.text(in ? "IN" : "OUT", in ? NamedTextColor.GREEN : NamedTextColor.RED,

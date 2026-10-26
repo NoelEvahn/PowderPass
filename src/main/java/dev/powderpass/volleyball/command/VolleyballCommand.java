@@ -69,6 +69,7 @@ public final class VolleyballCommand implements TabExecutor {
                 case "aim" -> aim(sender);
                 case "pack" -> pack(sender, rest);
                 case "role", "position" -> role(sender, rest);
+                case "pepper" -> pepper(sender, rest);
                 case "referee", "ref" -> referee(sender, rest);
                 case "timeout" -> timeout(sender);
                 case "status" -> status(sender, rest);
@@ -139,6 +140,7 @@ public final class VolleyballCommand implements TabExecutor {
         line(s, c + " role [setter|outside|middle|opposite|libero|any]", "Pick your playing position");
         line(s, c + " leave", "Leave the lobby or match");
         line(s, c + " practice", "Get a ball + hands to practice anywhere");
+        line(s, c + " pepper [join|invite|leave]", "No-rules pepper drill: solo, pair or circle");
         line(s, c + " aim", "Toggle the aim target marker");
         line(s, c + " pack [on|off|auto|send]", "Custom sounds from the optional resource pack");
         line(s, c + " timeout", "Call a timeout for your team");
@@ -334,6 +336,69 @@ public final class VolleyballCommand implements TabExecutor {
         Player p = player(s);
         boolean on = plugin.hits().toggleReticle(p);
         Msg.send(p, "<gray>Aim marker " + (on ? "<green>on" : "<red>off"));
+    }
+
+    private void pepper(CommandSender s, String[] args) {
+        Player p = player(s);
+        perm(s, "powderpass.practice");
+        if (plugin.matches().byPlayer(p) != null) {
+            throw new CommandError("You are in a match.");
+        }
+        String action = args.length == 0 ? "start" : args[0].toLowerCase(Locale.ROOT);
+        switch (action) {
+            case "join" -> {
+                if (args.length < 2) {
+                    throw new CommandError("Usage: /vb pepper join <player>");
+                }
+                Player host = Bukkit.getPlayerExact(args[1]);
+                if (host == null || !plugin.pepper().join(p, host)) {
+                    throw new CommandError("That player is not peppering.");
+                }
+                giveIfMissing(p, ItemType.HANDS);
+            }
+            case "invite" -> {
+                if (args.length < 2) {
+                    throw new CommandError("Usage: /vb pepper invite <player>");
+                }
+                Player target = Bukkit.getPlayerExact(args[1]);
+                if (target == null) {
+                    throw new CommandError("Player not found.");
+                }
+                if (plugin.pepper().of(p) == null) {
+                    plugin.pepper().start(p);
+                }
+                plugin.pepper().invite(p, target);
+                Msg.send(p, "<gray>Invited " + Msg.escape(target.getName()) + ".");
+            }
+            case "leave", "stop" -> {
+                if (plugin.pepper().of(p) == null) {
+                    throw new CommandError("You are not peppering.");
+                }
+                plugin.pepper().leave(p);
+                Msg.send(p, "<gray>You left the pepper.");
+            }
+            default -> {
+                plugin.matches().leaveLobby(p);
+                giveIfMissing(p, ItemType.HANDS);
+                var session = plugin.pepper().start(p);
+                Msg.send(p, "<gold>Pepper!</gold> <gray>No rules - keep the ball off the floor. Face a teammate and the ball "
+                        + "goes to them (alone it comes back to you). Bump, set, hit, repeat. Nearby players got an invite. "
+                        + "Leave with /vb pepper leave.");
+                p.getInventory().setHeldItemSlot(slotOf(p, ItemType.HANDS, p.getInventory().getHeldItemSlot()));
+                if (session.members().size() == 1) {
+                    p.sendActionBar(Msg.mm("<gold>Solo pepper</gold> <gray>- invite friends with /vb pepper invite <name>"));
+                }
+            }
+        }
+    }
+
+    private static int slotOf(Player p, ItemType type, int fallback) {
+        for (int i = 0; i < 9; i++) {
+            if (dev.powderpass.volleyball.items.CustomItems.is(p.getInventory().getItem(i), type)) {
+                return i;
+            }
+        }
+        return fallback;
     }
 
     private void role(CommandSender s, String[] args) {
@@ -828,7 +893,7 @@ public final class VolleyballCommand implements TabExecutor {
     public List<String> onTabComplete(CommandSender s, Command command, String alias, String[] args) {
         List<String> out = new ArrayList<>();
         if (args.length == 1) {
-            out.addAll(List.of("help", "guide", "join", "leave", "role", "practice", "aim", "pack", "timeout", "status"));
+            out.addAll(List.of("help", "guide", "join", "leave", "role", "practice", "pepper", "aim", "pack", "timeout", "status"));
             if (s.hasPermission("powderpass.host")) {
                 out.addAll(List.of("start", "stop", "rules", "referee"));
             }
@@ -933,6 +998,13 @@ public final class VolleyballCommand implements TabExecutor {
             case "pack" -> {
                 if (args.length == 2) {
                     out.addAll(List.of("on", "off", "auto", "send"));
+                }
+            }
+            case "pepper" -> {
+                if (args.length == 2) {
+                    out.addAll(List.of("join", "invite", "leave"));
+                } else if (args.length == 3) {
+                    Bukkit.getOnlinePlayers().forEach(pl -> out.add(pl.getName()));
                 }
             }
             case "give" -> {

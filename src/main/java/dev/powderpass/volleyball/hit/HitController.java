@@ -452,6 +452,14 @@ public final class HitController {
         double floorY = court != null ? court.centerY() : s.lastGround.y;
         Vec3 dir = horizontalDir(l);
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
+        Vec3 assist = ball.context().assistTarget(p, ball, type);
+        if (assist != null) {
+            // face the assisted target so arcs and spin line up with it
+            Vec3 to = new Vec3(assist.x - l.getX(), 0, assist.z - l.getZ());
+            if (to.lengthSq() > 1e-4) {
+                dir = to.normalize();
+            }
+        }
 
         Vec3 vel;
         Vec3 spin = new Vec3();
@@ -469,7 +477,7 @@ public final class HitController {
                     dist *= 0.4 + rnd.nextDouble() * 0.8;
                     apex *= 0.5 + rnd.nextDouble() * 0.8;
                 }
-                Vec3 target = target(l, d, dist, floorY, cfg.maxError() * Math.pow(1 - q, 1.4), rnd);
+                Vec3 target = aim(l, d, dist, floorY, cfg.maxError() * Math.pow(1 - q, 1.4), rnd, assist);
                 spin = TrajectorySolver.SpinFactory.topspin(-3 - rnd.nextDouble() * 3).spinFor(d);
                 vel = solver.solveArc(start, target, floorY, Math.max(0.4, apex), spin);
             }
@@ -477,7 +485,7 @@ public final class HitController {
                 Settings.SetHit cfg = st.set;
                 double dist = cfg.aim().distanceFor(l.getPitch());
                 double apex = type == HitType.QUICK_SET ? cfg.quickApex() : cfg.apex();
-                Vec3 target = target(l, dir, dist, floorY, cfg.maxError() * Math.pow(1 - q, 1.5), rnd);
+                Vec3 target = aim(l, dir, dist, floorY, cfg.maxError() * Math.pow(1 - q, 1.5), rnd, assist);
                 double wobble = (1 - q) * 10;
                 spin.set(rnd.nextGaussian() * wobble, rnd.nextGaussian() * wobble, rnd.nextGaussian() * wobble);
                 vel = solver.solveArc(start, target, floorY, apex, spin);
@@ -485,26 +493,26 @@ public final class HitController {
             case TIP -> {
                 Settings.Tip cfg = st.tip;
                 double dist = cfg.aim().distanceFor(l.getPitch());
-                Vec3 target = target(l, dir, dist, floorY, cfg.maxError() * Math.pow(1 - q, 1.4), rnd);
+                Vec3 target = aim(l, dir, dist, floorY, cfg.maxError() * Math.pow(1 - q, 1.4), rnd, assist);
                 vel = solver.solveArc(start, target, floorY, cfg.apex(), spin);
             }
             case SPIKE -> {
                 Settings.Spike cfg = st.spike;
                 double power = q * (s.sprintTakeoff ? 1.0 : 0.88);
                 // input.isSprint() may be set without the sprint flag: treat a fast take-off as an approach
-                double speed = lerp(cfg.minSpeed(), cfg.maxSpeed(), power);
+                double speed = Math.min(lerp(cfg.minSpeed(), cfg.maxSpeed(), power), ball.context().speedCap(type));
                 double rate = lerp(cfg.minTopspin(), cfg.maxTopspin(), q);
                 double dist = cfg.aim().distanceFor(l.getPitch());
-                Vec3 target = target(l, dir, dist, floorY, cfg.maxError() * Math.pow(1 - q, 1.3), rnd);
+                Vec3 target = aim(l, dir, dist, floorY, cfg.maxError() * Math.pow(1 - q, 1.3), rnd, assist);
                 TrajectorySolver.SpinFactory sf = TrajectorySolver.SpinFactory.topspin(rate);
                 vel = solver.solveDriven(start, target, floorY, speed, sf);
                 spin = sf.spinFor(vel);
             }
             case STANDING_ATTACK -> {
                 Settings.StandingAttack cfg = st.standingAttack;
-                double speed = lerp(cfg.minSpeed(), cfg.maxSpeed(), q);
+                double speed = Math.min(lerp(cfg.minSpeed(), cfg.maxSpeed(), q), ball.context().speedCap(type));
                 double dist = cfg.aim().distanceFor(l.getPitch());
-                Vec3 target = target(l, dir, dist, floorY, cfg.maxError() * Math.pow(1 - q, 1.3), rnd);
+                Vec3 target = aim(l, dir, dist, floorY, cfg.maxError() * Math.pow(1 - q, 1.3), rnd, assist);
                 TrajectorySolver.SpinFactory sf = TrajectorySolver.SpinFactory.topspin(cfg.topspin());
                 vel = solver.solveDriven(start, target, floorY, speed, sf);
                 spin = sf.spinFor(vel);
@@ -513,7 +521,7 @@ public final class HitController {
                 Settings.Serve cfg = st.serve;
                 double dist = cfg.aim().distanceFor(l.getPitch());
                 double err = cfg.maxError() * Math.pow(1 - q, 1.3);
-                Vec3 target = target(l, dir, dist, floorY, type == HitType.SERVE_UNDERHAND ? err * 0.5 : err, rnd);
+                Vec3 target = aim(l, dir, dist, floorY, type == HitType.SERVE_UNDERHAND ? err * 0.5 : err, rnd, assist);
                 TrajectorySolver.SpinFactory sf;
                 double speed;
                 switch (type) {
@@ -556,6 +564,21 @@ public final class HitController {
         HitResult result = new HitResult(type, q, Grade.of(q), start, feet, vel.length(), airborne);
         effects(p, ball, result);
         ball.context().onHit(p, ball, result);
+    }
+
+    /** Free aim, or the assisted target when the ball's context offers one; both get the quality error. */
+    private static Vec3 aim(Location l, Vec3 dir, double dist, double floorY, double sigma, ThreadLocalRandom rnd,
+                            Vec3 assist) {
+        if (assist == null) {
+            return target(l, dir, dist, floorY, sigma, rnd);
+        }
+        Vec3 t = new Vec3(assist.x, floorY, assist.z);
+        double s = sigma * 0.6;
+        if (s > 1e-3) {
+            t.x += rnd.nextGaussian() * s;
+            t.z += rnd.nextGaussian() * s;
+        }
+        return t;
     }
 
     /** Aim point on the floor, with a quality dependent random error. */
@@ -922,6 +945,13 @@ public final class HitController {
                     best = d;
                     nearest = b;
                 }
+            }
+            Vec3 assisted = nearest == null ? null : nearest.context().assistTarget(p, nearest, HitType.BUMP);
+            if (tossed == null && assisted != null) {
+                Court c = courtFor(p);
+                double fy = c != null ? c.centerY() : s.lastGround.y;
+                plugin.fx().ringFor(p, assisted.x, fy, assisted.z, 0.45, Color.fromRGB(255, 160, 40), 12);
+                return;
             }
             if (tossed != null) {
                 profile = st.serve.aim();

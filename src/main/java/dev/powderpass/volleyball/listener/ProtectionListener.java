@@ -98,6 +98,7 @@ public final class ProtectionListener implements Listener {
     public void onQuit(PlayerQuitEvent e) {
         Player p = e.getPlayer();
         plugin.matches().leave(p, true);
+        plugin.pepper().leave(p);
         plugin.hits().forget(p.getUniqueId());
         plugin.balls().removeOwnedBy(p.getUniqueId());
     }

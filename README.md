@@ -3,7 +3,9 @@
 A complete, multiplayer volleyball game for **Paper 1.21.11**. It works with the vanilla client: no mods and no resource pack are needed. An optional resource pack adds custom held-item models and custom sound effects for the players who have it.
 
 - **Real ball physics.** The plugin simulates gravity, quadratic air drag (including the drag crisis), Magnus lift from topspin and backspin, the float-serve "knuckle" wobble, and bounces with spin and friction. Physics is sub-stepped every tick against real block shapes.
-- **A real net.** It has a mesh, a top tape (net-cord rolls), antennas, side bands and posts. A mass-spring simulation animates the net when the ball or a player hits it.
+- **A real net.** It has strands with translucent netting in every cell, a top tape (net-cord rolls), a bottom rope, antennas, side bands and padded posts with winches. A mass-spring simulation animates the net when the ball or a player hits it.
+- **Line calls you can see.** The line a ball lands beyond flashes red, a close call flashes green, and a ball mark with a floating IN / OUT appears where it touched down. Faults light up their cause: the net glows red on a net touch, the antenna on an antenna fault, the centre line, end line (foot fault) or attack line. The serving team's end line glows in their colour during the serve, and points end with a burst over the winning half.
+- **Pepper.** `/vb pepper` starts a no-rules drill: keep the ball off the floor. Alone you juggle (every touch comes back to you); with a partner or a circle of players the ball goes to whoever you face. Hits are kept controllable, a live streak and best streak show in a boss bar, and a dropped ball is fed back in.
 - **Every touch.** You can bump, dig, dive, set, quick set, spike, tip, use a standing "down ball" and block. Serves include the float, standing topspin, jump topspin, jump float and underhand serve.
 - **Skill-based input.** Contact quality comes from timing and position, and it drives power and accuracy. You aim with your view, and an aim marker shows the target. Lag compensation and input buffering keep the game fair at real-world ping.
 - **Positions.** Players pick a role: setter, outside hitter, middle blocker, opposite or libero. 6v6 lineups follow the 5-1 system, and smaller teams use a shortened template. The libero wears a contrasting jersey and swaps in for a back-row middle each rally. Rotation spot and role show above heads and in the sidebar, teams wear coloured jerseys, and players no longer push each other.
@@ -74,6 +76,7 @@ Hold the **Volleyball Hands** item, which fills your hotbar during a match. Clic
 | `/vb role [setter\|outside\|middle\|opposite\|libero\|any]` | — | Pick your playing position for the next match |
 | `/vb leave` | — | Leave the lobby or match. Your inventory is restored |
 | `/vb practice` | `powderpass.practice` | Practice kit (ball + hands) |
+| `/vb pepper [join <player>\|invite <player>\|leave]` | `powderpass.practice` | No-rules pepper drill: solo, pair or circle (by group size). Nearby players get a clickable invite |
 | `/vb ball spawn\|clear` | `powderpass.practice` | Spawn or clear your free-play balls |
 | `/vb aim` | — | Toggle the aim marker |
 | `/vb pack [on\|off\|auto\|send]` | — | Custom sounds if you installed the pack yourself; `send` downloads it when the server hosts it |
@@ -171,7 +174,7 @@ Performance was measured on a live 1.21.11 server with bots. A 6v6 match with 12
 - `sounds.*`: every sound has a `vanilla` entry and a `pack` entry (any sound event key, volume and pitch).
 - `resource-pack.*`: `mode` (`auto` uses the client's pack status plus `/vb pack on`, `everyone`, `nobody`), and optionally `url`/`sha1`/`required` so the plugin offers the pack itself.
 - `ball.*`: `style` (`classic` 18-panel or `caps`), `detail` (6 to 14 voxels across), panel `colors`, size and interpolation.
-- `court-defaults.furniture`: referee stand, benches and scorer's table on or off. `net-columns`/`net-rows` set the mesh density.
+- `court-defaults.furniture`: referee stand, benches and scorer's table on or off. `net-columns`/`net-rows` set the mesh density and `net-fill` the translucent netting.
 - `teams.libero-color`: the libero's jersey colour.
 
 ## Resource pack (optional)

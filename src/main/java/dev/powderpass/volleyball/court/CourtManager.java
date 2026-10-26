@@ -88,7 +88,7 @@ public final class CourtManager {
             return;
         }
         addTickets(c, world);
-        CourtVisuals v = new CourtVisuals(c);
+        CourtVisuals v = new CourtVisuals(plugin, c);
         v.spawn(plugin.settings());
         visuals.put(key(c.name()), v);
     }

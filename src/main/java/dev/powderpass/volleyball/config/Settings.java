@@ -59,7 +59,7 @@ public final class Settings {
     public record CourtDefaults(double freeZone, double netBandHeight, double antennaAboveNet, double postOffset,
                                 Material courtFloor, Material freeZoneFloor, Material beachFloor,
                                 Material beachFreeZoneFloor, int netColumns, int netRows, int netInterpolation,
-                                Material lineMaterial, float viewRange, boolean furniture) {
+                                Material lineMaterial, float viewRange, boolean furniture, boolean netFill) {
     }
 
     public record TeamStyle(String name, TextColor color) {
@@ -264,7 +264,8 @@ public final class Settings {
                 (int) clamp(c.getInt(cd + "net-interpolation", 2), 0, 10),
                 material(c.getString(cd + "line-material"), Material.WHITE_CONCRETE, log),
                 (float) clamp(c.getDouble(cd + "view-range", 1.5), 0.1, 10),
-                c.getBoolean(cd + "furniture", true));
+                c.getBoolean(cd + "furniture", true),
+                c.getBoolean(cd + "net-fill", true));
 
         matchDefaults = MatchSettings.load(c.getConfigurationSection("match-defaults"), MatchSettings.standard());
         teamA = team(c.getConfigurationSection("teams.a"), "Red", "#ff5555");

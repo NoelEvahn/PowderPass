@@ -3,6 +3,9 @@ package dev.powderpass.volleyball.court;
 import dev.powderpass.volleyball.config.Settings;
 import dev.powderpass.volleyball.math.Vec3;
 import dev.powderpass.volleyball.util.Displays;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -22,11 +25,40 @@ public final class CourtVisuals {
     private static final double LINE_Y = 0.004;
     private static final double LINE_THICK = 0.006;
 
+    /** Named groups of court decorations that can be highlighted. */
+    public enum Mark {
+        SIDE_POS, SIDE_NEG, END_POS, END_NEG, CENTER, ATTACK_POS, ATTACK_NEG, ANTENNA_POS, ANTENNA_NEG;
+
+        public static Mark end(int side) {
+            return side > 0 ? END_POS : END_NEG;
+        }
+
+        public static Mark sideline(int side) {
+            return side > 0 ? SIDE_POS : SIDE_NEG;
+        }
+
+        public static Mark attack(int side) {
+            return side > 0 ? ATTACK_POS : ATTACK_NEG;
+        }
+
+        public static Mark antenna(int side) {
+            return side > 0 ? ANTENNA_POS : ANTENNA_NEG;
+        }
+    }
+
+    private final org.bukkit.plugin.Plugin plugin;
     private final Court court;
     private final List<Display> displays = new ArrayList<>();
+    private final java.util.Map<Mark, List<org.bukkit.entity.BlockDisplay>> marks = new java.util.EnumMap<>(Mark.class);
+    private final java.util.Map<org.bukkit.entity.BlockDisplay, org.bukkit.block.data.BlockData> original = new java.util.HashMap<>();
+    private final java.util.Map<Mark, Long> flashUntil = new java.util.EnumMap<>(Mark.class);
+    private final java.util.Map<Mark, org.bukkit.Color> highlights = new java.util.EnumMap<>(Mark.class);
+    private final List<org.bukkit.entity.Entity> temporary = new ArrayList<>();
+    private Mark current;
     private NetRenderer net;
 
-    public CourtVisuals(Court court) {
+    public CourtVisuals(org.bukkit.plugin.Plugin plugin, Court court) {
+        this.plugin = plugin;
         this.court = court;
     }
 
@@ -48,24 +80,32 @@ public final class CourtVisuals {
         double hw = court.halfWidth();
 
         // boundary lines (inside the court area, lines belong to the court)
+        current = Mark.SIDE_POS;
         rect(world, line, vr, owner, -hl, hl, hw - LINE, hw);
+        current = Mark.SIDE_NEG;
         rect(world, line, vr, owner, -hl, hl, -hw, -hw + LINE);
+        current = Mark.END_POS;
         rect(world, line, vr, owner, hl - LINE, hl, -hw, hw);
+        current = Mark.END_NEG;
         rect(world, line, vr, owner, -hl, -hl + LINE, -hw, hw);
         // centre line under the net
+        current = Mark.CENTER;
         rect(world, line, vr, owner, -LINE / 2, LINE / 2, -hw, hw);
+        current = null;
         // attack lines with dashed extensions
         double al = court.attackLine();
         if (al > 0 && al < hl) {
             for (int s = -1; s <= 1; s += 2) {
                 double u0 = s * al;
                 double u1 = s * (al - LINE);
+                current = Mark.attack(s);
                 rect(world, line, vr, owner, Math.min(u0, u1), Math.max(u0, u1), -hw, hw);
                 for (int k = 0; k < 5; k++) {
                     double start = hw + 0.2 + k * 0.35;
                     rect(world, line, vr, owner, Math.min(u0, u1), Math.max(u0, u1), start, start + 0.15);
                     rect(world, line, vr, owner, Math.min(u0, u1), Math.max(u0, u1), -start - 0.15, -start);
                 }
+                current = null;
             }
         }
         // service zone marks: 15 cm long, 20 cm behind the end line, in line with the side lines
@@ -103,20 +143,26 @@ public final class CourtVisuals {
         double stripe = antennaLen / stripes;
         for (int s = -1; s <= 1; s += 2) {
             double w = s * hw;
+            current = Mark.antenna(s);
             for (int k = 0; k < stripes; k++) {
                 Material m = (k % 2 == 0) ? Material.WHITE_CONCRETE : Material.RED_CONCRETE;
                 box(world, m, vr, owner, 0, antennaBottom + k * stripe, w, 0.028, stripe, 0.028);
             }
+            current = null;
         }
         // net cable from the tape to the posts
         for (int s = -1; s <= 1; s += 2) {
             double from = s * court.net().geometry().halfLength();
             double to = s * postW;
             rectVertical(world, Material.GRAY_CONCRETE, vr, owner, Math.min(from, to), Math.max(from, to), top - 0.045, 0.012);
+            // bottom rope and the tensioning winch on the post
+            rectVertical(world, Material.GRAY_CONCRETE, vr, owner, Math.min(from, to), Math.max(from, to), bottomOfNet + 0.02, 0.008);
+            box(world, Material.GRAY_CONCRETE, vr, owner, 0.0, top - 0.75, s * (postW + 0.1), 0.08, 0.14, 0.08);
+            box(world, Material.IRON_BLOCK, vr, owner, 0.07, top - 0.70, s * (postW + 0.1), 0.06, 0.03, 0.03);
         }
 
         net = new NetRenderer(court, cd.netColumns(), cd.netRows(), cd.netInterpolation());
-        net.spawn(world, vr, owner);
+        net.spawn(world, vr, owner, cd.netFill());
     }
 
     /**
@@ -215,7 +261,144 @@ public final class CourtVisuals {
         double cz = z + sz / 2;
         Location at = new Location(world, cx, y, cz);
         Matrix4f m = Displays.box(-sx / 2, 0, -sz / 2, sx, sy, sz);
-        displays.add(Displays.block(world, at, mat, m, vr, owner));
+        org.bukkit.entity.BlockDisplay d = Displays.block(world, at, mat, m, vr, owner);
+        displays.add(d);
+        if (current != null) {
+            marks.computeIfAbsent(current, k -> new ArrayList<>()).add(d);
+            original.put(d, d.getBlock());
+        }
+    }
+
+    // ------------------------------------------------------------------------------------------- highlights
+
+    /** Briefly recolours and outlines a group (e.g. the line a ball landed beyond). */
+    public void flash(Mark mark, Material block, org.bukkit.Color glow, int ticks) {
+        List<org.bukkit.entity.BlockDisplay> group = marks.get(mark);
+        if (group == null) {
+            return;
+        }
+        long until = court.world().getFullTime() + ticks;
+        flashUntil.put(mark, until);
+        org.bukkit.block.data.BlockData data = block.createBlockData();
+        for (org.bukkit.entity.BlockDisplay d : group) {
+            d.setBlock(data);
+            d.setGlowColorOverride(glow);
+            d.setGlowing(true);
+        }
+        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+            Long u = flashUntil.get(mark);
+            if (u != null && u == until) {
+                flashUntil.remove(mark);
+                restore(mark);
+            }
+        }, ticks);
+    }
+
+    /** Keeps a group outlined until cleared with {@code null} (used for the service zone). */
+    public void highlight(Mark mark, org.bukkit.Color glow) {
+        if (glow == null) {
+            highlights.remove(mark);
+        } else {
+            highlights.put(mark, glow);
+        }
+        if (!flashUntil.containsKey(mark)) {
+            restore(mark);
+        }
+    }
+
+    private void restore(Mark mark) {
+        List<org.bukkit.entity.BlockDisplay> group = marks.get(mark);
+        if (group == null) {
+            return;
+        }
+        org.bukkit.Color keep = highlights.get(mark);
+        for (org.bukkit.entity.BlockDisplay d : group) {
+            if (!d.isValid()) {
+                continue;
+            }
+            d.setBlock(original.get(d));
+            d.setGlowing(keep != null);
+            d.setGlowColorOverride(keep);
+        }
+    }
+
+    /**
+     * Calls a landing like a line judge: flashes the crossed line red (out) or a nearby line green (close
+     * call in), leaves a coloured ball mark and a floating IN / OUT.
+     *
+     * @return true when the ball is in
+     */
+    public boolean callLanding(dev.powderpass.volleyball.math.Vec3 pos, double ballRadius) {
+        double u = court.frame().toU(pos.x, pos.z);
+        double w = court.frame().toW(pos.x, pos.z);
+        boolean in = court.isIn(u, w, ballRadius);
+        double hl = court.halfLength();
+        double hw = court.halfWidth();
+        if (!in) {
+            if (Math.abs(u) > hl + ballRadius * 0.5) {
+                flash(Mark.end(u > 0 ? 1 : -1), Material.RED_CONCRETE, org.bukkit.Color.RED, 50);
+            }
+            if (Math.abs(w) > hw + ballRadius * 0.5) {
+                flash(Mark.sideline(w > 0 ? 1 : -1), Material.RED_CONCRETE, org.bukkit.Color.RED, 50);
+            }
+        } else {
+            double close = 0.35;
+            if (hl - Math.abs(u) < close) {
+                flash(Mark.end(u > 0 ? 1 : -1), Material.LIME_CONCRETE, org.bukkit.Color.LIME, 40);
+            }
+            if (hw - Math.abs(w) < close) {
+                flash(Mark.sideline(w > 0 ? 1 : -1), Material.LIME_CONCRETE, org.bukkit.Color.LIME, 40);
+            }
+        }
+        ballMark(pos, in);
+        return in;
+    }
+
+    /** A flat coloured disc where the ball touched down plus a floating call, removed after a few seconds. */
+    private void ballMark(dev.powderpass.volleyball.math.Vec3 pos, boolean in) {
+        World world = court.world();
+        if (world == null) {
+            return;
+        }
+        Material mat = in ? Material.LIME_CONCRETE : Material.RED_CONCRETE;
+        double y = court.centerY() + 0.008;
+        double r = 0.13;
+        double s = 2 * r * Math.tan(Math.PI / 8);
+        double[][] parts = {{2 * r, s}, {s, 2 * r}, {r * Math.sqrt(2), r * Math.sqrt(2)}};
+        Location at = new Location(world, pos.x, y, pos.z);
+        for (double[] part : parts) {
+            Matrix4f m = Displays.box(-part[0] / 2, 0, -part[1] / 2, part[0], 0.004, part[1]);
+            org.bukkit.entity.BlockDisplay d = Displays.block(world, at, mat, m, 2f, "court:" + court.name());
+            d.setBrightness(new Display.Brightness(15, 15));
+            temporary.add(d);
+            plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+                d.remove();
+                temporary.remove(d);
+            }, 70);
+        }
+        org.bukkit.entity.TextDisplay text = world.spawn(at.clone().add(0, 0.55, 0), org.bukkit.entity.TextDisplay.class, t -> {
+            t.text(Component.text(in ? "IN" : "OUT",
+                    in ? NamedTextColor.GREEN : NamedTextColor.RED,
+                    TextDecoration.BOLD));
+            t.setBillboard(Display.Billboard.CENTER);
+            t.setBackgroundColor(org.bukkit.Color.fromARGB(120, 0, 0, 0));
+            t.setBrightness(new Display.Brightness(15, 15));
+            t.setTransformation(new org.bukkit.util.Transformation(new org.joml.Vector3f(), new org.joml.Quaternionf(),
+                    new org.joml.Vector3f(1.6f), new org.joml.Quaternionf()));
+            Displays.tag(t, "court:" + court.name());
+        });
+        temporary.add(text);
+        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+            text.remove();
+            temporary.remove(text);
+        }, 50);
+    }
+
+    /** The net glows (e.g. red on a net touch). */
+    public void flashNet(org.bukkit.Color glow, int ticks) {
+        if (net != null) {
+            net.flash(plugin, glow, ticks);
+        }
     }
 
     public void tick() {
@@ -229,6 +412,13 @@ public final class CourtVisuals {
             d.remove();
         }
         displays.clear();
+        marks.clear();
+        original.clear();
+        flashUntil.clear();
+        for (org.bukkit.entity.Entity e : new ArrayList<>(temporary)) {
+            e.remove();
+        }
+        temporary.clear();
         if (net != null) {
             net.remove();
             net = null;

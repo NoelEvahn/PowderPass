@@ -271,6 +271,7 @@ public final class Match implements BallContext {
             return;
         }
         ended = true;
+        serviceZone(false);
         removeBall();
         for (Player p : players()) {
             release(p);
@@ -356,6 +357,7 @@ public final class Match implements BallContext {
                 if (stateTicks >= stateDuration && (!settings.flag(MatchSettings.Option.REFEREE_WHISTLE) || serveAuthorized)) {
                     whistle();
                     enter(MatchState.SERVE, settings.get(MatchSettings.Option.SERVE_TIME) * 20);
+                    serviceZone(true);
                 }
             }
             case SERVE -> {
@@ -405,6 +407,7 @@ public final class Match implements BallContext {
     }
 
     private void beginRallySetup() {
+        serviceZone(false);
         removeBall();
         resetRally();
         positionPlayers();
@@ -759,6 +762,7 @@ public final class Match implements BallContext {
             return;
         }
         served = true;
+        serviceZone(false);
         enter(MatchState.RALLY, 0);
         serveInFlight = true;
         serveCrossed = false;
@@ -822,12 +826,12 @@ public final class Match implements BallContext {
             double u = f.toU(position.x, position.z);
             double w = f.toW(position.x, position.z);
             double r = plugin.settings().physics.radius();
-            if (court.isIn(u, w, r)) {
+            var visuals = plugin.courts().visuals(court);
+            boolean in = visuals != null ? visuals.callLanding(position, r) : court.isIn(u, w, r);
+            if (in) {
                 TeamId sideTeam = u < 0 ? teamOnSide(-1) : teamOnSide(1);
-                pointMarker(position, true);
                 awardPoint(sideTeam.other(), Fault.BALL_IN, null);
             } else {
-                pointMarker(position, false);
                 faultAgainstLastTouch(Fault.BALL_OUT);
             }
         } else if (settings.rule(Rule.CEILING_OUT) && impact > 0.05) {
@@ -835,8 +839,41 @@ public final class Match implements BallContext {
         }
     }
 
-    private void pointMarker(Vec3 p, boolean in) {
-        plugin.fx().ring(court.world(), p.x, p.y, p.z, 0.32, in ? Color.fromRGB(80, 255, 80) : Color.fromRGB(255, 60, 60), 16);
+    /** Lights up whatever caused a fault, like a line judge's flag. */
+    private void showFault(Fault f, TeamId against, Player culprit) {
+        var v = plugin.courts().visuals(court);
+        if (v == null) {
+            return;
+        }
+        int side = team(against).side();
+        switch (f) {
+            case NET_TOUCH -> v.flashNet(Color.RED, 40);
+            case ANTENNA, OUTSIDE_ANTENNA -> {
+                double w = ball == null ? 1 : court.frame().toW(ball.position().x, ball.position().z);
+                v.flash(dev.powderpass.volleyball.court.CourtVisuals.Mark.antenna(w >= 0 ? 1 : -1),
+                        org.bukkit.Material.RED_CONCRETE, Color.RED, 50);
+            }
+            case CENTER_LINE -> v.flash(dev.powderpass.volleyball.court.CourtVisuals.Mark.CENTER,
+                    org.bukkit.Material.RED_CONCRETE, Color.RED, 50);
+            case FOOT_FAULT -> v.flash(dev.powderpass.volleyball.court.CourtVisuals.Mark.end(side),
+                    org.bukkit.Material.RED_CONCRETE, Color.RED, 50);
+            case BACK_ROW_ATTACK, BACK_ROW_BLOCK -> v.flash(dev.powderpass.volleyball.court.CourtVisuals.Mark.attack(side),
+                    org.bukkit.Material.RED_CONCRETE, Color.RED, 50);
+            default -> {
+            }
+        }
+    }
+
+    /** The serving team's end line glows in their colour while they serve. */
+    private void serviceZone(boolean on) {
+        var v = plugin.courts().visuals(court);
+        if (v == null) {
+            return;
+        }
+        for (Team t : teams) {
+            v.highlight(dev.powderpass.volleyball.court.CourtVisuals.Mark.end(t.side()),
+                    on && t.id() == score.serving() ? Color.fromRGB(t.color().value()) : null);
+        }
     }
 
     @Override
@@ -929,6 +966,9 @@ public final class Match implements BallContext {
 
     /** {@code against} committed a fault: the other team scores. */
     public void fault(TeamId against, Fault f, Player culprit) {
+        if (state != MatchState.POINT_END && state != MatchState.FINISHED && !ended) {
+            showFault(f, against, culprit);
+        }
         awardPoint(against.other(), f, culprit);
     }
 
@@ -940,12 +980,17 @@ public final class Match implements BallContext {
         while (undo.size() > 20) {
             undo.removeLast();
         }
+        serviceZone(false);
         ScoreKeeper.Outcome o = score.awardPoint(scorer);
         if (o.setWon()) {
             longWhistle();
         } else {
             whistle();
         }
+        // sparkle over the winning half
+        Location half = court.location(team(scorer).side() * court.halfLength() * 0.5, 2.5, 0);
+        plugin.fx().particle(half, org.bukkit.Particle.FIREWORK, 30, 1.6, 0.05);
+        plugin.fx().dust(half, Color.fromRGB(team(scorer).color().value()), 1.6f, 25, 1.8);
         // the crowd cheers a won rally, louder for long ones
         crowd(Settings.SoundId.CHEER, rallyTouches >= 4 ? 1.2f : 0.8f);
         Team winner = team(scorer);

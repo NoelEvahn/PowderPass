@@ -73,6 +73,10 @@ public final class InputListener implements Listener {
             m.requestUnderhand(p);
             return;
         }
+        if (plugin.pepper().of(p) != null) {
+            plugin.pepper().of(p).feed(p);
+            return;
+        }
         if (!p.hasPermission("powderpass.practice")) {
             return;
         }
@@ -149,6 +153,11 @@ public final class InputListener implements Listener {
         Match m = plugin.matches().byPlayer(p);
         if (m != null) {
             m.requestToss(p);
+            return;
+        }
+        var pepper = plugin.pepper().of(p);
+        if (pepper != null) {
+            pepper.feed(p);
             return;
         }
         if (!p.hasPermission("powderpass.practice")) {

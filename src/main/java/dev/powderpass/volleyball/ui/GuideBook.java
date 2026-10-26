@@ -50,6 +50,10 @@ public final class GuideBook {
                 page("<b>Libero</b>\n\n<black>Wears a white jersey and swaps in for a back-row middle "
                         + "blocker each rally. The libero may not serve, block, or attack a ball that is "
                         + "completely above the net."),
+                page("<b>Pepper</b>\n\n<black>/vb pepper starts a warm-up with no rules: keep the ball off "
+                        + "the floor.\n\n<dark_aqua>Alone</dark_aqua> the ball comes back to you.\n"
+                        + "<dark_aqua>Together</dark_aqua> it goes to whoever you face: bump, set, hit.\n\n"
+                        + "<black>Friends join with the [Join] link or /vb pepper join."),
                 page("<b>Rules</b>\n\n<black>Rally point scoring, sets to 25 (win by 2), deciding set to 15. "
                         + "Max 3 touches, no double touches, no net touches, stay behind the end line when serving. "
                         + "Hosts change rules with /vb rules <court>."),

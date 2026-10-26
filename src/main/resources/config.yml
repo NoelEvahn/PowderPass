@@ -163,6 +163,8 @@ court-defaults:
   # net mesh resolution (more = finer netting, more display entities)
   net-columns: 20
   net-rows: 6
+  # Translucent netting in every mesh cell (looks like fine mesh from a distance; one display per cell).
+  net-fill: true
   # ticks of client interpolation for net animation
   net-interpolation: 2
   # Lines are display entities, so they never break and can be removed cleanly.

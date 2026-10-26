@@ -132,6 +132,12 @@ public final class MatchManager {
         lobbies.remove(key(court));
         // clear free-play balls from the court
         plugin.balls().removeIf(ball -> ball.context() == plugin.balls().practice() && court.inArea(ball.location(), 2));
+        for (UUID id : a) {
+            plugin.pepper().leave(Bukkit.getPlayer(id));
+        }
+        for (UUID id : b) {
+            plugin.pepper().leave(Bukkit.getPlayer(id));
+        }
         Match m = new Match(plugin, court, court.settings().copy(), Lineup.build(a, roles), Lineup.build(b, roles),
                 host == null ? null : host.getUniqueId());
         matches.put(key(court), m);

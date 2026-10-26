@@ -43,6 +43,7 @@ public final class PowderPassPlugin extends JavaPlugin {
     private Menus menus;
     private SnapshotStore snapshots;
     private PackManager packs;
+    private dev.powderpass.volleyball.pepper.PepperManager pepper;
     private BallModel ballModel;
     private BukkitTask ticker;
 
@@ -68,6 +69,7 @@ public final class PowderPassPlugin extends JavaPlugin {
         hud = new HudManager(this);
         boards = new ScoreboardManager(this);
         menus = new Menus(this);
+        pepper = new dev.powderpass.volleyball.pepper.PepperManager(this);
 
         removeStrayEntities();
         courts.load();
@@ -129,6 +131,7 @@ public final class PowderPassPlugin extends JavaPlugin {
             hits.tick();
             long t2 = System.nanoTime();
             matches.tick();
+            pepper.tick();
             long t3 = System.nanoTime();
             courts.tick();
             long t4 = System.nanoTime();
@@ -203,6 +206,9 @@ public final class PowderPassPlugin extends JavaPlugin {
         if (matches != null) {
             matches.shutdown();
         }
+        if (pepper != null) {
+            pepper.shutdown();
+        }
         if (hud != null) {
             hud.shutdown();
         }
@@ -258,6 +264,10 @@ public final class PowderPassPlugin extends JavaPlugin {
 
     public Menus menus() {
         return menus;
+    }
+
+    public dev.powderpass.volleyball.pepper.PepperManager pepper() {
+        return pepper;
     }
 
     public PackManager packs() {
