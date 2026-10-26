@@ -1,0 +1,224 @@
+# ============================================================================
+#  PowderPass - realistic volleyball for Paper 1.21.11
+#  All distances are in blocks (1 block = 1 metre), speeds in metres/second.
+#  Run /vb reload after editing.
+# ============================================================================
+
+# Optional resource pack. When enabled, the ball, whistle and hands items use the
+# custom 3D models from the PowderPass pack (see resourcepack/ in the repository).
+# Players WITHOUT the pack would see a missing-model cube, so only enable this when
+# the pack is enforced through server.properties (require-resource-pack=true).
+# Chat prefix (MiniMessage).
+prefix: "<gradient:#ffd34d:#4da6ff><b>Volleyball</b></gradient> <dark_gray>»</dark_gray> "
+
+resource-pack:
+  enabled: false
+  ball-model: "powderpass:volleyball"
+  whistle-model: "powderpass:whistle"
+  hands-model: "powderpass:hands"
+
+ball:
+  # Player-head skin used for the ball when the resource pack is disabled.
+  texture: "https://textures.minecraft.net/texture/1e6df1c2bf5b918f6c8879af4c4ecc1dabbe37229284e1f8f6bccdb1ea3d0ac"
+  # Rendered size in blocks. A real ball is 0.21 m; slightly larger reads better on screen.
+  visual-size: 0.30
+  # Ticks the client uses to interpolate movement / rotation (1-3). Higher = smoother, slightly more delay.
+  teleport-interpolation: 2
+  rotation-interpolation: 2
+  shadow: true
+  trail: true
+  # Seconds before an untouched free-play ball despawns.
+  idle-despawn-seconds: 45
+  # Maximum free-play balls per player (oldest is removed).
+  max-practice-balls: 2
+
+physics:
+  gravity: 9.81
+  air-density: 1.2
+  radius: 0.105
+  mass: 0.27
+  # Drag coefficient below / above the drag crisis (smooth balls lose drag at speed).
+  drag-coefficient-slow: 0.47
+  drag-coefficient-fast: 0.22
+  drag-crisis-speed: 17.0
+  drag-crisis-width: 1.6
+  # Magnus lift: C_L = lift-slope * (r * omega / v), capped.
+  lift-slope: 1.0
+  max-lift-coefficient: 0.35
+  spin-decay-seconds: 4.0
+  # Float serve wobble (0 disables).
+  knuckle-strength: 1.0
+  knuckle-spin-threshold: 2.5
+  floor-restitution: 0.70
+  floor-friction: 0.45
+  wall-restitution: 0.55
+  wall-friction: 0.35
+  net-restitution: 0.12
+  net-tangential-damping: 0.55
+  tape-restitution: 0.35
+  antenna-restitution: 0.45
+  rolling-resistance: 0.6
+  rest-speed: 0.08
+  max-substeps: 32
+
+controls:
+  # Ticks a click stays "armed" waiting for the ball to reach your hands (input buffering).
+  input-buffer-ticks: 4
+  # Rewind the ball by the player's ping when judging contact (lag compensation).
+  lag-compensation: true
+  max-compensation-ms: 250
+  # Ticks before the same player can hit again.
+  hit-cooldown-ticks: 6
+  # Extra jump velocity (blocks/tick) for a sprinting approach jump inside the attack zone. 0 disables.
+  approach-jump-boost: 0.10
+  # Forward lunge (blocks/tick) when diving for a dig.
+  dive-lunge: 0.55
+  # Show a landing-target marker while aiming.
+  aim-reticle: true
+
+# Per-action tuning. 'reach' is the radius around the ideal contact point.
+# Aim: the landing distance is chosen with your view pitch, from 'near' (looking down at pitch-near)
+# to 'far' (looking up at pitch-far). Looking far above the horizon ("at the ball") uses 'look-up'.
+hits:
+  bump:
+    reach: 1.30
+    apex: 2.4
+    max-error: 2.2
+    aim: { near: 1.5, far: 9.0, pitch-near: 60, pitch-far: -25, look-up: 4.5 }
+  dig:
+    reach: 1.70
+    apex: 2.8
+    max-error: 3.0
+    aim: { near: 1.5, far: 8.0, pitch-near: 60, pitch-far: -25, look-up: 4.5 }
+  set:
+    reach: 1.10
+    apex: 3.0
+    quick-apex: 1.2
+    max-error: 1.5
+    aim: { near: 1.0, far: 8.0, pitch-near: 60, pitch-far: -15, look-up: 4.0 }
+  spike:
+    reach: 1.05
+    min-speed: 15.0
+    max-speed: 28.0
+    min-topspin: 15.0
+    max-topspin: 45.0
+    max-error: 2.0
+    aim: { near: 1.5, far: 11.0, pitch-near: 70, pitch-far: -10, look-up: 9.0 }
+  tip:
+    reach: 1.15
+    apex: 0.8
+    max-error: 0.8
+    aim: { near: 1.0, far: 6.0, pitch-near: 60, pitch-far: -20, look-up: 3.0 }
+  standing-attack:
+    reach: 1.05
+    min-speed: 11.0
+    max-speed: 17.0
+    topspin: 20.0
+    max-error: 2.0
+    aim: { near: 3.0, far: 12.0, pitch-near: 50, pitch-far: -15, look-up: 9.0 }
+  block:
+    duration-ticks: 12
+    width: 1.0
+    reach-over: 0.45
+  serve:
+    reach: 1.0
+    float-min-speed: 13.5
+    float-max-speed: 18.5
+    topspin-min-speed: 15.0
+    topspin-max-speed: 21.0
+    jump-min-speed: 19.0
+    jump-max-speed: 28.0
+    jump-topspin: 42.0
+    standing-topspin: 25.0
+    underhand-apex: 4.0
+    max-error: 2.5
+    toss-speed: 5.6
+    jump-toss-speed: 7.0
+    jump-toss-forward: 1.6
+    aim: { near: 10.0, far: 19.0, pitch-near: 35, pitch-far: -20, look-up: 16.0 }
+
+# Defaults for new courts (/vb court create). Presets override these.
+court-defaults:
+  free-zone: 3.0
+  net-band-height: 1.0
+  antenna-above-net: 0.8
+  post-offset: 0.75
+  floor:
+    court: ORANGE_TERRACOTTA
+    free-zone: BLUE_TERRACOTTA
+    beach-court: SAND
+    beach-free-zone: SAND
+  net-columns: 16
+  net-rows: 4
+  # ticks of client interpolation for net animation
+  net-interpolation: 2
+  # Lines are display entities, so they never break and can be removed cleanly.
+  line-material: WHITE_CONCRETE
+  view-range: 1.5
+
+# Default match settings. Every court can override them with /vb rules <court>.
+match-defaults:
+  sets-to-win: 2            # 1 = single set, 2 = best of 3, 3 = best of 5
+  points-per-set: 25
+  deciding-set-points: 15
+  win-by: 2
+  point-cap: 0              # 0 = no cap
+  serve-time-seconds: 8
+  rally-end-delay-seconds: 3
+  switch-sides: true
+  auto-position: true       # teleport players to their rotation spot before each serve
+  referee-whistle: false    # true = a referee must whistle before each serve
+  timeouts-per-set: 2
+  timeout-seconds: 30
+  rules:
+    foot-fault: true
+    net-touch: true
+    center-line: true
+    four-hits: true
+    double-contact: true
+    antenna: true
+    reach-over: true
+    back-row-attack: true   # only applies to 6v6
+    serve-block: true
+    serving-team-touch: true
+    toss-drop: true
+    ceiling-out: true
+    serve-delay: true
+
+teams:
+  a: { name: "Red", color: "#ff5555" }
+  b: { name: "Blue", color: "#55aaff" }
+
+# Sounds accept vanilla or resource-pack keys. volume / pitch.
+sounds:
+  bump: { key: "minecraft:block.wool.hit", volume: 1.4, pitch: 0.7 }
+  set: { key: "minecraft:block.wool.place", volume: 1.2, pitch: 1.3 }
+  spike: { key: "minecraft:entity.player.attack.strong", volume: 1.6, pitch: 0.8 }
+  spike-perfect: { key: "minecraft:entity.player.attack.crit", volume: 1.6, pitch: 0.9 }
+  tip: { key: "minecraft:block.wool.step", volume: 1.0, pitch: 1.5 }
+  serve: { key: "minecraft:entity.player.attack.knockback", volume: 1.5, pitch: 1.0 }
+  block: { key: "minecraft:entity.player.attack.sweep", volume: 1.4, pitch: 0.7 }
+  floor: { key: "minecraft:block.wood.hit", volume: 1.3, pitch: 0.8 }
+  sand: { key: "minecraft:block.sand.hit", volume: 1.3, pitch: 0.9 }
+  net: { key: "minecraft:block.wool.break", volume: 1.0, pitch: 0.6 }
+  tape: { key: "minecraft:block.chain.hit", volume: 1.0, pitch: 1.4 }
+  antenna: { key: "minecraft:block.bamboo.hit", volume: 1.0, pitch: 1.6 }
+  wall: { key: "minecraft:block.stone.hit", volume: 1.0, pitch: 1.0 }
+  whistle: { key: "minecraft:block.note_block.flute", volume: 2.0, pitch: 2.0 }
+  point: { key: "minecraft:entity.experience_orb.pickup", volume: 1.0, pitch: 1.2 }
+  win: { key: "minecraft:ui.toast.challenge_complete", volume: 1.0, pitch: 1.0 }
+  toss: { key: "minecraft:entity.egg.throw", volume: 0.8, pitch: 0.6 }
+
+hud:
+  sidebar: true
+  bossbar: true
+  hit-feedback: true        # action bar "PERFECT SPIKE 26 m/s"
+  sidebar-update-ticks: 5
+
+performance:
+  # Spawn trail particles only when the ball is faster than this (m/s).
+  trail-min-speed: 9.0
+  # Ball and net updates are sent to players within this many blocks.
+  particle-range: 64
+  # Log a breakdown when one volleyball tick takes longer than this (ms). 0 disables.
+  log-slow-ticks-ms: 0

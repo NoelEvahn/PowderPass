@@ -1,0 +1,33 @@
+name: PowderPass
+version: '${project.version}'
+main: dev.powderpass.volleyball.PowderPassPlugin
+api-version: '1.21.11'
+description: Realistic multiplayer volleyball with custom physics, rules and courts.
+authors: [PowderPass]
+website: https://github.com/noelevahn/powderpass
+commands:
+  volleyball:
+    description: Volleyball commands. Start with /vb help
+    usage: /vb help
+    aliases: [vb, powderpass]
+permissions:
+  powderpass.play:
+    description: Join lobbies and play matches.
+    default: true
+  powderpass.practice:
+    description: Use practice balls and the practice kit.
+    default: true
+  powderpass.host:
+    description: Start and stop matches, edit rules.
+    default: op
+  powderpass.referee:
+    description: Referee matches.
+    default: op
+  powderpass.admin:
+    description: Build courts and scoreboards, reload, debug.
+    default: op
+    children:
+      powderpass.host: true
+      powderpass.referee: true
+      powderpass.play: true
+      powderpass.practice: true
