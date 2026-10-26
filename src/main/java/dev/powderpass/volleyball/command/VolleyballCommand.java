@@ -66,6 +66,7 @@ public final class VolleyballCommand implements TabExecutor {
                 case "give" -> give(sender, rest);
                 case "practice" -> practice(sender);
                 case "aim" -> aim(sender);
+                case "pack" -> pack(sender, rest);
                 case "referee", "ref" -> referee(sender, rest);
                 case "timeout" -> timeout(sender);
                 case "status" -> status(sender, rest);
@@ -136,6 +137,7 @@ public final class VolleyballCommand implements TabExecutor {
         line(s, c + " leave", "Leave the lobby or match");
         line(s, c + " practice", "Get a ball + hands to practice anywhere");
         line(s, c + " aim", "Toggle the aim target marker");
+        line(s, c + " pack [on|off|auto|send]", "Custom sounds from the optional resource pack");
         line(s, c + " timeout", "Call a timeout for your team");
         if (s.hasPermission("powderpass.host")) {
             s.sendMessage(Msg.mm("<gray>Hosting:"));
@@ -321,6 +323,37 @@ public final class VolleyballCommand implements TabExecutor {
         Player p = player(s);
         boolean on = plugin.hits().toggleReticle(p);
         Msg.send(p, "<gray>Aim marker " + (on ? "<green>on" : "<red>off"));
+    }
+
+    private void pack(CommandSender s, String[] args) {
+        Player p = player(s);
+        var mode = plugin.settings().resourcePack.mode();
+        String action = args.length == 0 ? "status" : args[0].toLowerCase(Locale.ROOT);
+        switch (action) {
+            case "on" -> {
+                plugin.packs().setManual(p, true);
+                Msg.send(p, "<green>Custom volleyball sounds on.</green> <gray>Use this if you installed the PowderPass pack yourself.");
+            }
+            case "off" -> {
+                plugin.packs().setManual(p, false);
+                Msg.send(p, "<gray>Custom sounds off, you will hear vanilla sounds.");
+            }
+            case "auto" -> {
+                plugin.packs().setManual(p, null);
+                Msg.send(p, "<gray>Sounds follow your resource pack status again.");
+            }
+            case "send", "get" -> {
+                if (!plugin.packs().send(p)) {
+                    throw new CommandError("This server does not host the pack (resource-pack.url is empty).");
+                }
+            }
+            default -> {
+                Msg.send(p, "<white>Resource pack: " + (plugin.packs().has(p) ? "<green>custom sounds" : "<yellow>vanilla sounds")
+                        + "<gray> (mode " + mode.name().toLowerCase(Locale.ROOT) + ", detected "
+                        + (plugin.packs().detected(p) ? "yes" : "no") + ")");
+                p.sendMessage(Msg.mm("<gray>/vb pack on|off|auto" + (plugin.packs().canSend() ? "|send" : "")));
+            }
+        }
     }
 
     private void referee(CommandSender s, String[] args) {
@@ -705,7 +738,7 @@ public final class VolleyballCommand implements TabExecutor {
     public List<String> onTabComplete(CommandSender s, Command command, String alias, String[] args) {
         List<String> out = new ArrayList<>();
         if (args.length == 1) {
-            out.addAll(List.of("help", "guide", "join", "leave", "practice", "aim", "timeout", "status"));
+            out.addAll(List.of("help", "guide", "join", "leave", "practice", "aim", "pack", "timeout", "status"));
             if (s.hasPermission("powderpass.host")) {
                 out.addAll(List.of("start", "stop", "rules", "referee"));
             }
@@ -794,6 +827,11 @@ public final class VolleyballCommand implements TabExecutor {
             case "ball" -> {
                 if (args.length == 2) {
                     out.addAll(List.of("spawn", "clear", "give"));
+                }
+            }
+            case "pack" -> {
+                if (args.length == 2) {
+                    out.addAll(List.of("on", "off", "auto", "send"));
                 }
             }
             case "give" -> {

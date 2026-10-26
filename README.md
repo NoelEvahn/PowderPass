@@ -1,6 +1,6 @@
 # PowderPass — realistic volleyball for Paper 1.21.11
 
-A complete, multiplayer volleyball game for **Paper 1.21.11**. It works with the vanilla client: no mods are needed. An optional resource pack adds a 3D ball and whistle.
+A complete, multiplayer volleyball game for **Paper 1.21.11**. It works with the vanilla client: no mods and no resource pack are needed. An optional resource pack adds custom held-item models and custom sound effects for the players who have it.
 
 - **Real ball physics.** The plugin simulates gravity, quadratic air drag (including the drag crisis), Magnus lift from topspin and backspin, the float-serve "knuckle" wobble, and bounces with spin and friction. Physics is sub-stepped every tick against real block shapes.
 - **A real net.** It has a mesh, a top tape (net-cord rolls), antennas, side bands and posts. A mass-spring simulation animates the net when the ball or a player hits it.
@@ -10,7 +10,9 @@ A complete, multiplayer volleyball game for **Paper 1.21.11**. It works with the
 - **Toggleable rules.** Rules are enforced automatically, and each one can be switched on or off: foot fault, net touch, centre line, four hits, double contact, antenna, reaching over, back-row attack, serve block, serve screening, dropped toss, ceiling/objects and the serve clock.
 - **Courts in one command.** Courts are built from presets or custom sizes. The plugin places the floor and keeps an undo copy. Lines, posts and the net are display entities, so removing a court restores the world.
 - **Live HUD and scoreboards.** Each player gets a sidebar, a boss bar serve clock and action-bar hit grades. You can place physical **TextDisplay scoreboards** in the world and link them to any court.
-- **Custom items and menus.** The custom items are the volleyball, the referee whistle and the "hands". Chest menus cover the rules editor and the referee panel. An in-game guide book is also included.
+- **A ball made of block displays.** The in-world ball is a voxel sphere of `BlockDisplay`s in volleyball colours, so everyone sees the same ball with or without the pack. Spin is visible as it rotates.
+- **Custom items and menus.** The volleyball is a sunflower, the referee whistle an iron nugget and the "hands" leather. Chest menus cover the rules editor and the referee panel. An in-game guide book is also included.
+- **Sound for every action.** Each touch, serve, bounce, net and antenna contact has its own sound, as do dives, approach jumps and missed swings. The whistle, countdown and crowd (cheer, "ooh" on net cords, applause, match win) are covered too. Players with the pack hear custom sounds and everyone else hears mapped vanilla sounds, decided per player.
 
 ---
 
@@ -18,7 +20,7 @@ A complete, multiplayer volleyball game for **Paper 1.21.11**. It works with the
 
 1. Build it with `mvn package`, or use a release jar. Put `PowderPass-1.0.0.jar` in `plugins/`.
 2. Start the server. Edit `plugins/PowderPass/config.yml` if you like, then run `/vb reload`.
-3. Optional: install the resource pack (see [`resourcepack/README.md`](resourcepack/README.md)) and set `resource-pack.enabled: true`.
+3. Optional: offer the resource pack (see [`resourcepack/README.md`](resourcepack/README.md)). Nothing has to be switched on: players without it automatically get vanilla items and sounds.
 
 Requirements: Paper 1.21.11 and Java 21.
 
@@ -72,6 +74,7 @@ Hold the **Volleyball Hands** item, which fills your hotbar during a match. Clic
 | `/vb practice` | `powderpass.practice` | Practice kit (ball + hands) |
 | `/vb ball spawn\|clear` | `powderpass.practice` | Spawn or clear your free-play balls |
 | `/vb aim` | — | Toggle the aim marker |
+| `/vb pack [on\|off\|auto\|send]` | — | Custom sounds if you installed the pack yourself; `send` downloads it when the server hosts it |
 | `/vb timeout` | — | Call a timeout for your team, between rallies |
 | `/vb start [court]` | `powderpass.host` | Start a match with the lobby; teams auto-balance |
 | `/vb stop [court]` | `powderpass.host` | Stop a match |
@@ -142,7 +145,7 @@ The match host gets a whistle automatically.
 
 ## How it works within Minecraft's limits
 
-- **The ball** is an `ItemDisplay`. The ball model is a textured player head, or the 3D model from the optional pack. Movement uses client-side teleport interpolation and spin uses transformation interpolation, so the ball looks smooth even though the server only updates 20 times a second. Its shadow helps players judge where it will land.
+- **The ball** is a voxel sphere split into about a dozen coloured cuboids (13 block displays at the default `ball.detail: 10`). One display is the root and the others ride it as passengers, so a single interpolated teleport moves the whole ball smoothly. Spin rotates every part's transformation around the ball centre, refreshed every other tick and interpolated on the client. The root casts a shadow that helps players judge where the ball will land.
 - **Physics** runs on the server only. Every tick is split into adaptive sub-steps (up to 32), so fast spikes never tunnel through the net, players or blocks. The ball collides with the real collision shapes of blocks, such as slabs, fences and barriers.
 - **Input.** Minecraft only reports clicks, not arm movement. A click therefore *arms* the chosen technique for a few ticks (input buffering). The server then compares the ball's path with the ideal contact point of that technique. That path is rewound by the player's ping for lag compensation, and the distance becomes the contact quality.
 - **Animations.** Players can't be posed by the server, so touches play the arm-swing animation (one or both arms), sounds and particles. Blocks lift both arms.
@@ -160,7 +163,22 @@ Performance was measured on a live 1.21.11 server with bots. A 6v6 match with 12
 - `controls.*`: input buffer, lag compensation, approach-jump boost, dive lunge and the aim marker.
 - `court-defaults.*`: floor materials, net mesh resolution and view range.
 - `match-defaults.*`: format and rules used for new courts.
-- `teams`, `sounds` and `hud`: team names and colours, every sound (including resource-pack keys), and HUD toggles.
+- `teams` and `hud`: team names and colours, and HUD toggles.
+- `sounds.*`: every sound has a `vanilla` entry and a `pack` entry (any sound event key, volume and pitch).
+- `resource-pack.*`: `mode` (`auto` uses the client's pack status plus `/vb pack on`, `everyone`, `nobody`), and optionally `url`/`sha1`/`required` so the plugin offers the pack itself.
+- `ball.*`: `detail` (6, 8, 10 or 12 voxels across), panel `colors`, size and interpolation.
+
+## Resource pack (optional)
+
+| | Without the pack | With the pack |
+|---|---|---|
+| Ball in the world | Block-display sphere | Same block-display sphere |
+| Volleyball item | Sunflower | 3D volleyball model |
+| Whistle item | Iron nugget | Referee whistle model |
+| Hands item | Leather | Forearm "hands" icon |
+| Sounds | Mapped vanilla sounds | Custom sounds (hits, bounces, net, whistle, crowd, sneakers) |
+
+The plugin's items carry a `custom_model_data` tag, and the pack only replaces tagged items, so ordinary sunflowers, nuggets and leather stay vanilla. Build the zip with `resourcepack/build.sh`.
 
 ## Building and testing
 

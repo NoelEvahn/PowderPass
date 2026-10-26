@@ -4,22 +4,26 @@ import dev.powderpass.volleyball.game.MatchSettings;
 import dev.powderpass.volleyball.physics.PhysicsParams;
 import net.kyori.adventure.text.format.TextColor;
 import org.bukkit.Material;
-import org.bukkit.NamespacedKey;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 
 import java.util.EnumMap;
+import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 
 /** Typed, immutable view of config.yml. Rebuilt on /vb reload. */
 public final class Settings {
 
-    public record ResourcePack(boolean enabled, NamespacedKey ballModel, NamespacedKey whistleModel, NamespacedKey handsModel) {
+    /** How the plugin decides which players have the optional resource pack. */
+    public enum PackMode { AUTO, EVERYONE, NOBODY }
+
+    public record ResourcePack(PackMode mode, String url, String sha1, boolean required, String prompt) {
     }
 
-    public record Ball(String texture, double visualSize, int teleportInterpolation, int rotationInterpolation,
-                       boolean shadow, boolean trail, int idleDespawnSeconds, int maxPracticeBalls) {
+    public record Ball(int detail, Material[] colors, double visualSize, int teleportInterpolation,
+                       int rotationInterpolation, boolean shadow, boolean trail, int idleDespawnSeconds,
+                       int maxPracticeBalls) {
     }
 
     public record Controls(int inputBufferTicks, boolean lagCompensation, int maxCompensationMs, int hitCooldownTicks,
@@ -64,8 +68,49 @@ public final class Settings {
     public record Hud(boolean sidebar, boolean bossbar, boolean hitFeedback, int sidebarUpdateTicks) {
     }
 
+    /** Every sound the plugin plays, with its vanilla fallback and the resource-pack sound event. */
     public enum SoundId {
-        BUMP, SET, SPIKE, SPIKE_PERFECT, TIP, SERVE, BLOCK, FLOOR, SAND, NET, TAPE, ANTENNA, WALL, WHISTLE, POINT, WIN, TOSS;
+        BUMP("minecraft:block.wool.hit", 1.4f, 0.7f, "powderpass:ball.bump"),
+        DIG("minecraft:block.wool.fall", 1.4f, 0.8f, "powderpass:ball.dig"),
+        SET("minecraft:block.wool.place", 1.2f, 1.3f, "powderpass:ball.set"),
+        SPIKE("minecraft:entity.player.attack.strong", 1.6f, 0.8f, "powderpass:ball.spike"),
+        SPIKE_PERFECT("minecraft:entity.player.attack.crit", 1.6f, 0.9f, "powderpass:ball.spike_perfect"),
+        TIP("minecraft:block.wool.step", 1.0f, 1.5f, "powderpass:ball.tip"),
+        SERVE("minecraft:entity.player.attack.knockback", 1.5f, 1.0f, "powderpass:ball.serve"),
+        SERVE_JUMP("minecraft:entity.player.attack.strong", 1.7f, 1.1f, "powderpass:ball.serve_jump"),
+        BLOCK("minecraft:entity.player.attack.sweep", 1.4f, 0.7f, "powderpass:ball.block"),
+        BODY("minecraft:entity.player.attack.weak", 1.2f, 0.9f, "powderpass:ball.body"),
+        FLOOR("minecraft:block.wood.hit", 1.3f, 0.8f, "powderpass:ball.floor"),
+        SAND("minecraft:block.sand.hit", 1.3f, 0.9f, "powderpass:ball.sand"),
+        WALL("minecraft:block.stone.hit", 1.0f, 1.0f, "powderpass:ball.wall"),
+        NET("minecraft:block.wool.break", 1.0f, 0.6f, "powderpass:net.hit"),
+        TAPE("minecraft:block.chain.hit", 1.0f, 1.4f, "powderpass:net.tape"),
+        ANTENNA("minecraft:block.bamboo.hit", 1.0f, 1.6f, "powderpass:net.antenna"),
+        TOSS("minecraft:entity.egg.throw", 0.8f, 0.6f, "powderpass:ball.toss"),
+        WHISTLE("minecraft:block.note_block.flute", 2.0f, 2.0f, "powderpass:whistle.short"),
+        WHISTLE_LONG("minecraft:block.note_block.flute", 2.0f, 1.9f, "powderpass:whistle.long"),
+        POINT("minecraft:entity.experience_orb.pickup", 1.0f, 1.2f, "powderpass:ui.point"),
+        CHEER("minecraft:entity.villager.celebrate", 1.2f, 1.1f, "powderpass:crowd.cheer"),
+        APPLAUSE("minecraft:entity.firework_rocket.twinkle", 1.5f, 1.0f, "powderpass:crowd.applause"),
+        OOH("minecraft:entity.villager.ambient", 1.0f, 1.3f, "powderpass:crowd.ooh"),
+        WIN("minecraft:ui.toast.challenge_complete", 1.0f, 1.0f, "powderpass:crowd.win"),
+        COUNTDOWN("minecraft:block.note_block.hat", 1.0f, 1.0f, "powderpass:ui.countdown"),
+        GO("minecraft:block.note_block.pling", 1.0f, 2.0f, "powderpass:ui.go"),
+        JUMP("minecraft:entity.rabbit.jump", 0.8f, 1.3f, "powderpass:player.jump"),
+        DIVE("minecraft:entity.player.small_fall", 1.2f, 0.9f, "powderpass:player.dive"),
+        WHIFF("minecraft:entity.player.attack.nodamage", 0.9f, 1.2f, "powderpass:player.whiff");
+
+        final String vanillaKey;
+        final float volume;
+        final float pitch;
+        final String packKey;
+
+        SoundId(String vanillaKey, float volume, float pitch, String packKey) {
+            this.vanillaKey = vanillaKey;
+            this.volume = volume;
+            this.pitch = pitch;
+            this.packKey = packKey;
+        }
 
         String path() {
             return name().toLowerCase().replace('_', '-');
@@ -88,20 +133,32 @@ public final class Settings {
     public final MatchSettings matchDefaults;
     public final TeamStyle teamA;
     public final TeamStyle teamB;
-    public final Map<SoundId, SoundSpec> sounds = new EnumMap<>(SoundId.class);
+    public final Map<SoundId, SoundPair> sounds = new EnumMap<>(SoundId.class);
     public final Hud hud;
     public final double trailMinSpeed;
     public final double particleRange;
 
     public Settings(FileConfiguration c, Logger log) {
-        resourcePack = new ResourcePack(
-                c.getBoolean("resource-pack.enabled", false),
-                key(c.getString("resource-pack.ball-model"), "powderpass:volleyball"),
-                key(c.getString("resource-pack.whistle-model"), "powderpass:whistle"),
-                key(c.getString("resource-pack.hands-model"), "powderpass:hands"));
+        PackMode mode;
+        try {
+            mode = PackMode.valueOf(c.getString("resource-pack.mode", "auto").toUpperCase(java.util.Locale.ROOT));
+        } catch (IllegalArgumentException e) {
+            log.warning("resource-pack.mode must be auto, everyone or nobody");
+            mode = PackMode.AUTO;
+        }
+        resourcePack = new ResourcePack(mode, c.getString("resource-pack.url", "").trim(),
+                c.getString("resource-pack.sha1", "").trim(), c.getBoolean("resource-pack.required", false),
+                c.getString("resource-pack.prompt", ""));
 
+        List<String> colorNames = c.getStringList("ball.colors");
+        Material[] colors = {Material.YELLOW_CONCRETE, Material.WHITE_CONCRETE, Material.BLUE_CONCRETE};
+        for (int i = 0; i < Math.min(3, colorNames.size()); i++) {
+            colors[i] = material(colorNames.get(i), colors[i], log);
+        }
+        int detail = (int) clamp(c.getInt("ball.detail", 10), 6, 12);
         ball = new Ball(
-                c.getString("ball.texture", ""),
+                detail + detail % 2,
+                colors,
                 clamp(c.getDouble("ball.visual-size", 0.3), 0.1, 2),
                 (int) clamp(c.getInt("ball.teleport-interpolation", 2), 0, 59),
                 (int) clamp(c.getInt("ball.rotation-interpolation", 2), 0, 59),
@@ -202,7 +259,16 @@ public final class Settings {
         teamB = team(c.getConfigurationSection("teams.b"), "Blue", "#55aaff");
 
         for (SoundId id : SoundId.values()) {
-            sounds.put(id, SoundSpec.load(c.getConfigurationSection("sounds." + id.path()), "minecraft:block.wool.hit"));
+            ConfigurationSection sec = c.getConfigurationSection("sounds." + id.path());
+            ConfigurationSection vanilla = sec == null ? null : sec.getConfigurationSection("vanilla");
+            ConfigurationSection pack = sec == null ? null : sec.getConfigurationSection("pack");
+            // older configs had key/volume/pitch directly under the sound
+            if (vanilla == null && sec != null && sec.contains("key")) {
+                vanilla = sec;
+            }
+            sounds.put(id, new SoundPair(
+                    SoundSpec.load(vanilla, id.vanillaKey, id.volume, id.pitch),
+                    SoundSpec.load(pack, id.packKey, 1.0f, 1.0f)));
         }
         hud = new Hud(c.getBoolean("hud.sidebar", true), c.getBoolean("hud.bossbar", true),
                 c.getBoolean("hud.hit-feedback", true), (int) clamp(c.getInt("hud.sidebar-update-ticks", 5), 1, 40));
@@ -210,7 +276,7 @@ public final class Settings {
         particleRange = clamp(c.getDouble("performance.particle-range", 64), 8, 256);
     }
 
-    public SoundSpec sound(SoundId id) {
+    public SoundPair sound(SoundId id) {
         return sounds.get(id);
     }
 
@@ -220,11 +286,6 @@ public final class Settings {
         }
         TextColor tc = TextColor.fromHexString(s.getString("color", color));
         return new TeamStyle(s.getString("name", name), tc == null ? TextColor.fromHexString(color) : tc);
-    }
-
-    private static NamespacedKey key(String raw, String def) {
-        NamespacedKey k = raw == null ? null : NamespacedKey.fromString(raw);
-        return k != null ? k : NamespacedKey.fromString(def);
     }
 
     private static Material material(String name, Material def, Logger log) {

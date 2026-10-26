@@ -13,23 +13,18 @@ import dev.powderpass.volleyball.physics.BallSimulator;
 import dev.powderpass.volleyball.physics.CourtNet;
 import dev.powderpass.volleyball.physics.NetContact;
 import dev.powderpass.volleyball.physics.SimulationListener;
-import dev.powderpass.volleyball.util.Displays;
 import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
-import org.bukkit.entity.Display;
-import org.bukkit.entity.ItemDisplay;
-import org.bukkit.util.Transformation;
 import org.joml.Quaternionf;
-import org.joml.Vector3f;
 
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * A live volleyball: server-authoritative physics rendered by an interpolated item display.
+ * A live volleyball: server-authoritative physics rendered as a block-display voxel sphere.
  */
 public final class Volleyball implements SimulationListener {
 
@@ -43,7 +38,7 @@ public final class Volleyball implements SimulationListener {
     private final BallSimulator simulator = new BallSimulator();
     private final BukkitCollisionWorld collisionWorld;
     private BallContext context;
-    private ItemDisplay display;
+    private final BallRenderer renderer = new BallRenderer();
     private final Quaternionf rotation = new Quaternionf();
     private final Vec3 prevPos = new Vec3();
 
@@ -80,23 +75,8 @@ public final class Volleyball implements SimulationListener {
     }
 
     private void spawnDisplay() {
-        Settings s = plugin.settings();
         Location at = new Location(world, body.pos.x, body.pos.y, body.pos.z);
-        float size = (float) s.ball.visualSize();
-        display = world.spawn(at, ItemDisplay.class, d -> {
-            d.setItemStack(plugin.items().ballModel());
-            d.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.FIXED);
-            d.setTransformation(new Transformation(new Vector3f(), new Quaternionf(), new Vector3f(size * 2f), new Quaternionf()));
-            d.setTeleportDuration(s.ball.teleportInterpolation());
-            d.setInterpolationDuration(s.ball.rotationInterpolation());
-            d.setBillboard(Display.Billboard.FIXED);
-            d.setViewRange(4f);
-            if (s.ball.shadow()) {
-                d.setShadowRadius(size * 0.9f);
-                d.setShadowStrength(0.9f);
-            }
-            Displays.tag(d, "ball");
-        });
+        renderer.spawn(world, at, plugin.ballModel(), plugin.settings().ball);
     }
 
     public UUID id() {
@@ -206,7 +186,7 @@ public final class Volleyball implements SimulationListener {
             return;
         }
         tick++;
-        if (display == null || !display.isValid()) {
+        if (!renderer.valid()) {
             spawnDisplay();
         }
         cachedCourt = context.court(this);
@@ -233,8 +213,9 @@ public final class Volleyball implements SimulationListener {
 
     private void render() {
         Settings s = plugin.settings();
-        if (!body.resting || display.getLocation().distanceSquared(location()) > 1e-6) {
-            display.teleport(location());
+        Location current = renderer.location();
+        if (!body.resting || current == null || current.distanceSquared(location()) > 1e-6) {
+            renderer.moveTo(location());
         }
         // spin the model with the angular velocity
         double w = body.spin.length();
@@ -243,10 +224,10 @@ public final class Volleyball implements SimulationListener {
             Quaternionf dq = new Quaternionf().fromAxisAngleRad(
                     (float) (body.spin.x / w), (float) (body.spin.y / w), (float) (body.spin.z / w), (float) angle);
             rotation.premul(dq).normalize();
-            float size = (float) s.ball.visualSize() * 2f;
-            display.setTransformation(new Transformation(new Vector3f(), new Quaternionf(rotation),
-                    new Vector3f(size), new Quaternionf()));
-            Displays.refreshInterpolation(display, s.ball.rotationInterpolation());
+            // the ball is several displays: refresh the pose every other tick and let the client interpolate
+            if (tick % 2 == 0) {
+                renderer.rotate(rotation);
+            }
         }
         // speed trail
         double speed = body.speed();
@@ -351,12 +332,10 @@ public final class Volleyball implements SimulationListener {
             return;
         }
         removed = true;
-        if (display != null) {
-            display.remove();
-        }
+        renderer.remove();
     }
 
-    public ItemDisplay display() {
-        return display;
+    public int partCount() {
+        return renderer.partCount();
     }
 }

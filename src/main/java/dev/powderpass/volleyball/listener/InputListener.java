@@ -177,7 +177,7 @@ public final class InputListener implements Listener {
             }
             return;
         }
-        plugin.fx().sound(p.getLocation(), Settings.SoundId.WHISTLE);
+        plugin.fx().whistle(p.getLocation(), false);
         if (m != null && m.isOfficial(p)) {
             m.refereeWhistle(p);
         }

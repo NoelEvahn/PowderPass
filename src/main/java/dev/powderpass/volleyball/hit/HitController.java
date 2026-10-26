@@ -110,6 +110,7 @@ public final class HitController {
             if (dir.lengthSquared() > 1e-6) {
                 dir.normalize().multiply(plugin.settings().controls.diveLunge());
                 p.setVelocity(p.getVelocity().add(dir).setY(0.18));
+                plugin.fx().sound(p.getLocation(), Settings.SoundId.DIVE);
             }
         }
         tryResolve(p, s);
@@ -163,6 +164,7 @@ public final class HitController {
         double w = court.frame().toW(l.getX(), l.getZ());
         double zone = Math.max(court.attackLine(), 3.0) + 1.0;
         if (Math.abs(u) <= zone && Math.abs(w) <= court.halfWidth() + 1) {
+            plugin.fx().sound(p.getLocation(), Settings.SoundId.JUMP, 0.8f);
             Bukkit.getScheduler().runTask(plugin, () -> {
                 if (p.isOnline() && !p.isOnGround()) {
                     p.setVelocity(p.getVelocity().add(new Vector(0, boost, 0)));
@@ -254,6 +256,7 @@ public final class HitController {
         if (s.lastHitTick >= s.clickTick) {
             return;
         }
+        plugin.fx().sound(p.getEyeLocation(), Settings.SoundId.WHIFF, 0.6f);
         p.sendActionBar(Component.text("MISS", NamedTextColor.GRAY, TextDecoration.BOLD)
                 .append(Component.text("  time the click as the ball reaches your hands", NamedTextColor.DARK_GRAY)
                         .decoration(TextDecoration.BOLD, false)));
@@ -577,7 +580,8 @@ public final class HitController {
         switch (r.type()) {
             case SPIKE, STANDING_ATTACK -> {
                 p.swingMainHand();
-                fx.sound(at, r.grade() == Grade.PERFECT ? Settings.SoundId.SPIKE_PERFECT : Settings.SoundId.SPIKE);
+                fx.sound(at, r.grade() == Grade.PERFECT ? Settings.SoundId.SPIKE_PERFECT : Settings.SoundId.SPIKE,
+                        r.type() == HitType.STANDING_ATTACK ? 0.75f : 1f);
                 fx.particle(at, Particle.CRIT, 12 + (int) (r.quality() * 14), 0.15, 0.35);
                 if (r.grade() == Grade.PERFECT) {
                     fx.particle(at, Particle.SWEEP_ATTACK, 1, 0, 0);
@@ -596,7 +600,8 @@ public final class HitController {
             case BUMP, DIG -> {
                 p.swingMainHand();
                 p.swingOffHand();
-                fx.sound(at, Settings.SoundId.BUMP, (float) Math.min(1.3, 0.6 + r.speed() / 20));
+                fx.sound(at, r.type() == HitType.DIG ? Settings.SoundId.DIG : Settings.SoundId.BUMP,
+                        (float) Math.min(1.3, 0.6 + r.speed() / 20));
                 fx.particle(at, Particle.CLOUD, 4, 0.12, 0.02);
             }
             case BLOCK -> {
@@ -605,10 +610,11 @@ public final class HitController {
                 fx.sound(at, Settings.SoundId.BLOCK);
                 fx.particle(at, Particle.CRIT, 10, 0.2, 0.2);
             }
-            case BODY -> fx.sound(at, Settings.SoundId.BUMP, 0.7f);
+            case BODY -> fx.sound(at, Settings.SoundId.BODY);
             default -> {
                 p.swingMainHand();
-                fx.sound(at, Settings.SoundId.SERVE, r.type() == HitType.SERVE_JUMP ? 1.3f : 1f);
+                boolean jump = r.type() == HitType.SERVE_JUMP || r.type() == HitType.SERVE_JUMP_FLOAT;
+                fx.sound(at, jump ? Settings.SoundId.SERVE_JUMP : Settings.SoundId.SERVE);
                 fx.particle(at, Particle.CRIT, 8, 0.1, 0.25);
             }
         }

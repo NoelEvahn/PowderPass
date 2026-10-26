@@ -316,11 +316,17 @@ public final class Match implements BallContext {
                 int left = stateDuration - stateTicks;
                 if (left > 0 && left % 20 == 0) {
                     int sec = left / 20;
+                    for (Player p : players()) {
+                        plugin.fx().sound(p, Settings.SoundId.COUNTDOWN);
+                    }
                     audience().showTitle(Title.title(Component.text(sec, NamedTextColor.YELLOW, TextDecoration.BOLD),
                             Component.text(court.name() + " · " + teams[0].name() + " vs " + teams[1].name(), NamedTextColor.GRAY),
                             Title.Times.times(Duration.ZERO, Duration.ofMillis(900), Duration.ofMillis(100))));
                 }
                 if (left <= 0) {
+                    for (Player p : players()) {
+                        plugin.fx().sound(p, Settings.SoundId.GO);
+                    }
                     beginRallySetup();
                 }
             }
@@ -443,10 +449,21 @@ public final class Match implements BallContext {
         }
     }
 
+    private Location refereeSpot() {
+        return court.location(0, court.netHeight() + 1, court.halfWidth() + 1);
+    }
+
     private void whistle() {
-        Location c = court.location(0, court.netHeight() + 1, court.halfWidth() + 1);
-        plugin.fx().sound(c, Settings.SoundId.WHISTLE);
-        Bukkit.getScheduler().runTaskLater(plugin, () -> plugin.fx().sound(c, Settings.SoundId.WHISTLE, 0.8f), 3);
+        plugin.fx().whistle(refereeSpot(), false);
+    }
+
+    private void longWhistle() {
+        plugin.fx().whistle(refereeSpot(), true);
+    }
+
+    /** Crowd reaction around the court. */
+    private void crowd(Settings.SoundId id, float volume) {
+        plugin.fx().sound(court.location(0, 2, 0), id, volume);
     }
 
     // ------------------------------------------------------------------------------------------- serving
@@ -671,6 +688,9 @@ public final class Match implements BallContext {
         if (b != ball || state != MatchState.RALLY) {
             return;
         }
+        if (contact == NetContact.TAPE && impact > 1.5) {
+            crowd(Settings.SoundId.OOH, 0.9f);
+        }
         if (contact == NetContact.ANTENNA && settings.rule(Rule.ANTENNA)) {
             faultAgainstLastTouch(Fault.ANTENNA);
         } else if (contact == NetContact.POST && settings.rule(Rule.CEILING_OUT)) {
@@ -764,8 +784,14 @@ public final class Match implements BallContext {
         while (undo.size() > 20) {
             undo.removeLast();
         }
-        whistle();
         ScoreKeeper.Outcome o = score.awardPoint(scorer);
+        if (o.setWon()) {
+            longWhistle();
+        } else {
+            whistle();
+        }
+        // the crowd cheers a won rally, louder for long ones
+        crowd(Settings.SoundId.CHEER, rallyTouches >= 4 ? 1.2f : 0.8f);
         Team winner = team(scorer);
         String detail = reason.text() + (culprit != null && reason != Fault.BALL_IN ? " · " + culprit.getName() : "");
         lastPointText = detail;
@@ -790,6 +816,7 @@ public final class Match implements BallContext {
             return;
         }
         if (o.setWon()) {
+            crowd(Settings.SoundId.APPLAUSE, 1.2f);
             int[] last = score.history().get(score.history().size() - 1);
             Msg.send(audience(), winner.displayName().append(Component.text(" wins set " + score.history().size()
                     + " (" + last[0] + "-" + last[1] + ")", NamedTextColor.WHITE)));
@@ -825,6 +852,8 @@ public final class Match implements BallContext {
         for (Player p : players()) {
             plugin.fx().sound(p, win);
         }
+        longWhistle();
+        crowd(Settings.SoundId.WIN, 1.5f);
         StringBuilder sets = new StringBuilder();
         for (int[] h : score.history()) {
             if (!sets.isEmpty()) {
@@ -912,7 +941,7 @@ public final class Match implements BallContext {
         }
         t.useTimeout();
         removeBall();
-        whistle();
+        longWhistle();
         enter(MatchState.TIMEOUT, settings.get(MatchSettings.Option.TIMEOUT_SECONDS) * 20);
         Msg.send(audience(), t.displayName().append(Component.text(" called a timeout (" + t.timeoutsUsed() + "/"
                 + settings.get(MatchSettings.Option.TIMEOUTS_PER_SET) + ")", NamedTextColor.GRAY)));

@@ -1,0 +1,215 @@
+{
+  "ball.bump": {
+    "subtitle": "subtitles.powderpass.ball.bump",
+    "sounds": [
+      "powderpass:ball/bump1",
+      "powderpass:ball/bump2",
+      "powderpass:ball/bump3"
+    ]
+  },
+  "ball.dig": {
+    "subtitle": "subtitles.powderpass.ball.dig",
+    "sounds": [
+      "powderpass:ball/dig1",
+      "powderpass:ball/dig2",
+      "powderpass:ball/dig3"
+    ]
+  },
+  "ball.set": {
+    "subtitle": "subtitles.powderpass.ball.set",
+    "sounds": [
+      "powderpass:ball/set1",
+      "powderpass:ball/set2",
+      "powderpass:ball/set3"
+    ]
+  },
+  "ball.spike": {
+    "subtitle": "subtitles.powderpass.ball.spike",
+    "sounds": [
+      "powderpass:ball/spike1",
+      "powderpass:ball/spike2",
+      "powderpass:ball/spike3"
+    ]
+  },
+  "ball.spike_perfect": {
+    "subtitle": "subtitles.powderpass.ball.spike_perfect",
+    "sounds": [
+      "powderpass:ball/spike_perfect1",
+      "powderpass:ball/spike_perfect2"
+    ]
+  },
+  "ball.tip": {
+    "subtitle": "subtitles.powderpass.ball.tip",
+    "sounds": [
+      "powderpass:ball/tip1",
+      "powderpass:ball/tip2",
+      "powderpass:ball/tip3"
+    ]
+  },
+  "ball.serve": {
+    "subtitle": "subtitles.powderpass.ball.serve",
+    "sounds": [
+      "powderpass:ball/serve1",
+      "powderpass:ball/serve2",
+      "powderpass:ball/serve3"
+    ]
+  },
+  "ball.serve_jump": {
+    "subtitle": "subtitles.powderpass.ball.serve_jump",
+    "sounds": [
+      "powderpass:ball/serve_jump1",
+      "powderpass:ball/serve_jump2",
+      "powderpass:ball/serve_jump3"
+    ]
+  },
+  "ball.block": {
+    "subtitle": "subtitles.powderpass.ball.block",
+    "sounds": [
+      "powderpass:ball/block1",
+      "powderpass:ball/block2",
+      "powderpass:ball/block3"
+    ]
+  },
+  "ball.body": {
+    "subtitle": "subtitles.powderpass.ball.body",
+    "sounds": [
+      "powderpass:ball/body1",
+      "powderpass:ball/body2",
+      "powderpass:ball/body3"
+    ]
+  },
+  "ball.floor": {
+    "subtitle": "subtitles.powderpass.ball.floor",
+    "sounds": [
+      "powderpass:ball/floor1",
+      "powderpass:ball/floor2",
+      "powderpass:ball/floor3"
+    ]
+  },
+  "ball.sand": {
+    "subtitle": "subtitles.powderpass.ball.sand",
+    "sounds": [
+      "powderpass:ball/sand1",
+      "powderpass:ball/sand2",
+      "powderpass:ball/sand3"
+    ]
+  },
+  "ball.wall": {
+    "subtitle": "subtitles.powderpass.ball.wall",
+    "sounds": [
+      "powderpass:ball/wall1",
+      "powderpass:ball/wall2",
+      "powderpass:ball/wall3"
+    ]
+  },
+  "ball.toss": {
+    "subtitle": "subtitles.powderpass.ball.toss",
+    "sounds": [
+      "powderpass:ball/toss1",
+      "powderpass:ball/toss2"
+    ]
+  },
+  "net.hit": {
+    "subtitle": "subtitles.powderpass.net.hit",
+    "sounds": [
+      "powderpass:net/hit1",
+      "powderpass:net/hit2",
+      "powderpass:net/hit3"
+    ]
+  },
+  "net.tape": {
+    "subtitle": "subtitles.powderpass.net.tape",
+    "sounds": [
+      "powderpass:net/tape1",
+      "powderpass:net/tape2",
+      "powderpass:net/tape3"
+    ]
+  },
+  "net.antenna": {
+    "subtitle": "subtitles.powderpass.net.antenna",
+    "sounds": [
+      "powderpass:net/antenna1",
+      "powderpass:net/antenna2"
+    ]
+  },
+  "whistle.short": {
+    "subtitle": "subtitles.powderpass.whistle.short",
+    "sounds": [
+      "powderpass:whistle/short"
+    ]
+  },
+  "whistle.long": {
+    "subtitle": "subtitles.powderpass.whistle.long",
+    "sounds": [
+      "powderpass:whistle/long"
+    ]
+  },
+  "crowd.cheer": {
+    "subtitle": "subtitles.powderpass.crowd.cheer",
+    "sounds": [
+      "powderpass:crowd/cheer1",
+      "powderpass:crowd/cheer2"
+    ]
+  },
+  "crowd.applause": {
+    "subtitle": "subtitles.powderpass.crowd.applause",
+    "sounds": [
+      "powderpass:crowd/applause1",
+      "powderpass:crowd/applause2"
+    ]
+  },
+  "crowd.ooh": {
+    "subtitle": "subtitles.powderpass.crowd.ooh",
+    "sounds": [
+      "powderpass:crowd/ooh1",
+      "powderpass:crowd/ooh2"
+    ]
+  },
+  "crowd.win": {
+    "subtitle": "subtitles.powderpass.crowd.win",
+    "sounds": [
+      "powderpass:crowd/win"
+    ]
+  },
+  "ui.point": {
+    "subtitle": "subtitles.powderpass.ui.point",
+    "sounds": [
+      "powderpass:ui/point"
+    ]
+  },
+  "ui.countdown": {
+    "subtitle": "subtitles.powderpass.ui.countdown",
+    "sounds": [
+      "powderpass:ui/countdown"
+    ]
+  },
+  "ui.go": {
+    "subtitle": "subtitles.powderpass.ui.go",
+    "sounds": [
+      "powderpass:ui/go"
+    ]
+  },
+  "player.jump": {
+    "subtitle": "subtitles.powderpass.player.jump",
+    "sounds": [
+      "powderpass:player/jump1",
+      "powderpass:player/jump2",
+      "powderpass:player/jump3"
+    ]
+  },
+  "player.dive": {
+    "subtitle": "subtitles.powderpass.player.dive",
+    "sounds": [
+      "powderpass:player/dive1",
+      "powderpass:player/dive2"
+    ]
+  },
+  "player.whiff": {
+    "subtitle": "subtitles.powderpass.player.whiff",
+    "sounds": [
+      "powderpass:player/whiff1",
+      "powderpass:player/whiff2",
+      "powderpass:player/whiff3"
+    ]
+  }
+}
