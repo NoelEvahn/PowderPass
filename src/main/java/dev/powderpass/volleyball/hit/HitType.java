@@ -10,6 +10,8 @@ public enum HitType {
     TIP("Tip", true, false),
     STANDING_ATTACK("Down ball", true, false),
     BLOCK("Block", false, false),
+    /** The ball ran into a player without a deliberate touch. */
+    BODY("Body touch", false, false),
     SERVE_FLOAT("Float serve", false, true),
     SERVE_TOPSPIN("Topspin serve", false, true),
     SERVE_JUMP("Jump serve", false, true),

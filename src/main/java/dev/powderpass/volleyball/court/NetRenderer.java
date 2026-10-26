@@ -28,6 +28,7 @@ public final class NetRenderer {
     private final int interpolation;
     private final List<Segment> segments = new ArrayList<>();
     private boolean dirty;
+    private int frame;
 
     private static final class Segment {
         final BlockDisplay display;
@@ -136,13 +137,17 @@ public final class NetRenderer {
         }
         sim.step(0.05);
         dirty = false;
+        // the simulation runs every tick, the clients get a new pose every other tick and interpolate between
+        if (++frame % 2 != 0 && sim.active()) {
+            return;
+        }
         for (Segment s : segments) {
             if (!s.display.isValid()) {
                 continue;
             }
             float da = (float) sim.displacement(s.i0, s.j0);
             float db = (float) sim.displacement(s.i1, s.j1);
-            if (Math.abs(da - s.lastA) < 0.002f && Math.abs(db - s.lastB) < 0.002f) {
+            if (Math.abs(da - s.lastA) < 0.006f && Math.abs(db - s.lastB) < 0.006f) {
                 continue;
             }
             s.lastA = da;
@@ -150,7 +155,7 @@ public final class NetRenderer {
             Vec3 a = node(s.i0, s.j0, da);
             Vec3 b = node(s.i1, s.j1, db);
             s.display.setTransformationMatrix(matrix(a, b, s.origin, s.thickness, s.height, false));
-            Displays.refreshInterpolation(s.display, interpolation);
+            Displays.refreshInterpolation(s.display, Math.max(2, interpolation + 1));
         }
     }
 

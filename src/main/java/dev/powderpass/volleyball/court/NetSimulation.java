@@ -21,7 +21,7 @@ public final class NetSimulation {
     /** wave speed squared (m^2/s^2) */
     private static final double TENSION = 30.0;
     private static final double SPRING = 18.0;
-    private static final double DAMPING = 5.5;
+    private static final double DAMPING = 8.0;
     private static final double MAX_DISPLACEMENT = 0.45;
 
     public NetSimulation(int cols, int rows, double halfLength, double bottom, double height) {
@@ -136,7 +136,7 @@ public final class NetSimulation {
         for (int k = 0; k < d.length; k++) {
             energy += d[k] * d[k] + v[k] * v[k] * 0.01;
         }
-        if (energy < 1e-6) {
+        if (energy < 2e-5) {
             java.util.Arrays.fill(d, 0);
             java.util.Arrays.fill(v, 0);
             active = false;

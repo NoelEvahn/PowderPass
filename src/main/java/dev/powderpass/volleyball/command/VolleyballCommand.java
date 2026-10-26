@@ -284,12 +284,12 @@ public final class VolleyballCommand implements TabExecutor {
         if (r != null) {
             boolean on = value.equals("on") || value.equals("true") || value.equals("yes");
             c.settings().setRule(r, on);
-            Msg.send(s, "<white>" + r.displayName() + " is now " + (on ? "<green>on" : "<red>off") + "<white> on " + Msg.escape(c.name()));
+            Msg.send(s, "<white>" + r.displayName() + (on ? " <green>enabled" : " <red>disabled") + "<white> for " + Msg.escape(c.name()));
         } else if (o != null) {
             int v = o.isToggle() ? (value.equals("on") || value.equals("true") ? 1 : value.equals("off") || value.equals("false") ? 0 : (int) num(value, "number"))
                     : (int) num(value, "number");
             c.settings().set(o, v);
-            Msg.send(s, "<white>" + o.label + " = <yellow>" + c.settings().get(o) + "<white> on " + Msg.escape(c.name()));
+            Msg.send(s, "<white>" + o.label + " = <yellow>" + c.settings().get(o) + "<white> for " + Msg.escape(c.name()));
         } else {
             throw new CommandError("Unknown rule '" + key + "'.");
         }

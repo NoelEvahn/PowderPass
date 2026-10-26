@@ -147,11 +147,16 @@ public final class CustomItems {
         meta.getPersistentDataContainer().set(Keys.ITEM, PersistentDataType.STRING, type.name());
     }
 
+    /** Identifies a custom item. Called every tick, so it avoids copying item meta. */
     public static ItemType typeOf(ItemStack item) {
-        if (item == null || item.getType().isAir() || !item.hasItemMeta()) {
+        if (item == null) {
             return null;
         }
-        String s = item.getItemMeta().getPersistentDataContainer().get(Keys.ITEM, PersistentDataType.STRING);
+        Material m = item.getType();
+        if (m != Material.PLAYER_HEAD && m != Material.IRON_NUGGET && m != Material.LEATHER) {
+            return null;
+        }
+        String s = item.getPersistentDataContainer().get(Keys.ITEM, PersistentDataType.STRING);
         return s == null ? null : ItemType.byName(s);
     }
 

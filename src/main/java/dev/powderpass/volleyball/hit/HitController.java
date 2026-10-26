@@ -212,6 +212,10 @@ public final class HitController {
                 drawReticle(p, s);
             }
         }
+        // after intents: someone who just clicked gets to play the ball instead of being hit by it
+        for (Volleyball b : plugin.balls().all()) {
+            checkBodies(b, active);
+        }
         // drop states of players that left long ago
         Iterator<Map.Entry<UUID, PlayerState>> it = states.entrySet().iterator();
         while (it.hasNext()) {
@@ -409,7 +413,7 @@ public final class HitController {
             case STANDING_ATTACK -> feet.addScaled(dir, 0.4).add(0, eye + 0.6, 0);
             case SERVE_FLOAT, SERVE_TOPSPIN, SERVE_JUMP, SERVE_JUMP_FLOAT -> feet.addScaled(dir, 0.35).add(0, eye + 0.55, 0);
             case SERVE_UNDERHAND -> feet.addScaled(dir, 0.5).add(0, 0.8, 0);
-            case BLOCK -> feet.add(0, eye + 0.6, 0);
+            case BLOCK, BODY -> feet.add(0, eye + 0.6, 0);
         };
     }
 
@@ -423,7 +427,7 @@ public final class HitController {
             case TIP -> s.tip.reach();
             case STANDING_ATTACK -> s.standingAttack.reach();
             case SERVE_FLOAT, SERVE_TOPSPIN, SERVE_JUMP, SERVE_JUMP_FLOAT, SERVE_UNDERHAND -> s.serve.reach();
-            case BLOCK -> s.block.width();
+            case BLOCK, BODY -> s.block.width();
         };
     }
 
@@ -601,6 +605,7 @@ public final class HitController {
                 fx.sound(at, Settings.SoundId.BLOCK);
                 fx.particle(at, Particle.CRIT, 10, 0.2, 0.2);
             }
+            case BODY -> fx.sound(at, Settings.SoundId.BUMP, 0.7f);
             default -> {
                 p.swingMainHand();
                 fx.sound(at, Settings.SoundId.SERVE, r.type() == HitType.SERVE_JUMP ? 1.3f : 1f);
@@ -618,6 +623,60 @@ public final class HitController {
                         .decoration(TextDecoration.BOLD, false));
             }
             p.sendActionBar(msg);
+        }
+    }
+
+    // ------------------------------------------------------------------------------------------------ body contact
+
+    /** A ball running into a player deflects off their hitbox and counts as a touch, as in real volleyball. */
+    private void checkBodies(Volleyball ball, Set<Player> players) {
+        if (ball.removed() || ball.body().resting || ball.tick() - ball.lastHitTick() < 3 || ball.tossedBy() != null) {
+            return;
+        }
+        double r = plugin.settings().physics.radius();
+        Vec3 a = ball.previousPosition();
+        Vec3 b = ball.position();
+        for (Player p : players) {
+            if (p.getWorld() != ball.world() || p.getGameMode() == org.bukkit.GameMode.SPECTATOR) {
+                continue;
+            }
+            if (p.getUniqueId().equals(ball.lastToucher()) && ball.tick() - ball.lastHitTick() < 10) {
+                continue;
+            }
+            PlayerState st = states.get(p.getUniqueId());
+            if (st != null && (tick <= st.primaryUntil || tick <= st.secondaryUntil || st.blocking(tick))) {
+                continue;
+            }
+            var box = p.getBoundingBox();
+            double t = segmentBox(a, b, box.getMinX() - r, box.getMaxX() + r, box.getMinY() - r, box.getMaxY() + r,
+                    box.getMinZ() - r, box.getMaxZ() + r);
+            if (t < 0 || !ball.context().canTouch(p, ball)) {
+                continue;
+            }
+            Vec3 hit = a.copy().lerp(b, t);
+            // normal from the closest point of the body box to the ball centre
+            double cx = Math.max(box.getMinX(), Math.min(box.getMaxX(), hit.x));
+            double cy = Math.max(box.getMinY(), Math.min(box.getMaxY(), hit.y));
+            double cz = Math.max(box.getMinZ(), Math.min(box.getMaxZ(), hit.z));
+            Vec3 n = new Vec3(hit.x - cx, hit.y - cy, hit.z - cz);
+            if (n.lengthSq() < 1e-8) {
+                n.set(hit.x - box.getCenterX(), 0, hit.z - box.getCenterZ());
+            }
+            n.normalize();
+            Vec3 v = ball.body().vel.copy();
+            double vn = v.dot(n);
+            if (vn >= 0) {
+                continue;
+            }
+            v.addScaled(n, -1.35 * vn).mul(0.75);
+            ball.teleport(hit.addScaled(n, 0.02));
+            ball.launch(v, ball.body().spin.copy().mul(0.3), false, p.getUniqueId(), HitType.BODY);
+            Location l = p.getLocation();
+            HitResult res = new HitResult(HitType.BODY, 0, Grade.POOR, ball.position().copy(),
+                    new Vec3(l.getX(), l.getY(), l.getZ()), v.length(), !p.isOnGround());
+            effects(p, ball, res);
+            ball.context().onHit(p, ball, res);
+            return;
         }
     }
 
