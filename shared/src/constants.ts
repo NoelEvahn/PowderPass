@@ -29,7 +29,7 @@ export const DOOR_W = 1.3;
 export const DOOR_H = 2.4;
 
 /** Noise radii (meters) used by Figure's hearing. */
-export const NOISE = { still: 0, crouch: 2.2, walk: 8, sprint: 18, interact: 7, book: 9, door: 12, breaker: 14 };
+export const NOISE = { still: 0, crouch: 1.2, walk: 8, sprint: 18, interact: 7, book: 9, door: 12, breaker: 14 };
 
 export const HIDE_LIMIT = { calm: 22, threat: 60, warn: 6 };
 export const GLITCH_BEHIND = 4;

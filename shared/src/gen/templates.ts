@@ -596,12 +596,12 @@ function greenhouse(b: RoomBuilder) {
   const nSn = b.rng.int(2, 4);
   for (let k = 0; k < nSn; k++) {
     const z = b.rng.range(b.iz0 + 2.5, b.iz1 - 2.5);
-    const x = (b.rng.chance(0.5) ? -1 : 1) * b.rng.range(0.35, 0.65) + (ex && ex.dir === 0 && z > (b.laneMid ?? 0) ? ex.lx : 0);
+    const x = (b.rng.chance(0.5) ? -1 : 1) * b.rng.range(0.6, 0.78) + (ex && ex.dir === 0 && z > (b.laneMid ?? 0) ? ex.lx : 0);
     b.addProp('snare', x, z, 0, { size: null });
   }
   for (let k = 0; k < b.rng.int(3, 6); k++) {
     const x = b.rng.range(r.xMin + 0.5, r.xMax - 0.5), z = b.rng.range(b.iz0 + 2, b.iz1 - 1);
-    if (Math.abs(x) < 1.2) continue;
+    if (Math.abs(x) < 1.2 || b.keepOut.some((k) => x > k.x0 - 0.4 && x < k.x1 + 0.4 && z > k.z0 - 0.4 && z < k.z1 + 0.4)) continue;
     b.addProp('snare', x, z, 0, { size: null });
   }
   b.addLight(b.cx, r.height + 3, b.cz, { color: 0x6f86b8, intensity: 0.35, range: 30, kind: 'moon' });
@@ -721,9 +721,12 @@ function seekRoom(b: RoomBuilder, kind: RoomData['kind']) {
     ceilingLights(b, 'ceilingLight', Math.round(r.depth / 6), 3.5, 8);
     // grabbing hands on the walls and obstacles to crouch under
     const n = b.rng.int(5, 8);
+    const ex = r.exits[r.realExit];
     for (let k = 0; k < n; k++) {
       const side = b.rng.chance(0.5) ? -1 : 1;
       const z = b.rng.range(b.iz0 + 3, b.iz1 - 3);
+      // keep hands away from the turn toward a side exit
+      if (ex && ex.dir !== 0 && z > ex.lz - 2.6) continue;
       b.addProp('hands', side * (b.w / 2 - 0.35), z, side < 0 ? 1 : 3, { size: null, y: 0 });
     }
     const cut = b.rng.int(1, 2);
@@ -750,7 +753,7 @@ function seekRoom(b: RoomBuilder, kind: RoomData['kind']) {
       b.addLight(x, 1.0, z, { color: 0xff7a2a, intensity: 2.2, range: 6, kind: 'fire', flicker: true });
     }
     for (let k = 0; k < 3; k++) {
-      const z = b.iz0 + 5 + k * 6;
+      const z = b.iz0 + 9 + k * 6;
       b.addProp('chandelier', b.rng.range(-1.2, 1.2), z, 0, { y: r.height, size: null, data: 1, variant: 0 });
     }
     b.addProp('guidingLight', ex.lx, b.iz1 - 0.6, 2, { size: null });

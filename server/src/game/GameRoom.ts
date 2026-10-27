@@ -105,7 +105,7 @@ export class GameRoom implements Game {
     for (let n = 1; n <= start; n++) { this.opened.add(n); this.open.add(n); this.unlocked.add(n); }
     this.furthestDoor = start;
     const spawn = this.spawnPoints(start);
-    opts.players.forEach((p, i) => this.addPlayer(p.id, p.name, p.peer, spawn[i % spawn.length]));
+    opts.players.forEach((p, i) => this.addPlayer(p.id, p.name, p.peer, spawn[i % spawn.length], start));
     this.visited.add(start);
     if (!opts.manual) this.timer = setInterval(() => this.step(TICK_DT), TICK_DT * 1000);
   }
@@ -135,16 +135,16 @@ export class GameRoom implements Game {
     return { x: r.origin.x + lx * c + lz * s, y: r.origin.y, z: r.origin.z - lx * s + lz * c };
   }
 
-  private addPlayer(id: string, name: string, peer: Peer | null, pos: Vec3) {
+  private addPlayer(id: string, name: string, peer: Peer | null, pos: Vec3, startRoom = 0) {
     const p: PlayerState = {
       id, name, peer, pos: { ...pos }, lastValid: { ...pos }, yaw: 0, pitch: 0, crouch: false, sprint: false, moving: false,
-      room: this.world.roomAt(pos, 0), roomEnteredAt: 0, hp: PLAYER.maxHealth, dead: false, deadAt: 0, cause: null, gold: 0,
+      room: this.world.roomAt(pos, startRoom), roomEnteredAt: 0, hp: PLAYER.maxHealth, dead: false, deadAt: 0, cause: null, gold: 0,
       inv: new Array(INVENTORY_SLOTS).fill(null), equipped: -1, stamina: PLAYER.maxStamina, boost: 0, hidden: null, hiddenTime: 0,
       hideWarned: false, snared: 0, snareCooldown: 0, lastSeq: 0, lastInputAt: 0, connected: !!peer, disconnectedAt: 0,
       revives: 1, noise: 0, behindSince: -1, screechCooldown: 20, cooldowns: new Map(), shopOpen: false, deaths: 0,
       furthest: 0, selfDirty: true, violations: 0, inElevator: false, slowUntil: 0,
     };
-    if (p.room < 0) p.room = 0;
+    if (p.room < 0) p.room = startRoom;
     this.ps.set(id, p);
   }
 
@@ -740,7 +740,7 @@ export class GameRoom implements Game {
 
   private updatePlayer(p: PlayerState, dt: number) {
     if (p.dead) { p.noise = 0; return; }
-    const inChase = [...this.entities.values()].some((e) => e.kind === 'seek');
+    const inChase = this.powerOn || [...this.entities.values()].some((e) => e.kind === 'seek');
     if (p.sprint && p.moving && !p.hidden) {
       if (p.boost <= 0 && !inChase) p.stamina = Math.max(0, p.stamina - PLAYER.staminaDrain * dt);
     } else p.stamina = Math.min(PLAYER.maxStamina, p.stamina + PLAYER.staminaRegen * dt);
@@ -807,7 +807,7 @@ export class GameRoom implements Game {
         for (const pr of r.props) {
           if (pr.type !== 'snare') continue;
           const w = this.propWorld(r, pr);
-          if (distXZ(w, p.pos) < 0.45 && Math.abs(w.y - p.pos.y) < 0.6) {
+          if (distXZ(w, p.pos) < 0.4 && Math.abs(w.y - p.pos.y) < 0.6) {
             p.snared = 2.5; p.snareCooldown = this.time + 6; p.selfDirty = true;
             this.emit({ e: 'snare', id: pr.id, target: p.id });
             this.damage(p, 20, 'snare');
@@ -821,7 +821,7 @@ export class GameRoom implements Game {
         for (const pr of r.props) {
           if (pr.type === 'hands' || pr.type === 'fire') {
             const w = this.propWorld(r, pr);
-            const reach = pr.type === 'hands' ? 1.25 : 0.95;
+            const reach = pr.type === 'hands' ? 1.05 : 0.95;
             const key = `${pr.id}:${p.id}`;
             if (distXZ(w, p.pos) < reach && (p.cooldowns.get(key) ?? 0) < this.time) {
               p.cooldowns.set(key, this.time + (pr.type === 'hands' ? 99 : 1));
@@ -831,10 +831,10 @@ export class GameRoom implements Game {
           }
           if (pr.type === 'chandelier' && pr.data === 1 && !this.fallen.has(pr.id)) {
             const w = this.propWorld(r, pr);
-            if (distXZ(w, p.pos) < 4.5) {
+            if (distXZ(w, p.pos) < 7.5) {
               this.fallen.add(pr.id);
               this.emit({ e: 'chandelier', id: pr.id });
-              this.pendingChandeliers.push({ id: pr.id, at: this.time + 0.75, pos: { x: w.x, y: p.pos.y, z: w.z }, room: r.index });
+              this.pendingChandeliers.push({ id: pr.id, at: this.time + 0.9, pos: { x: w.x, y: p.pos.y, z: w.z }, room: r.index });
             }
           }
         }
@@ -851,7 +851,7 @@ export class GameRoom implements Game {
     }
     for (const c of this.pendingChandeliers) {
       if (c.at > this.time) continue;
-      for (const p of this.alive()) if (distXZ(p.pos, c.pos) < 1.4) this.damage(p, 40, 'chandelier');
+      for (const p of this.alive()) { if (distXZ(p.pos, c.pos) < 1.4) this.damage(p, 40, 'chandelier'); }
     }
     this.pendingChandeliers = this.pendingChandeliers.filter((c) => c.at > this.time);
   }
@@ -958,7 +958,7 @@ export class GameRoom implements Game {
 
   // ---- test helpers
   debugState() {
-    return { opened: [...this.opened], libraryUnlocked: this.libraryUnlocked, powerOn: this.powerOn, breakerRound: this.breakerRound, hvDoorOpen: this.hvDoorOpen, books: [...this.books.values()], hideOcc: Object.fromEntries(this.hideOcc), taken: [...this.taken], emptied: [...this.emptied] };
+    return { haltDone: [...this.haltDone], unlocked: [...this.unlocked], opened: [...this.opened], libraryUnlocked: this.libraryUnlocked, powerOn: this.powerOn, breakerRound: this.breakerRound, hvDoorOpen: this.hvDoorOpen, books: [...this.books.values()], hideOcc: Object.fromEntries(this.hideOcc), taken: [...this.taken], emptied: [...this.emptied] };
   }
   isInside(p: Vec3, room: number) { return this.rooms[room].walkable.some((w) => pointInBox(p, w, 0.05)); }
 }

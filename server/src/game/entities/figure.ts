@@ -83,7 +83,7 @@ export class FigureEntity implements Entity {
         if (!heard || loud > heard.loud) heard = { pos: { ...p.pos }, loud, p };
       }
       // it can "feel" anyone who walks right into it
-      if (d < 1.6 && !p.crouch) heard = { pos: { ...p.pos }, loud: 99, p };
+      if (d < (p.crouch ? 0.9 : 1.6)) heard = { pos: { ...p.pos }, loud: 99, p };
     }
     this.noisePulses = this.noisePulses.filter((n) => this.g.time - n.t < 0.3);
     for (const n of this.noisePulses) {
@@ -93,15 +93,16 @@ export class FigureEntity implements Entity {
     this.noisePulses = [];
 
     if (this.state === 'enraged') {
+      if (this.stateT < 3.5) return; // breaking loose
       const tgt = inRoom.filter((p) => !p.hidden && !p.inElevator).sort((a, b) => dist(a.pos, this.pos) - dist(b.pos, this.pos))[0];
-      if (tgt) { this.targetPlayer = tgt; this.chaseStep(dt, 5.0, tgt); }
+      if (tgt) { this.targetPlayer = tgt; this.chaseStep(dt, 4.6, tgt); }
       return;
     }
 
     if (heard) {
       const close = dist(heard.pos, this.pos) < 7 && heard.loud > 2;
       if (heard.p && (close || heard.loud > 9)) { this.targetPlayer = heard.p; this.setState('chase'); }
-      else if (this.state !== 'chase') { this.setState('investigate'); this.goTo(heard.pos); }
+      else if (this.state !== 'chase' && (this.state !== 'investigate' || !this.target || dist(this.target, heard.pos) > 2)) { this.setState('investigate'); this.goTo(heard.pos); }
     }
 
     switch (this.state) {

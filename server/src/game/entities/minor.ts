@@ -130,10 +130,10 @@ export class HaltEntity implements Entity {
     const zs = ps.map((p) => toLocal(this.r, p.pos.x, p.pos.z)[1]);
     this.state = this.phases[this.phase];
     if (this.state === 'behind') {
-      this.lz = Math.max(WALL_T + 0.3, (zs.length ? Math.min(...zs) : WALL_T) - 7);
+      this.lz = Math.max(WALL_T + 0.3, (zs.length ? Math.min(...zs) : WALL_T) - 6);
       this.dirSign = 1;
     } else {
-      this.lz = Math.min(WALL_T + this.r.depth - 0.3, (zs.length ? Math.max(...zs) : WALL_T) + 7);
+      this.lz = Math.min(WALL_T + this.r.depth - 0.3, (zs.length ? Math.max(...zs) : WALL_T) + 8);
       this.dirSign = -1;
     }
     this.t = 0;
@@ -141,13 +141,21 @@ export class HaltEntity implements Entity {
   }
   update(dt: number) {
     this.t += dt;
-    const dur = this.state === 'front' ? 5.5 : 7;
-    this.lz += this.dirSign * 2.1 * dt;
+    const dur = this.state === 'front' ? 5 : 7;
+    const ps = this.g.alive().filter((p) => p.room === this.room);
+    const zs = ps.map((p) => toLocal(this.r, p.pos.x, p.pos.z)[1]);
+    if (this.state === 'behind') {
+      // follows from behind but never closes in: walking forward is always safe
+      const rear = zs.length ? Math.min(...zs) : WALL_T;
+      this.lz = Math.min(this.lz + 2.0 * dt, rear - 3.2);
+    } else {
+      this.lz -= 2.0 * dt;
+    }
     this.lz = Math.max(WALL_T + 0.3, Math.min(WALL_T + this.r.depth - 0.3, this.lz));
     this.pos = toWorld(this.r, 0, 1.0, this.lz);
     this.yaw = ((this.r.rot + (this.dirSign > 0 ? 0 : 2)) * Math.PI) / 2 + Math.PI;
     for (const p of this.g.alive()) {
-      if (p.room !== this.room) continue;
+      if (p.room !== this.room || this.state !== 'front') continue;
       const [, pz] = toLocal(this.r, p.pos.x, p.pos.z);
       if (Math.abs(pz - this.lz) < 0.9) {
         const k = `halt:${p.id}`;

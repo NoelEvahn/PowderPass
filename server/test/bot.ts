@@ -11,7 +11,7 @@ export class FakePeer {
   send(m: S2C) {
     this.msgs.push(m);
     if (m.t === 'ev') this.events.push(...m.list);
-    if (this.msgs.length > 400) this.msgs.splice(0, 200);
+    if (this.msgs.length > 400) this.msgs = this.msgs.filter((m) => m.t === "ev");
   }
 }
 
@@ -50,6 +50,8 @@ export class Bot {
     for (const e of this.peer.events) {
       if (e.e === 'book' && e.shape !== undefined) this.digits.set(e.shape, e.digit!);
       if (e.e === 'breaker') { this.lit = e.lit; this.switches = [...e.switches]; }
+      if (e.e === 'heartbeat' && e.target === this.id) this.hb = { beats: e.beats, start: this.game.time, sent: new Set() };
+      if (e.e === 'heartbeatResult' && e.target === this.id) this.hb = null;
     }
     this.peer.events = [];
   }
@@ -81,8 +83,7 @@ export class Bot {
       const k = Math.min(1, budget / d);
       pos = { x: pos.x + (t.x - pos.x) * k, y: pos.y, z: pos.z + (t.z - pos.z) * k };
       this.yaw = Math.atan2(-(t.x - p.pos.x), -(t.z - p.pos.z));
-      budget -= d * k;
-      if (k >= 1) this.route.shift();
+      if (k >= 1) { this.route.shift(); budget -= d; } else budget = 0;
     }
     const ri = this.game.world.roomAt(pos, p.room, 0.4);
     const r = this.game.rooms[ri >= 0 ? ri : p.room];
@@ -127,6 +128,25 @@ export class Bot {
       return;
     }
     this.pitch = -1.25; // eyes down: never look at Eyes
+    const band = p.inv.findIndex((i) => i?.type === 'bandage');
+    if (p.hp < 65 && band >= 0) this.send({ t: 'use', slot: band });
+    if (this.hb) {
+      const t = g.time - this.hb.start;
+      this.hb.beats.forEach((b, i) => { if (!this.hb!.sent.has(i) && Math.abs(t - b) < 0.06) { this.hb!.sent.add(i); this.send({ t: 'heartbeat', idx: i }); } });
+    }
+    const fig = ents.find((e) => e.kind === 'figure' && e.room === p.room && !g.powerOn) as any;
+    if (fig && (['chase', 'investigate', 'search', 'heartbeat'].includes(fig.state) && dist(fig.pos, p.pos) < 9 || dist(fig.pos, p.pos) < 5.5)) {
+      if (p.hidden) return this.idle();
+      const h = this.nearestHide();
+      if (h) {
+        if (dist(g.eye(p), h.pos) < PLAYER.interactRange) { this.interact(h.id); return; }
+        this.sprint = fig.state === 'chase';
+        this.crouch = !this.sprint;
+        this.go(h.pos, 1.0, 'fhide' + h.id);
+        return;
+      }
+    }
+    if (fig && p.hidden && dist(fig.pos, p.pos) < 12) return this.idle();
     const rush = ents.find((e) => e.kind === 'rush' || e.kind === 'ambush');
     if (rush) {
       if (p.hidden) return this.idle();
@@ -143,7 +163,7 @@ export class Bot {
     const seek = ents.some((e) => e.kind === 'seek');
     this.sprint = seek;
     this.crouch = (r.kind === 'library' || r.kind === 'electrical') && !g.powerOn;
-    if (r.kind === 'halt' && !g.debugState().opened.includes(r.index + 1)) return this.halt(r);
+    if (r.kind === 'halt' && !g.debugState().haltDone.includes(r.index)) return this.halt(r);
     if (r.index === 50) return this.library(r);
     if (r.index === FINAL_ROOM) return this.electrical(r);
     this.advance(r);
@@ -166,7 +186,7 @@ export class Bot {
       return;
     }
     // locked?
-    if (ex.lock === 'key' && !this.p.inv.some((i) => i?.type === 'key' && i.door === n) && !st.opened.includes(n)) {
+    if (ex.lock === 'key' && !this.p.inv.some((i) => i?.type === 'key' && i.door === n) && !st.unlocked.includes(n)) {
       const src = r.interactables.find((i) => i.loot?.item === 'key' && i.loot.door === n)!;
       if (dist(this.game.eye(this.p), src.pos) < PLAYER.interactRange) {
         if (src.kind === 'drawer' && !st.emptied.includes(src.id)) { this.interact(src.id); if (!this.game.debugState().emptied.includes(src.id)) this.interact(src.id); }
@@ -176,16 +196,34 @@ export class Bot {
       this.go(src.pos, 1.2, 'key' + n);
       return;
     }
-    if (ex.lock === 'lever') {
+    if (ex.lock === 'lever' && !st.unlocked.includes(n)) {
       const lever = r.interactables.find((i) => i.kind === 'lever')!;
       if (dist(this.game.eye(this.p), lever.pos) < PLAYER.interactRange) { this.interact(lever.id); return; }
       this.go(lever.pos, 1.2, 'lever' + n);
       return;
     }
-    const doorPt = r.path[r.path.length - 2];
     if (dist(this.p.pos, ex.world) < 2.4) { this.interact(`door:${n}`); this.idle(); return; }
-    this.go(doorPt, 0.5, 'door' + n);
+    this.followLane(r, 'door' + n);
   }
+
+  /** Follow the room's guaranteed-clear lane (grid-navigate back onto it after detours). */
+  private followLane(r: RoomData, key: string) {
+    const pts = r.path.slice(1, -1);
+    if (this.routeGoal !== key || !this.route.length) {
+      let best = 0, bd = Infinity;
+      pts.forEach((q, i) => { const d = distXZ(q, this.p.pos); if (d < bd) { bd = d; best = i; } });
+      const onLane = bd < 0.5;
+      const rest = pts.slice(onLane ? best + 1 : best);
+      if (!onLane) {
+        const lead = nav(r).findPath(this.p.pos, pts[best]) ?? [pts[best]];
+        this.route = [...lead, ...rest];
+      } else this.route = rest.length ? rest : [pts[pts.length - 1]];
+      this.routeGoal = key;
+    }
+    this.stepAlong();
+  }
+
+  private hb: { beats: number[]; start: number; sent: Set<number> } | null = null;
 
   private halt(r: RoomData) {
     const h = [...this.game.entities.values()].find((e) => e.kind === 'halt');
@@ -207,12 +245,19 @@ export class Bot {
     if (todo.length) {
       todo.sort((a, b) => dist(a.pos, this.p.pos) - dist(b.pos, this.p.pos));
       const t = todo[0];
-      if (dist(this.game.eye(this.p), t.pos) < PLAYER.interactRange) { this.interact(t.id); this.visited.add(t.id); return; }
+      const fig = [...this.game.entities.values()].find((e) => e.kind === 'figure');
+      if (dist(this.game.eye(this.p), t.pos) < PLAYER.interactRange) {
+        // don't make noise with the Figure nearby
+        if (fig && dist(fig.pos, this.p.pos) < 11) return this.idle();
+        this.interact(t.id); this.visited.add(t.id); return;
+      }
       this.go(t.pos, 1.0, 'lib' + t.id);
       return;
     }
     const pad = r.interactables.find((i) => i.kind === 'padlock')!;
     if (dist(this.game.eye(this.p), pad.pos) < 3) {
+      const fig = [...this.game.entities.values()].find((e) => e.kind === 'figure');
+      if (fig && dist(fig.pos, this.p.pos) < 11) return this.idle();
       const code = r.puzzle!.shapes!.map((s) => this.digits.get(s)).join('');
       this.send({ t: 'code', code });
       return;
