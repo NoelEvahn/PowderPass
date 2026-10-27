@@ -1,59 +1,18 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
-# dependencies
+# dependencies (only used for browser tests)
 /node_modules
-/.pnp
-.pnp.js
-.yarn/install-state.gz
 
-/.idea/*
-!/.idea/runConfigurations
+# local WordPress used for development and tests (lives outside the repo)
+/wp-local
 
-# testing
-/coverage
+# build output: zips to upload to WordPress
+/dist
 
-# next.js
-/.next/
-/out/
-
-# production
-/build
+# test output
+/test-results
+/playwright-report
+/tests/e2e/.state.json
 
 # misc
 .DS_Store
-*.pem
-
-# debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# local env files
-.env*.local
-
-# vercel
-.vercel
-
-# typescript
-*.tsbuildinfo
-next-env.d.ts
-
+*.log
 .env
-
-/media
-
-# Playwright
-node_modules/
-/test-results/
-/playwright-report/
-/blob-report/
-/playwright/.cache/
-
-# local data
-/media
-.env
-/test-results
-/playwright-report
-
-/media-e2e
-/tests/e2e/.state.json
