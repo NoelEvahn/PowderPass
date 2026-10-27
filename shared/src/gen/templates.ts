@@ -412,6 +412,7 @@ function reception(b: RoomBuilder) {
   el(1.5, -3.2, 1.7, 0, 0, 3);
   el(-1.7, -3.2, 1.7, 0, 2.8, 3.1);
   b.addProp('elevator', 0, 0, 0, { y: 0, size: null });
+  r.walkable.push(b.rectToWorldBox({ x0: -1.5, z0: -3.0, x1: 1.5, z1: 0 }, -0.2, 2.8));
   r.tags.push('spawn:0,-1.6');
   const desk = b.addProp('receptionDesk', -3.2, b.iz0 + 9.5, 2);
   b.addDrawers(desk, 3, () => rollLoot(b.rng, 0, 'rich'), 0.8, 1.3, -0.55);

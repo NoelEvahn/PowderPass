@@ -1,4 +1,4 @@
-import { generateRun, validateRun } from '../src/index';
+import { generateRun, validateRun } from '../shared/src/index';
 const t0 = Date.now();
 let total = 0;
 const counts: Record<string, number> = {};
