@@ -494,7 +494,7 @@ const B: Partial<Record<PropData['type'], Builder>> = {
       ctx.fillStyle = tint; ctx.fillRect(0, 0, 256, 256);
       ctx.strokeStyle = 'rgba(200,160,80,0.7)'; ctx.lineWidth = 8; ctx.strokeRect(14, 14, 228, 228);
       ctx.lineWidth = 3; ctx.strokeRect(30, 30, 196, 196);
-      ctx.fillStyle = 'rgba(200,160,80,0.35)';
+      ctx.fillStyle = 'rgba(200,160,80,0.12)';
       for (let k = 0; k < 6; k++) { ctx.beginPath(); ctx.ellipse(128, 128, 90 - k * 14, 50 - k * 7, k * 0.5, 0, Math.PI * 2); ctx.fill(); }
       for (let k = 0; k < 4000; k++) { ctx.fillStyle = `rgba(0,0,0,${Math.random() * 0.12})`; ctx.fillRect(Math.random() * 256, Math.random() * 256, 2, 2); }
     });

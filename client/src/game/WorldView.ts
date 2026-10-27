@@ -285,8 +285,8 @@ export class WorldView {
       const l = c.l;
       pl.position.set(l.world.x, l.world.y, l.world.z);
       const mode = this.modes.get(c.room);
-      let inten = l.intensity * (l.kind === 'chandelier' ? 1.6 : 1.25);
-      if (c.room === FINAL_ROOM && this.powerOn && l.kind === 'ceiling') inten = 3.5;
+      let inten = l.intensity * (l.kind === 'chandelier' ? 5 : l.kind === 'moon' ? 3 : l.kind === 'ceiling' ? 3.2 : 4.5);
+      if (c.room === FINAL_ROOM && this.powerOn && l.kind === 'ceiling') inten = 14;
       let color = l.color;
       if (mode === 'flicker') inten *= Math.random() < 0.35 ? 0.05 : 0.7 + Math.random() * 0.6;
       else if (mode === 'green') { color = 0x50ff60; inten *= Math.random() < 0.3 ? 0.1 : 0.9; }
@@ -300,8 +300,8 @@ export class WorldView {
       if (fu && fu > this.t) inten *= Math.random();
       pl.color.setHex(color);
       pl.intensity = inten;
-      pl.distance = l.range * 1.2;
-      pl.decay = 1.6;
+      pl.distance = l.range * 1.6;
+      pl.decay = 1.5;
     }
   }
 

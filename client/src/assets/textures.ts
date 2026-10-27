@@ -167,14 +167,14 @@ function woodGrain(): TexSet {
   const f = field();
   each(f, (u, v, i) => {
     const w = fbm(u * 2, v * 2, 2, 3, 5);
-    const rings = Math.sin((v * 22 + w * 6 + fbm(u * 4, v * 30, 4, 4, 9) * 1.4) * Math.PI * 2) * 0.5 + 0.5;
-    const fine = fbm(u * 64, v * 4, 64, 3, 2);
-    const t = 0.8 + rings * 0.25 - fine * 0.2;
+    const rings = Math.sin((u * 14 + w * 3 + fbm(u * 30, v * 4, 30, 4, 9) * 0.8) * Math.PI * 2) * 0.5 + 0.5;
+    const fine = fbm(u * 4, v * 64, 4, 3, 2);
+    const t = 0.85 + rings * 0.14 - fine * 0.16;
     setCol(f, i, 0.62 * t, 0.42 * t, 0.27 * t);
     f.ht[i] = rings * 0.2 + fine * 0.15;
     f.ro[i] = 0.42 + fine * 0.2;
   });
-  return toTextures(f, 1.2, 1.5);
+  return toTextures(f, 1.0, 1.0);
 }
 
 function carpet(): TexSet {
@@ -291,9 +291,9 @@ function plaster(): TexSet {
   const f = field();
   each(f, (u, v, i) => {
     const n = fbm(u * 10, v * 10, 10, 5, 13);
-    const crack = Math.pow(1 - Math.abs(fbm(u * 3, v * 3, 3, 5, 77) - 0.5) * 2, 40);
+    const crack = Math.pow(1 - Math.abs(fbm(u * 3, v * 3, 3, 5, 77) - 0.5) * 2, 60);
     const g = grime(u, v, 66);
-    const t = 0.78 + n * 0.08 - g * 0.35 - crack * 0.3;
+    const t = 0.78 + n * 0.06 - g * 0.25 - crack * 0.12;
     setCol(f, i, t, t * 0.96, t * 0.88);
     f.ht[i] = n * 0.4 - crack;
     f.ro[i] = 0.92;

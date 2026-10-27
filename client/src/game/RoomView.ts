@@ -173,11 +173,12 @@ export class RoomView {
     this.disposables.push(tex);
     for (const l of this.lights) {
       if (l.kind !== 'ceiling' && l.kind !== 'chandelier' && l.kind !== 'lamp') continue;
+      if (!this.room.props.some((p) => Math.hypot(p.x - l.lx, p.z - l.lz) < 0.6 && (p.type === 'ceilingLight' || p.type === 'chandelier' || p.type === 'lamp' || p.type === 'floorLamp'))) continue;
       const h = l.kind === 'lamp' ? 0.9 : Math.min(2.6, l.ly - 0.2);
       const r = l.kind === 'lamp' ? 0.35 : 1.3;
       const geo = new THREE.CylinderGeometry(0.12, r, h, 18, 1, true);
       geo.translate(0, -h / 2, 0);
-      const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, color: l.color, opacity: 0.55, fog: true });
+      const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, color: l.color, opacity: 0.22, fog: true });
       const m = new THREE.Mesh(geo, mat);
       m.position.set(l.lx, l.ly - (l.kind === 'lamp' ? -0.05 : 0.05), l.lz);
       m.userData.shaft = true;

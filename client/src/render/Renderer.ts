@@ -28,7 +28,7 @@ export function detectQuality(): QualityName {
 /** Cinematic grading: vignette, grain, chromatic aberration, damage pulse, tints and distortion. */
 const GradeShader = {
   uniforms: {
-    tDiffuse: { value: null }, time: { value: 0 }, vignette: { value: 1.0 }, grain: { value: 0.05 }, damage: { value: 0 },
+    tDiffuse: { value: null }, time: { value: 0 }, vignette: { value: 1.0 }, grain: { value: 0.03 }, damage: { value: 0 },
     aberration: { value: 0.0015 }, tint: { value: new THREE.Vector3(1, 1, 1) }, distort: { value: 0 }, exposure: { value: 1 }, darkness: { value: 0 },
   },
   vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
@@ -80,7 +80,7 @@ export class Renderer {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: this.preset.antialias, powerPreference: 'high-performance', stencil: false });
     if (!this.renderer.capabilities.isWebGL2) console.warn('WebGL2 not available; running in compatibility mode');
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.05;
+    this.renderer.toneMappingExposure = 1.25;
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.shadowMap.enabled = this.preset.shadows;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;

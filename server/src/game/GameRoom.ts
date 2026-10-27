@@ -784,6 +784,7 @@ export class GameRoom implements Game {
         this.send(p, { t: 'correct', x: pos.x, y: pos.y, z: pos.z, seq: p.lastSeq });
       }
     } else p.behindSince = -1;
+    if (this.tickN % 20 === 0) p.selfDirty = true;
     if (p.selfDirty) { p.selfDirty = false; this.send(p, { t: 'self', s: this.selfState(p) }); }
   }
 

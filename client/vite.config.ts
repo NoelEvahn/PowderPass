@@ -17,7 +17,7 @@ export default defineConfig({
   },
   preview: { host: true, port: 4173, proxy: { '/ws': { target: 'ws://localhost:2567', ws: true } } },
   build: {
-    target: 'es2020',
+    target: 'es2022',
     chunkSizeWarningLimit: 2500,
     rollupOptions: { output: { manualChunks: { three: ['three'], rapier: ['@dimforge/rapier3d-compat'] } } },
   },

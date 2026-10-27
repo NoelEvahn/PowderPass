@@ -1,0 +1,31 @@
+// Browser smoke test: open a client, create a private elevator, ready up, enter the hotel and take screenshots.
+import { chromium } from 'playwright';
+const OUT = process.argv[2] || '.';
+const URL = process.argv[3] || 'http://localhost:2567/';
+const browser = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
+const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
+const errors = [];
+page.on('pageerror', (e) => errors.push('pageerror: ' + e.message));
+page.on('console', (m) => { if (m.type() === 'error' || m.type() === 'warning') errors.push(m.type() + ': ' + m.text()); });
+page.on('requestfailed', (r) => errors.push('requestfailed: ' + r.url() + ' ' + r.failure()?.errorText));
+await page.goto(URL);
+await page.waitForTimeout(1500);
+await page.screenshot({ path: OUT + '/01-menu.png' });
+await page.fill('#nameIn', 'Tester');
+await page.click('#bPrivate');
+await page.waitForSelector('#lobby.show', { timeout: 10000 });
+await page.screenshot({ path: OUT + '/02-lobby.png' });
+await page.click('#bReady');
+await page.waitForFunction(() => window.__doors?.inGame, null, { timeout: 60000 });
+await page.waitForTimeout(4000);
+await page.screenshot({ path: OUT + '/03-spawn.png' });
+// walk forward out of the elevator
+const g = await page.evaluate(() => ({ room: __doors.room, pos: __doors.pos, fps: __doors.fps, calls: __doors.calls }));
+console.log('state', JSON.stringify(g));
+await page.keyboard.down('KeyW');
+await page.waitForTimeout(2500);
+await page.keyboard.up('KeyW');
+await page.screenshot({ path: OUT + '/04-lobbyroom.png' });
+console.log('after walk', JSON.stringify(await page.evaluate(() => ({ room: __doors.room, pos: __doors.pos, fps: __doors.fps }))));
+console.log('errors', errors.slice(0, 20).join('\n'));
+await browser.close();

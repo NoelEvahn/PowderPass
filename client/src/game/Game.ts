@@ -131,7 +131,7 @@ export class Game {
     this.room = 0;
     this.world.stream(0);
     this.physics.teleport(sp);
-    this.yaw = 0; this.pitch = 0;
+    this.yaw = Math.PI; this.pitch = 0;
     for (const pl of m.players) if (pl.id !== this.me) this.addRemote(pl.id, pl.name, m.players.indexOf(pl));
     this.ui.setLoading('Entering…', 1);
     this.running = true;
@@ -685,7 +685,7 @@ export class Game {
     // ambient level: darker in dark/broken rooms
     const room = this.layout.rooms[this.room];
     const dark = room?.dark || this.world.broken.has(this.room);
-    const targetHemi = room?.theme.outdoor ? 0.22 : dark ? 0.012 : 0.1;
+    const targetHemi = room?.theme.outdoor ? 0.35 : dark ? 0.02 : 0.28;
     this.hemi.intensity += (targetHemi - this.hemi.intensity) * Math.min(1, dt * 2);
     // viewmodel bob
     if (this.viewItem) {

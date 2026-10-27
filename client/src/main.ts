@@ -17,10 +17,18 @@ try {
   uiRoot.innerHTML = `<div style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;color:#e8dcc4;font-family:sans-serif;text-align:center;padding:20px;pointer-events:auto">This game needs WebGL, which is unavailable in this browser.<br/>${String((e as Error).message)}</div>`;
   throw e;
 }
+const galleryParam = new URLSearchParams(location.search).get('gallery');
+if (galleryParam) {
+  const { runGallery } = await import('./gallery');
+  runGallery(renderer, galleryParam);
+  throw new Error('gallery mode');
+}
 const net = new Net();
 const audio = new Audio();
 let inGame = false;
 let paused = false;
+let starting = false;
+const pending: S2C[] = [];
 
 const ui = new UI(uiRoot, {
   quickPlay: () => { ensureName(); net.send({ t: 'quickJoin' }); },
@@ -94,6 +102,8 @@ net.on(async (m: S2C) => {
     case 'leftLobby': ui.show('menu'); net.send({ t: 'listLobbies' }); break;
     case 'error': ui.notice(m.msg); alertMenu(m.msg); break;
     case 'start':
+      starting = true;
+      pending.length = 0;
       ui.show('loading');
       await audio.unlock();
       try {
@@ -102,9 +112,12 @@ net.on(async (m: S2C) => {
         console.error(e);
         ui.notice('Failed to start: ' + (e as Error).message);
         ui.show('menu');
+        starting = false;
         return;
       }
       inGame = true;
+      starting = false;
+      for (const pm of pending.splice(0)) game.handle(pm);
       input.enabled = true;
       ui.hideScreens();
       ui.showHud(true, input.touch);
@@ -115,7 +128,7 @@ net.on(async (m: S2C) => {
       input.enabled = false;
       input.unlock();
       break;
-    default: game.handle(m);
+    default: if (starting) { if (m.t !== 'snap') pending.push(m); } else game.handle(m);
   }
 });
 
