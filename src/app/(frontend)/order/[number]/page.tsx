@@ -156,7 +156,14 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
           tone: 'neutral',
           icon: 'info',
           title: justCancelled ? 'Your order has been cancelled' : 'This order was cancelled',
-          body: <p>Nothing was charged. The {order.items.length === 1 ? 'piece has' : 'pieces have'} gone back to the shop.</p>,
+          body: (
+            <p>
+              {order.payment?.paidAt
+                ? 'Your payment will be refunded; we will contact you about it.'
+                : 'Nothing was charged.'}{' '}
+              The {order.items.length === 1 ? 'piece has' : 'pieces have'} gone back to the shop.
+            </p>
+          ),
           actions: (
             <Link className="btn btn--secondary" href="/shop">
               Back to the shop

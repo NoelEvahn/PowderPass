@@ -6,7 +6,7 @@ import sharp from 'sharp'
 import type { FullConfig } from '@playwright/test'
 
 export const ADMIN = { email: 'e2e-admin@example.com', password: 'e2e-admin-password-1' }
-export const STATE_FILE = path.resolve(__dirname, '.state.json')
+export const STATE_FILE = path.resolve(process.cwd(), 'tests/e2e/.state.json')
 
 const testImage = (label: string, colour: string) =>
   sharp({ create: { width: 800, height: 1000, channels: 3, background: colour } })

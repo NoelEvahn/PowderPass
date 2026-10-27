@@ -103,9 +103,9 @@ test.describe('accessibility and layout', () => {
 
 test('contact form sends an enquiry', async ({ page }) => {
   await page.goto('/contact?topic=visit')
-  await page.getByLabel('Name').fill('E2E Visitor')
-  await page.getByLabel(/^Email/).fill('visitor@example.com')
-  await page.getByLabel(/Message/).fill('Could I visit on Saturday afternoon?')
+  await page.getByRole('textbox', { name: /^Name/ }).fill('E2E Visitor')
+  await page.getByRole('textbox', { name: /^Email/ }).fill('visitor@example.com')
+  await page.getByRole('textbox', { name: /^Message/ }).fill('Could I visit on Saturday afternoon?')
   await page.getByLabel(/I agree/).check()
   await page.waitForTimeout(2600) // minimum fill time for the spam check
   await page.getByRole('button', { name: /send/i }).click()

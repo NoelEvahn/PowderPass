@@ -1,7 +1,12 @@
 /** Central place for environment-derived settings, so defaults live in one file. */
 
+/**
+ * The site's public address. Read at runtime from SERVER_URL (NEXT_PUBLIC_* variables
+ * are frozen into the build, which breaks images built in Docker or CI).
+ */
 export const getServerURL = (): string => {
   const url =
+    process.env.SERVER_URL ||
     process.env.NEXT_PUBLIC_SERVER_URL ||
     (process.env.VERCEL_PROJECT_PRODUCTION_URL
       ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`

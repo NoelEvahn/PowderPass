@@ -7,7 +7,8 @@ const __filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(__filename)
 
 const isDev = process.env.NODE_ENV !== 'production'
-const httpsSite = (process.env.NEXT_PUBLIC_SERVER_URL || '').startsWith('https://')
+// Headers are fixed at build time: set SERVER_URL during the build to send HSTS (or let your host/proxy add it).
+const httpsSite = (process.env.SERVER_URL || '').startsWith('https://')
 const s3Origin = process.env.S3_PUBLIC_URL ? new URL(process.env.S3_PUBLIC_URL).origin : ''
 
 // Only the third parties actually used: Billplz receives the checkout redirect.

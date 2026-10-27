@@ -70,6 +70,7 @@ export const Gallery = ({ images, title }: { images: Media[]; title: string }) =
             <MediaImage
               media={m}
               priority={i === 0}
+              eager
               sizes="(min-width: 960px) 52vw, 100vw"
               alt={m.alt ? m.alt : `${title}, photo ${i + 1} of ${count}`}
             />

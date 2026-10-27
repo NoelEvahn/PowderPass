@@ -12,5 +12,6 @@ await client.query(`SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE
 await client.query(`DROP DATABASE IF EXISTS "${dbName}"`)
 await client.query(`CREATE DATABASE "${dbName}" OWNER "${url.username}"`)
 await client.end()
-(await import('fs')).rmSync(new URL('../../media-e2e', import.meta.url), { recursive: true, force: true })
+const fs = await import('fs')
+fs.rmSync(new URL('../../media-e2e', import.meta.url), { recursive: true, force: true })
 console.log(`Reset ${dbName}`)

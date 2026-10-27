@@ -1,10 +1,11 @@
 import { expect, test, type Page } from '@playwright/test'
 
-import { expectAccessible, state } from './helpers'
+import { expectAccessible, expectImagesLoaded, state } from './helpers'
 
 const addToCart = async (page: Page, slug: string) => {
   await page.goto(`/shop/${slug}`)
   await page.getByRole('button', { name: 'Add to cart' }).first().click()
+  await expect(page.getByText(/Added to your cart|Already in your cart/).first()).toBeVisible()
 }
 
 test.describe('shop', () => {
@@ -33,6 +34,13 @@ test.describe('shop', () => {
     await expect(page.getByRole('link', { name: /Ask about this piece/ }).first()).toBeVisible()
   })
 
+  test('every product photo loads on home, shop and product pages', async ({ page }) => {
+    for (const path of ['/', '/shop', `/shop/${state().available.slug}`]) {
+      await page.goto(path)
+      await expectImagesLoaded(page)
+    }
+  })
+
   test('gallery thumbnails switch the main photo', async ({ page, isMobile }) => {
     test.skip(isMobile, 'desktop')
     await page.goto(`/shop/${state().available.slug}`)
@@ -45,7 +53,6 @@ test.describe('shop', () => {
     test.skip(isMobile, 'one checkout run is enough; mobile checks layout below')
     const s = state()
     await addToCart(page, s.second.slug)
-    await expect(page.getByText(/Added to your cart|Already in your cart/)).toBeVisible()
 
     // Another shopper sees it on hold and cannot add it.
     const other = await browser.newContext()
@@ -99,7 +106,7 @@ test.describe('shop', () => {
     const email = `e2e-${Date.now()}@example.com`
     await page.goto('/account/register')
     await page.getByLabel('Full name').fill('E2E Customer')
-    await page.getByLabel('Email').fill(email)
+    await page.getByRole('textbox', { name: 'Email' }).fill(email)
     await page.getByLabel('Password').fill('a-long-password-1')
     await page.getByRole('button', { name: 'Create account' }).click()
     await expect(page).toHaveURL(/\/account$/)
@@ -107,7 +114,7 @@ test.describe('shop', () => {
     await page.getByRole('button', { name: /Sign out/ }).click()
     await expect(page).toHaveURL(/\/$/)
     await page.goto('/account/sign-in')
-    await page.getByLabel('Email').fill(email)
+    await page.getByRole('textbox', { name: 'Email' }).fill(email)
     await page.getByLabel('Password').fill('wrong-password-1')
     await page.getByRole('button', { name: 'Sign in' }).click()
     await expect(page.getByText(/do not match/)).toBeVisible()

@@ -33,7 +33,7 @@ export default defineConfig({
         timeout: 120_000,
         env: {
           DATABASE_URL: databaseURL,
-          NEXT_PUBLIC_SERVER_URL: baseURL,
+          SERVER_URL: baseURL,
           PAYLOAD_SECRET: process.env.PAYLOAD_SECRET || 'e2e-secret-0123456789abcdef',
           MEDIA_DIR: 'media-e2e',
           NODE_ENV: 'production',

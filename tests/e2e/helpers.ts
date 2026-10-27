@@ -11,7 +11,7 @@ export type E2EState = {
   sold: { id: number; slug: string }
 }
 
-export const state = (): E2EState => JSON.parse(fs.readFileSync(path.resolve(__dirname, '.state.json'), 'utf8'))
+export const state = (): E2EState => JSON.parse(fs.readFileSync(path.resolve(process.cwd(), 'tests/e2e/.state.json'), 'utf8'))
 
 /** Zero serious or critical axe violations (WCAG 2.2 A/AA), after reveals settle. */
 export const expectAccessible = async (page: Page) => {
@@ -32,4 +32,19 @@ export const expectAccessible = async (page: Page) => {
 export const expectNoHorizontalScroll = async (page: Page) => {
   const [scrollWidth, innerWidth] = await page.evaluate(() => [document.documentElement.scrollWidth, window.innerWidth])
   expect(scrollWidth, `page is ${scrollWidth}px wide in a ${innerWidth}px window`).toBeLessThanOrEqual(innerWidth)
+}
+
+/** Every image on the page has loaded (scrolls first so lazy images fetch). */
+export const expectImagesLoaded = async (page: Page) => {
+  await page.evaluate(async () => {
+    for (let y = 0; y < document.body.scrollHeight; y += window.innerHeight * 0.7) {
+      window.scrollTo(0, y)
+      await new Promise((r) => setTimeout(r, 80))
+    }
+  })
+  await page.waitForLoadState('networkidle')
+  const broken = await page.$$eval('img', (imgs) =>
+    imgs.filter((i) => !(i.complete && i.naturalWidth > 0)).map((i) => i.currentSrc || i.src),
+  )
+  expect(broken).toEqual([])
 }

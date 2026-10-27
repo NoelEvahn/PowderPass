@@ -28,7 +28,7 @@ Requirements: Node 22.12+, pnpm 10, PostgreSQL 14+.
 
 ```bash
 pnpm install
-cp .env.example .env            # set DATABASE_URL, PAYLOAD_SECRET, NEXT_PUBLIC_SERVER_URL=http://localhost:3000
+cp .env.example .env            # set DATABASE_URL, PAYLOAD_SECRET, SERVER_URL=http://localhost:3000
 echo "PAYLOAD_DB_PUSH=true" >> .env   # dev only: keep the schema in sync automatically
 SEED_ADMIN_EMAIL=you@example.com SEED_ADMIN_PASSWORD='a-long-password' pnpm seed
 pnpm dev                        # http://localhost:3000 and http://localhost:3000/admin
@@ -44,7 +44,7 @@ The app is a standard Node server, so it runs on any host. Two tested paths:
 
 1. Create a Postgres database (for example on Neon) and copy its connection string.
 2. Create an S3-compatible bucket (Cloudflare R2, AWS S3, Backblaze B2) and an access key. Vercel's disk is temporary, so photos **must** go to a bucket here.
-3. Import the repository into Vercel and add the environment variables from `.env.example`: `DATABASE_URL`, `PAYLOAD_SECRET`, `NEXT_PUBLIC_SERVER_URL`, the `S3_*` values, and optionally Billplz, SMTP and `CRON_SECRET`.
+3. Import the repository into Vercel and add the environment variables from `.env.example`: `DATABASE_URL`, `PAYLOAD_SECRET`, `SERVER_URL`, the `S3_*` values, and optionally Billplz, SMTP and `CRON_SECRET`.
 4. Deploy. Database migrations run automatically when the server starts.
 5. Visit `/admin` and create the first administrator (or run `pnpm seed` locally against the production `DATABASE_URL`).
 6. Add a scheduled call to `/tasks/release-holds` (see below). On Vercel, use Vercel Cron, or an external scheduler such as cron-job.org, with the header `Authorization: Bearer <CRON_SECRET>`.
@@ -52,7 +52,7 @@ The app is a standard Node server, so it runs on any host. Two tested paths:
 ### Option B: your own server (Docker)
 
 ```bash
-cp .env.example .env    # fill in PAYLOAD_SECRET, NEXT_PUBLIC_SERVER_URL, optional Billplz/SMTP
+cp .env.example .env    # fill in PAYLOAD_SECRET, SERVER_URL, optional Billplz/SMTP
 echo "POSTGRES_PASSWORD=$(openssl rand -hex 16)" >> .env
 docker compose up -d --build
 ```
@@ -65,7 +65,7 @@ This starts the app, PostgreSQL and a persistent volume for photos. Put a revers
 
 ### Environment variables
 
-See `.env.example`; every variable is described there. Required: `DATABASE_URL`, `PAYLOAD_SECRET`, `NEXT_PUBLIC_SERVER_URL`.
+See `.env.example`; every variable is described there. Required: `DATABASE_URL`, `PAYLOAD_SECRET`, `SERVER_URL`.
 
 ### Database migrations
 
