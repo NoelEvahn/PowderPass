@@ -51,6 +51,11 @@ public final class PowderPassPlugin extends JavaPlugin {
     public void onEnable() {
         Keys.init(this);
         saveDefaultConfig();
+        // older configs shipped a smaller ball; move untouched values to the new default
+        if (getConfig().getDouble("ball.visual-size", 0.45) == 0.30) {
+            getConfig().set("ball.visual-size", 0.45);
+            saveConfig();
+        }
         settings = new Settings(getConfig(), getLogger());
         loadSettings();
 
@@ -202,6 +207,9 @@ public final class PowderPassPlugin extends JavaPlugin {
         }
         if (hud != null) {
             hud.shutdown();
+        }
+        if (hits != null) {
+            hits.shutdown();
         }
         if (balls != null) {
             balls.shutdown();

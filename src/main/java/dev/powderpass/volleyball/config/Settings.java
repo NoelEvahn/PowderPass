@@ -132,7 +132,7 @@ public final class Settings {
         customSounds = c.getBoolean("custom-sounds", false);
         ball = new Ball(
                 c.getString("ball.texture", ""),
-                clamp(c.getDouble("ball.visual-size", 0.3), 0.1, 2),
+                clamp(c.getDouble("ball.visual-size", 0.45), 0.1, 2),
                 (int) clamp(c.getInt("ball.teleport-interpolation", 2), 0, 59),
                 (int) clamp(c.getInt("ball.rotation-interpolation", 2), 0, 59),
                 c.getBoolean("ball.shadow", true),

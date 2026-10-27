@@ -218,8 +218,7 @@ public final class Match implements BallContext {
         p.setAllowFlight(false);
         p.setFlying(false);
         giveKit(p, false);
-        p.sendMessage(Msg.mm("<gray>Controls: <yellow>left-click</yellow> bump/spike · <yellow>right-click</yellow> set/block · "
-                + "<yellow>sneak</yellow> variants · look where you aim. <white>/vb guide</white> for details."));
+        p.sendMessage(Msg.mm("<dark_gray>Click to hit · sneak for the variant · look where you aim"));
     }
 
     /** Empty hands (everything is played with bare hands) and a team jersey. */
@@ -394,10 +393,7 @@ public final class Match implements BallContext {
             ball = plugin.balls().spawn(sp.getWorld(), plugin.hits().handPosition(sp), this);
             ball.setHeld(true);
             holdTicks = 0;
-            sp.sendActionBar(Msg.mm("<gold>Your serve</gold> <gray>· <white>right-click</white> toss · <white>sprint + right-click</white> "
-                    + "jump toss · <white>left-click</white> underhand"));
-            sp.showTitle(Title.title(Component.empty(), Component.text("Your serve!", NamedTextColor.GOLD, TextDecoration.BOLD),
-                    Title.Times.times(Duration.ZERO, Duration.ofMillis(1200), Duration.ofMillis(300))));
+            sp.sendActionBar(Msg.mm("<gold>Your serve</gold> <dark_gray>· click to toss · sneak-click underhand"));
             plugin.fx().sound(sp, Settings.SoundId.POINT);
         }
     }
@@ -471,7 +467,7 @@ public final class Match implements BallContext {
             double drop = hand.y - floor;
             hand.y -= drop * (1 - (2 * t - 1) * (2 * t - 1));
             if (k == 0) {
-                sp.swingMainHand();
+                plugin.hits().animateSwing(sp);
             }
             if (k == bounce / 2) {
                 plugin.fx().sound(ball.location(), court.beach() ? Settings.SoundId.SAND : Settings.SoundId.FLOOR, 0.6f);
@@ -862,13 +858,9 @@ public final class Match implements BallContext {
 
         Component title = Component.text("POINT ", NamedTextColor.WHITE, TextDecoration.BOLD)
                 .append(Component.text(winner.name().toUpperCase(), winner.color(), TextDecoration.BOLD));
-        Component sub = Component.text(score.points(TeamId.A) + " - " + score.points(TeamId.B), NamedTextColor.WHITE)
-                .append(Component.text("  " + detail, NamedTextColor.GRAY));
-        audience().showTitle(Title.title(title, sub, Title.Times.times(Duration.ofMillis(100), Duration.ofMillis(1600),
-                Duration.ofMillis(400))));
-        audience().sendMessage(Msg.mm("<dark_gray>»</dark_gray> ").append(winner.displayName())
-                .append(Component.text(" +1 ", NamedTextColor.WHITE))
-                .append(Component.text("(" + detail + ")", NamedTextColor.GRAY)));
+        audience().showTitle(Title.title(Component.empty(), title.append(Component.text("  " + score.points(TeamId.A)
+                + " - " + score.points(TeamId.B), NamedTextColor.GRAY)), Title.Times.times(Duration.ZERO, Duration.ofMillis(1000),
+                Duration.ofMillis(300))));
         for (Player p : winner.online()) {
             plugin.fx().sound(p, Settings.SoundId.POINT);
         }

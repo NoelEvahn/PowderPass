@@ -371,17 +371,18 @@ public final class CourtVisuals {
                     in ? NamedTextColor.GREEN : NamedTextColor.RED,
                     TextDecoration.BOLD));
             t.setBillboard(Display.Billboard.CENTER);
-            t.setBackgroundColor(org.bukkit.Color.fromARGB(120, 0, 0, 0));
+            t.setBackgroundColor(org.bukkit.Color.fromARGB(0, 0, 0, 0));
+            t.setShadowed(true);
             t.setBrightness(new Display.Brightness(15, 15));
             t.setTransformation(new org.bukkit.util.Transformation(new org.joml.Vector3f(), new org.joml.Quaternionf(),
-                    new org.joml.Vector3f(1.6f), new org.joml.Quaternionf()));
+                    new org.joml.Vector3f(0.8f), new org.joml.Quaternionf()));
             Displays.tag(t, "court:" + court.name());
         });
         temporary.add(text);
         plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
             text.remove();
             temporary.remove(text);
-        }, 50);
+        }, 30);
     }
 
     /** The net glows (e.g. red on a net touch). */

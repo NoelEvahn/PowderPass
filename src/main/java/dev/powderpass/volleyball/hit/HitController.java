@@ -41,6 +41,8 @@ public final class HitController {
     private static final double UP_TOUCH_DISTANCE = 5.0;
 
     private final PowderPassPlugin plugin;
+    private final DiveCrawl crawl = new DiveCrawl();
+    private boolean selfSwing;
     private final Map<UUID, PlayerState> states = new HashMap<>();
     private TrajectorySolver solver;
     private long tick;
@@ -109,13 +111,8 @@ public final class HitController {
                 dir.normalize().multiply(plugin.settings().controls.diveLunge());
                 p.setVelocity(p.getVelocity().add(dir).setY(0.18));
                 plugin.fx().sound(p.getLocation(), Settings.SoundId.DIVE);
-                // other players see a horizontal dive; the pose is released once the player lands
-                p.setPose(org.bukkit.entity.Pose.SWIMMING, true);
-                Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                    if (p.isOnline()) {
-                        p.setPose(org.bukkit.entity.Pose.STANDING, false);
-                    }
-                }, 12L);
+                // the diver drops into the crawl pose until they land and the slide ends
+                crawl.start(p, tick, 24);
             }
         }
         tryResolve(p, s);
@@ -200,6 +197,7 @@ public final class HitController {
 
     public void tick() {
         tick++;
+        crawl.tick(tick);
         Set<Player> active = new HashSet<>();
         for (Volleyball b : plugin.balls().all()) {
             for (Player p : b.world().getNearbyPlayers(b.location(), 24)) {
@@ -272,9 +270,7 @@ public final class HitController {
             return;
         }
         plugin.fx().sound(p.getEyeLocation(), Settings.SoundId.WHIFF, 0.6f);
-        p.sendActionBar(Component.text("MISS", NamedTextColor.GRAY, TextDecoration.BOLD)
-                .append(Component.text("  time the click as the ball reaches your hands", NamedTextColor.DARK_GRAY)
-                        .decoration(TextDecoration.BOLD, false)));
+        p.sendActionBar(Component.text("miss", NamedTextColor.DARK_GRAY));
     }
 
     // ------------------------------------------------------------------------------------------------ resolution
@@ -620,7 +616,7 @@ public final class HitController {
         var fx = plugin.fx();
         switch (r.type()) {
             case SPIKE -> {
-                p.swingMainHand();
+                animateSwing(p);
                 fx.sound(at, r.grade() == Grade.PERFECT ? Settings.SoundId.SPIKE_PERFECT : Settings.SoundId.SPIKE);
                 fx.particle(at, Particle.CRIT, 12 + (int) (r.quality() * 14), 0.15, 0.35);
                 if (r.grade() == Grade.PERFECT) {
@@ -628,31 +624,31 @@ public final class HitController {
                 }
             }
             case TIP -> {
-                p.swingMainHand();
+                animateSwing(p);
                 fx.sound(at, Settings.SoundId.TIP);
             }
             case SET, QUICK_SET -> {
-                p.swingMainHand();
-                p.swingOffHand();
+                animateSwing(p);
+                animateOffSwing(p);
                 fx.sound(at, Settings.SoundId.SET);
                 fx.particle(at, Particle.CLOUD, 3, 0.1, 0.01);
             }
             case BUMP, DIG -> {
-                p.swingMainHand();
-                p.swingOffHand();
+                animateSwing(p);
+                animateOffSwing(p);
                 fx.sound(at, r.type() == HitType.DIG ? Settings.SoundId.DIG : Settings.SoundId.BUMP,
                         (float) Math.min(1.3, 0.6 + r.speed() / 20));
                 fx.particle(at, Particle.CLOUD, 4, 0.12, 0.02);
             }
             case BLOCK -> {
-                p.swingMainHand();
-                p.swingOffHand();
+                animateSwing(p);
+                animateOffSwing(p);
                 fx.sound(at, Settings.SoundId.BLOCK);
                 fx.particle(at, Particle.CRIT, 10, 0.2, 0.2);
             }
             case BODY -> fx.sound(at, Settings.SoundId.BODY);
             default -> {
-                p.swingMainHand();
+                animateSwing(p);
                 boolean jump = r.type() == HitType.SERVE_JUMP || r.type() == HitType.SERVE_BANANA;
                 fx.sound(at, jump ? Settings.SoundId.SERVE_JUMP : Settings.SoundId.SERVE);
                 fx.particle(at, Particle.CRIT, 8, 0.1, 0.25);
@@ -662,11 +658,9 @@ public final class HitController {
             fx.particle(at, Particle.END_ROD, 6, 0.05, 0.06);
         }
         if (plugin.settings().hud.hitFeedback()) {
-            Component msg = Component.text(r.grade().label + " ", r.grade().color, TextDecoration.BOLD)
-                    .append(Component.text(r.type().displayName().toUpperCase(), NamedTextColor.WHITE, TextDecoration.BOLD));
+            Component msg = Component.text(r.type().displayName().toLowerCase(), r.grade().color);
             if (r.type().attack() || r.type().serve()) {
-                msg = msg.append(Component.text(String.format(" · %.0f km/h", r.speed() * 3.6), NamedTextColor.GRAY)
-                        .decoration(TextDecoration.BOLD, false));
+                msg = msg.append(Component.text(String.format(" %.0f km/h", r.speed() * 3.6), NamedTextColor.DARK_GRAY));
             }
             p.sendActionBar(msg);
         }
@@ -749,8 +743,8 @@ public final class HitController {
         if (!s.blocking(tick)) {
             s.blockStart = tick;
             s.blockUntil = tick + plugin.settings().block.durationTicks();
-            p.swingMainHand();
-            p.swingOffHand();
+            animateSwing(p);
+            animateOffSwing(p);
             plugin.fx().particle(p.getEyeLocation().add(0, 0.6, 0), Particle.CLOUD, 2, 0.15, 0.0);
         }
         return true;
@@ -887,7 +881,7 @@ public final class HitController {
     public void prepareToss(Player p, Volleyball ball, Vec3 vel) {
         ball.launch(vel, new Vec3(0, 2, 0), false, null, null);
         ball.markToss(p.getUniqueId());
-        p.swingOffHand();
+        animateOffSwing(p);
         plugin.fx().sound(ball.location(), Settings.SoundId.TOSS);
         PlayerState s = state(p);
         s.lastHitTick = tick - plugin.settings().controls.hitCooldownTicks();
@@ -908,9 +902,7 @@ public final class HitController {
         Vec3 dir = horizontalDir(l);
         boolean jump = runningUp(p, state(p));
         if (plugin.settings().hud.hitFeedback()) {
-            p.sendActionBar(Component.text(jump ? "JUMP TOSS" : "TOSS", NamedTextColor.GOLD, TextDecoration.BOLD)
-                    .append(Component.text(jump ? "  jump and hit at the top" : "  hit it as it falls to your hand",
-                            NamedTextColor.GRAY).decoration(TextDecoration.BOLD, false)));
+            p.sendActionBar(Component.text(jump ? "jump toss" : "toss", NamedTextColor.GRAY));
         }
         Vec3 pos = handPosition(p);
         Vec3 vel = jump ? dir.copy().mul(cfg.jumpTossForward()).add(0, cfg.jumpTossSpeed(), 0)
@@ -919,6 +911,34 @@ public final class HitController {
     }
 
     /** Left click with the volleyball item and no toss in the air: underhand serve. */
+    public void shutdown() {
+        crawl.shutdown();
+    }
+
+    /** Swings the arm for show. The swing may echo back as an arm-swing event, which must not count as a click. */
+    public void animateSwing(Player p) {
+        selfSwing = true;
+        try {
+            p.swingMainHand();
+        } finally {
+            selfSwing = false;
+        }
+    }
+
+    private void animateOffSwing(Player p) {
+        selfSwing = true;
+        try {
+            p.swingOffHand();
+        } finally {
+            selfSwing = false;
+        }
+    }
+
+    /** True while the plugin itself is swinging an arm. */
+    public boolean selfSwing() {
+        return selfSwing;
+    }
+
     public void underhand(Player p, Volleyball ball) {
         PlayerState s = state(p);
         s.lastHitTick = tick;

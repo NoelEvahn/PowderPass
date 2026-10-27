@@ -15,7 +15,7 @@ ball:
   # Player-head skin of the ball (players without the resource pack see this head).
   texture: "https://textures.minecraft.net/texture/1e6df1c2bf5b918f6c8879af4c4ecc1dabbe37229284e1f8f6bccdb1ea3d0ac"
   # Rendered size in blocks (a real ball is 0.21 m).
-  visual-size: 0.30
+  visual-size: 0.45
   # Client smoothing in ticks for movement / spin.
   teleport-interpolation: 2
   rotation-interpolation: 2

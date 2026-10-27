@@ -29,7 +29,7 @@ public final class InputListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGH)
     public void onSwing(PlayerAnimationEvent e) {
-        if (e.getAnimationType() != PlayerAnimationType.ARM_SWING) {
+        if (e.getAnimationType() != PlayerAnimationType.ARM_SWING || plugin.hits().selfSwing()) {
             return;
         }
         Player p = e.getPlayer();
