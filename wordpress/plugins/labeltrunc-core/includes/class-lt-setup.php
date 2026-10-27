@@ -88,6 +88,7 @@ final class LT_Setup {
 			'woocommerce_registration_generate_password' => 'no',
 			'woocommerce_calc_taxes'                 => 'no',
 			'woocommerce_price_num_decimals'         => '0',
+			'woocommerce_enable_coupons'             => 'no', // no discount codes until staff turn them on
 			'woocommerce_currency_pos'               => 'left_space',
 			'woocommerce_notify_no_stock'            => 'no',
 		);

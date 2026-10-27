@@ -140,10 +140,63 @@ add_filter(
 			$fields['billing']['billing_phone']['label']    = __( 'Phone / WhatsApp', 'labeltrunc' );
 		}
 		if ( isset( $fields['order']['order_comments'] ) ) {
-			$fields['order']['order_comments']['label'] = __( 'Note for the boutique (optional)', 'labeltrunc' );
+			$fields['order']['order_comments']['label'] = __( 'Note for the boutique', 'labeltrunc' );
 		}
 		return $fields;
 	}
+);
+
+// WooCommerce's address script re-applies each country's rules in the browser, so the
+// same "address is optional" rule has to live in the locale data too.
+$lt_locale_rules = static function ( $locale ) {
+	$rules = array(
+		'address_1' => array( 'required' => false, 'label' => __( 'Address (only needed for delivery)', 'labeltrunc' ), 'placeholder' => '' ),
+		'city'      => array( 'required' => false ),
+		'state'     => array( 'required' => false ),
+		'postcode'  => array( 'required' => false ),
+		'phone'     => array( 'required' => true, 'label' => __( 'Phone / WhatsApp', 'labeltrunc' ) ),
+	);
+	$apply = static function ( $fields ) use ( $rules ) {
+		foreach ( $rules as $key => $values ) {
+			$fields[ $key ] = array_merge( isset( $fields[ $key ] ) ? (array) $fields[ $key ] : array(), $values );
+		}
+		return $fields;
+	};
+	if ( isset( $locale['address_1'] ) || isset( $locale['postcode'] ) ) { // the default locale (a flat field list)
+		return $apply( $locale );
+	}
+	foreach ( $locale as $country => $fields ) {
+		$locale[ $country ] = $apply( (array) $fields );
+	}
+	return $locale;
+};
+add_filter( 'woocommerce_get_country_locale', $lt_locale_rules, 20 );
+add_filter( 'woocommerce_get_country_locale_default', $lt_locale_rules, 20 );
+
+// The address is optional only when collecting; any delivery method still needs one.
+add_action(
+	'woocommerce_after_checkout_validation',
+	static function ( $data, $errors ) {
+		$methods  = (array) WC()->session->get( 'chosen_shipping_methods', array() );
+		$delivery = false;
+		foreach ( $methods as $method ) {
+			if ( $method && ! preg_match( '/^(local_pickup|pickup_location)/', (string) $method ) ) {
+				$delivery = true;
+			}
+		}
+		if ( ! $delivery || ! WC()->cart->needs_shipping() ) {
+			return;
+		}
+		$prefix = ! empty( $data['ship_to_different_address'] ) ? 'shipping_' : 'billing_';
+		foreach ( array( 'address_1' => __( 'Address', 'labeltrunc' ), 'city' => __( 'Town / City', 'labeltrunc' ), 'postcode' => __( 'Postcode', 'labeltrunc' ) ) as $key => $label ) {
+			if ( empty( $data[ $prefix . $key ] ) ) {
+				/* translators: %s: field name */
+				$errors->add( 'lt_address', sprintf( __( '%s is needed for delivery.', 'labeltrunc' ), $label ) );
+			}
+		}
+	},
+	10,
+	2
 );
 
 add_filter(
@@ -164,7 +217,10 @@ add_filter(
 add_action(
 	'woocommerce_review_order_after_submit',
 	static function () {
-		echo '<p class="lt-checkout-safety">' . esc_html__( 'Online payments are processed by Billplz. We never see your card or bank details.', 'labeltrunc' ) . '</p>';
+		$gateways = WC()->payment_gateways() ? WC()->payment_gateways()->get_available_payment_gateways() : array();
+		if ( isset( $gateways['billplz'] ) ) {
+			echo '<p class="lt-checkout-safety">' . esc_html__( 'Online payments are processed by Billplz. We never see your card or bank details.', 'labeltrunc' ) . '</p>';
+		}
 	}
 );
 

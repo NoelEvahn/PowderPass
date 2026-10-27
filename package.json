@@ -1,0 +1,13 @@
+{
+  "name": "labeltrunc-wordpress",
+  "private": true,
+  "description": "Browser tests for the Label Trunc WordPress theme and plugin (run against a local WordPress).",
+  "scripts": {
+    "test:e2e": "php tools/local/wp-eval.php ${LT_WP_DIR:-/home/user/wp-local} tools/local/e2e-reset.php && playwright test -c tests/e2e/playwright.config.cjs",
+    "test:php": "LT_DB_NAME=labeltrunc_wp_test LT_DISABLE_CRON=1 php tests/php/run.php ${LT_WP_DIR:-/home/user/wp-local}"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
+    "@playwright/test": "1.63.0"
+  }
+}

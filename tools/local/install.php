@@ -18,6 +18,7 @@ if ( ! is_blog_installed() ) {
 update_option( 'permalink_structure', '/%postname%/' );
 update_option( 'timezone_string', 'Asia/Kuala_Lumpur' );
 update_option( 'blogdescription', 'New and pre-loved designer pieces, curated in Ampang.' );
+update_option( 'woocommerce_coming_soon', 'no' );
 foreach ( array( 'woocommerce/woocommerce.php', 'billplz-for-woocommerce/billplzWoo.php', 'labeltrunc-core/labeltrunc-core.php' ) as $plugin ) {
 	if ( file_exists( WP_PLUGIN_DIR . '/' . $plugin ) && ! is_plugin_active( $plugin ) ) {
 		$res = activate_plugin( $plugin, '', false, false );
