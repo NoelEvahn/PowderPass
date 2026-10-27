@@ -84,8 +84,9 @@ if (isMain) {
   const here = path.dirname(fileURLToPath(import.meta.url));
   const port = Number(process.env.PORT ?? 2567);
   const staticDir = process.env.STATIC_DIR ?? path.resolve(here, '../../client/dist');
-  const dataFile = process.env.DATA_FILE ?? path.resolve(here, '../data/profiles.json');
-  startServer({ port, staticDir, dataFile, maxPlayers: Number(process.env.MAX_PLAYERS ?? 4) }).then(({ port: p }) => {
+  const dataFile = process.env.DATA_FILE === '' ? null : process.env.DATA_FILE ?? path.resolve(here, '../data/profiles.json');
+  const countdown = process.env.LOBBY_COUNTDOWN ? Number(process.env.LOBBY_COUNTDOWN) : undefined;
+  startServer({ port, staticDir, dataFile, countdown, maxPlayers: Number(process.env.MAX_PLAYERS ?? 4) }).then(({ port: p }) => {
     console.log(`[doors] server listening on :${p} (ws path /ws)${fs.existsSync(staticDir) ? `, serving ${staticDir}` : ''}`);
   });
 }

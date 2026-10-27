@@ -604,7 +604,8 @@ function greenhouse(b: RoomBuilder) {
     if (Math.abs(x) < 1.2 || b.keepOut.some((k) => x > k.x0 - 0.4 && x < k.x1 + 0.4 && z > k.z0 - 0.4 && z < k.z1 + 0.4)) continue;
     b.addProp('snare', x, z, 0, { size: null });
   }
-  b.addLight(b.cx, r.height + 3, b.cz, { color: 0x6f86b8, intensity: 0.35, range: 30, kind: 'moon' });
+  b.addLight(b.cx, r.height + 3, b.cz, { color: 0x6f86b8, intensity: 1.6, range: 30, kind: 'moon' });
+  for (let k = 0; k < 2; k++) b.addLight(b.rng.range(r.xMin + 1, r.xMax - 1), 2.2, b.iz0 + r.depth * (0.3 + k * 0.4), { color: 0x9adf8a, intensity: 0.8, range: 6, kind: 'neon', flicker: true });
   r.tags.push('rain', 'glass');
 }
 

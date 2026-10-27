@@ -50,7 +50,7 @@ export class RoomView {
     g.position.set(room.origin.x, room.origin.y, room.origin.z);
     g.rotation.y = (room.rot * Math.PI) / 2;
     g.updateMatrixWorld(true);
-    this.lights = room.dark ? room.lights.filter((l) => l.kind === 'emergency' || l.kind === 'guide' || l.kind === 'fire' || l.kind === 'moon') : room.lights;
+    this.lights = room.dark ? room.lights.filter((l) => l.kind === 'emergency' || l.kind === 'guide' || l.kind === 'fire' || l.kind === 'moon' || l.kind === 'neon') : room.lights;
     if (room.dark) this.lightMode = 'off';
 
     const batch = new MeshBatch();

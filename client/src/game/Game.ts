@@ -685,7 +685,7 @@ export class Game {
     // ambient level: darker in dark/broken rooms
     const room = this.layout.rooms[this.room];
     const dark = room?.dark || this.world.broken.has(this.room);
-    const targetHemi = room?.theme.outdoor ? 0.35 : dark ? 0.02 : 0.28;
+    const targetHemi = room?.theme.outdoor ? 0.35 : room?.theme.glass ? 0.1 : dark ? 0.02 : 0.28;
     this.hemi.intensity += (targetHemi - this.hemi.intensity) * Math.min(1, dt * 2);
     // viewmodel bob
     if (this.viewItem) {

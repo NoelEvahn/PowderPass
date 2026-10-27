@@ -160,7 +160,7 @@ function woodPlanks(dark = false): TexSet {
     f.ht[i] = -gap * 1.2 + grain * 0.15 + ring * 0.1;
     f.ro[i] = 0.55 + grain * 0.15 + g * 0.2 + gap * 0.3 - (dark ? 0.05 : 0);
   });
-  return toTextures(f, 3, 3);
+  return toTextures(f, 1.6, 3);
 }
 
 function woodGrain(): TexSet {

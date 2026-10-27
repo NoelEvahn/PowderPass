@@ -1,0 +1,14 @@
+# Render.com blueprint: one Docker web service (HTTPS + WSS on the same origin).
+services:
+  - type: web
+    name: doors-hotel
+    runtime: docker
+    plan: starter
+    healthCheckPath: /health
+    envVars:
+      - key: MAX_PLAYERS
+        value: "4"
+    disk:
+      name: doors-data
+      mountPath: /data
+      sizeGB: 1
