@@ -11,7 +11,6 @@ import dev.powderpass.volleyball.math.Vec3;
 import dev.powderpass.volleyball.physics.Aabb;
 import dev.powderpass.volleyball.physics.NetContact;
 import dev.powderpass.volleyball.util.Msg;
-import net.kyori.adventure.bossbar.BossBar;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
@@ -49,7 +48,6 @@ public final class PepperSession implements BallContext {
     private final PowderPassPlugin plugin;
     private final UUID host;
     private final Set<UUID> members = new LinkedHashSet<>();
-    private final BossBar bar = BossBar.bossBar(Component.empty(), 0f, BossBar.Color.YELLOW, BossBar.Overlay.NOTCHED_10);
     private Volleyball ball;
     private int streak;
     private int best;
@@ -87,17 +85,13 @@ public final class PepperSession implements BallContext {
 
     public void add(Player p) {
         members.add(p.getUniqueId());
-        p.showBossBar(bar);
-        updateBar();
     }
 
     public void remove(Player p) {
         members.remove(p.getUniqueId());
-        p.hideBossBar(bar);
         if (members.isEmpty()) {
             close();
         } else {
-            updateBar();
         }
     }
 
@@ -117,9 +111,6 @@ public final class PepperSession implements BallContext {
             return;
         }
         closed = true;
-        for (Player p : Bukkit.getOnlinePlayers()) {
-            p.hideBossBar(bar);
-        }
         if (ball != null) {
             plugin.balls().remove(ball);
             ball = null;
@@ -146,7 +137,6 @@ public final class PepperSession implements BallContext {
         plugin.fx().sound(p.getLocation(), Settings.SoundId.TOSS);
         p.sendActionBar(Component.text("Ball in! ", NamedTextColor.GOLD, TextDecoration.BOLD)
                 .append(Component.text("keep it off the floor", NamedTextColor.GRAY).decoration(TextDecoration.BOLD, false)));
-        updateBar();
     }
 
     private Player nearestTo(Vec3 pos) {
@@ -194,7 +184,6 @@ public final class PepperSession implements BallContext {
                 p.sendActionBar(Component.text(streak + " in a row!", NamedTextColor.GOLD, TextDecoration.BOLD));
             }
         }
-        updateBar();
     }
 
     @Override
@@ -217,7 +206,6 @@ public final class PepperSession implements BallContext {
         }
         streak = 0;
         feedIn = 30;
-        updateBar();
     }
 
     @Override
@@ -328,15 +316,6 @@ public final class PepperSession implements BallContext {
         return "set";
     }
 
-    void updateBar() {
-        Mode m = mode();
-        bar.name(Component.text(m.label, NamedTextColor.YELLOW, TextDecoration.BOLD)
-                .append(Component.text("  streak ", NamedTextColor.GRAY))
-                .append(Component.text(streak, NamedTextColor.WHITE, TextDecoration.BOLD))
-                .append(Component.text("  best " + best, NamedTextColor.GRAY))
-                .append(Component.text("  next: " + next(), NamedTextColor.AQUA)));
-        bar.progress(Math.min(1f, (streak % 10) / 10f));
-    }
 
     /** Called every tick by the manager. */
     void tick() {

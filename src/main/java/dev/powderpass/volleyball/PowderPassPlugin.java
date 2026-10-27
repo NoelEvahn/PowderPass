@@ -51,11 +51,7 @@ public final class PowderPassPlugin extends JavaPlugin {
     public void onEnable() {
         Keys.init(this);
         saveDefaultConfig();
-        // older configs shipped a smaller ball; move untouched values to the new default
-        if (getConfig().getDouble("ball.visual-size", 0.45) == 0.30) {
-            getConfig().set("ball.visual-size", 0.45);
-            saveConfig();
-        }
+        migrateConfig();
         settings = new Settings(getConfig(), getLogger());
         loadSettings();
 
@@ -96,8 +92,8 @@ public final class PowderPassPlugin extends JavaPlugin {
     private void loadSettings() {
         settings = new Settings(getConfig(), getLogger());
         fx = new Fx(this, settings);
-        String prefix = getConfig().getString("prefix");
-        if (prefix != null && !prefix.isBlank()) {
+        String prefix = getConfig().getString("prefix", "");
+        if (prefix != null && !prefix.isBlank() && !prefix.contains("»")) {
             Msg.setPrefix(prefix);
         }
     }
@@ -192,6 +188,26 @@ public final class PowderPassPlugin extends JavaPlugin {
         hits.reload();
         courts.spawnAll();
         boards.spawnAll();
+    }
+
+    /** Moves older configs to the current defaults for the values that changed (bigger ball, easier controls). */
+    private void migrateConfig() {
+        var c = getConfig();
+        if (c.getInt("config-version", 1) >= 2) {
+            return;
+        }
+        Object[][] updates = {
+                {"prefix", ""}, {"ball.visual-size", 0.45}, {"controls.input-buffer-ticks", 8},
+                {"hits.bump.reach", 1.7}, {"hits.dig.reach", 2.1}, {"hits.set.reach", 1.5}, {"hits.spike.reach", 1.45},
+                {"hits.tip.reach", 1.5}, {"hits.serve.reach", 1.5}, {"hits.block.width", 1.3},
+                {"hits.bump.max-error", 1.4}, {"hits.dig.max-error", 2.0}, {"hits.set.max-error", 1.0},
+                {"hits.spike.max-error", 1.3}, {"hits.serve.max-error", 1.6}, {"hud.bossbar", null}};
+        for (Object[] u : updates) {
+            c.set((String) u[0], u[1]);
+        }
+        c.set("config-version", 2);
+        saveConfig();
+        getLogger().info("Updated config.yml to version 2 (bigger ball, easier controls).");
     }
 
     @Override

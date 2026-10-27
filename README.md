@@ -4,7 +4,7 @@ Multiplayer volleyball with real ball physics. Works on the vanilla client; an o
 
 - **Physics:** gravity, air drag, Magnus lift from spin, float-serve wobble, spin-aware bounces.
 - **Matches 1v1–6v6:** rally scoring, sets, side switches, toggleable rules (`/vb rules`).
-- **Animated net**, line calls (red/green line flash, ball mark, IN/OUT), live sidebar, boss bar and world scoreboards.
+- **Animated net**, line calls (red/green line flash, ball mark, IN/OUT), live sidebar and world scoreboards.
 - **Pepper:** a no-rules drill, solo, pairs or circle.
 - **Sittable benches.**
 
@@ -24,23 +24,16 @@ Multiplayer volleyball with real ball physics. Works on the vanilla client; an o
 
 ## Controls
 
-You play bare-handed. Everything is **left-click**; **sneak** picks the alternative. Aim with your view (look down = short, up = long).
+Just **click** when the ball is near you — the right touch is picked for you.
 
-| Situation | Left-click | Sneak + left-click |
-|---|---|---|
-| Ground, ball low | Bump | Dig / dive |
-| Ground, ball above head | Set | Quick set |
-| In the air | Spike (or block, at the net vs. an attack) | Tip |
-
-**Serving** (you hold the ball after the whistle):
-
-| Serve | How |
+| Input | Does |
 |---|---|
-| Underhand | Sneak + left-click while holding |
-| Float | Left-click to toss, then left-click standing |
-| Topspin | Toss, then sneak + left-click standing |
-| Jump serve | Toss, jump, left-click in the air |
-| Banana | Toss, jump, sneak + left-click in the air (curves sideways) |
+| Click | Pass (low ball), set (ball above head), spike (while jumping), block (jumping at the net vs. an attack) |
+| Sneak + click | Dive for low balls · quick set · tip while jumping |
+
+Passes and sets aim themselves (rule `aim-assist`); look where you want spikes and serves to go.
+
+**Serving:** click to toss, click again to hit. Jump before hitting for a jump serve; hold sneak for topspin (standing) or banana (jumping). Sneak + click without tossing = underhand.
 
 ## Commands
 

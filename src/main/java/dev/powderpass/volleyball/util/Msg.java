@@ -9,7 +9,7 @@ import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 public final class Msg {
 
     public static final MiniMessage MM = MiniMessage.miniMessage();
-    private static Component prefix = MM.deserialize("<gradient:#ffd34d:#4da6ff><b>Volleyball</b></gradient> <dark_gray>»</dark_gray> ");
+    private static Component prefix = Component.empty();
 
     private Msg() {
     }

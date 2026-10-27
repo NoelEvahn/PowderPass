@@ -29,7 +29,9 @@ public enum Rule {
     CEILING_OUT("ceiling-out", "Ceiling & objects", Material.GLASS,
             "Ball touching walls, ceiling or objects is out."),
     SERVE_DELAY("serve-delay", "Serve clock", Material.REPEATER,
-            "The server must serve within the serve time.");
+            "The server must serve within the serve time."),
+    AIM_ASSIST("aim-assist", "Aim assist", Material.SPYGLASS,
+            "Passes go to the setter spot and sets go", "along the net automatically.");
 
     private final String key;
     private final String displayName;

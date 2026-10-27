@@ -524,6 +524,51 @@ public final class Match implements BallContext {
     }
     // ------------------------------------------------------------------------------------------- BallContext
 
+    /**
+     * Easy aiming: the first two touches of a team go to sensible spots automatically. A pass or dig goes to the
+     * setter spot in front of the net; a set goes high along the net toward the side the player faces. The third
+     * touch (attack) and serves stay free-aimed.
+     */
+    @Override
+    public Vec3 assistTarget(Player player, Volleyball b, HitType type) {
+        if (b != ball || state != MatchState.RALLY || !settings.rule(Rule.AIM_ASSIST)) {
+            return null;
+        }
+        Team t = teamOf(player.getUniqueId());
+        if (t == null) {
+            return null;
+        }
+        int contact = lastTouchTeam == t.id() && !lastTouchBlock ? teamContacts + 1 : 1;
+        if (contact >= 3 || t.size() == 1) {
+            return null;
+        }
+        CourtFrame f = court.frame();
+        Location l = player.getLocation();
+        double side = t.side();
+        double u;
+        double w;
+        switch (type) {
+            case BUMP, DIG -> {
+                u = side * 1.6;
+                w = side * -0.25 * court.halfWidth();
+            }
+            case SET, QUICK_SET -> {
+                Vec3 look = f.dirToLocal(new Vec3(-Math.sin(Math.toRadians(l.getYaw())), 0,
+                        Math.cos(Math.toRadians(l.getYaw()))), new Vec3());
+                double here = f.toW(l.getX(), l.getZ());
+                double reach = type == HitType.QUICK_SET ? 1.0 : court.halfWidth() - 0.8;
+                w = Math.abs(look.z) < 0.35 ? here : Math.signum(look.z) * reach;
+                u = side * 1.2;
+            }
+            default -> {
+                return null;
+            }
+        }
+        Vec3 out = f.toWorld(u, 0, w, new Vec3());
+        out.y = court.centerY();
+        return out;
+    }
+
     @Override
     public Court court(Volleyball b) {
         return court;

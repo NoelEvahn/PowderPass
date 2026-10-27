@@ -7,10 +7,8 @@ import dev.powderpass.volleyball.game.Positions;
 import dev.powderpass.volleyball.game.Team;
 import dev.powderpass.volleyball.game.TeamId;
 import io.papermc.paper.scoreboard.numbers.NumberFormat;
-import net.kyori.adventure.bossbar.BossBar;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -25,14 +23,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-/** Per-player sidebar and per-match boss bar. */
+/** Per-player sidebar and name tags. */
 public final class HudManager {
 
     private static final int LINES = 13;
 
     private final PowderPassPlugin plugin;
     private final Map<UUID, Attached> attached = new HashMap<>();
-    private final Map<Match, BossBar> bars = new HashMap<>();
     private long tick;
 
     private static final class Attached {
@@ -67,9 +64,6 @@ public final class HudManager {
             p.setScoreboard(board);
         }
         attached.put(p.getUniqueId(), new Attached(m, board, obj, previous));
-        if (plugin.settings().hud.bossbar()) {
-            p.showBossBar(bar(m));
-        }
         update(p, attached.get(p.getUniqueId()));
     }
 
@@ -77,10 +71,6 @@ public final class HudManager {
         Attached a = attached.remove(p.getUniqueId());
         if (a == null) {
             return;
-        }
-        BossBar bar = bars.get(a.match);
-        if (bar != null) {
-            p.hideBossBar(bar);
         }
         if (a.board != null && p.getScoreboard() == a.board) {
             p.setScoreboard(a.previous != null ? a.previous : Bukkit.getScoreboardManager().getMainScoreboard());
@@ -92,24 +82,8 @@ public final class HudManager {
                 .append(Component.text("VOLLEYBALL", NamedTextColor.YELLOW, TextDecoration.BOLD));
     }
 
-    private BossBar bar(Match m) {
-        return bars.computeIfAbsent(m, k -> BossBar.bossBar(Component.empty(), 1f, BossBar.Color.WHITE, BossBar.Overlay.PROGRESS));
-    }
-
     public void tick() {
         tick++;
-        // bars every tick for a smooth serve clock
-        bars.entrySet().removeIf(e -> {
-            Match m = e.getKey();
-            if (m.ended()) {
-                for (Player p : Bukkit.getOnlinePlayers()) {
-                    p.hideBossBar(e.getValue());
-                }
-                return true;
-            }
-            updateBar(m, e.getValue());
-            return false;
-        });
         if (tick % plugin.settings().hud.sidebarUpdateTicks() != 0) {
             return;
         }
@@ -128,71 +102,12 @@ public final class HudManager {
         }
     }
 
-    private void updateBar(Match m, BossBar bar) {
-        MatchState st = m.state();
-        Team serving = m.team(m.score().serving());
-        Component name;
-        float progress = 1f;
-        BossBar.Color color = barColor(serving.color());
-        switch (st) {
-            case SERVE -> {
-                Player sp = m.server() == null ? null : Bukkit.getPlayer(m.server());
-                name = Component.text("Serve ", NamedTextColor.WHITE, TextDecoration.BOLD)
-                        .append(Component.text(sp == null ? "" : sp.getName(), serving.color()))
-                        .append(Component.text(String.format("  %.1fs", m.secondsLeft()), NamedTextColor.GRAY));
-                progress = (float) m.clockProgress();
-            }
-            case RALLY -> {
-                TeamId t = m.lastTouchTeam();
-                Component touches = t == null ? Component.empty()
-                        : Component.text("  " + dots(m.teamContacts()), m.team(t).color());
-                name = Component.text("Rally", NamedTextColor.WHITE, TextDecoration.BOLD)
-                        .append(Component.text("  touches " + m.rallyTouches(), NamedTextColor.GRAY)).append(touches);
-                color = t == null ? color : barColor(m.team(t).color());
-            }
-            case COUNTDOWN -> name = Component.text(String.format("Starting in %.0f", Math.ceil(m.secondsLeft())),
-                    NamedTextColor.YELLOW, TextDecoration.BOLD);
-            case POINT_END -> name = Component.text(m.lastPointText(), NamedTextColor.GRAY);
-            case FINISHED -> name = Component.text("Match over", NamedTextColor.GOLD, TextDecoration.BOLD);
-            default -> name = Component.text("Get ready · ", NamedTextColor.WHITE)
-                    .append(Component.text(serving.name() + " serves", serving.color()));
-        }
-        bar.name(name);
-        bar.progress(Math.max(0f, Math.min(1f, progress)));
-        bar.color(color);
-    }
-
     private static String dots(int contacts) {
         StringBuilder sb = new StringBuilder();
         for (int i = 1; i <= 3; i++) {
             sb.append(i <= contacts ? '●' : '○');
         }
         return sb.toString();
-    }
-
-    private static BossBar.Color barColor(TextColor c) {
-        int r = c.red();
-        int g = c.green();
-        int b = c.blue();
-        if (r > 200 && g < 120 && b < 120) {
-            return BossBar.Color.RED;
-        }
-        if (b > 180 && r < 150) {
-            return BossBar.Color.BLUE;
-        }
-        if (g > 180 && r < 150 && b < 150) {
-            return BossBar.Color.GREEN;
-        }
-        if (r > 200 && g > 180 && b < 120) {
-            return BossBar.Color.YELLOW;
-        }
-        if (r > 150 && b > 150 && g < 120) {
-            return BossBar.Color.PURPLE;
-        }
-        if (r > 200 && g > 100 && b > 150) {
-            return BossBar.Color.PINK;
-        }
-        return BossBar.Color.WHITE;
     }
 
     /**
@@ -304,11 +219,5 @@ public final class HudManager {
             }
         }
         attached.clear();
-        for (BossBar bar : bars.values()) {
-            for (Player p : Bukkit.getOnlinePlayers()) {
-                p.hideBossBar(bar);
-            }
-        }
-        bars.clear();
     }
 }

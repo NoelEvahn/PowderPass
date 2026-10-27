@@ -4,8 +4,10 @@
 #  Run /vb reload after editing.
 # ============================================================================
 
-# Chat prefix (MiniMessage).
-prefix: "<gradient:#ffd34d:#4da6ff><b>Volleyball</b></gradient> <dark_gray>»</dark_gray> "
+config-version: 2
+
+# Optional chat prefix (MiniMessage), empty for none.
+prefix: ""
 
 # Set true when players use the PowderPass resource pack: the plugin then plays its custom sounds.
 # (The pack's 3D ball shows automatically for players who have it.)
@@ -56,7 +58,7 @@ physics:
 
 controls:
   # Ticks a click stays "armed" waiting for the ball to reach your hands (input buffering).
-  input-buffer-ticks: 4
+  input-buffer-ticks: 8
   # Rewind the ball by the player's ping when judging contact (lag compensation).
   lag-compensation: true
   max-compensation-ms: 250
@@ -74,40 +76,40 @@ controls:
 # to 'far' (looking up at pitch-far). Looking far above the horizon ("at the ball") uses 'look-up'.
 hits:
   bump:
-    reach: 1.30
+    reach: 1.70
     apex: 2.4
-    max-error: 2.2
+    max-error: 1.4
     aim: { near: 1.5, far: 9.0, pitch-near: 60, pitch-far: -25, look-up: 4.5 }
   dig:
-    reach: 1.70
+    reach: 2.10
     apex: 2.8
-    max-error: 3.0
+    max-error: 2.0
     aim: { near: 1.5, far: 8.0, pitch-near: 60, pitch-far: -25, look-up: 4.5 }
   set:
-    reach: 1.10
+    reach: 1.50
     apex: 3.0
     quick-apex: 1.2
-    max-error: 1.5
+    max-error: 1.0
     aim: { near: 1.0, far: 8.0, pitch-near: 60, pitch-far: -15, look-up: 4.0 }
   spike:
-    reach: 1.05
+    reach: 1.45
     min-speed: 15.0
     max-speed: 28.0
     min-topspin: 15.0
     max-topspin: 45.0
-    max-error: 2.0
+    max-error: 1.3
     aim: { near: 1.5, far: 11.0, pitch-near: 70, pitch-far: -10, look-up: 9.0 }
   tip:
-    reach: 1.15
+    reach: 1.50
     apex: 0.8
     max-error: 0.8
     aim: { near: 1.0, far: 6.0, pitch-near: 60, pitch-far: -20, look-up: 3.0 }
   block:
     duration-ticks: 12
-    width: 1.0
+    width: 1.3
     reach-over: 0.45
   serve:
-    reach: 1.0
+    reach: 1.5
     float-min-speed: 13.5
     float-max-speed: 18.5
     topspin-min-speed: 15.0
@@ -117,7 +119,7 @@ hits:
     jump-topspin: 42.0
     standing-topspin: 25.0
     underhand-apex: 4.0
-    max-error: 2.5
+    max-error: 1.6
     toss-speed: 6.0
     jump-toss-speed: 7.4
     jump-toss-forward: 1.6
@@ -170,6 +172,7 @@ match-defaults:
     toss-drop: true
     ceiling-out: true
     serve-delay: true
+    aim-assist: true
 
 teams:
   a: { name: "Red", color: "#ff5555" }
@@ -184,8 +187,7 @@ sounds: {}
 
 hud:
   sidebar: true
-  bossbar: true
-  hit-feedback: true        # action bar "PERFECT SPIKE 26 m/s"
+  hit-feedback: true        # short action bar after each touch
   sidebar-update-ticks: 5
 
 performance:

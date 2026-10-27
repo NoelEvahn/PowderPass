@@ -65,11 +65,11 @@ public final class VolleyballCommand implements TabExecutor {
     }
 
     private void help(CommandSender s) {
-        s.sendMessage(Msg.mm("<gold><b>Volleyball</b></gold> <gray>- play with empty hands:"));
-        s.sendMessage(Msg.mm("<gray> <white>Left-click</white> bump · set (ball above head) · spike (in the air) · block (in the air at the net)"));
-        s.sendMessage(Msg.mm("<gray> <white>Sneak + left-click</white> dive · quick set · tip"));
-        s.sendMessage(Msg.mm("<gray> <white>Serve</white> left-click to toss (sprint = jump toss), sneak + left-click = underhand."));
-        s.sendMessage(Msg.mm("<gray>   Hit the toss: standing = float, sneaking = topspin, jumping = jump serve, jumping + sneaking = banana"));
+        s.sendMessage(Msg.mm("<gold><b>How to play</b></gold> <gray>- just click when the ball is near you:"));
+        s.sendMessage(Msg.mm("<gray> <white>Click</white> - the right touch is picked for you (pass, set, or spike when jumping)"));
+        s.sendMessage(Msg.mm("<gray> <white>Sneak + click</white> - dive for low balls, tip when jumping"));
+        s.sendMessage(Msg.mm("<gray> <white>Serve</white> - click to toss, click again to hit (jump for a jump serve), or sneak + click for underhand"));
+        s.sendMessage(Msg.mm("<gray> Passes and sets aim themselves; look where you want spikes and serves to go."));
         line(s, "/vb join [court] [red|blue]", "join a court");
         line(s, "/vb leave", "leave the lobby or match");
         line(s, "/vb ball [clear]", "hold a practice ball");
