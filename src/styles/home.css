@@ -1,0 +1,347 @@
+/* Home page */
+.home-hero {
+  padding-block: clamp(40px, 6vw, 88px) var(--s-6);
+  position: relative;
+  overflow: clip;
+}
+.home-hero::before {
+  /* Faint oversized monogram letters in the background: decorative only. */
+  content: 'LT';
+  position: absolute;
+  right: -2vw;
+  top: -6vw;
+  font-family: var(--f-display);
+  font-weight: 700;
+  font-size: clamp(14rem, 34vw, 34rem);
+  line-height: 1;
+  color: var(--wine);
+  opacity: 0.045;
+  pointer-events: none;
+  letter-spacing: -0.06em;
+}
+.home-hero__grid {
+  display: grid;
+  gap: var(--s-7);
+  align-items: center;
+  position: relative;
+}
+@media (min-width: 960px) {
+  .home-hero__grid {
+    grid-template-columns: 7fr 5fr;
+  }
+}
+.home-hero__copy {
+  display: grid;
+  gap: var(--s-5);
+  justify-items: start;
+}
+.home-hero__title {
+  font-size: var(--fs-display);
+  line-height: 0.98;
+  letter-spacing: -0.035em;
+  max-width: 12ch;
+}
+.home-hero__actions {
+  margin-top: var(--s-2);
+}
+.home-hero__photo {
+  aspect-ratio: 4 / 5;
+  border-radius: 999px 999px var(--r-lg) var(--r-lg);
+  overflow: hidden;
+  background: var(--sand);
+}
+.home-hero__photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* The luggage-tag card: the brand's tag motif, carrying real facts only. */
+.tag-card {
+  position: relative;
+  background: var(--wine);
+  color: var(--on-primary);
+  border-radius: var(--r-lg) var(--r-lg) var(--r-lg) 64px;
+  padding: clamp(28px, 4vw, 44px);
+  padding-left: clamp(56px, 7vw, 80px);
+  box-shadow: var(--shadow-raised);
+  transform: rotate(-2deg);
+  max-width: 460px;
+  margin-inline: auto;
+  display: grid;
+  gap: var(--s-5);
+}
+.tag-card__hole {
+  position: absolute;
+  left: 22px;
+  top: 50%;
+  width: 16px;
+  height: 16px;
+  margin-top: -8px;
+  border-radius: 50%;
+  background: var(--bg);
+  box-shadow: inset 0 0 0 2px rgb(0 0 0 / 0.15);
+}
+.tag-card__head {
+  display: flex;
+  gap: var(--s-4);
+  align-items: center;
+}
+.tag-card__head .monogram {
+  outline: 1.5px solid rgb(251 243 234 / 0.4);
+}
+.tag-card__name {
+  font-family: var(--f-display);
+  font-weight: 700;
+  font-size: clamp(1.75rem, 1.4rem + 1.2vw, 2.4rem);
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+.tag-card__name span {
+  color: var(--gold-light);
+}
+.tag-card__motto {
+  font-size: var(--fs-meta);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  margin-top: 6px;
+  color: rgb(251 243 234 / 0.82);
+}
+.tag-card__address {
+  font-style: normal;
+  font-family: var(--f-display);
+  font-size: 1.15rem;
+  line-height: 1.5;
+  border-top: 1px dashed rgb(251 243 234 / 0.35);
+  padding-top: var(--s-4);
+}
+.tag-card__note {
+  font-size: var(--fs-small);
+  color: rgb(251 243 234 / 0.86);
+}
+
+.scroll-cue {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-3);
+  margin-top: var(--s-7);
+  color: var(--muted);
+  font-size: var(--fs-small);
+  font-weight: 500;
+  text-decoration: none;
+  min-height: 44px;
+}
+.scroll-cue__circle {
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1.5px solid var(--line-strong);
+  color: var(--ink);
+  animation: cue-nudge 2.4s var(--ease) infinite;
+}
+.scroll-cue:hover {
+  color: var(--ink);
+}
+@keyframes cue-nudge {
+  0%,
+  70%,
+  100% {
+    transform: none;
+  }
+  80% {
+    transform: translateY(4px);
+  }
+}
+
+/* Facts strip */
+.facts {
+  border-block: 1px solid var(--line);
+  background: var(--surface);
+}
+.facts__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr));
+}
+.facts__item {
+  display: flex;
+  gap: var(--s-3);
+  align-items: flex-start;
+  padding: var(--s-5) var(--s-4);
+  color: var(--wine);
+}
+.facts__item > div {
+  color: var(--ink);
+}
+.facts__title {
+  font-weight: 700;
+}
+.facts__text {
+  font-size: var(--fs-small);
+  color: var(--muted);
+}
+
+/* Steps */
+.steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--s-5);
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+  counter-reset: none;
+}
+.steps__item {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  padding: var(--s-6);
+  display: grid;
+  gap: var(--s-3);
+  align-content: start;
+}
+.steps__num {
+  font-family: var(--f-display);
+  font-weight: 700;
+  font-size: 2.5rem;
+  line-height: 1;
+  color: var(--wine);
+}
+.steps__item p {
+  color: var(--muted);
+}
+
+/* Lit statement */
+.lit {
+  background: var(--wine-deep);
+  color: var(--on-primary);
+}
+.lit__sticky {
+  padding-block: var(--section);
+}
+.lit__words {
+  font-family: var(--f-display);
+  font-weight: 700;
+  font-size: clamp(2.75rem, 1.4rem + 6.6vw, 8.5rem);
+  line-height: 1.02;
+  letter-spacing: -0.035em;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 0.3em;
+}
+.lit__word {
+  position: relative;
+  color: var(--on-primary);
+}
+.lit__word::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0.25em;
+  bottom: 0.06em;
+  height: 0.06em;
+  background: var(--gold-light);
+  transform-origin: left;
+  transform: scaleX(1);
+}
+.lit__caption {
+  margin-top: var(--s-5);
+  font-size: var(--fs-lead);
+  color: rgb(251 243 234 / 0.86);
+  font-style: italic;
+  font-family: var(--f-display);
+}
+/* Scroll-driven version: only when JavaScript confirms motion is welcome. */
+.lit[data-lit='scroll'] {
+  height: 200vh;
+}
+.lit[data-lit='scroll'] .lit__sticky {
+  position: sticky;
+  top: 0;
+  min-height: 100vh;
+  display: grid;
+  align-items: center;
+}
+.lit[data-lit='scroll'] .lit__word {
+  /* Each word lights over its own share of the travel. Muted state stays above 4.5:1. */
+  --w: clamp(0, calc(var(--lit, 0) * var(--n) - var(--i)), 1);
+  color: color-mix(in srgb, var(--on-primary) calc(55% + var(--w) * 45%), var(--wine-deep));
+}
+.lit[data-lit='scroll'] .lit__word::after {
+  transform: scaleX(var(--w));
+}
+
+/* About + consign */
+.about-split {
+  display: grid;
+  gap: var(--s-7);
+  align-items: start;
+}
+@media (min-width: 960px) {
+  .about-split {
+    grid-template-columns: 7fr 5fr;
+  }
+}
+.consign-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  padding: var(--s-6);
+  display: grid;
+  gap: var(--s-4);
+  justify-items: start;
+  color: var(--wine);
+}
+.consign-card h3,
+.consign-card p {
+  color: var(--ink);
+}
+.consign-card p {
+  color: var(--muted);
+}
+
+/* Visit band */
+.visit-band {
+  background: var(--wine);
+}
+.visit-band__grid {
+  display: grid;
+  gap: var(--s-6);
+}
+@media (min-width: 900px) {
+  .visit-band__grid {
+    grid-template-columns: 1fr 1fr;
+    align-items: end;
+  }
+}
+.visit-band__address {
+  font-style: normal;
+  font-size: var(--fs-lead);
+  line-height: 1.6;
+}
+.hours {
+  margin: 0;
+  display: grid;
+  gap: 6px;
+}
+.hours div {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--s-4);
+  border-bottom: 1px solid rgb(251 243 234 / 0.2);
+  padding-bottom: 6px;
+}
+.hours dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scroll-cue__circle {
+    animation: none;
+  }
+}

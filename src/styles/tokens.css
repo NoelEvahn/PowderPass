@@ -1,0 +1,86 @@
+/*
+ * Design tokens: the one place colours, type, spacing and motion are defined.
+ * Colours come from the Label Trunc brand (LT monogram wine, cream, gold) and are
+ * named by role. Contrast is checked against --bg and --surface (WCAG AA).
+ */
+:root {
+  /* Brand palette */
+  --wine: #501c2b;
+  --wine-deep: #3e1421;
+  --wine-soft: #e9c9cf;
+  --cream: #f4ede3;
+  --paper: #fbf7f1;
+  --sand: #eadfd0;
+  --gold: #7a5d26;
+  --gold-light: #d9b86c;
+
+  /* Roles */
+  --bg: var(--cream);
+  --surface: var(--paper);
+  --tint: var(--sand);
+  --ink: #2a1b20; /* headings, body text: 14.2:1 on cream */
+  --muted: #5e4b51; /* secondary text: 7.0:1 on cream */
+  --primary: var(--wine); /* primary buttons, links: 11.7:1 on cream */
+  --primary-hover: var(--wine-deep);
+  --on-primary: #fbf3ea;
+  --accent: var(--gold); /* eyebrows, small details: 5.3:1 on cream */
+  --line: #ddcfbd;
+  --line-strong: #b9a58f;
+  --focus: var(--wine);
+  --focus-on-dark: var(--gold-light);
+  --error: #9b1c1c;
+  --error-bg: #fbeaea;
+  --success: #2f5d3a;
+  --success-bg: #e6f0e6;
+  --pending-bg: #f8ebc4;
+  --pending-ink: #5a4310;
+
+  /* Type */
+  --f-display: var(--font-display), 'Times New Roman', Times, serif;
+  --f-body: var(--font-body), system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --fs-display: clamp(2.5rem, 1.6rem + 4.4vw, 6rem);
+  --fs-h1: clamp(2.25rem, 1.7rem + 2.6vw, 4.25rem);
+  --fs-h2: clamp(1.75rem, 1.45rem + 1.4vw, 2.75rem);
+  --fs-h3: clamp(1.25rem, 1.15rem + 0.5vw, 1.625rem);
+  --fs-lead: clamp(1.125rem, 1.07rem + 0.28vw, 1.375rem);
+  --fs-body: clamp(1rem, 0.97rem + 0.14vw, 1.0625rem);
+  --fs-small: 0.9375rem;
+  --fs-meta: 0.8125rem;
+  --lh-tight: 1.08;
+  --lh-body: 1.6;
+
+  /* Space (4px base) */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 24px;
+  --s-6: 32px;
+  --s-7: 48px;
+  --s-8: 64px;
+  --s-9: 96px;
+  --section: clamp(48px, 7vw, 104px);
+  --gutter: clamp(20px, 4vw, 64px);
+  --container: 1440px;
+  --measure: 68ch;
+  --header-h: 72px;
+
+  /* Shape */
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 18px;
+  --r-pill: 999px;
+  --shadow-raised: 0 12px 40px -12px rgb(42 27 32 / 0.28);
+
+  /* Motion */
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --t-fast: 180ms;
+  --t-med: 280ms;
+  --t-slow: 560ms;
+}
+
+@media (max-width: 767px) {
+  :root {
+    --header-h: 64px;
+  }
+}
