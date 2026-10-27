@@ -106,6 +106,6 @@ add_action(
 		if ( lt_hours_rows() ) {
 			$data['openingHours'] = array_map( static fn( $r ) => trim( $r[0] . ' ' . $r[1] ), lt_hours_rows() );
 		}
-		echo '<script type="application/ld+json">' . wp_json_encode( array_filter( $data ), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE ) . '</script>' . "\n";
+		echo '<script type="application/ld+json">' . wp_json_encode( array_filter( $data ), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP ) . '</script>' . "\n";
 	}
 );
