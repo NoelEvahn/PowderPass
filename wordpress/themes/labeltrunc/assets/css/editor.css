@@ -1,0 +1,15 @@
+/* Block editor: match the front-end page body so staff see what visitors see. */
+@font-face { font-family: 'Newsreader'; src: url('../fonts/newsreader-normal.woff2') format('woff2'); font-weight: 300 600; font-display: swap; }
+@font-face { font-family: 'Instrument Sans'; src: url('../fonts/instrument-sans-normal.woff2') format('woff2'); font-weight: 400 600; font-display: swap; }
+
+.editor-styles-wrapper { background: #f7f2ea; color: #241a1d; font-family: 'Instrument Sans', system-ui, sans-serif; font-size: 1rem; line-height: 1.6; }
+.editor-styles-wrapper .wp-block { max-width: 42rem; }
+.editor-styles-wrapper .editor-post-title__input, .editor-styles-wrapper h1, .editor-styles-wrapper h2, .editor-styles-wrapper h3 { font-family: 'Newsreader', Georgia, serif; font-weight: 400; line-height: 1.12; letter-spacing: -0.01em; }
+.editor-styles-wrapper h2 { font-size: 2rem; margin-top: 2em; }
+.editor-styles-wrapper h3 { font-size: 1.3rem; }
+.editor-styles-wrapper a { color: #501c2b; }
+.editor-styles-wrapper .is-style-lt-ledger { list-style: none; padding: 0; border-top: 1px solid #dcd0c0; }
+.editor-styles-wrapper .is-style-lt-ledger li { padding: 14px 0; border-bottom: 1px solid #dcd0c0; color: #5b4a50; }
+.editor-styles-wrapper .is-style-lt-ledger strong { display: block; color: #241a1d; font-weight: 500; }
+.editor-styles-wrapper .wp-block-button__link { border-radius: 0; background: #501c2b; color: #fbf4ec; }
+.editor-styles-wrapper .wp-block-details { border-bottom: 1px solid #dcd0c0; padding: 12px 0; }
