@@ -141,3 +141,11 @@ function lt_page_header( $title, $intro = '', $trail = array() ) {
 	}
 	echo '</header>';
 }
+
+/** True when online payment (Billplz) is set up and offered at checkout. */
+function lt_online_payments() {
+	if ( ! function_exists( 'WC' ) || ! WC()->payment_gateways() ) {
+		return false;
+	}
+	return isset( WC()->payment_gateways()->get_available_payment_gateways()['billplz'] );
+}

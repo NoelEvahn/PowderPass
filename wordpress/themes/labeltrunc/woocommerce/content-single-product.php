@@ -129,7 +129,7 @@ $can_buy      = $product->is_purchasable() && $product->is_in_stock();
 
 				<ul class="lt-assure">
 					<li><?php esc_html_e( 'Guaranteed authentic, with a money-back guarantee.', 'labeltrunc' ); ?></li>
-					<li><?php esc_html_e( 'Pay online (FPX, cards, Touch ’n Go) or reserve and pay at the boutique.', 'labeltrunc' ); ?></li>
+					<li><?php lt_online_payments() ? esc_html_e( 'Pay online (FPX, cards, Touch ’n Go) or reserve and pay at the boutique.', 'labeltrunc' ) : esc_html_e( 'Reserve online and pay when you collect at the boutique.', 'labeltrunc' ); ?></li>
 					<li><?php esc_html_e( 'Collect at Ukay Boulevard, Ampang. See it in person first by appointment.', 'labeltrunc' ); ?></li>
 				</ul>
 			</div>

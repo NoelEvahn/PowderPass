@@ -217,8 +217,7 @@ add_filter(
 add_action(
 	'woocommerce_review_order_after_submit',
 	static function () {
-		$gateways = WC()->payment_gateways() ? WC()->payment_gateways()->get_available_payment_gateways() : array();
-		if ( isset( $gateways['billplz'] ) ) {
+		if ( lt_online_payments() ) {
 			echo '<p class="lt-checkout-safety">' . esc_html__( 'Online payments are processed by Billplz. We never see your card or bank details.', 'labeltrunc' ) . '</p>';
 		}
 	}

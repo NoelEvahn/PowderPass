@@ -28,11 +28,7 @@ $hero_image   = (int) lt_mod( 'lt_hero_image' );
 $hero_product = ( ! $hero_image && $newest ) ? $newest[0] : null;
 $hold_hours   = class_exists( 'LT_Settings' ) ? LT_Settings::get( 'cart_hold_hours' ) : 24;
 $shop_url     = function_exists( 'wc_get_page_permalink' ) ? wc_get_page_permalink( 'shop' ) : home_url( '/' );
-$online       = false;
-if ( function_exists( 'WC' ) ) {
-	$gateways = WC()->payment_gateways() ? WC()->payment_gateways()->get_available_payment_gateways() : array();
-	$online   = isset( $gateways['billplz'] );
-}
+$online       = lt_online_payments();
 $address = lt_address_lines();
 ?>
 

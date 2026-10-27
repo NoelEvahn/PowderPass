@@ -87,10 +87,10 @@ final class LT_Product_Fields {
 				'placeholder' => __( 'Be specific: corner wear, marks on hardware, inside the bag.', 'labeltrunc' ),
 			)
 		);
-		echo '<fieldset class="form-field"><legend style="float:left;width:150px;margin:0 0 0 -150px">' . esc_html__( 'Comes with', 'labeltrunc' ) . '</legend><ul style="margin:0;columns:2">';
+		echo '<fieldset class="form-field"><legend style="float:left;width:150px;margin:0 0 0 -150px">' . esc_html__( 'Comes with', 'labeltrunc' ) . '</legend><ul style="margin:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:6px 16px">';
 		foreach ( self::INCLUDES as $key => $label ) {
 			printf(
-				'<li><label><input type="checkbox" name="_lt_includes[]" value="%1$s" %2$s> %3$s</label></li>',
+				'<li style="margin:0"><label style="float:none;width:auto;margin:0;display:inline-flex;gap:6px;align-items:center"><input type="checkbox" name="_lt_includes[]" value="%1$s" %2$s style="margin:0"> %3$s</label></li>',
 				esc_attr( $key ),
 				checked( in_array( $key, $includes, true ), true, false ),
 				esc_html( $label )
