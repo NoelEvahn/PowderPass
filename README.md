@@ -21,6 +21,7 @@ Staff instructions are in [docs/EDITOR-GUIDE.md](docs/EDITOR-GUIDE.md). Facts an
 - **Billplz** for online payments (optional; without it the shop runs on reserve-and-pay-at-the-boutique).
 - **SMTP** for email (optional; without it emails go to the server log).
 - Plain CSS with design tokens in `src/styles/tokens.css`; fonts are self-hosted at build time.
+- Icons from [Lucide](https://lucide.dev/icons) (`lucide-react`), mapped in `src/components/Icon.tsx`.
 
 ## Run it locally
 

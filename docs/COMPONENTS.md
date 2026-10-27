@@ -29,6 +29,8 @@ All colours, type, spacing, radii and motion values are in `src/styles/tokens.cs
 | `/visit`, `/contact` | site settings; `ContactForm` (server action `enquiryAction`) |
 | `/admin` | Payload editor, branded with `components/admin/Logo` and `Welcome` |
 
+Icons: [Lucide](https://lucide.dev/icons) via `lucide-react` (pinned), wrapped by `components/Icon.tsx` so pages use short names (`<Icon name="bag" />`) and only the icons used are shipped. Lucide has no brand logos, so social links use generic Lucide icons (WhatsApp → message-circle, Instagram → camera, TikTok → video, Facebook → users) and always show the handle as text. To change an icon, swap the import in `Icon.tsx`.
+
 Site chrome: `components/site/Header.tsx` (sticky; the menu button replaces the links below 1100 px), `HeaderNav.tsx` (native `<dialog>` mobile menu), `Footer.tsx`, `Wordmark.tsx`.
 
 ## Motion trigger table
