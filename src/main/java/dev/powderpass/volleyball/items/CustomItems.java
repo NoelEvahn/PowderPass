@@ -36,6 +36,23 @@ public final class CustomItems {
         return templates.computeIfAbsent(type, this::build).clone();
     }
 
+    private ItemStack matchHands;
+
+    /**
+     * Hands for matches: the vanilla empty item model, so players play bare-handed (the arm shows in first
+     * person and nothing is held in third person). Same item type as {@link ItemType#HANDS} for input.
+     */
+    public ItemStack matchHands() {
+        if (matchHands == null) {
+            ItemStack it = build(ItemType.HANDS);
+            ItemMeta meta = it.getItemMeta();
+            meta.setItemModel(org.bukkit.NamespacedKey.minecraft("air"));
+            it.setItemMeta(meta);
+            matchHands = it;
+        }
+        return matchHands.clone();
+    }
+
     private ItemStack build(ItemType type) {
         return switch (type) {
             case VOLLEYBALL -> item(Material.SUNFLOWER, MODEL_VOLLEYBALL, ItemType.VOLLEYBALL,
@@ -56,6 +73,7 @@ public final class CustomItems {
                     "<yellow>Right-click</yellow> <white>set  ·  in the air at the net: block</white>",
                     "<yellow>Sneak + left</yellow> <white>dive/dig  ·  in the air: tip</white>",
                     "<yellow>Sneak + right</yellow> <white>quick (low) set</white>",
+                    "<yellow>Serving</yellow> <white>right-click toss · left-click underhand</white>",
                     "",
                     "<dark_gray>Click when the ball reaches your hands.</dark_gray>",
                     "<dark_gray>Look where you want the ball to go.</dark_gray>");

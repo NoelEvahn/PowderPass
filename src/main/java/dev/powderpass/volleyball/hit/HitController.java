@@ -111,6 +111,13 @@ public final class HitController {
                 dir.normalize().multiply(plugin.settings().controls.diveLunge());
                 p.setVelocity(p.getVelocity().add(dir).setY(0.18));
                 plugin.fx().sound(p.getLocation(), Settings.SoundId.DIVE);
+                // other players see a horizontal dive; the pose is released once the player lands
+                p.setPose(org.bukkit.entity.Pose.SWIMMING, true);
+                Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                    if (p.isOnline()) {
+                        p.setPose(org.bukkit.entity.Pose.STANDING, false);
+                    }
+                }, 12L);
             }
         }
         tryResolve(p, s);
@@ -891,7 +898,15 @@ public final class HitController {
         s.lastHitTick = tick - plugin.settings().controls.hitCooldownTicks();
     }
 
-    /** Position and velocity of a toss for the player (used by matches that spawn their own ball). */
+    /** Where a held ball sits: in front of the chest, a little toward the right hand. */
+    public Vec3 handPosition(Player p) {
+        Location l = p.getLocation();
+        Vec3 dir = horizontalDir(l);
+        double height = p.isSneaking() ? 0.85 : 1.05;
+        return new Vec3(l.getX(), l.getY(), l.getZ()).addScaled(dir, 0.36).add(-dir.z * 0.14, height, dir.x * 0.14);
+    }
+
+    /** Position and velocity of a toss for the player: the ball leaves from the hands. */
     public Vec3[] tossState(Player p) {
         Settings.Serve cfg = plugin.settings().serve;
         Location l = p.getLocation();
@@ -902,7 +917,7 @@ public final class HitController {
                     .append(Component.text(jump ? "  jump and hit at the top" : "  hit it as it falls to your hand",
                             NamedTextColor.GRAY).decoration(TextDecoration.BOLD, false)));
         }
-        Vec3 pos = new Vec3(l.getX(), l.getY(), l.getZ()).addScaled(dir, 0.45).add(0, p.getEyeHeight() - 0.15, 0);
+        Vec3 pos = handPosition(p);
         Vec3 vel = jump ? dir.copy().mul(cfg.jumpTossForward()).add(0, cfg.jumpTossSpeed(), 0)
                 : dir.copy().mul(0.25).add(0, cfg.tossSpeed(), 0);
         return new Vec3[]{pos, vel};
@@ -925,7 +940,8 @@ public final class HitController {
 
     private void drawReticle(Player p, PlayerState s) {
         ItemStack hand = p.getInventory().getItemInMainHand();
-        boolean holdingBall = CustomItems.is(hand, ItemType.VOLLEYBALL);
+        var match = plugin.matches().byPlayer(p);
+        boolean holdingBall = CustomItems.is(hand, ItemType.VOLLEYBALL) || (match != null && match.holdsServeBall(p));
         AimProfile profile = null;
         Color color = null;
         Settings st = plugin.settings();

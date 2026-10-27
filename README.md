@@ -14,6 +14,8 @@ A complete, multiplayer volleyball game for **Paper 1.21.11**. It works with the
 - **Courts in one command.** Courts are built from presets or custom sizes. The plugin places the floor and keeps an undo copy. Lines, padded posts, antennas, the net, a referee stand, team benches and a scorer's table are display entities, so removing a court restores the world.
 - **Live HUD and scoreboards.** Each player gets a sidebar, a boss bar serve clock and action-bar hit grades. You can place physical **TextDisplay scoreboards** in the world and link them to any court.
 - **A ball made of block displays.** The in-world ball is a voxel sphere of `BlockDisplay`s painted as a classic 18-panel volleyball (6 groups of 3 yellow/white/blue strips), so everyone sees the same ball with or without the pack. Spin is visible as it rotates.
+- **Sittable benches.** Right-click a team bench or the referee chair to sit, sneak to stand up. Players swapped out for the libero sit on their team's bench automatically.
+- **Animations that read right.** Touches swing one or both arms; divers drop into a horizontal pose for other players; the ball grows in and shrinks away instead of popping; the server holds and dribbles the ball before the whistle and tosses it from the hands.
 - **Custom items and menus.** The volleyball is a sunflower, the referee whistle an iron nugget and the "hands" leather. Chest menus cover the rules editor and the referee panel. An in-game guide book is also included.
 - **Sound for every action.** Each touch, serve, bounce, net and antenna contact has its own sound, as do dives, approach jumps and missed swings. The whistle, countdown and crowd (cheer, "ooh" on net cords, applause, match win) are covered too. Players with the pack hear custom sounds and everyone else hears mapped vanilla sounds, decided per player.
 
@@ -41,7 +43,7 @@ To practise alone, run `/vb practice`. It gives you a ball and the Hands item, a
 
 ## Controls
 
-Hold the **Volleyball Hands** item, which fills your hotbar during a match. Click when the ball reaches your hands; better timing gives more power and accuracy. The action bar grades every touch as **PERFECT / GOOD / OK / POOR**.
+During a match your hotbar is filled with invisible **hands**, so you play bare-handed (your arm shows in first person, nothing is held in third person). Click when the ball reaches your hands; better timing gives more power and accuracy. The action bar grades every touch as **PERFECT / GOOD / OK / POOR**.
 
 | Input | On the ground | In the air |
 |---|---|---|
@@ -56,7 +58,7 @@ Hold the **Volleyball Hands** item, which fills your hotbar during a match. Clic
 - Looking **up at the ball** uses a standard distance (a normal pass or set).
 - A coloured ring on the floor shows the target. Toggle it with `/vb aim`.
 
-**Serving.** Hold the ball and wait for the whistle.
+**Serving.** In a match the server holds the real ball in their hands (bouncing it while waiting) and serves with the same bare hands, no item needed. Practice uses the volleyball item. After the whistle:
 
 | Action | Result |
 |---|---|

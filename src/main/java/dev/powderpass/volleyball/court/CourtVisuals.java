@@ -54,6 +54,12 @@ public final class CourtVisuals {
     private final java.util.Map<Mark, Long> flashUntil = new java.util.EnumMap<>(Mark.class);
     private final java.util.Map<Mark, org.bukkit.Color> highlights = new java.util.EnumMap<>(Mark.class);
     private final List<org.bukkit.entity.Entity> temporary = new ArrayList<>();
+    /** Seats: bench seats per half (side -1 / +1) and the referee's seat (side 0). */
+    private final List<Seat> seats = new ArrayList<>();
+
+    /** A sittable spot: an invisible interaction box players click; they ride on top of it. */
+    public record Seat(org.bukkit.entity.Interaction entity, int side, Location front) {
+    }
     private Mark current;
     private NetRenderer net;
 
@@ -204,6 +210,7 @@ public final class CourtVisuals {
         for (int sgn = -1; sgn <= 1; sgn += 2) {
             box(world, Material.LIGHT_GRAY_CONCRETE, vr, owner, sgn * 0.36, floor, w - 0.38, 0.05, 0.9, 0.05);
         }
+        seat(world, owner, 0, floor + 0.06, w + 0.12, 0.45, 0.45, 0, w - 0.6);
         // ladder on the far side
         for (int r = 1; r <= 4; r++) {
             box(world, Material.IRON_BLOCK, vr, owner, 0, floor * r / 5.0, w + 0.42, 0.5, 0.04, 0.04);
@@ -217,6 +224,11 @@ public final class CourtVisuals {
         double len = Math.min(4.0, court.halfLength() - 1.5);
         for (int sgn = -1; sgn <= 1; sgn += 2) {
             double uc = sgn * (2.0 + len / 2 - 0.5);
+            int places = Math.max(1, (int) Math.floor(len / 0.6));
+            for (int k = 0; k < places; k++) {
+                double u = uc - len / 2 + (k + 0.5) * len / places;
+                seat(world, owner, u, 0, bw, 0.5, 0.48, sgn, bw + 0.75);
+            }
             box(world, Material.SPRUCE_PLANKS, vr, owner, uc, 0.42, bw, len, 0.06, 0.38);
             box(world, Material.SPRUCE_PLANKS, vr, owner, uc, 0.55, bw - 0.2, len, 0.35, 0.05);
             for (int k = -1; k <= 1; k++) {
@@ -228,6 +240,42 @@ public final class CourtVisuals {
         box(world, Material.BLUE_CONCRETE, vr, owner, 0, 0, bw + 0.18, 1.8, 0.72, 0.04);
         box(world, Material.GRAY_CONCRETE, vr, owner, -0.8, 0, bw - 0.1, 0.05, 0.72, 0.5);
         box(world, Material.GRAY_CONCRETE, vr, owner, 0.8, 0, bw - 0.1, 0.05, 0.72, 0.5);
+    }
+
+    private void seat(World world, String owner, double u, double y, double w, double width, double height, int side,
+                      double frontW) {
+        Vec3 c = court.frame().toWorld(u, y, w, new Vec3());
+        Location at = new Location(world, c.x, c.y, c.z);
+        org.bukkit.entity.Interaction it = world.spawn(at, org.bukkit.entity.Interaction.class, e -> {
+            e.setInteractionWidth((float) width);
+            e.setInteractionHeight((float) height);
+            e.setResponsive(true);
+            Displays.tag(e, "seat:" + court.name());
+        });
+        Location front = court.location(u, 0.01, frontW);
+        front.setYaw(court.frame().yawOf(0, frontW > w ? 1 : -1));
+        seats.add(new Seat(it, side, front));
+        seatEntities.add(it);
+    }
+
+    private final List<org.bukkit.entity.Interaction> seatEntities = new ArrayList<>();
+
+    public List<Seat> seats() {
+        return seats;
+    }
+
+    /** A free bench seat on the given half (side -1 / +1), preferring the {@code index}-th. */
+    public Seat freeBenchSeat(int side, int index) {
+        List<Seat> mine = new ArrayList<>();
+        for (Seat s : seats) {
+            if (s.side() == side && s.entity().isValid() && s.entity().getPassengers().isEmpty()) {
+                mine.add(s);
+            }
+        }
+        if (mine.isEmpty()) {
+            return null;
+        }
+        return mine.get(Math.min(index, mine.size() - 1));
     }
 
     /** Flat floor line spanning u in [u0, u1], w in [w0, w1]. */
@@ -409,9 +457,17 @@ public final class CourtVisuals {
 
     public void remove() {
         for (Display d : displays) {
-            d.remove();
+            if (d != null) {
+                d.remove();
+            }
         }
         displays.clear();
+        for (org.bukkit.entity.Interaction it : seatEntities) {
+            it.eject();
+            it.remove();
+        }
+        seatEntities.clear();
+        seats.clear();
         marks.clear();
         original.clear();
         flashUntil.clear();
@@ -426,6 +482,6 @@ public final class CourtVisuals {
     }
 
     public int entityCount() {
-        return displays.size() + (net == null ? 0 : net.entityCount());
+        return displays.size() + seatEntities.size() + (net == null ? 0 : net.entityCount());
     }
 }

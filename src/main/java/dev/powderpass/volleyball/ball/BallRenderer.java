@@ -27,6 +27,8 @@ public final class BallRenderer {
     private final Quaternionf shown = new Quaternionf();
     private float radius;
     private int rotationInterpolation;
+    /** 0..1 size factor, animated on spawn and removal. */
+    private float scale = 1f;
 
     public void spawn(World world, Location at, BallModel ballModel, Settings.Ball cfg) {
         remove();
@@ -39,7 +41,7 @@ public final class BallRenderer {
             boolean first = root == null;
             BlockDisplay d = world.spawn(at, BlockDisplay.class, e -> {
                 e.setBlock(data);
-                e.setTransformationMatrix(matrix(p, shown));
+                e.setTransformationMatrix(matrix(p, shown, 0.05f));
                 e.setViewRange(4f);
                 e.setBillboard(Display.Billboard.FIXED);
                 e.setInterpolationDuration(rotationInterpolation);
@@ -62,11 +64,24 @@ public final class BallRenderer {
         }
     }
 
-    private Matrix4f matrix(BallModel.Part p, Quaternionf rotation) {
+    private Matrix4f matrix(BallModel.Part p, Quaternionf rotation, float factor) {
+        float r = radius * factor;
         return new Matrix4f()
                 .rotate(rotation)
-                .translate((float) p.minX() * radius, (float) p.minY() * radius, (float) p.minZ() * radius)
-                .scale((float) p.sizeX() * radius, (float) p.sizeY() * radius, (float) p.sizeZ() * radius);
+                .translate((float) p.minX() * r, (float) p.minY() * r, (float) p.minZ() * r)
+                .scale((float) p.sizeX() * r, (float) p.sizeY() * r, (float) p.sizeZ() * r);
+    }
+
+    /** Animates the ball to a new size over {@code ticks} (spawn pop-in, despawn shrink). */
+    public void resize(float factor, int ticks) {
+        scale = factor;
+        for (int i = 0; i < parts.size(); i++) {
+            BlockDisplay d = parts.get(i);
+            if (d.isValid()) {
+                d.setTransformationMatrix(matrix(model.get(i), shown, scale));
+                Displays.refreshInterpolation(d, ticks);
+            }
+        }
     }
 
     public boolean valid() {
@@ -102,8 +117,15 @@ public final class BallRenderer {
         shown.set(rotation);
         for (int i = 0; i < parts.size(); i++) {
             BlockDisplay d = parts.get(i);
-            d.setTransformationMatrix(matrix(model.get(i), shown));
+            d.setTransformationMatrix(matrix(model.get(i), shown, scale));
             Displays.refreshInterpolation(d, rotationInterpolation + 1);
+        }
+    }
+
+    /** Movement smoothing of the whole ball (the passengers follow the root). */
+    public void setTeleportDuration(int ticks) {
+        if (!parts.isEmpty() && parts.get(0).getTeleportDuration() != ticks) {
+            parts.get(0).setTeleportDuration(ticks);
         }
     }
 

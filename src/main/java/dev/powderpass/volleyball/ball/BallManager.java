@@ -67,14 +67,23 @@ public final class BallManager {
                 remove(b);
                 continue;
             }
-            if (b.position().y < b.world().getMinHeight() - 16 || b.context().shouldDespawn(b)) {
+            if (b.position().y < b.world().getMinHeight() - 16) {
                 remove(b);
+            } else if (b.context().shouldDespawn(b)) {
+                removeAnimated(b);
             }
         }
     }
 
     public void remove(Volleyball b) {
         b.remove();
+        balls.remove(b);
+        practice.forget(b);
+    }
+
+    /** Removes with the shrink animation (end of a rally, idle practice ball). */
+    public void removeAnimated(Volleyball b) {
+        b.removeAnimated();
         balls.remove(b);
         practice.forget(b);
     }

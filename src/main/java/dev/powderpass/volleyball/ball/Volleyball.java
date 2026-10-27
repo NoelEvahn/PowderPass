@@ -59,6 +59,9 @@ public final class Volleyball implements SimulationListener {
     private UUID tossedBy;
     private boolean tossPending;
     private boolean removed;
+    /** Held in a player's hands: no physics, positioned by its owner every tick. */
+    private boolean held;
+    private boolean grown;
     private int soundCooldown;
     private Court cachedCourt;
 
@@ -77,6 +80,33 @@ public final class Volleyball implements SimulationListener {
     private void spawnDisplay() {
         Location at = new Location(world, body.pos.x, body.pos.y, body.pos.z);
         renderer.spawn(world, at, plugin.ballModel(), plugin.settings().ball);
+        grown = false;
+    }
+
+    public boolean held() {
+        return held;
+    }
+
+    /** Puts the ball in someone's hands (kinematic) or releases it to the physics. */
+    public void setHeld(boolean held) {
+        this.held = held;
+        // other clients smooth players over 3 ticks: match it so the ball stays in the hands
+        renderer.setTeleportDuration(held ? 3 : plugin.settings().ball.teleportInterpolation());
+        if (held) {
+            body.vel.zero();
+            body.spin.zero();
+            body.resting = false;
+        }
+        lastMoveTick = tick;
+    }
+
+    /** Moves a held ball (and spins it a little, as if turned in the hands). */
+    public void holdAt(Vec3 pos, double spinRad) {
+        prevPos.set(body.pos);
+        body.pos.set(pos);
+        if (spinRad != 0) {
+            rotation.premul(new Quaternionf().rotateY((float) spinRad)).normalize();
+        }
     }
 
     public UUID id() {
@@ -190,6 +220,20 @@ public final class Volleyball implements SimulationListener {
             spawnDisplay();
         }
         cachedCourt = context.court(this);
+        if (!grown) {
+            // pop in: displays spawn tiny and grow, instead of appearing out of nowhere
+            renderer.resize(1f, 3);
+            grown = true;
+        }
+        if (held) {
+            recordHistory();
+            renderer.moveTo(location());
+            if (tick % 2 == 0) {
+                renderer.rotate(rotation);
+            }
+            context.onTick(this);
+            return;
+        }
         prevPos.set(body.pos);
         boolean wasResting = body.resting;
         CourtNet net = cachedCourt != null && cachedCourt.world() == world ? cachedCourt.net() : null;
@@ -333,6 +377,16 @@ public final class Volleyball implements SimulationListener {
         }
         removed = true;
         renderer.remove();
+    }
+
+    /** Shrinks the ball away over a few ticks, then removes it. */
+    public void removeAnimated() {
+        if (removed) {
+            return;
+        }
+        removed = true;
+        renderer.resize(0.05f, 4);
+        plugin.getServer().getScheduler().runTaskLater(plugin, renderer::remove, 5);
     }
 
     public int partCount() {

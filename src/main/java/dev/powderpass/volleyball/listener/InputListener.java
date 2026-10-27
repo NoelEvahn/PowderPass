@@ -55,6 +55,11 @@ public final class InputListener implements Listener {
         if (type == ItemType.WHISTLE) {
             return;
         }
+        Match server = plugin.matches().byPlayer(p);
+        if (server != null && server.holdsServeBall(p)) {
+            server.requestUnderhand(p);
+            return;
+        }
         plugin.hits().primary(p);
     }
 
@@ -113,12 +118,22 @@ public final class InputListener implements Listener {
         }
         switch (type) {
             case VOLLEYBALL -> toss(p);
-            case HANDS -> plugin.hits().secondary(p);
+            case HANDS -> secondary(p);
             case WHISTLE -> whistle(p);
         }
     }
 
-    @EventHandler(priority = EventPriority.HIGH)
+    /** Right click with the hands: the server holding the ball tosses, everyone else sets / blocks. */
+    private void secondary(Player p) {
+        Match m = plugin.matches().byPlayer(p);
+        if (m != null && m.holdsServeBall(p)) {
+            m.requestToss(p);
+            return;
+        }
+        plugin.hits().secondary(p);
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onInteractEntity(PlayerInteractEntityEvent e) {
         if (e.getHand() != EquipmentSlot.HAND) {
             return;
@@ -131,7 +146,7 @@ public final class InputListener implements Listener {
         e.setCancelled(true);
         switch (type) {
             case VOLLEYBALL -> toss(p);
-            case HANDS -> plugin.hits().secondary(p);
+            case HANDS -> secondary(p);
             case WHISTLE -> whistle(p);
         }
     }

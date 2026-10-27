@@ -80,6 +80,7 @@ public final class PowderPassPlugin extends JavaPlugin {
         var pm = getServer().getPluginManager();
         pm.registerEvents(new InputListener(this), this);
         pm.registerEvents(new ProtectionListener(this), this);
+        pm.registerEvents(new dev.powderpass.volleyball.listener.SeatListener(this), this);
         pm.registerEvents(menus, this);
         pm.registerEvents(packs, this);
 

@@ -70,6 +70,7 @@ public final class Match implements BallContext {
     private String lastPointText = "";
     private TeamId lastPointTeam;
     private boolean ended;
+    private int holdTicks;
 
     public Match(PowderPassPlugin plugin, Court court, MatchSettings settings, Lineup teamA, Lineup teamB,
                  UUID host) {
@@ -248,11 +249,9 @@ public final class Match implements BallContext {
     private void giveKit(Player p, boolean serving) {
         PlayerInventory inv = p.getInventory();
         inv.clear();
+        // bare hands in every slot: nothing is drawn in the hand, and every slot reacts to clicks
         for (int i = 0; i < 9; i++) {
-            inv.setItem(i, plugin.items().create(ItemType.HANDS));
-        }
-        if (serving) {
-            inv.setItem(0, plugin.items().create(ItemType.VOLLEYBALL));
+            inv.setItem(i, plugin.items().matchHands());
         }
         if (p.getUniqueId().equals(referee) || p.getUniqueId().equals(host)) {
             inv.setItem(8, plugin.items().create(ItemType.WHISTLE));
@@ -334,6 +333,9 @@ public final class Match implements BallContext {
             return;
         }
         stateTicks++;
+        if (ball != null && ball.held() && (state == MatchState.PRE_SERVE || state == MatchState.SERVE)) {
+            animateHeldBall();
+        }
         switch (state) {
             case COUNTDOWN -> {
                 int left = stateDuration - stateTicks;
@@ -367,7 +369,7 @@ public final class Match implements BallContext {
                     setupServe();
                     return;
                 }
-                if (!served && stateTicks >= stateDuration && ball == null) {
+                if (!served && stateTicks >= stateDuration && (ball == null || ball.held())) {
                     if (settings.rule(Rule.SERVE_DELAY)) {
                         fault(team(score.serving()).id(), Fault.SERVE_DELAY, sp);
                     } else {
@@ -430,16 +432,15 @@ public final class Match implements BallContext {
     private void setupServe() {
         Team st = team(score.serving());
         server = st.atPosition(1, score.rotation(st.id()));
-        // only the old and the new server need a different hotbar
-        for (Player p : players()) {
-            boolean isServer = p.getUniqueId().equals(server);
-            boolean holdsBall = dev.powderpass.volleyball.items.CustomItems.is(p.getInventory().getItem(0), ItemType.VOLLEYBALL);
-            if (isServer != holdsBall) {
-                giveKit(p, isServer);
-            }
-        }
         Player sp = server == null ? null : Bukkit.getPlayer(server);
         if (sp != null) {
+            // the server holds the real ball from now on, so everyone sees it in their hands
+            removeBall();
+            ball = plugin.balls().spawn(sp.getWorld(), plugin.hits().handPosition(sp), this);
+            ball.setHeld(true);
+            holdTicks = 0;
+            sp.sendActionBar(Msg.mm("<gold>Your serve</gold> <gray>· <white>right-click</white> toss · <white>sprint + right-click</white> "
+                    + "jump toss · <white>left-click</white> underhand"));
             sp.showTitle(Title.title(Component.empty(), Component.text("Your serve!", NamedTextColor.GOLD, TextDecoration.BOLD),
                     Title.Times.times(Duration.ZERO, Duration.ofMillis(1200), Duration.ofMillis(300))));
             plugin.fx().sound(sp, Settings.SoundId.POINT);
@@ -477,6 +478,24 @@ public final class Match implements BallContext {
         }
     }
 
+    /** A benched player sits down on their team's bench (or stands next to it when it is full). */
+    private void sitOnBench(Player p, Team t, int index) {
+        var v = plugin.courts().visuals(court);
+        var seat = v == null ? null : v.freeBenchSeat(t.side(), index);
+        if (p.isInsideVehicle()) {
+            if (seat != null && p.getVehicle() == seat.entity()) {
+                return;
+            }
+            p.leaveVehicle();
+        }
+        if (seat == null) {
+            p.teleport(benchSpot(t, index));
+            return;
+        }
+        p.teleport(seat.front());
+        seat.entity().addPassenger(p);
+    }
+
     /** Bench spot along the side line, away from the referee stand. */
     private Location benchSpot(Team t, int index) {
         double u = t.side() * (Math.min(court.halfLength() - 1, 2.0 + index * 1.0));
@@ -497,7 +516,9 @@ public final class Match implements BallContext {
             int benchIndex = 0;
             for (Player p : t.online()) {
                 if (!t.onCourt(p.getUniqueId())) {
-                    p.teleport(benchSpot(t, benchIndex++));
+                    sitOnBench(p, t, benchIndex++);
+                } else if (p.isInsideVehicle()) {
+                    p.leaveVehicle();
                 }
             }
             if (!auto) {
@@ -591,6 +612,44 @@ public final class Match implements BallContext {
 
     private void whistle() {
         plugin.fx().whistle(refereeSpot(), false);
+        plugin.fx().particle(refereeSpot(), org.bukkit.Particle.NOTE, 2, 0.2, 1);
+    }
+
+    /**
+     * Keeps the held ball in the server's hands. Standing still, the server bounces it on the floor every
+     * couple of seconds, like real servers do before the whistle.
+     */
+    private void animateHeldBall() {
+        Player sp = server == null ? null : Bukkit.getPlayer(server);
+        if (sp == null) {
+            return;
+        }
+        holdTicks++;
+        Vec3 hand = plugin.hits().handPosition(sp);
+        boolean still = sp.isOnGround() && !sp.isSprinting() && !sp.getCurrentInput().isForward()
+                && !sp.getCurrentInput().isBackward() && !sp.getCurrentInput().isLeft() && !sp.getCurrentInput().isRight();
+        int cycle = 46;
+        int bounce = 14;
+        int k = holdTicks % cycle;
+        if (still && holdTicks > 20 && k < bounce) {
+            double t = (k + 1) / (double) bounce;
+            double floor = court.centerY() + plugin.settings().physics.radius();
+            double drop = hand.y - floor;
+            hand.y -= drop * (1 - (2 * t - 1) * (2 * t - 1));
+            if (k == 0) {
+                sp.swingMainHand();
+            }
+            if (k == bounce / 2) {
+                plugin.fx().sound(ball.location(), court.beach() ? Settings.SoundId.SAND : Settings.SoundId.FLOOR, 0.6f);
+            }
+        }
+        ball.holdAt(hand, still ? 0 : 0.05);
+    }
+
+    /** True while {@code p} is the server holding the ball (clicks become toss / underhand). */
+    public boolean holdsServeBall(Player p) {
+        return p.getUniqueId().equals(server) && ball != null && ball.held()
+                && (state == MatchState.SERVE || state == MatchState.PRE_SERVE);
     }
 
     private void longWhistle() {
@@ -606,31 +665,32 @@ public final class Match implements BallContext {
 
     /** Right click with the ball item. */
     public void requestToss(Player p) {
-        if (state != MatchState.SERVE || !p.getUniqueId().equals(server) || ball != null) {
-            if (state == MatchState.PRE_SERVE && p.getUniqueId().equals(server)) {
-                p.sendActionBar(Component.text("Wait for the whistle", NamedTextColor.YELLOW));
-            }
+        if (!holdsServeBall(p)) {
+            return;
+        }
+        if (state == MatchState.PRE_SERVE) {
+            p.sendActionBar(Component.text("Wait for the whistle", NamedTextColor.YELLOW));
             return;
         }
         Vec3[] st = plugin.hits().tossState(p);
-        ball = plugin.balls().spawn(p.getWorld(), st[0], this);
+        ball.setHeld(false);
+        ball.teleport(st[0]);
         plugin.hits().prepareToss(p, ball, st[1]);
-        takeBallItem(p);
     }
 
-    /** Left click with the ball item and no toss: underhand serve. */
+    /** Left click while holding the serve ball: underhand serve. */
     public void requestUnderhand(Player p) {
-        if (state != MatchState.SERVE || !p.getUniqueId().equals(server) || ball != null) {
+        if (!holdsServeBall(p)) {
             return;
         }
-        ball = plugin.balls().spawn(p.getWorld(), plugin.hits().underhandPosition(p), this);
+        if (state == MatchState.PRE_SERVE) {
+            p.sendActionBar(Component.text("Wait for the whistle", NamedTextColor.YELLOW));
+            return;
+        }
+        ball.setHeld(false);
+        ball.teleport(plugin.hits().underhandPosition(p));
         ball.markToss(p.getUniqueId());
-        takeBallItem(p);
         plugin.hits().underhand(p, ball);
-    }
-
-    private void takeBallItem(Player p) {
-        giveKit(p, false);
     }
 
     /** Referee whistle. */
@@ -807,11 +867,9 @@ public final class Match implements BallContext {
                 Player sp = server == null ? null : Bukkit.getPlayer(server);
                 if (settings.rule(Rule.TOSS_DROP)) {
                     fault(score.serving(), Fault.TOSS_DROP, sp);
-                } else {
-                    removeBall();
-                    if (sp != null) {
-                        giveKit(sp, true);
-                    }
+                } else if (sp != null) {
+                    ball.setHeld(true);
+                    holdTicks = 0;
                 }
             }
             return;
@@ -1091,7 +1149,7 @@ public final class Match implements BallContext {
 
     private void removeBall() {
         if (ball != null) {
-            plugin.balls().remove(ball);
+            plugin.balls().removeAnimated(ball);
             ball = null;
         }
     }

@@ -144,8 +144,8 @@ hits:
     standing-topspin: 25.0
     underhand-apex: 4.0
     max-error: 2.5
-    toss-speed: 5.6
-    jump-toss-speed: 7.0
+    toss-speed: 6.0
+    jump-toss-speed: 7.4
     jump-toss-forward: 1.6
     aim: { near: 10.0, far: 19.0, pitch-near: 35, pitch-far: -20, look-up: 16.0 }
 

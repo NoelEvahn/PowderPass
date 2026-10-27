@@ -34,7 +34,7 @@ public final class GuideBook {
                         + "Look <dark_aqua>down</dark_aqua> = shorter\nLook <dark_aqua>ahead</dark_aqua> = longer\n"
                         + "Look <dark_aqua>up at the ball</dark_aqua> = standard distance\n\n"
                         + "<black>The coloured ring on the floor shows your target. Toggle: /vb aim"),
-                page("<b>Serving</b>\n\n<black>Hold the ball and wait for the whistle.\n\n"
+                page("<b>Serving</b>\n\n<black>You hold the ball (bouncing it while you wait). After the whistle:\n\n"
                         + "<dark_green>Right-click</dark_green> toss\n<dark_green>Sprint + right-click</dark_green> jump toss\n"
                         + "<dark_green>Left-click the ball</dark_green> hit it\n\n"
                         + "<black>Standing = float (wobbles!)\nIn the air = jump topspin\nSneak = swap spin type\n"

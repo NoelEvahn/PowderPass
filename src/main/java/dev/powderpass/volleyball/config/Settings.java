@@ -245,7 +245,7 @@ public final class Settings {
                 c.getDouble(s + "jump-min-speed", 19), c.getDouble(s + "jump-max-speed", 28),
                 c.getDouble(s + "jump-topspin", 42), c.getDouble(s + "standing-topspin", 25),
                 c.getDouble(s + "underhand-apex", 4), c.getDouble(s + "max-error", 2.5),
-                c.getDouble(s + "toss-speed", 5.6), c.getDouble(s + "jump-toss-speed", 7),
+                c.getDouble(s + "toss-speed", 6.0), c.getDouble(s + "jump-toss-speed", 7.4),
                 c.getDouble(s + "jump-toss-forward", 1.6),
                 AimProfile.load(c.getConfigurationSection(s + "aim"), new AimProfile(10, 19, 35, -20, 16)));
 
