@@ -19,15 +19,15 @@
   --paper: #f7f2ea;        /* canvas */
   --paper-2: #fdfaf5;      /* raised surface */
   --sand: #ede4d7;         /* tinted band */
-  --ink: #241a1d;          /* text: 15.4:1 on paper */
+  --ink: #241a1d;          /* text: 15.2:1 on paper */
   --ink-2: #5b4a50;        /* secondary text: 7.4:1 on paper, 6.6:1 on sand */
   --line: #dcd0c0;         /* hairlines */
-  --line-2: #a8957f;       /* strong hairlines, input borders: 3.0:1 */
+  --line-2: #8f7b63;       /* strong hairlines, input borders: 3.6:1 on paper, 3.2:1 on sand */
   --wine: #501c2b;         /* action, brand: 12.2:1 on paper */
   --wine-2: #3a1220;
   --on-wine: #fbf4ec;
   --gold: #e0c080;         /* only on dark */
-  --held: #8a5a12;         /* status text: 5.5:1 on paper */
+  --held: #8a5a12;         /* status text: 5.3:1 on paper */
   --sold: #5b4a50;
   --ok: #2f5d3a;
   --error: #9b1c1c;

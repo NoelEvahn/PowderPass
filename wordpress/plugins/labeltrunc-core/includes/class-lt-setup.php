@@ -30,6 +30,38 @@ final class LT_Setup {
 	public static function init() {
 		add_action( 'admin_menu', array( __CLASS__, 'menu' ) );
 		add_action( 'admin_post_lt_run_setup', array( __CLASS__, 'handle' ) );
+		add_action( 'add_meta_boxes_page', array( __CLASS__, 'confirmation_box' ) );
+		add_action( 'save_post_page', array( __CLASS__, 'save_confirmation' ) );
+	}
+
+	/** Policy pages imported with [bracketed] placeholders show a notice until staff untick this. */
+	public static function confirmation_box() {
+		add_meta_box(
+			'lt-confirmation',
+			__( 'Awaiting confirmation', 'labeltrunc' ),
+			static function ( $post ) {
+				wp_nonce_field( 'lt_confirmation', 'lt_confirmation_nonce' );
+				printf(
+					'<label><input type="checkbox" name="lt_needs_confirmation" value="1" %s> %s</label><p class="description">%s</p>',
+					checked( (bool) get_post_meta( $post->ID, '_lt_needs_confirmation', true ), true, false ),
+					esc_html__( 'Parts of this page await confirmation', 'labeltrunc' ),
+					esc_html__( 'Shows a notice to visitors. Untick once every [bracketed] item is replaced.', 'labeltrunc' )
+				);
+			},
+			'page',
+			'side'
+		);
+	}
+
+	public static function save_confirmation( $post_id ) {
+		if ( ! isset( $_POST['lt_confirmation_nonce'] ) || ! wp_verify_nonce( sanitize_key( $_POST['lt_confirmation_nonce'] ), 'lt_confirmation' ) || ! current_user_can( 'edit_page', $post_id ) || wp_is_post_revision( $post_id ) ) {
+			return;
+		}
+		if ( ! empty( $_POST['lt_needs_confirmation'] ) ) {
+			update_post_meta( $post_id, '_lt_needs_confirmation', 1 );
+		} else {
+			delete_post_meta( $post_id, '_lt_needs_confirmation' );
+		}
 	}
 
 	public static function menu() {

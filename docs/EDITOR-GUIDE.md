@@ -1,99 +1,119 @@
-# Editor guide
+# Editor guide (WordPress)
 
-Everything on the website is edited at **`/admin`** (for example `https://www.labeltrunc.com/admin`). Sign in with your staff email and password.
+Everything is edited in **wp-admin** (`https://yourdomain/wp-admin`). Sign in with your staff account.
 
-> Five wrong passwords lock the account for 15 minutes. You stay signed in for 8 hours. Only an administrator can add staff; there is no public sign-up.
+> Five wrong passwords in a row lock that sign-in for 15 minutes. Staff accounts are added by an administrator under **Users → Add New**.
 
 ## Who can do what
 
-| Task | Administrator | Editor | Sales |
-| --- | :-: | :-: | :-: |
-| Add, edit, publish and delete stock | ✓ | ✓ | edit only (e.g. mark Sold) |
-| Upload and describe photos | ✓ | ✓ | ✓ |
-| Edit pages, home page, contact details, hours, banner | ✓ | ✓ | |
-| See and update orders, holds, enquiries, customers | ✓ | | ✓ |
-| Shop settings (holds, payment options, delivery) | ✓ | | |
-| Add or remove staff, change roles | ✓ | | |
+| Task | Administrator | Shop manager |
+| --- | :-: | :-: |
+| Add, edit and publish pieces; upload photos | ✓ | ✓ |
+| Orders, reservations, refunds, enquiries | ✓ | ✓ |
+| Pages, menus, contact details, home page text (Customizer) | ✓ | ✓ |
+| Hold rules (WooCommerce → Settings) | ✓ | ✓ |
+| Plugins, themes, Billplz keys, users, Tools → Label Trunc setup | ✓ | |
 
-The last administrator cannot be demoted or deleted, so you can never lock yourselves out.
+Give day-to-day staff the **Shop manager** role. Keep administrator accounts few, with strong passwords.
 
-## Add a piece to the shop
+## Your dashboard
 
-1. Dashboard → **Add a piece** (or *Stock → Create new*).
-2. **Piece** tab: title (e.g. "Classic Flap Medium, black caviar"), designer/brand (press **+** to add a new brand), category, **price in RM**.
-3. **Photos**: drag photos in, or *Create New*. Use real photos of this exact piece. For each photo, write a **description** of what it shows (for people using screen readers), for example "Black quilted leather bag, front view, gold chain". The first photo is the cover; drag to reorder. Large photos are resized automatically.
-4. **Condition & details** tab: condition grade, honest notes on wear, what it comes with, colour, material, hardware, size, year.
-5. Right-hand side:
-   - **Can be bought online**: untick to show the piece as "In the boutique, ask us" with no cart button.
-   - **Show on home page**: featured pieces appear first in "New in the boutique".
-6. Your work saves automatically as a **draft**. Press the eye icon to **preview** it exactly as customers will see it (phone, tablet and desktop sizes are available in *Live preview*).
-7. Press **Publish changes**. It is now in the shop.
+**Dashboard → Label Trunc today** shows what needs you: refunds due, orders to prepare, reservations waiting for collection, unpaid checkouts, new enquiries, pieces in carts, and pieces for sale and sold. Each line links to the list.
 
-**Changing a piece later:** edit and press *Publish changes*. Until you publish, customers keep seeing the previous version. *Versions* (top right) shows every saved version and lets you restore one.
+## Add a piece
 
-**Sold in the boutique?** Set **Status → Sold** and publish. Sold pieces stay visible marked "Sold" for 30 days (change this in *Shop settings*), then disappear from the shop. **Archived** hides a piece completely without deleting it.
+**Products → Add New.**
 
-> Opening "Add a piece" creates an empty draft straight away. If you leave without filling it in, delete it from the Stock list. Drafts are never shown to customers.
+1. **Name**: what a customer would search for, e.g. "Kelly 28 Sellier, Togo leather".
+2. **Description** (the big box): anything a buyer should know. Optional.
+3. **Product data → General → Regular price** in RM (whole ringgit). Use *Sale price* only for a real reduction.
+4. **Product data → Piece details**: **Condition** (required), *Condition notes* (marks, wear, repairs), *Comes with* (box, dust bag, receipt…), colour, material, hardware, size, year.
+5. **Brands** box (right): the designer. **Product categories**: *Top handle*, *Shoulder*, or your own.
+6. **Product image** (right): the main photo. **Product gallery**: more photos. Fill in each photo's *Alternative text* (e.g. "Front of the black Kelly 28, gold hardware").
+7. **Publish.**
+
+The site does the rest automatically:
+
+- Stock is set to exactly 1 and the piece can only be bought once.
+- A stock number (`LT-0042`) is given if the SKU is empty. Write it on the piece's tag.
+- A piece **without a photo, price or condition stays a draft**, with a message telling you what is missing.
+
+Photos: JPG, PNG or WebP up to 15 MB, ideally 1600 px or wider, portrait (4:5) on a plain background. They are cropped to 4:5 in the shop.
+
+## A piece sells in the boutique
+
+Open the piece, **Inventory → Stock quantity → 0**, Update. It shows *Sold* everywhere at once.
+
+If someone had it in their cart, it is removed from their cart. If someone was half-way through paying online, their order is cancelled and they get an email. If their payment still goes through, the order is marked **Refund due** (see below) and you get an email, so nobody is ever sold the same piece twice.
+
+Sold pieces stay visible as *Sold* for 30 days (change in hold rules), then hide from the shop automatically. Their pages stay up for anyone with the link.
+
+## Holds and reservations: what customers see
+
+| Status on the site | Meaning |
+| --- | --- |
+| *Available* | Anyone can add it to their cart |
+| *In your cart* | This visitor holds it |
+| *On hold* | In another shopper's cart until the time shown; nobody else can buy it |
+| *Awaiting payment* | Another shopper is paying online right now |
+| *Reserved* | Reserved online to pay at the boutique |
+| *Sold* | Gone |
+
+The **Availability** column in *Products* shows the same for staff, with the order number when there is one.
 
 ## Orders
 
-*Shop → Orders* lists every order, newest first. You get an email for each new order (sent to the notification email in *Contact & business details*).
+**WooCommerce → Orders.**
 
-| Status | Meaning | What you do |
-| --- | --- | --- |
-| Awaiting online payment | The customer is paying on Billplz. The piece is held. | Nothing. It becomes **Paid** by itself, or **Expired** if they do not pay. |
-| Reserved: pay at boutique | The customer will come in to pay and collect. The piece is held until the time shown. | When they pay, set the status to **Paid**. |
-| Paid | Payment received. The piece is marked **Sold**. | Arrange collection or delivery. Then set **Completed**. |
-| Completed | Collected or delivered. | Nothing. |
-| Cancelled / Expired | No sale. The piece is back in the shop. | Nothing. |
-| Refund due | A payment came in after the hold ended and the piece had gone, or the amount was wrong. | Refund the customer in Billplz and contact them. |
+| Status | What to do |
+| --- | --- |
+| **Processing** | Paid online. Prepare the piece; mark **Completed** when collected or delivered. |
+| **Reserved (pay at boutique)** | The customer will come in. Take payment, then mark **Completed**. If they don't come, it cancels itself when the reservation time ends and the piece goes back on sale. You can also cancel it yourself. |
+| **Pending payment** | Checkout started, not paid. Cancels automatically after the payment window (30 minutes by default) after one last check with Billplz. |
+| **Refund due** | Money arrived for a piece someone else already bought. **Refund the customer in Billplz** (or by bank transfer), contact them, then mark the order **Refunded**. |
+| **Cancelled / Refunded** | Done. |
 
-- To **extend a hold**, change *Piece held until*.
-- **Cancelling** a paid order puts the piece back in the shop (for example after a refund).
-- Every change to an order is recorded under *Versions*.
+### Refunds and returns
 
-## Holds
+Refunding an order **never puts the piece back on sale by itself**, because a refunded piece may still be with the customer or need checking. The *Restock refunded items* box starts unticked; leave it.
 
-*Shop → Holds* shows pieces currently in someone's cart or held by an unpaid order. Holds end by themselves (24 hours for carts at most). To release one now, delete it.
+When the piece is physically back and checked: open the order → **Order actions → Return pieces to stock (piece is back in the boutique)** → Update. It goes back on sale and a note is added.
 
 ## Enquiries
 
-Messages from the contact form appear in *Shop → Enquiries*, and are emailed to you. Set the status to *Replied / in progress* or *Closed* to keep track.
+**Enquiries** in the menu lists messages from the contact form (newest first), with name, topic and the piece they asked about. Set the status to *Replied / in progress* or *Closed* as you go. Reply by email, phone or WhatsApp from the details shown. A copy of each new enquiry is also emailed to the address set in the Customizer.
 
-## Pages
+## Contact details, hours and home page text
 
-*Content → Pages*: About, Buying info and the policy pages. Each page is built from **sections** you can add, drag to reorder, duplicate or remove:
+**Appearance → Customize → Label Trunc**:
 
-| Section | Use it for |
-| --- | --- |
-| Text | Paragraphs, headings, lists, links |
-| Icon list | Short promises or features: icon, a few words and one line |
-| Questions & answers | FAQs (also helps Google show answers) |
-| Photo and text | A real photo beside some text |
-| Notice | An information box, or "Awaiting confirmation" |
-| Call to action | A wine-coloured band with up to two buttons |
-| Latest stock | Shows the newest pieces automatically |
+- **Contact**: phone, WhatsApp number (digits with country code, e.g. 60124211205), email, where enquiries are sent, address, Google Maps link, opening hours (one line per row: `Mon – Sat | 11am – 7pm`; leave empty to show "Appointments recommended…").
+- **Social**: Instagram, TikTok, Facebook links.
+- **Home page**: hero heading and intro, hero photo (optional; otherwise the newest piece's photo is used), the statement, About and Consignment text, visit photo.
+- **Business**: registered name and SSM number for the footer.
 
-Tick **Parts await confirmation** on a page to show a visible notice while wording is being checked. Text in [square brackets] on the policy pages is waiting for Label Trunc to confirm; please replace it with the confirmed wording and untick the box.
+Changes preview live; press **Publish**.
 
-## Home page
+## Pages and policies
 
-*Content → Home page*: the headline, the introduction, an optional **hero photo** (a real photo of the boutique or your pieces; without one, an address card shows), the facts strip, and the About and consignment texts.
+**Pages** holds About, Buying info, Visit, Contact, Privacy (and Privasi in Malay), Cookies, Terms, Refunds, Accessibility and Business details. Edit them like any document.
 
-## Contact & business details
+Policy pages imported with **[bracketed]** placeholders show visitors a notice that parts await confirmation. Replace every bracketed item, then untick **Parts of this page await confirmation** (right side of the editor) and Update.
 
-Phone, WhatsApp number (digits only, e.g. `60124211205`), email, social links, address, Google Maps link, **opening hours** (leave empty until confirmed, and the site then says appointments are recommended), registered name and SSM number, and the **announcement banner** (with an optional end date).
+Menus are under **Appearance → Menus** (*Label Trunc main* and *Label Trunc policies*).
 
-## Shop settings (administrators)
+## Hold rules
 
-- **Cart hold**: up to 24 hours.
-- **Pay-at-boutique hold**: how long a reservation is kept before it returns to the shop.
-- **Minimum time to pay online**.
-- **Most pieces one cart can hold** (stops one person holding the whole shop).
-- **Payment options**: online payment (needs Billplz keys, see the README) and/or reserve and pay at the boutique.
-- **Delivery**: turn on, set a fee and a note. Delivery is only offered with online payment.
-- **Keep sold pieces visible for** a number of days.
+**WooCommerce → Settings → Products → Label Trunc holds**:
 
-## Restricting access to `/admin`
+| Setting | Default | Allowed |
+| --- | --- | --- |
+| Cart hold for signed-in customers | 24 h | 1–24 h |
+| Cart hold for guests | 24 h | 1–24 h. **2–4 h is recommended** so anonymous visitors cannot sit on pieces |
+| Pay-at-boutique reservation | 24 h | 1–168 h |
+| Online payment window | 30 min | 10–120 min |
+| Pieces per cart | 3 | 1–10 |
+| Holds per visitor (all carts from one connection) | 5 | 1–30 |
+| Keep sold pieces visible | 30 days | 0–365 |
 
-`/admin` is protected by sign-in, lockout and roles. To restrict it further, ask your host to allow `/admin` only from the boutique's internet connection (an IP allow-list), or add single sign-on in front of it.
+Holds never renew silently: when the time is up, the piece leaves the cart and goes back on sale.

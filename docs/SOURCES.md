@@ -18,15 +18,15 @@ Every fact the site states, where it came from, and its status. **Approved** mea
 | Buying tips (Bring your day, Read the corners, Ask what is included, Getting it home) | Buying info | Previous site | Approved |
 | Consignment: "Send a few photos and we will explain how consignment works before anything is agreed." | Home, Info, Contact | Previous site | Approved |
 | Categories "Top handle", "Shoulder" | Shop filters | Previous site filters | Approved |
-| Opening hours | Visit, Home | Not supplied | **Not shown** until entered in the editor |
+| Opening hours | Visit, Home | Not supplied | **Not shown** until entered in the Customizer |
 | Registered business name, SSM number | Business details, policies | Not supplied | **Awaiting confirmation** |
 | Refund time limits ([48 hours], [14 days]), change-of-mind policy | Refunds | Previous site's draft defaults | **Awaiting confirmation** |
 | Deposits, in-store payment methods, prices including tax, delivery fees and areas | Terms, Info | Not supplied | **Awaiting confirmation** |
 | Hosting provider, email provider, data retention periods | Privacy, Cookies | Not supplied | **Awaiting confirmation** |
 | Condition grade definitions | Buying info FAQ | Written for this site in neutral terms | **Awaiting confirmation** |
-| Hold length (24 h cart, 24 h pay-at-boutique), max 3 pieces per cart | Shop, Info | Owner's instruction ("reserve in shopping cart max 1 day") and defaults | Approved / editable in Shop settings |
+| Hold length (24 h cart, 24 h pay-at-boutique), max 3 pieces per cart | Shop, Info | Owner's instruction ("reserve in shopping cart max 1 day") and defaults | Approved / editable in WooCommerce → Settings → Products → Label Trunc holds |
 | Payment options: FPX (Maybank2u, HSBC, Public Bank, other FPX banks), cards, Touch 'n Go eWallet via Billplz; reserve and pay at the boutique | Checkout, Info, Home | Owner's instruction; Billplz documentation | Approved (channels depend on the Billplz account) |
 
 ## Images
 
-The site contains **no stock photographs, generated images or design-reference photos**. The previous site's design-reference photos of designer bags (not Label Trunc's stock) were removed. Every product photo is uploaded by staff, with a required description. Product photos uploaded for automated tests were deleted.
+The site contains **no stock photographs, generated images or design-reference photos**. The previous site's design-reference photos of designer bags (not Label Trunc's stock) were removed. Every product photo is uploaded by staff. The automated tests generate plain placeholder images marked "TEST PHOTO" inside a local test site only; none are in the theme, the plugin or the upload zips.

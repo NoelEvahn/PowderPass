@@ -1,134 +1,99 @@
-# Label Trunc: website, online shop and editor
+# Label Trunc website (WordPress + WooCommerce)
 
-The website for **Label Trunc**, a boutique for new and pre-loved designer bags at Ukay Boulevard, Ampang.
+The Label Trunc boutique site as a **WordPress theme** and a **companion plugin**, built for the existing cPanel WordPress hosting.
 
-| For visitors | For staff (`/admin`) |
+| Folder | What it is |
 | --- | --- |
-| What Label Trunc is, where it is, buying information and policies | Add stock with photos; save as draft, preview, publish, mark sold |
-| Contact form, WhatsApp, phone and email | Orders: see, mark paid / completed / cancelled |
-| Shop with search and filters; only real stock is shown | Holds: see which pieces are in carts; release one |
-| Cart that **holds a piece for up to 24 hours** | Enquiries from the contact form |
-| Checkout: **pay online** (FPX online banking: Maybank2u, HSBC, PBe and other banks; cards; Touch 'n Go eWallet and other e-wallets via Billplz) or **reserve and pay at the boutique** | Edit pages (About, Buying info, policies) from reusable sections |
-| Customer accounts (order history); guest checkout also works | Contact details, opening hours, banner, shop settings |
+| `wordpress/themes/labeltrunc` | The theme: design, page templates, shop, piece page, cart, checkout and account styling, Customizer fields for contact details and home page text |
+| `wordpress/plugins/labeltrunc-core` | The rules that must not depend on the theme: one-of-a-kind holds, no double sales, pay-at-boutique reservations, Billplz reconciliation, refunds that never relist automatically, piece details for staff, enquiry form, sign-in throttling, security headers, setup tool |
+| `tests/php` | Commerce and security tests run inside a real WordPress + WooCommerce (separate test database) |
+| `tests/e2e` | Browser tests (Playwright + axe) against a local WordPress |
+| `tools/` | `build-zips.sh` (makes the upload files) and local development helpers |
+| `docs/` | Editor guide, sources register, disclosure, design notes |
 
-Staff instructions are in [docs/EDITOR-GUIDE.md](docs/EDITOR-GUIDE.md). Facts and their sources are in [docs/SOURCES.md](docs/SOURCES.md). What is unfinished or unconfirmed is in [docs/DISCLOSURE.md](docs/DISCLOSURE.md).
+**Requirements:** WordPress 6.5+, WooCommerce 9+ (tested on WordPress 7.1.3 and WooCommerce 11.2.1), PHP 7.4+ declared, **tested on PHP 8.3**, MySQL or MariaDB (tested on MariaDB 10.11). The official **Billplz for WooCommerce** plugin for online payment.
 
-## Stack
+---
 
-- **Next.js 16** (App Router, React 19) with **Payload CMS 3** embedded: one app serves the site, the editor at `/admin` and the API.
-- **PostgreSQL** for all data (any provider).
-- **Photos** on local disk (default) or any **S3-compatible** storage. Payload creates 400/800/1400/2200 px WebP sizes.
-- **Billplz** for online payments (optional; without it the shop runs on reserve-and-pay-at-the-boutique).
-- **SMTP** for email (optional; without it emails go to the server log).
-- Plain CSS with design tokens in `src/styles/tokens.css`; fonts are self-hosted at build time.
-- Icons from [Lucide](https://lucide.dev/icons) (`lucide-react`), mapped in `src/components/Icon.tsx`.
+## Deploying to the cPanel site
 
-## Run it locally
+> Your live site is untouched by anything in this repository until someone uploads it. Do these steps **on a staging copy first**, then repeat on the live site once you are happy. Nothing here needs a destructive database change: the plugin only adds one table (`wp_lt_holds`) and some options.
 
-Requirements: Node 22.12+, pnpm 10, PostgreSQL 14+.
+### 1. Back up and make a staging copy
 
-```bash
-pnpm install
-cp .env.example .env            # set DATABASE_URL, PAYLOAD_SECRET, SERVER_URL=http://localhost:3000
-echo "PAYLOAD_DB_PUSH=true" >> .env   # dev only: keep the schema in sync automatically
-SEED_ADMIN_EMAIL=you@example.com SEED_ADMIN_PASSWORD='a-long-password' pnpm seed
-pnpm dev                        # http://localhost:3000 and http://localhost:3000/admin
-```
+1. In cPanel, make a full backup (Files → Backup, or your host's backup tool) and download it.
+2. Make a staging copy: if cPanel offers **WP Toolkit** or **Softaculous**, use its *Clone* / *Staging* feature onto a subdomain such as `staging.yourdomain`. Otherwise create a subdomain, copy the files, and import a copy of the database.
+3. Discourage search engines on staging (Settings → Reading).
 
-`pnpm seed` adds the facts already published on the old site (address, phone, email, social links), the home page text, the editable pages and the first administrator. It **never creates stock or images**. It is safe to run again.
-
-## Hosting
-
-The app is a standard Node server, so it runs on any host. Two tested paths:
-
-### Option A: managed (Vercel + Neon + R2 or S3)
-
-1. Create a Postgres database (for example on Neon) and copy its connection string.
-2. Create an S3-compatible bucket (Cloudflare R2, AWS S3, Backblaze B2) and an access key. Vercel's disk is temporary, so photos **must** go to a bucket here.
-3. Import the repository into Vercel and add the environment variables from `.env.example`: `DATABASE_URL`, `PAYLOAD_SECRET`, `SERVER_URL`, the `S3_*` values, and optionally Billplz, SMTP and `CRON_SECRET`.
-4. Deploy. Database migrations run automatically when the server starts.
-5. Visit `/admin` and create the first administrator (or run `pnpm seed` locally against the production `DATABASE_URL`).
-6. Add a scheduled call to `/tasks/release-holds` (see below). On Vercel, use Vercel Cron, or an external scheduler such as cron-job.org, with the header `Authorization: Bearer <CRON_SECRET>`.
-
-### Option B: your own server (Docker)
+### 2. Build the upload files
 
 ```bash
-cp .env.example .env    # fill in PAYLOAD_SECRET, SERVER_URL, optional Billplz/SMTP
-echo "POSTGRES_PASSWORD=$(openssl rand -hex 16)" >> .env
-docker compose up -d --build
+./tools/build-zips.sh      # makes dist/labeltrunc-core.zip and dist/labeltrunc-theme.zip
 ```
 
-This starts the app, PostgreSQL and a persistent volume for photos. Put a reverse proxy with HTTPS in front of it (Caddy, Nginx, Traefik). Back up the `pgdata` and `media` volumes. Add a cron entry for holds, for example:
+### 3. Install, in this order (wp-admin on staging)
 
-```cron
-*/10 * * * * curl -fsS -H "Authorization: Bearer $CRON_SECRET" https://www.example.com/tasks/release-holds
-```
+1. **Plugins → Add New**: install and activate **WooCommerce**. Skip the setup wizard's extras.
+2. **Plugins → Add New**: install and activate **Billplz for WooCommerce** (by Billplz).
+3. **Plugins → Add New → Upload**: `labeltrunc-core.zip`, activate.
+4. **Appearance → Themes → Add New → Upload**: `labeltrunc-theme.zip`, activate.
+5. **Tools → Label Trunc setup → Run setup.** It only fills what is empty and skips anything that already exists:
+   - contact details and social links from the previous site (Customizer)
+   - shop options: Malaysian ringgit, stock tracking, guest checkout, no tax, coupons off
+   - "Reserve and pay at the boutique" turned on
+   - a Malaysia shipping zone with *Collect at the boutique* (only if you have no zones yet)
+   - pages (About, Buying info, Visit, Contact, Privacy, Privasi, Cookies, Terms, Refunds, Accessibility, Business details), **skipping any page whose address already exists**: check your existing pages afterwards
+   - cart and checkout set to the classic layout this theme styles
+   - categories *Top handle* and *Shoulder*, and the main and footer menus
+6. **WooCommerce → Settings → Site visibility**: new WooCommerce installs start in *Coming soon* mode, which hides the shop from visitors. Switch to **Live** when you launch.
 
-### Environment variables
+### 4. Real cron (holds must expire on time)
 
-See `.env.example`; every variable is described there. Required: `DATABASE_URL`, `PAYLOAD_SECRET`, `SERVER_URL`.
+WordPress only runs scheduled jobs when someone visits. Holds, reservations and payment checks run every 5 minutes, so give it a real clock:
 
-### Database migrations
+1. In `wp-config.php` add: `define( 'DISABLE_WP_CRON', true );`
+2. In cPanel → **Cron Jobs**, every 5 minutes:
+   `wget -q -O - "https://yourdomain/wp-cron.php?doing_wp_cron" >/dev/null 2>&1`
 
-The schema lives in `src/migrations` and is applied automatically in production when the server starts. After changing a collection or field:
+Expired holds are also cleared whenever someone tries to buy the piece, so a late cron never lets two people buy it. It only delays when the piece *shows* as available again.
+
+### 5. Billplz (sandbox first)
+
+1. Create a **Billplz sandbox** account (billplz-sandbox.com). Note the API secret key, X-Signature key and collection ID.
+2. WooCommerce → Settings → Payments → **Billplz**: enter the sandbox keys and turn sandbox mode on. Enable the X-Signature check.
+3. Do a full test purchase on staging with sandbox FPX and Touch 'n Go. Check the order goes to *Processing*, the piece shows *Sold*, and a second shopper cannot buy it.
+4. Only then switch to the live keys on the live site. Which channels appear (Maybank2u, HSBC, Public Bank and other FPX banks, cards, Touch 'n Go eWallet) depends on what is enabled on your Billplz account.
+
+Until Billplz is configured, checkout simply offers *Reserve and pay at the boutique*.
+
+### 6. Email
+
+Order, reservation, password-reset and "no longer available" emails go through WordPress mail. On shared hosting, PHP mail often lands in spam. Install an SMTP plugin (for example *WP Mail SMTP*) and connect it to your mailbox provider. Set where enquiries go in **Appearance → Customize → Label Trunc → Contact**.
+
+### 7. Caching (LiteSpeed or any cache plugin)
+
+- Never cache cart, checkout or my-account (LiteSpeed Cache and WooCommerce exclude them by default; check).
+- Shop and piece pages show live status (*On hold*, *Reserved*, *Sold*). If they are cached for long, a piece can *look* available for a while after it is held. Purchases are still blocked correctly, because every add-to-cart and payment is checked against the database. Keep the public cache TTL short (5 minutes) or exclude `/shop/` and `/product/`.
+- Do not minify or combine the theme's CSS/JS; they are already small.
+
+### 8. Before launch
+
+Work through `docs/DISCLOSURE.md` (business details, policy wording, first real pieces, sandbox payment, email). Then switch Site visibility to Live.
+
+---
+
+## Local development
+
+Everything runs locally with PHP and MariaDB; nothing touches a real site.
 
 ```bash
-pnpm migrate:create   # writes a new migration from the change
-pnpm migrate          # applies it (also happens on deploy)
+# one-time: MariaDB with databases labeltrunc_wp and labeltrunc_wp_test (user ltwp)
+php tools/local/install.php /path/to/wp-local          # installs WP, activates WooCommerce, Billplz, plugin, theme
+php -S 127.0.0.1:8080 -t /path/to/wp-local tools/local/router.php
+php tools/local/wp-eval.php /path/to/wp-local tools/local/seed-test-pieces.php   # labelled TEST pieces, localhost only
+
+npm run test:php     # commerce + security tests in the separate *_test database
+npm run test:e2e     # resets test pieces, then Playwright + axe against http://localhost:8080
 ```
 
-Never set `PAYLOAD_DB_PUSH=true` in production.
-
-## Online payments (Billplz)
-
-1. Open a Billplz account (use [billplz-sandbox.com](https://www.billplz-sandbox.com) first to test).
-2. Create a **Collection**. In its payment settings, enable FPX online banking, cards, and the e-wallets you want (for example Touch 'n Go eWallet).
-3. In Settings, copy the **API Secret Key**, the **Collection ID** and the **X Signature Key**, and enable X Signature.
-4. Set `BILLPLZ_API_KEY`, `BILLPLZ_COLLECTION_ID`, `BILLPLZ_X_SIGNATURE_KEY` (and `BILLPLZ_SANDBOX=true` while testing).
-5. Redeploy. The checkout now offers "Pay online now". Payment confirmations arrive at `/payments/billplz/callback`, which is signature-checked.
-
-How orders work:
-
-- **Pay online:** order status *Awaiting online payment*. The piece stays held while the customer pays (at least 30 minutes, configurable). Billplz confirms, and the order becomes *Paid* and the piece *Sold*.
-- **Reserve and pay at the boutique:** order status *Reserved*, piece held for 24 hours (configurable). Staff mark the order *Paid* in the editor when the customer pays, which marks the piece *Sold*.
-- Unpaid holds end automatically and the piece returns to the shop. A payment that arrives after a hold ended still completes if the piece is free; otherwise the order is flagged *Refund due* and staff get an email.
-
-## Holds and the scheduled task
-
-Holds end on their own whenever someone uses the shop. To send "your hold has ended" emails on time when the site is quiet, call `GET /tasks/release-holds` with `Authorization: Bearer <CRON_SECRET>` every 5 to 15 minutes.
-
-## Security
-
-- No public staff sign-up. Staff sessions last 8 hours. Five failed sign-ins lock an account for 15 minutes (staff and customers).
-- Roles: **Administrator** (everything, staff, shop settings), **Editor** (stock, pages, images, contact details), **Sales** (orders, enquiries, holds, stock status). The last administrator cannot be demoted or deleted.
-- Orders, enquiries, holds and customers are never readable through the public API. Customers can read only their own orders. Guest order links carry a secret token.
-- Forms are validated on the server, rate-limited, and protected from spam without a CAPTCHA (hidden field and minimum fill time).
-- Security headers: Content Security Policy, `frame-ancestors 'self'`, `nosniff`, referrer and permissions policy, and HSTS when the site is served over HTTPS.
-- No analytics, advertising or tracking. Only two cookies: the sign-in session and the cart.
-- To restrict `/admin` further (for example to the boutique's network), add an IP allow-list for `/admin` at your reverse proxy or host.
-
-## Tests
-
-```bash
-pnpm typecheck
-pnpm lint
-pnpm test:int      # unit tests and integration tests (uses a separate database: TEST_DATABASE_URL, default postgres://lt:lt@localhost:5432/labeltrunc_test)
-pnpm test:e2e      # Playwright + axe against a running production build (see tests/e2e/README.md)
-```
-
-## Project map
-
-```
-src/
-  app/(frontend)/        public pages, server actions (actions/)
-  app/(payload)/         the editor (/admin) and REST API (/api) — generated by Payload
-  app/payments/…         Billplz callback
-  app/tasks/…            scheduled hold release
-  collections/, globals/ content model (stock, orders, holds, pages, settings…)
-  blocks/                page sections editors can add
-  components/            UI (site chrome, shop, forms, blocks, admin branding)
-  lib/commerce/          holds, checkout, payments, order status, emails
-  styles/                tokens.css (design tokens) + component styles
-  seed/                  real facts and pages, no stock
-docs/                    editor guide, sources register, disclosure, component & motion map
-```
+The test runners refuse to run against anything that is not a local or `*_test` database.
