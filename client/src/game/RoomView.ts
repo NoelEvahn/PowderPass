@@ -203,8 +203,8 @@ export class RoomView {
         // cabin behind the entry plane (local -z) for the reception, or into the alcove for the finale
         const dz = -1.5;
         cabin.add(new THREE.Mesh(box(3.0, 0.05, 3.0, 0, 0.0, dz), M.floor('carpet', 0x3a1414)));
-        cabin.add(new THREE.Mesh(box(3.0, 2.9, 0.05, 0, 1.45, dz - 1.5), M.woodDark()));
-        for (const s of [-1, 1]) cabin.add(new THREE.Mesh(box(0.05, 2.9, 3.0, s * 1.5, 1.45, dz), M.woodDark()));
+        cabin.add(new THREE.Mesh(box(3.0, 2.9, 0.05, 0, 1.45, dz - 1.5), M.wood(0x4a2c18)));
+        for (const s of [-1, 1]) cabin.add(new THREE.Mesh(box(0.05, 2.9, 3.0, s * 1.5, 1.45, dz), M.wood(0x4a2c18)));
         cabin.add(new THREE.Mesh(box(3.0, 0.05, 3.0, 0, 2.8, dz), M.brass()));
         cabin.add(new THREE.Mesh(box(2.8, 0.06, 0.06, 0, 1.0, dz - 1.45), M.brass()));
         cabin.add(new THREE.Mesh(box(0.2, 0.4, 0.03, 1.2, 1.3, -0.1), metal));

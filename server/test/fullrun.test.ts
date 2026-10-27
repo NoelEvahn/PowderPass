@@ -30,3 +30,26 @@ describe('full run Doors 0–100', () => {
     });
   }
 });
+
+describe('co-op and mortal runs', () => {
+  it('two bots complete the run together (shared doors, puzzles, elevator)', () => {
+    const { result, game, bots } = playRun(31337, 2, true);
+    expect(result).toBe('win');
+    expect(bots.every((b) => b.p.inElevator)).toBe(true);
+    expect(game.debugState().powerOn).toBe(true);
+  });
+
+  it('reports mortal survival across seeds (entities really kill)', () => {
+    const outcomes: string[] = [];
+    let deaths = 0;
+    for (const seed of [1, 2, 3, 4, 5, 6]) {
+      const { result, bots } = playRun(seed, 1, false);
+      outcomes.push(`${seed}:${result ?? 'timeout'}@${bots[0].p.furthest}${bots[0].p.cause ? '(' + bots[0].p.cause + ')' : ''}`);
+      deaths += bots[0].p.deaths;
+    }
+    console.log('mortal bot outcomes:', outcomes.join(' '));
+    expect(outcomes.length).toBe(6);
+    // the scripted bot is not a perfect player: dangerous encounters must be able to kill it
+    expect(deaths).toBeGreaterThan(0);
+  });
+});

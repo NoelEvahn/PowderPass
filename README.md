@@ -119,3 +119,15 @@ Some exact numbers (speeds, damage, timings) are tuned estimates rather than val
 - **Visual fidelity.** The look aims for a stylized-realistic hotel, not photogrammetry-level photorealism.
 - **Public URL.** No hosting credentials were available in the build environment, so there is no live URL yet. Deploy with the Docker, Fly or Render configs above.
 - **Software rendering in CI.** Browser tests use SwiftShader, which runs at roughly 20 fps on the low preset. Real GPUs run far faster, but frame rates on physical phones were not measured.
+
+## Test results (latest run)
+
+| Suite | Result |
+|---|---|
+| `shared/test/gen.test.ts`: determinism, seed variety, 150 seeds fully validated (no overlaps, numbering, reachability of every interactable and hiding exit, solvable library and breaker puzzles, fair encounters) | 3/3 passed |
+| `server/test/sim.test.ts`: contested pickups, drawer loot, hiding and Hide, inventory and items, Rush kill and spare, crucifix, Figure hearing → chase, Eyes gaze damage, secret padlock code, Glitch | 10/10 passed |
+| `server/test/net.test.ts`: real WebSocket clients; malformed and outdated messages rejected, private codes, synchronized start, shared doors, snapshots, speed-hack correction, disconnect and reconnect into the same run, quick-play matchmaking, full-lobby rejection | 4/4 passed |
+| `server/test/fullrun.test.ts`: scripted bots finish Doors 0→100 on 3 seeds solo and 1 seed in co-op (library code, breakers, elevator); mortal bots across 6 seeds escape on 3 and die to the Figure on 3 | 5/5 passed |
+| `e2e/multiplayer.spec.ts` (Playwright, Chromium with SwiftShader): two browsers share a run (code join, same seed, remote avatars, door sync, reload-reconnect), mobile touch joystick and swipe-look, asset gallery with no console errors | 3/3 passed |
+
+**Known issues.** In one early E2E run the server process exited during the suite. It did not reproduce in later runs, and the cause was not identified. The tick loop now catches and logs exceptions instead of crashing. Software-rendered (SwiftShader) frame rate is about 20 fps on the low preset.

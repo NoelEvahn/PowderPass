@@ -107,7 +107,9 @@ export class GameRoom implements Game {
     const spawn = this.spawnPoints(start);
     opts.players.forEach((p, i) => this.addPlayer(p.id, p.name, p.peer, spawn[i % spawn.length], start));
     this.visited.add(start);
-    if (!opts.manual) this.timer = setInterval(() => this.step(TICK_DT), TICK_DT * 1000);
+    if (!opts.manual) this.timer = setInterval(() => {
+      try { this.step(TICK_DT); } catch (e) { console.error('[game] tick error', e); }
+    }, TICK_DT * 1000);
   }
 
   // ------------------------------------------------------------------ players

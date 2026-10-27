@@ -12,7 +12,7 @@ describe('procedural generation', () => {
   });
   it('produces valid, solvable runs across many seeds', () => {
     const failures: string[] = [];
-    for (let s = 1; s <= 60; s++) {
+    for (let s = 1; s <= 150; s++) {
       const run = generateRun(s * 7919);
       const issues = validateRun(run);
       if (issues.length) failures.push(`seed ${s * 7919}: ` + issues.slice(0, 4).map((i) => `#${i.room} ${i.msg}`).join('; '));
