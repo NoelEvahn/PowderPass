@@ -17,17 +17,13 @@ public final class Team {
     private final TeamId id;
     private final Settings.TeamStyle style;
     private final List<UUID> order = new ArrayList<>();
-    private final java.util.Map<UUID, Role> roles = new java.util.HashMap<>();
-    private UUID libero;
-    /** The back-row player the libero replaces in the current rally (null = libero not on court). */
-    private UUID benched;
     private int side;
-    private int timeoutsUsed;
 
-    public Team(TeamId id, Settings.TeamStyle style, int side) {
+    public Team(TeamId id, Settings.TeamStyle style, int side, List<UUID> players) {
         this.id = id;
         this.style = style;
         this.side = side;
+        this.order.addAll(players);
     }
 
     public TeamId id() {
@@ -55,49 +51,7 @@ public final class Team {
     }
 
     public boolean contains(UUID id) {
-        return order.contains(id) || id.equals(libero);
-    }
-
-    public void applyLineup(Lineup lineup) {
-        order.clear();
-        order.addAll(lineup.order());
-        roles.clear();
-        roles.putAll(lineup.roles());
-        libero = lineup.libero();
-        benched = null;
-    }
-
-    public Role role(UUID id) {
-        return roles.getOrDefault(id, Role.ANY);
-    }
-
-    public UUID libero() {
-        return libero;
-    }
-
-    public void clearLibero() {
-        libero = null;
-        benched = null;
-    }
-
-    public UUID benched() {
-        return benched;
-    }
-
-    public void setBenched(UUID benched) {
-        this.benched = benched;
-    }
-
-    public boolean isLibero(UUID id) {
-        return id.equals(libero);
-    }
-
-    /** On the court this rally: not swapped out for the libero, and the libero only while replacing someone. */
-    public boolean onCourt(UUID id) {
-        if (id.equals(libero)) {
-            return benched != null;
-        }
-        return order.contains(id) && !id.equals(benched);
+        return order.contains(id);
     }
 
     /** -1 = court side with u &lt; 0, +1 = u &gt; 0. */
@@ -109,18 +63,6 @@ public final class Team {
         side = -side;
     }
 
-    public int timeoutsUsed() {
-        return timeoutsUsed;
-    }
-
-    public void useTimeout() {
-        timeoutsUsed++;
-    }
-
-    public void resetTimeouts() {
-        timeoutsUsed = 0;
-    }
-
     /** Player standing in rotation position {@code position} (1-based) after {@code rotation} rotations. */
     public UUID atPosition(int position, int rotation) {
         if (order.isEmpty()) {
@@ -129,11 +71,8 @@ public final class Team {
         return order.get(Math.floorMod(position - 1 + rotation, order.size()));
     }
 
-    /** Rotation position (1-based) of a player. The libero takes the position of the player they replace. */
+    /** Rotation position (1-based) of a player. */
     public int positionOf(UUID player, int rotation) {
-        if (player.equals(libero)) {
-            return benched == null ? -1 : positionOf(benched, rotation);
-        }
         int idx = order.indexOf(player);
         if (idx < 0) {
             return -1;
@@ -141,29 +80,11 @@ public final class Team {
         return Math.floorMod(idx - rotation, order.size()) + 1;
     }
 
-    /** Every online member, the libero included. */
     public List<Player> online() {
         List<Player> list = new ArrayList<>();
-        for (UUID id : order) {
-            Player p = Bukkit.getPlayer(id);
+        for (UUID uuid : order) {
+            Player p = Bukkit.getPlayer(uuid);
             if (p != null) {
-                list.add(p);
-            }
-        }
-        if (libero != null) {
-            Player p = Bukkit.getPlayer(libero);
-            if (p != null) {
-                list.add(p);
-            }
-        }
-        return list;
-    }
-
-    /** Players currently on the court. */
-    public List<Player> onCourt() {
-        List<Player> list = new ArrayList<>();
-        for (Player p : online()) {
-            if (onCourt(p.getUniqueId())) {
                 list.add(p);
             }
         }

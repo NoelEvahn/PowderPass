@@ -1,7 +1,6 @@
 package dev.powderpass.volleyball.listener;
 
 import dev.powderpass.volleyball.PowderPassPlugin;
-import dev.powderpass.volleyball.items.CustomItems;
 import dev.powderpass.volleyball.util.Keys;
 import dev.powderpass.volleyball.util.Msg;
 import org.bukkit.Bukkit;
@@ -54,7 +53,7 @@ public final class ProtectionListener implements Listener {
 
     @EventHandler(ignoreCancelled = true)
     public void onDrop(PlayerDropItemEvent e) {
-        if (inMatch(e.getPlayer()) || CustomItems.typeOf(e.getItemDrop().getItemStack()) == dev.powderpass.volleyball.items.ItemType.HANDS) {
+        if (inMatch(e.getPlayer())) {
             e.setCancelled(true);
         }
     }
@@ -69,20 +68,6 @@ public final class ProtectionListener implements Listener {
     @EventHandler(ignoreCancelled = true)
     public void onInventory(InventoryClickEvent e) {
         if (e.getWhoClicked() instanceof Player p && inMatch(p)) {
-            e.setCancelled(true);
-        }
-    }
-
-    @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGH)
-    public void onPlace(BlockPlaceEvent e) {
-        if (CustomItems.typeOf(e.getItemInHand()) != null) {
-            e.setCancelled(true);
-        }
-    }
-
-    @EventHandler(ignoreCancelled = true)
-    public void onArmorStand(PlayerArmorStandManipulateEvent e) {
-        if (CustomItems.typeOf(e.getPlayerItem()) != null) {
             e.setCancelled(true);
         }
     }

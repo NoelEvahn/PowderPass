@@ -15,13 +15,7 @@ import java.util.logging.Logger;
 /** Typed, immutable view of config.yml. Rebuilt on /vb reload. */
 public final class Settings {
 
-    /** How the plugin decides which players have the optional resource pack. */
-    public enum PackMode { AUTO, EVERYONE, NOBODY }
-
-    public record ResourcePack(PackMode mode, String url, String sha1, boolean required, String prompt) {
-    }
-
-    public record Ball(int detail, dev.powderpass.volleyball.ball.BallModel.Style style, Material[] colors, double visualSize, int teleportInterpolation,
+    public record Ball(String texture, double visualSize, int teleportInterpolation,
                        int rotationInterpolation, boolean shadow, boolean trail, int idleDespawnSeconds,
                        int maxPracticeBalls) {
     }
@@ -43,10 +37,6 @@ public final class Settings {
     public record Tip(double reach, double apex, double maxError, AimProfile aim) {
     }
 
-    public record StandingAttack(double reach, double minSpeed, double maxSpeed, double topspin, double maxError,
-                                 AimProfile aim) {
-    }
-
     public record Block(int durationTicks, double width, double reachOver) {
     }
 
@@ -59,7 +49,7 @@ public final class Settings {
     public record CourtDefaults(double freeZone, double netBandHeight, double antennaAboveNet, double postOffset,
                                 Material courtFloor, Material freeZoneFloor, Material beachFloor,
                                 Material beachFreeZoneFloor, int netColumns, int netRows, int netInterpolation,
-                                Material lineMaterial, float viewRange, boolean furniture, boolean netFill) {
+                                Material lineMaterial, float viewRange, boolean furniture) {
     }
 
     public record TeamStyle(String name, TextColor color) {
@@ -117,7 +107,8 @@ public final class Settings {
         }
     }
 
-    public final ResourcePack resourcePack;
+    /** Play the resource-pack sound events instead of vanilla sounds. */
+    public final boolean customSounds;
     public final Ball ball;
     public final PhysicsParams physics;
     public final Controls controls;
@@ -126,50 +117,21 @@ public final class Settings {
     public final SetHit set;
     public final Spike spike;
     public final Tip tip;
-    public final StandingAttack standingAttack;
     public final Block block;
     public final Serve serve;
     public final CourtDefaults courtDefaults;
     public final MatchSettings matchDefaults;
     public final TeamStyle teamA;
     public final TeamStyle teamB;
-    /** Jersey colour of liberos (contrasting, as the rules require). */
-    public final TextColor liberoColor;
-    public final Map<SoundId, SoundPair> sounds = new EnumMap<>(SoundId.class);
+    public final Map<SoundId, SoundSpec> sounds = new EnumMap<>(SoundId.class);
     public final Hud hud;
     public final double trailMinSpeed;
     public final double particleRange;
 
     public Settings(FileConfiguration c, Logger log) {
-        PackMode mode;
-        try {
-            mode = PackMode.valueOf(c.getString("resource-pack.mode", "auto").toUpperCase(java.util.Locale.ROOT));
-        } catch (IllegalArgumentException e) {
-            log.warning("resource-pack.mode must be auto, everyone or nobody");
-            mode = PackMode.AUTO;
-        }
-        resourcePack = new ResourcePack(mode, c.getString("resource-pack.url", "").trim(),
-                c.getString("resource-pack.sha1", "").trim(), c.getBoolean("resource-pack.required", false),
-                c.getString("resource-pack.prompt", ""));
-
-        List<String> colorNames = c.getStringList("ball.colors");
-        Material[] colors = {Material.YELLOW_CONCRETE, Material.WHITE_CONCRETE, Material.BLUE_CONCRETE};
-        for (int i = 0; i < Math.min(3, colorNames.size()); i++) {
-            colors[i] = material(colorNames.get(i), colors[i], log);
-        }
-        int detail = (int) clamp(c.getInt("ball.detail", 12), 6, 14);
-        dev.powderpass.volleyball.ball.BallModel.Style style;
-        try {
-            style = dev.powderpass.volleyball.ball.BallModel.Style.valueOf(
-                    c.getString("ball.style", "classic").toUpperCase(java.util.Locale.ROOT));
-        } catch (IllegalArgumentException e) {
-            log.warning("ball.style must be classic or caps");
-            style = dev.powderpass.volleyball.ball.BallModel.Style.CLASSIC;
-        }
+        customSounds = c.getBoolean("custom-sounds", false);
         ball = new Ball(
-                detail + detail % 2,
-                style,
-                colors,
+                c.getString("ball.texture", ""),
                 clamp(c.getDouble("ball.visual-size", 0.3), 0.1, 2),
                 (int) clamp(c.getInt("ball.teleport-interpolation", 2), 0, 59),
                 (int) clamp(c.getInt("ball.rotation-interpolation", 2), 0, 59),
@@ -232,10 +194,6 @@ public final class Settings {
         tip = new Tip(c.getDouble(h + "tip.reach", 1.15), c.getDouble(h + "tip.apex", 0.8),
                 c.getDouble(h + "tip.max-error", 0.8),
                 AimProfile.load(c.getConfigurationSection(h + "tip.aim"), new AimProfile(1, 6, 60, -20, 3)));
-        standingAttack = new StandingAttack(c.getDouble(h + "standing-attack.reach", 1.05),
-                c.getDouble(h + "standing-attack.min-speed", 11), c.getDouble(h + "standing-attack.max-speed", 17),
-                c.getDouble(h + "standing-attack.topspin", 20), c.getDouble(h + "standing-attack.max-error", 2),
-                AimProfile.load(c.getConfigurationSection(h + "standing-attack.aim"), new AimProfile(3, 12, 50, -15, 9)));
         block = new Block((int) clamp(c.getInt(h + "block.duration-ticks", 12), 2, 60),
                 clamp(c.getDouble(h + "block.width", 1.0), 0.3, 3), clamp(c.getDouble(h + "block.reach-over", 0.45), 0, 1.5));
         String s = h + "serve.";
@@ -259,31 +217,31 @@ public final class Settings {
                 material(c.getString(cd + "floor.free-zone"), Material.BLUE_TERRACOTTA, log),
                 material(c.getString(cd + "floor.beach-court"), Material.SAND, log),
                 material(c.getString(cd + "floor.beach-free-zone"), Material.SAND, log),
-                (int) clamp(c.getInt(cd + "net-columns", 20), 4, 48),
-                (int) clamp(c.getInt(cd + "net-rows", 6), 2, 12),
+                (int) clamp(c.getInt(cd + "net-columns", 12), 4, 48),
+                (int) clamp(c.getInt(cd + "net-rows", 4), 2, 12),
                 (int) clamp(c.getInt(cd + "net-interpolation", 2), 0, 10),
                 material(c.getString(cd + "line-material"), Material.WHITE_CONCRETE, log),
                 (float) clamp(c.getDouble(cd + "view-range", 1.5), 0.1, 10),
-                c.getBoolean(cd + "furniture", true),
-                c.getBoolean(cd + "net-fill", true));
+                c.getBoolean(cd + "furniture", true));
 
         matchDefaults = MatchSettings.load(c.getConfigurationSection("match-defaults"), MatchSettings.standard());
         teamA = team(c.getConfigurationSection("teams.a"), "Red", "#ff5555");
         teamB = team(c.getConfigurationSection("teams.b"), "Blue", "#55aaff");
-        TextColor lib = TextColor.fromHexString(c.getString("teams.libero-color", "#f2f2f2"));
-        liberoColor = lib == null ? TextColor.color(0xf2f2f2) : lib;
 
         for (SoundId id : SoundId.values()) {
             ConfigurationSection sec = c.getConfigurationSection("sounds." + id.path());
-            ConfigurationSection vanilla = sec == null ? null : sec.getConfigurationSection("vanilla");
-            ConfigurationSection pack = sec == null ? null : sec.getConfigurationSection("pack");
-            // older configs had key/volume/pitch directly under the sound
-            if (vanilla == null && sec != null && sec.contains("key")) {
-                vanilla = sec;
+            String key = customSounds ? id.packKey : id.vanillaKey;
+            float vol = customSounds ? 1f : id.volume;
+            float pitch = customSounds ? 1f : id.pitch;
+            if (sec != null) {
+                key = sec.getString("key", key);
+                vol = (float) sec.getDouble("volume", vol);
+                pitch = (float) sec.getDouble("pitch", pitch);
             }
-            sounds.put(id, new SoundPair(
-                    SoundSpec.load(vanilla, id.vanillaKey, id.volume, id.pitch),
-                    SoundSpec.load(pack, id.packKey, 1.0f, 1.0f)));
+            SoundSpec spec = SoundSpec.of(key, vol, pitch);
+            if (spec != null) {
+                sounds.put(id, spec);
+            }
         }
         hud = new Hud(c.getBoolean("hud.sidebar", true), c.getBoolean("hud.bossbar", true),
                 c.getBoolean("hud.hit-feedback", true), (int) clamp(c.getInt("hud.sidebar-update-ticks", 5), 1, 40));
@@ -291,7 +249,7 @@ public final class Settings {
         particleRange = clamp(c.getDouble("performance.particle-range", 64), 8, 256);
     }
 
-    public SoundPair sound(SoundId id) {
+    public SoundSpec sound(SoundId id) {
         return sounds.get(id);
     }
 

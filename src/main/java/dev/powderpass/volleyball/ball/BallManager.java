@@ -51,6 +51,41 @@ public final class BallManager {
         return b;
     }
 
+    /** The free-play ball {@code p} is holding, if any. */
+    public Volleyball holding(Player p) {
+        for (Volleyball b : balls) {
+            if (b.held() && b.context() == practice && p.getUniqueId().equals(b.owner())) {
+                return b;
+            }
+        }
+        return null;
+    }
+
+    /** Puts a free-play ball in {@code p}'s hands (replacing one they already hold). */
+    public Volleyball giveHeld(Player p) {
+        Volleyball old = holding(p);
+        if (old != null) {
+            return old;
+        }
+        Volleyball b = spawnPractice(p, plugin.hits().handPosition(p));
+        b.setHeld(true);
+        return b;
+    }
+
+    /** Serves the held free-play ball: a toss, or an underhand serve when sneaking. */
+    public void serveHeld(Player p, Volleyball b) {
+        b.setHeld(false);
+        if (p.isSneaking()) {
+            b.teleport(plugin.hits().underhandPosition(p));
+            b.markToss(p.getUniqueId());
+            plugin.hits().underhand(p, b);
+            return;
+        }
+        Vec3[] st = plugin.hits().tossState(p);
+        b.teleport(st[0]);
+        plugin.hits().prepareToss(p, b, st[1]);
+    }
+
     public void tick() {
         if (balls.isEmpty()) {
             return;

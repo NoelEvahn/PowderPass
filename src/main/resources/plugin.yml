@@ -20,14 +20,10 @@ permissions:
   powderpass.host:
     description: Start and stop matches, edit rules.
     default: op
-  powderpass.referee:
-    description: Referee matches.
-    default: op
   powderpass.admin:
     description: Build courts and scoreboards, reload, debug.
     default: op
     children:
       powderpass.host: true
-      powderpass.referee: true
       powderpass.play: true
       powderpass.practice: true

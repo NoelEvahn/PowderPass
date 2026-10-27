@@ -106,22 +106,9 @@ public final class CourtVisuals {
                 double u1 = s * (al - LINE);
                 current = Mark.attack(s);
                 rect(world, line, vr, owner, Math.min(u0, u1), Math.max(u0, u1), -hw, hw);
-                for (int k = 0; k < 5; k++) {
-                    double start = hw + 0.2 + k * 0.35;
-                    rect(world, line, vr, owner, Math.min(u0, u1), Math.max(u0, u1), start, start + 0.15);
-                    rect(world, line, vr, owner, Math.min(u0, u1), Math.max(u0, u1), -start - 0.15, -start);
-                }
                 current = null;
             }
         }
-        // service zone marks: 15 cm long, 20 cm behind the end line, in line with the side lines
-        for (int s = -1; s <= 1; s += 2) {
-            double a = s * (hl + 0.2);
-            double b = s * (hl + 0.35);
-            rect(world, line, vr, owner, Math.min(a, b), Math.max(a, b), hw - LINE, hw);
-            rect(world, line, vr, owner, Math.min(a, b), Math.max(a, b), -hw, -hw + LINE);
-        }
-
         double top = court.netHeight();
         double bottomOfNet = top - court.netBand();
         double postW = court.net().geometry().postW();
@@ -129,10 +116,7 @@ public final class CourtVisuals {
         for (int sgn = -1; sgn <= 1; sgn += 2) {
             double w = sgn * postW;
             octo(world, Material.IRON_BLOCK, vr, owner, 0, 0, w, 0.10, top + 0.12);
-            octo(world, Material.BLUE_CONCRETE, vr, owner, 0, 0.12, w, 0.24, 1.6);
-            octo(world, Material.WHITE_CONCRETE, vr, owner, 0, 1.42, w, 0.245, 0.08);
-            octo(world, Material.LIGHT_GRAY_CONCRETE, vr, owner, 0, top + 0.1, w, 0.12, 0.04);
-            octo(world, Material.GRAY_CONCRETE, vr, owner, 0, 0, w, 0.42, 0.12);
+            octo(world, Material.BLUE_CONCRETE, vr, owner, 0, 0, w, 0.24, 1.6);
         }
         if (cd.furniture()) {
             furniture(world, vr, owner, postW, top);
@@ -145,7 +129,7 @@ public final class CourtVisuals {
         // antennas: 1.8 m rods, red/white 10 cm stripes
         double antennaBottom = top - court.netBand();
         double antennaLen = court.netBand() + court.antennaAbove();
-        int stripes = (int) Math.round(antennaLen / 0.1);
+        int stripes = (int) Math.round(antennaLen / 0.2);
         double stripe = antennaLen / stripes;
         for (int s = -1; s <= 1; s += 2) {
             double w = s * hw;
@@ -161,14 +145,10 @@ public final class CourtVisuals {
             double from = s * court.net().geometry().halfLength();
             double to = s * postW;
             rectVertical(world, Material.GRAY_CONCRETE, vr, owner, Math.min(from, to), Math.max(from, to), top - 0.045, 0.012);
-            // bottom rope and the tensioning winch on the post
-            rectVertical(world, Material.GRAY_CONCRETE, vr, owner, Math.min(from, to), Math.max(from, to), bottomOfNet + 0.02, 0.008);
-            box(world, Material.GRAY_CONCRETE, vr, owner, 0.0, top - 0.75, s * (postW + 0.1), 0.08, 0.14, 0.08);
-            box(world, Material.IRON_BLOCK, vr, owner, 0.07, top - 0.70, s * (postW + 0.1), 0.06, 0.03, 0.03);
         }
 
         net = new NetRenderer(court, cd.netColumns(), cd.netRows(), cd.netInterpolation());
-        net.spawn(world, vr, owner, cd.netFill());
+        net.spawn(world, vr, owner);
     }
 
     /**
@@ -188,38 +168,8 @@ public final class CourtVisuals {
     /**
      * First referee's stand at the post opposite the benches, two team benches and a scorer's table.
      */
+    /** Two sittable team benches along the far side line. */
     private void furniture(World world, float vr, String owner, double postW, double top) {
-        // referee stand: platform so the referee's eyes are about 50 cm above the net
-        double w = postW + 0.75;
-        double floor = Math.max(1.0, top - 1.1);
-        for (int su = -1; su <= 1; su += 2) {
-            for (int sw = -1; sw <= 1; sw += 2) {
-                box(world, Material.LIGHT_GRAY_CONCRETE, vr, owner, su * 0.3, 0, w + sw * 0.3, 0.06, floor, 0.06);
-            }
-        }
-        box(world, Material.GRAY_CONCRETE, vr, owner, 0, floor, w, 0.8, 0.06, 0.8);
-        // seat: cushion on four short legs, slim backrest facing the net
-        for (int su = -1; su <= 1; su += 2) {
-            for (int sw = -1; sw <= 1; sw += 2) {
-                box(world, Material.GRAY_CONCRETE, vr, owner, su * 0.16, floor + 0.06, w + 0.12 + sw * 0.14, 0.04, 0.38, 0.04);
-            }
-        }
-        box(world, Material.BLUE_CONCRETE, vr, owner, 0, floor + 0.44, w + 0.12, 0.40, 0.07, 0.36);
-        box(world, Material.BLUE_CONCRETE, vr, owner, 0, floor + 0.51, w + 0.31, 0.40, 0.36, 0.05);
-        box(world, Material.LIGHT_GRAY_CONCRETE, vr, owner, 0, floor + 0.85, w - 0.38, 0.75, 0.05, 0.05);
-        for (int sgn = -1; sgn <= 1; sgn += 2) {
-            box(world, Material.LIGHT_GRAY_CONCRETE, vr, owner, sgn * 0.36, floor, w - 0.38, 0.05, 0.9, 0.05);
-        }
-        seat(world, owner, 0, floor + 0.06, w + 0.12, 0.45, 0.45, 0, w - 0.6);
-        // ladder on the far side
-        for (int r = 1; r <= 4; r++) {
-            box(world, Material.IRON_BLOCK, vr, owner, 0, floor * r / 5.0, w + 0.42, 0.5, 0.04, 0.04);
-        }
-        for (int sgn = -1; sgn <= 1; sgn += 2) {
-            box(world, Material.IRON_BLOCK, vr, owner, sgn * 0.27, 0, w + 0.45, 0.05, floor, 0.05);
-        }
-
-        // team benches along the opposite side line, one per half
         double bw = -(court.halfWidth() + Math.min(court.freeZone(), 3.0) * 0.7) - 0.45;
         double len = Math.min(4.0, court.halfLength() - 1.5);
         for (int sgn = -1; sgn <= 1; sgn += 2) {
@@ -230,16 +180,8 @@ public final class CourtVisuals {
                 seat(world, owner, u, 0, bw, 0.5, 0.48, sgn, bw + 0.75);
             }
             box(world, Material.SPRUCE_PLANKS, vr, owner, uc, 0.42, bw, len, 0.06, 0.38);
-            box(world, Material.SPRUCE_PLANKS, vr, owner, uc, 0.55, bw - 0.2, len, 0.35, 0.05);
-            for (int k = -1; k <= 1; k++) {
-                box(world, Material.GRAY_CONCRETE, vr, owner, uc + k * (len / 2 - 0.15), 0, bw, 0.06, 0.42, 0.32);
-            }
+            box(world, Material.GRAY_CONCRETE, vr, owner, uc, 0, bw, len - 0.3, 0.42, 0.06);
         }
-        // scorer's table at the centre line
-        box(world, Material.WHITE_CONCRETE, vr, owner, 0, 0.72, bw - 0.1, 1.8, 0.05, 0.6);
-        box(world, Material.BLUE_CONCRETE, vr, owner, 0, 0, bw + 0.18, 1.8, 0.72, 0.04);
-        box(world, Material.GRAY_CONCRETE, vr, owner, -0.8, 0, bw - 0.1, 0.05, 0.72, 0.5);
-        box(world, Material.GRAY_CONCRETE, vr, owner, 0.8, 0, bw - 0.1, 0.05, 0.72, 0.5);
     }
 
     private void seat(World world, String owner, double u, double y, double w, double width, double height, int side,

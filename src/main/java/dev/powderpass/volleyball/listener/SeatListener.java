@@ -62,7 +62,7 @@ public final class SeatListener implements Listener {
         }
         Player p = e.getPlayer();
         Match m = plugin.matches().byPlayer(p);
-        if (m != null && m.onCourt(p.getUniqueId())) {
+        if (m != null) {
             p.sendActionBar(Component.text("You're on court - no sitting during the match", NamedTextColor.GRAY));
             return;
         }

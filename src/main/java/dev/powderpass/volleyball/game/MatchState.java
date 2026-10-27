@@ -6,8 +6,6 @@ public enum MatchState {
     SERVE("Serve"),
     RALLY("Rally"),
     POINT_END("Point"),
-    TIMEOUT("Timeout"),
-    PAUSED("Paused"),
     FINISHED("Finished");
 
     private final String label;

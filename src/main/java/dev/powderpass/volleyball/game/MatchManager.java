@@ -22,20 +22,6 @@ public final class MatchManager {
     /** court name (lower case) -> player -> preferred team (null = any) */
     private final Map<String, LinkedHashMap<UUID, TeamId>> lobbies = new HashMap<>();
     private final Map<String, Match> matches = new HashMap<>();
-    /** Preferred playing position of each player (kept between matches). */
-    private final Map<UUID, Role> roles = new HashMap<>();
-
-    public void setRole(Player p, Role role) {
-        if (role == null || role == Role.ANY) {
-            roles.remove(p.getUniqueId());
-        } else {
-            roles.put(p.getUniqueId(), role);
-        }
-    }
-
-    public Role role(UUID id) {
-        return roles.getOrDefault(id, Role.ANY);
-    }
 
     public MatchManager(PowderPassPlugin plugin) {
         this.plugin = plugin;
@@ -138,7 +124,7 @@ public final class MatchManager {
         for (UUID id : b) {
             plugin.pepper().leave(Bukkit.getPlayer(id));
         }
-        Match m = new Match(plugin, court, court.settings().copy(), Lineup.build(a, roles), Lineup.build(b, roles),
+        Match m = new Match(plugin, court, court.settings().copy(), a, b,
                 host == null ? null : host.getUniqueId());
         matches.put(key(court), m);
         m.start();
@@ -150,15 +136,9 @@ public final class MatchManager {
         }
         return null;
     }
-
-    /** Six on the court plus one libero per team. */
-    private boolean fits(List<UUID> team, UUID candidate) {
-        long liberos = team.stream().filter(id -> role(id) == Role.LIBERO).count();
-        long field = team.size() - Math.min(1, liberos);
-        if (role(candidate) == Role.LIBERO && liberos == 0) {
-            return true;
-        }
-        return field < 6;
+    /** Six players per team. */
+    private static boolean fits(List<UUID> team, UUID candidate) {
+        return team.size() < 6;
     }
 
     public boolean stop(Court court, String reason) {
@@ -186,17 +166,6 @@ public final class MatchManager {
         }
         return null;
     }
-
-    /** Match the player officiates (host/referee) or plays in. */
-    public Match officiatedBy(Player p) {
-        for (Match m : matches.values()) {
-            if (p.getUniqueId().equals(m.referee()) || p.getUniqueId().equals(m.host())) {
-                return m;
-            }
-        }
-        return byPlayer(p);
-    }
-
     public Collection<Match> all() {
         return matches.values();
     }

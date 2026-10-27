@@ -27,24 +27,7 @@ public final class NetRenderer {
     private final NetSimulation sim;
     private final int interpolation;
     private final List<Segment> segments = new ArrayList<>();
-    private final List<Pane> panes = new ArrayList<>();
-    private static final float PANE_THICKNESS = 0.004f;
 
-    /** Translucent netting filling one mesh cell, so the net reads as fine mesh from a distance. */
-    private static final class Pane {
-        final BlockDisplay display;
-        final int i;
-        final int j;
-        final Vector3f origin;
-        float lastSum = Float.NaN;
-
-        Pane(BlockDisplay display, int i, int j, Vector3f origin) {
-            this.display = display;
-            this.i = i;
-            this.j = j;
-            this.origin = origin;
-        }
-    }
     private boolean dirty;
     private int frame;
 
@@ -83,21 +66,9 @@ public final class NetRenderer {
         return sim;
     }
 
-    public void spawn(World world, float viewRange, String owner, boolean fill) {
+    public void spawn(World world, float viewRange, String owner) {
         int cols = sim.cols();
         int rows = sim.rows();
-        if (fill) {
-            for (int i = 0; i < cols; i++) {
-                for (int j = 0; j < rows; j++) {
-                    Vec3 c = node(i, j, 0).lerp(node(i + 1, j + 1, 0), 0.5);
-                    Location at = new Location(world, c.x, c.y, c.z);
-                    Vector3f origin = new Vector3f((float) c.x, (float) c.y, (float) c.z);
-                    BlockDisplay d = Displays.block(world, at, Material.BLACK_STAINED_GLASS, paneMatrix(i, j, origin),
-                            viewRange, owner);
-                    panes.add(new Pane(d, i, j, origin));
-                }
-            }
-        }
         // vertical mesh strands
         for (int i = 0; i <= cols; i++) {
             for (int j = 0; j < rows; j++) {
@@ -147,28 +118,6 @@ public final class NetRenderer {
         Vector3f rb = new Vector3f((float) b.x, (float) b.y, (float) b.z).sub(origin);
         return Displays.bar(ra, rb, thickness, height);
     }
-
-    /** Parallelogram spanned by the cell's bottom edge and left edge, using the current displacement. */
-    private Matrix4f paneMatrix(int i, int j, Vector3f origin) {
-        Vec3 a = node(i, j, sim.displacement(i, j));
-        Vec3 b = node(i + 1, j, sim.displacement(i + 1, j));
-        Vec3 c = node(i, j + 1, sim.displacement(i, j + 1));
-        Vec3 d = node(i + 1, j + 1, sim.displacement(i + 1, j + 1));
-        // average the two diagonals so a twisted cell still sits in the middle of its corners
-        Vec3 ex = b.copy().sub(a).add(d.copy().sub(c)).mul(0.5);
-        Vec3 ey = c.copy().sub(a).add(d.copy().sub(b)).mul(0.5);
-        Vec3 ez = Vec3.cross(ex, ey).normalize().mul(PANE_THICKNESS);
-        Vec3 corner = a.copy().add(b).add(c).add(d).mul(0.25).addScaled(ex, -0.5).addScaled(ey, -0.5).addScaled(ez, -0.5);
-        float ox = (float) corner.x - origin.x;
-        float oy = (float) corner.y - origin.y;
-        float oz = (float) corner.z - origin.z;
-        return new Matrix4f(
-                (float) ex.x, (float) ex.y, (float) ex.z, 0,
-                (float) ey.x, (float) ey.y, (float) ey.z, 0,
-                (float) ez.x, (float) ez.y, (float) ez.z, 0,
-                ox, oy, oz, 1);
-    }
-
     /** Outlines the whole net, e.g. red when a player touches it. */
     public void flash(org.bukkit.plugin.Plugin plugin, org.bukkit.Color glow, int ticks) {
         for (Segment s : segments) {
@@ -223,19 +172,6 @@ public final class NetRenderer {
             s.display.setTransformationMatrix(matrix(a, b, s.origin, s.thickness, s.height, false));
             Displays.refreshInterpolation(s.display, Math.max(2, interpolation + 1));
         }
-        for (Pane p : panes) {
-            if (!p.display.isValid()) {
-                continue;
-            }
-            float sum = (float) (sim.displacement(p.i, p.j) + sim.displacement(p.i + 1, p.j) * 1.3
-                    + sim.displacement(p.i, p.j + 1) * 1.7 + sim.displacement(p.i + 1, p.j + 1) * 2.1);
-            if (!Float.isNaN(p.lastSum) && Math.abs(sum - p.lastSum) < 0.01f) {
-                continue;
-            }
-            p.lastSum = sum;
-            p.display.setTransformationMatrix(paneMatrix(p.i, p.j, p.origin));
-            Displays.refreshInterpolation(p.display, Math.max(2, interpolation + 1));
-        }
     }
 
     public void remove() {
@@ -243,13 +179,9 @@ public final class NetRenderer {
             s.display.remove();
         }
         segments.clear();
-        for (Pane p : panes) {
-            p.display.remove();
-        }
-        panes.clear();
     }
 
     public int entityCount() {
-        return segments.size() + panes.size();
+        return segments.size();
     }
 }

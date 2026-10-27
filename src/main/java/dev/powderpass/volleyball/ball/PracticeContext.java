@@ -87,7 +87,23 @@ public final class PracticeContext implements BallContext {
     }
 
     @Override
+    public void onTick(Volleyball ball) {
+        if (!ball.held()) {
+            return;
+        }
+        Player owner = ball.owner() == null ? null : Bukkit.getPlayer(ball.owner());
+        if (owner == null || owner.getWorld() != ball.world()) {
+            ball.setHeld(false);
+            return;
+        }
+        ball.holdAt(plugin.hits().handPosition(owner), 0.05);
+    }
+
+    @Override
     public boolean shouldDespawn(Volleyball ball) {
+        if (ball.held()) {
+            return false;
+        }
         boolean idle = ball.ticksSinceMove() > plugin.settings().ball.idleDespawnSeconds() * 20L;
         if (idle) {
             called.remove(ball.id());

@@ -8,14 +8,13 @@ public enum HitType {
     QUICK_SET("Quick set", false, false),
     SPIKE("Spike", true, false),
     TIP("Tip", true, false),
-    STANDING_ATTACK("Down ball", true, false),
     BLOCK("Block", false, false),
     /** The ball ran into a player without a deliberate touch. */
     BODY("Body touch", false, false),
     SERVE_FLOAT("Float serve", false, true),
     SERVE_TOPSPIN("Topspin serve", false, true),
     SERVE_JUMP("Jump serve", false, true),
-    SERVE_JUMP_FLOAT("Jump float", false, true),
+    SERVE_BANANA("Banana serve", false, true),
     SERVE_UNDERHAND("Underhand serve", false, true);
 
     private final String displayName;

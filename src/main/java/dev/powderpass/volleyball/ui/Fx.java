@@ -2,9 +2,7 @@ package dev.powderpass.volleyball.ui;
 
 import com.destroystokyo.paper.ParticleBuilder;
 import dev.powderpass.volleyball.config.Settings;
-import dev.powderpass.volleyball.config.SoundPair;
 import dev.powderpass.volleyball.config.SoundSpec;
-import dev.powderpass.volleyball.pack.PackManager;
 import net.kyori.adventure.sound.Sound;
 import org.bukkit.Color;
 import org.bukkit.Location;
@@ -23,50 +21,25 @@ public final class Fx {
 
     private final org.bukkit.plugin.Plugin plugin;
     private final Settings settings;
-    private final PackManager packs;
 
-    public Fx(org.bukkit.plugin.Plugin plugin, Settings settings, PackManager packs) {
+    public Fx(org.bukkit.plugin.Plugin plugin, Settings settings) {
         this.plugin = plugin;
         this.settings = settings;
-        this.packs = packs;
     }
 
-    /**
-     * Referee whistle. The pack sound is a recorded-style blast; vanilla players get a trill of flute notes
-     * (two short blasts, or one long one).
-     */
+    /** Referee whistle: the pack sound is a full blast, the vanilla fallback a short flute trill. */
     public void whistle(Location at, boolean longBlast) {
         Settings.SoundId id = longBlast ? Settings.SoundId.WHISTLE_LONG : Settings.SoundId.WHISTLE;
-        SoundPair pair = settings.sound(id);
-        World world = at.getWorld();
-        if (pair == null || world == null) {
+        if (settings.customSounds) {
+            sound(at, id);
             return;
         }
-        int[] vanillaTicks = longBlast ? new int[]{0, 2, 4, 6, 8, 10} : new int[]{0, 1, 5, 6};
-        for (Player p : world.getPlayers()) {
-            if (p.getLocation().distanceSquared(at) > 64 * 64) {
-                continue;
-            }
-            boolean pack = packs.has(p) && pair.pack() != null;
-            SoundSpec spec = pair.pick(pack);
-            if (spec == null) {
-                continue;
-            }
-            if (pack) {
-                p.playSound(spec.toSound(0, 1f), at.getX(), at.getY(), at.getZ());
-                continue;
-            }
-            for (int t : vanillaTicks) {
-                Sound snd = spec.toSound(t % 2 == 0 ? 0f : -0.05f, 1f);
-                if (t == 0) {
-                    p.playSound(snd, at.getX(), at.getY(), at.getZ());
-                } else {
-                    plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
-                        if (p.isOnline()) {
-                            p.playSound(snd, at.getX(), at.getY(), at.getZ());
-                        }
-                    }, t);
-                }
+        int[] ticks = longBlast ? new int[]{0, 2, 4, 6, 8, 10} : new int[]{0, 1, 5, 6};
+        for (int t : ticks) {
+            if (t == 0) {
+                sound(at, id);
+            } else {
+                plugin.getServer().getScheduler().runTaskLater(plugin, () -> sound(at, id), t);
             }
         }
     }
@@ -77,34 +50,18 @@ public final class Fx {
 
     /** Positional sound for everyone in earshot. */
     public void sound(Location at, Settings.SoundId id, float volumeScale) {
-        SoundPair pair = settings.sound(id);
+        SoundSpec spec = settings.sound(id);
         World world = at.getWorld();
-        if (pair == null || world == null) {
+        if (spec == null || world == null) {
             return;
         }
         float jitter = (ThreadLocalRandom.current().nextFloat() - 0.5f) * 0.12f;
-        // a sound of volume v carries 16 * v blocks
-        float maxVolume = Math.max(pair.vanilla() == null ? 0 : pair.vanilla().volume(),
-                pair.pack() == null ? 0 : pair.pack().volume()) * volumeScale;
-        double range = Math.max(16, 16 * maxVolume);
-        for (Player p : world.getPlayers()) {
-            if (p.getLocation().distanceSquared(at) > range * range) {
-                continue;
-            }
-            SoundSpec spec = pair.pick(packs.has(p));
-            if (spec != null) {
-                p.playSound(spec.toSound(jitter, volumeScale), at.getX(), at.getY(), at.getZ());
-            }
-        }
+        world.playSound(spec.toSound(jitter, volumeScale), at.getX(), at.getY(), at.getZ());
     }
 
     /** Non-positional sound for one player. */
     public void sound(Player p, Settings.SoundId id) {
-        SoundPair pair = settings.sound(id);
-        if (pair == null) {
-            return;
-        }
-        SoundSpec spec = pair.pick(packs.has(p));
+        SoundSpec spec = settings.sound(id);
         if (spec != null) {
             p.playSound(spec.toSound(0, 1f), Sound.Emitter.self());
         }

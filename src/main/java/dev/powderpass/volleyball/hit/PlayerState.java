@@ -8,15 +8,11 @@ final class PlayerState {
     long primaryUntil = -1;
     boolean primarySneak;
     boolean primaryAirborne;
-    long secondaryUntil = -1;
-    boolean secondarySneak;
-    boolean secondaryAirborne;
     long clickTick = -100;
     boolean clickNearBall;
 
     long lastHitTick = -1000;
     long lastDiveTick = -1000;
-    long lastRightClickTick = -1000;
 
     long blockStart = -1000;
     long blockUntil = -1000;

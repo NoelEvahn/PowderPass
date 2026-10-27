@@ -4,7 +4,6 @@ import dev.powderpass.volleyball.PowderPassPlugin;
 import dev.powderpass.volleyball.game.Match;
 import dev.powderpass.volleyball.game.MatchState;
 import dev.powderpass.volleyball.game.Positions;
-import dev.powderpass.volleyball.game.Role;
 import dev.powderpass.volleyball.game.Team;
 import dev.powderpass.volleyball.game.TeamId;
 import io.papermc.paper.scoreboard.numbers.NumberFormat;
@@ -151,14 +150,9 @@ public final class HudManager {
                         .append(Component.text("  touches " + m.rallyTouches(), NamedTextColor.GRAY)).append(touches);
                 color = t == null ? color : barColor(m.team(t).color());
             }
-            case TIMEOUT -> {
-                name = Component.text(String.format("Timeout  %.0fs", m.secondsLeft()), NamedTextColor.AQUA, TextDecoration.BOLD);
-                progress = (float) m.clockProgress();
-            }
             case COUNTDOWN -> name = Component.text(String.format("Starting in %.0f", Math.ceil(m.secondsLeft())),
                     NamedTextColor.YELLOW, TextDecoration.BOLD);
             case POINT_END -> name = Component.text(m.lastPointText(), NamedTextColor.GRAY);
-            case PAUSED -> name = Component.text("Paused by the referee", NamedTextColor.YELLOW, TextDecoration.BOLD);
             case FINISHED -> name = Component.text("Match over", NamedTextColor.GOLD, TextDecoration.BOLD);
             default -> name = Component.text("Get ready · ", NamedTextColor.WHITE)
                     .append(Component.text(serving.name() + " serves", serving.color()));
@@ -223,8 +217,7 @@ public final class HudManager {
                     st.addEntry(q.getName());
                 }
                 int pos = m.positionOf(q.getUniqueId());
-                Role role = m.roleOf(q.getUniqueId());
-                String label = (pos > 0 ? "P" + pos : "Bench") + (role.shortName().isEmpty() ? "" : " " + role.shortName());
+                String label = pos > 0 ? "P" + pos : "";
                 Component prefix = Component.text(label + " ", t.color(), TextDecoration.BOLD);
                 if (!prefix.equals(st.prefix())) {
                     st.prefix(prefix);
@@ -256,14 +249,8 @@ public final class HudManager {
         Team mine = m.teamOf(p.getUniqueId());
         if (mine != null) {
             int pos = m.positionOf(p.getUniqueId());
-            Role role = m.roleOf(p.getUniqueId());
-            Component where = pos > 0 ? Component.text(Positions.label(mine.size(), pos), mine.color())
-                    : Component.text("Bench (libero rotation)", NamedTextColor.GRAY);
-            lines.add(Component.text("You: ", NamedTextColor.GRAY).append(where));
-            if (role != Role.ANY) {
-                lines.add(Component.text("Role: ", NamedTextColor.GRAY).append(Component.text(role.displayName(),
-                        role == Role.LIBERO ? NamedTextColor.WHITE : mine.color())));
-            }
+            lines.add(Component.text("You: ", NamedTextColor.GRAY)
+                    .append(Component.text(Positions.label(mine.size(), pos), mine.color())));
         }
         Player server = m.server() == null ? null : Bukkit.getPlayer(m.server());
         if (server != null) {

@@ -7,41 +7,22 @@
 # Chat prefix (MiniMessage).
 prefix: "<gradient:#ffd34d:#4da6ff><b>Volleyball</b></gradient> <dark_gray>»</dark_gray> "
 
-# Optional resource pack (see resourcepack/ in the repository).
-# Nobody needs it: without it players see a vanilla sunflower (ball), iron nugget (whistle) and leather
-# (hands) and hear vanilla sounds. With it they see custom held-item models and hear custom sounds.
-resource-pack:
-  # auto     - custom sounds for players whose client reports the pack as loaded (sent by the server or
-  #            this plugin) and for players who ran /vb pack on (installed it themselves)
-  # everyone - assume every player has it (e.g. require-resource-pack=true in server.properties)
-  # nobody   - always use vanilla sounds
-  mode: auto
-  # Optional: host the pack zip somewhere and the plugin offers it to players on join.
-  url: ""
-  sha1: ""
-  required: false
-  prompt: "<yellow>PowderPass volleyball</yellow> <gray>custom sounds and items (optional)"
+# Set true when players use the PowderPass resource pack: the plugin then plays its custom sounds.
+# (The pack's 3D ball shows automatically for players who have it.)
+custom-sounds: false
 
 ball:
-  # The in-world ball is a voxel sphere of block displays.
-  #  style classic - 18 panels in 6 groups of 3 strips (the classic indoor ball)
-  #  style caps    - three colour caps, fewest entities
-  # detail = voxels across (6 - 14, even). Block displays used:
-  #   classic: 10 -> 21, 12 -> 29, 14 -> 48      caps: 10 -> 13, 12 -> 21
-  style: classic
-  detail: 12
-  # The three panel colours (any blocks).
-  colors: [YELLOW_CONCRETE, WHITE_CONCRETE, BLUE_CONCRETE]
-  # Rendered size in blocks. A real ball is 0.21 m; slightly larger reads better on screen.
+  # Player-head skin of the ball (players without the resource pack see this head).
+  texture: "https://textures.minecraft.net/texture/1e6df1c2bf5b918f6c8879af4c4ecc1dabbe37229284e1f8f6bccdb1ea3d0ac"
+  # Rendered size in blocks (a real ball is 0.21 m).
   visual-size: 0.30
-  # Ticks the client uses to interpolate movement / rotation (1-3). Higher = smoother, slightly more delay.
+  # Client smoothing in ticks for movement / spin.
   teleport-interpolation: 2
   rotation-interpolation: 2
   shadow: true
   trail: true
-  # Seconds before an untouched free-play ball despawns.
+  # Seconds before an untouched practice ball despawns.
   idle-despawn-seconds: 45
-  # Maximum free-play balls per player (oldest is removed).
   max-practice-balls: 2
 
 physics:
@@ -121,13 +102,6 @@ hits:
     apex: 0.8
     max-error: 0.8
     aim: { near: 1.0, far: 6.0, pitch-near: 60, pitch-far: -20, look-up: 3.0 }
-  standing-attack:
-    reach: 1.05
-    min-speed: 11.0
-    max-speed: 17.0
-    topspin: 20.0
-    max-error: 2.0
-    aim: { near: 3.0, far: 12.0, pitch-near: 50, pitch-far: -15, look-up: 9.0 }
   block:
     duration-ticks: 12
     width: 1.0
@@ -161,16 +135,14 @@ court-defaults:
     beach-court: SAND
     beach-free-zone: SAND
   # net mesh resolution (more = finer netting, more display entities)
-  net-columns: 20
-  net-rows: 6
-  # Translucent netting in every mesh cell (looks like fine mesh from a distance; one display per cell).
-  net-fill: true
+  net-columns: 12
+  net-rows: 4
   # ticks of client interpolation for net animation
   net-interpolation: 2
   # Lines are display entities, so they never break and can be removed cleanly.
   line-material: WHITE_CONCRETE
   view-range: 1.5
-  # Referee stand, team benches and scorer's table (display entities).
+  # Sittable team benches.
   furniture: true
 
 # Default match settings. Every court can override them with /vb rules <court>.
@@ -184,9 +156,6 @@ match-defaults:
   rally-end-delay-seconds: 3
   switch-sides: true
   auto-position: true       # teleport players to their rotation spot before each serve
-  referee-whistle: false    # true = a referee must whistle before each serve
-  timeouts-per-set: 2
-  timeout-seconds: 30
   rules:
     foot-fault: true
     net-touch: true
@@ -201,105 +170,17 @@ match-defaults:
     toss-drop: true
     ceiling-out: true
     serve-delay: true
-    libero: true            # libero may not block or attack above the net
-    rotation-order: false   # 6v6 positional (overlap) fault at the serve
 
 teams:
   a: { name: "Red", color: "#ff5555" }
   b: { name: "Blue", color: "#55aaff" }
-  # Liberos wear a contrasting jersey.
-  libero-color: "#f2f2f2"
 
-# Every sound has a vanilla version (heard by players without the pack) and a pack version.
-# Keys may be any sound event; set a key to "" to silence it. volume / pitch per entry.
-sounds:
-  bump:
-    vanilla: { key: "minecraft:block.wool.hit", volume: 1.4, pitch: 0.7 }
-    pack: { key: "powderpass:ball.bump", volume: 1.0, pitch: 1.0 }
-  dig:
-    vanilla: { key: "minecraft:block.wool.fall", volume: 1.4, pitch: 0.8 }
-    pack: { key: "powderpass:ball.dig", volume: 1.0, pitch: 1.0 }
-  set:
-    vanilla: { key: "minecraft:block.wool.place", volume: 1.2, pitch: 1.3 }
-    pack: { key: "powderpass:ball.set", volume: 1.0, pitch: 1.0 }
-  spike:
-    vanilla: { key: "minecraft:entity.player.attack.strong", volume: 1.6, pitch: 0.8 }
-    pack: { key: "powderpass:ball.spike", volume: 1.0, pitch: 1.0 }
-  spike-perfect:
-    vanilla: { key: "minecraft:entity.player.attack.crit", volume: 1.6, pitch: 0.9 }
-    pack: { key: "powderpass:ball.spike_perfect", volume: 1.0, pitch: 1.0 }
-  tip:
-    vanilla: { key: "minecraft:block.wool.step", volume: 1.0, pitch: 1.5 }
-    pack: { key: "powderpass:ball.tip", volume: 1.0, pitch: 1.0 }
-  serve:
-    vanilla: { key: "minecraft:entity.player.attack.knockback", volume: 1.5, pitch: 1.0 }
-    pack: { key: "powderpass:ball.serve", volume: 1.0, pitch: 1.0 }
-  serve-jump:
-    vanilla: { key: "minecraft:entity.player.attack.strong", volume: 1.7, pitch: 1.1 }
-    pack: { key: "powderpass:ball.serve_jump", volume: 1.0, pitch: 1.0 }
-  block:
-    vanilla: { key: "minecraft:entity.player.attack.sweep", volume: 1.4, pitch: 0.7 }
-    pack: { key: "powderpass:ball.block", volume: 1.0, pitch: 1.0 }
-  body:
-    vanilla: { key: "minecraft:entity.player.attack.weak", volume: 1.2, pitch: 0.9 }
-    pack: { key: "powderpass:ball.body", volume: 1.0, pitch: 1.0 }
-  floor:
-    vanilla: { key: "minecraft:block.wood.hit", volume: 1.3, pitch: 0.8 }
-    pack: { key: "powderpass:ball.floor", volume: 1.0, pitch: 1.0 }
-  sand:
-    vanilla: { key: "minecraft:block.sand.hit", volume: 1.3, pitch: 0.9 }
-    pack: { key: "powderpass:ball.sand", volume: 1.0, pitch: 1.0 }
-  wall:
-    vanilla: { key: "minecraft:block.stone.hit", volume: 1.0, pitch: 1.0 }
-    pack: { key: "powderpass:ball.wall", volume: 1.0, pitch: 1.0 }
-  net:
-    vanilla: { key: "minecraft:block.wool.break", volume: 1.0, pitch: 0.6 }
-    pack: { key: "powderpass:net.hit", volume: 1.0, pitch: 1.0 }
-  tape:
-    vanilla: { key: "minecraft:block.chain.hit", volume: 1.0, pitch: 1.4 }
-    pack: { key: "powderpass:net.tape", volume: 1.0, pitch: 1.0 }
-  antenna:
-    vanilla: { key: "minecraft:block.bamboo.hit", volume: 1.0, pitch: 1.6 }
-    pack: { key: "powderpass:net.antenna", volume: 1.0, pitch: 1.0 }
-  toss:
-    vanilla: { key: "minecraft:entity.egg.throw", volume: 0.8, pitch: 0.6 }
-    pack: { key: "powderpass:ball.toss", volume: 1.0, pitch: 1.0 }
-  whistle:
-    vanilla: { key: "minecraft:block.note_block.flute", volume: 2.0, pitch: 2.0 }
-    pack: { key: "powderpass:whistle.short", volume: 1.0, pitch: 1.0 }
-  whistle-long:
-    vanilla: { key: "minecraft:block.note_block.flute", volume: 2.0, pitch: 1.9 }
-    pack: { key: "powderpass:whistle.long", volume: 1.0, pitch: 1.0 }
-  point:
-    vanilla: { key: "minecraft:entity.experience_orb.pickup", volume: 1.0, pitch: 1.2 }
-    pack: { key: "powderpass:ui.point", volume: 1.0, pitch: 1.0 }
-  cheer:
-    vanilla: { key: "minecraft:entity.villager.celebrate", volume: 1.2, pitch: 1.1 }
-    pack: { key: "powderpass:crowd.cheer", volume: 1.0, pitch: 1.0 }
-  applause:
-    vanilla: { key: "minecraft:entity.firework_rocket.twinkle", volume: 1.5, pitch: 1.0 }
-    pack: { key: "powderpass:crowd.applause", volume: 1.0, pitch: 1.0 }
-  ooh:
-    vanilla: { key: "minecraft:entity.villager.ambient", volume: 1.0, pitch: 1.3 }
-    pack: { key: "powderpass:crowd.ooh", volume: 1.0, pitch: 1.0 }
-  win:
-    vanilla: { key: "minecraft:ui.toast.challenge_complete", volume: 1.0, pitch: 1.0 }
-    pack: { key: "powderpass:crowd.win", volume: 1.0, pitch: 1.0 }
-  countdown:
-    vanilla: { key: "minecraft:block.note_block.hat", volume: 1.0, pitch: 1.0 }
-    pack: { key: "powderpass:ui.countdown", volume: 1.0, pitch: 1.0 }
-  go:
-    vanilla: { key: "minecraft:block.note_block.pling", volume: 1.0, pitch: 2.0 }
-    pack: { key: "powderpass:ui.go", volume: 1.0, pitch: 1.0 }
-  jump:
-    vanilla: { key: "minecraft:entity.rabbit.jump", volume: 0.8, pitch: 1.3 }
-    pack: { key: "powderpass:player.jump", volume: 1.0, pitch: 1.0 }
-  dive:
-    vanilla: { key: "minecraft:entity.player.small_fall", volume: 1.2, pitch: 0.9 }
-    pack: { key: "powderpass:player.dive", volume: 1.0, pitch: 1.0 }
-  whiff:
-    vanilla: { key: "minecraft:entity.player.attack.nodamage", volume: 0.9, pitch: 1.2 }
-    pack: { key: "powderpass:player.whiff", volume: 1.0, pitch: 1.0 }
+# Optional sound overrides, e.g.
+#   spike: { key: "minecraft:entity.player.attack.strong", volume: 1.6, pitch: 0.8 }
+# Sound ids: bump dig set spike spike-perfect tip serve serve-jump block body floor sand wall net tape antenna
+#            toss whistle whistle-long point cheer applause ooh win countdown go jump dive whiff
+# Without overrides vanilla sounds are used, or the pack's sounds when custom-sounds is true.
+sounds: {}
 
 hud:
   sidebar: true

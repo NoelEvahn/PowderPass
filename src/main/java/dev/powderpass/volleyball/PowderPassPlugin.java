@@ -1,17 +1,14 @@
 package dev.powderpass.volleyball;
 
 import dev.powderpass.volleyball.ball.BallManager;
-import dev.powderpass.volleyball.ball.BallModel;
 import dev.powderpass.volleyball.command.VolleyballCommand;
 import dev.powderpass.volleyball.config.Settings;
 import dev.powderpass.volleyball.court.CourtManager;
 import dev.powderpass.volleyball.game.MatchManager;
 import dev.powderpass.volleyball.game.SnapshotStore;
 import dev.powderpass.volleyball.hit.HitController;
-import dev.powderpass.volleyball.items.CustomItems;
 import dev.powderpass.volleyball.listener.InputListener;
 import dev.powderpass.volleyball.listener.ProtectionListener;
-import dev.powderpass.volleyball.pack.PackManager;
 import dev.powderpass.volleyball.ui.Fx;
 import dev.powderpass.volleyball.ui.HudManager;
 import dev.powderpass.volleyball.ui.Menus;
@@ -32,7 +29,6 @@ import java.util.logging.Level;
 public final class PowderPassPlugin extends JavaPlugin {
 
     private Settings settings;
-    private CustomItems items;
     private Fx fx;
     private CourtManager courts;
     private BallManager balls;
@@ -42,9 +38,7 @@ public final class PowderPassPlugin extends JavaPlugin {
     private ScoreboardManager boards;
     private Menus menus;
     private SnapshotStore snapshots;
-    private PackManager packs;
     private dev.powderpass.volleyball.pepper.PepperManager pepper;
-    private BallModel ballModel;
     private BukkitTask ticker;
 
     private final long[] tickNanos = new long[200];
@@ -58,7 +52,6 @@ public final class PowderPassPlugin extends JavaPlugin {
         Keys.init(this);
         saveDefaultConfig();
         settings = new Settings(getConfig(), getLogger());
-        packs = new PackManager(this);
         loadSettings();
 
         snapshots = new SnapshotStore(getDataFolder(), getLogger());
@@ -82,7 +75,6 @@ public final class PowderPassPlugin extends JavaPlugin {
         pm.registerEvents(new ProtectionListener(this), this);
         pm.registerEvents(new dev.powderpass.volleyball.listener.SeatListener(this), this);
         pm.registerEvents(menus, this);
-        pm.registerEvents(packs, this);
 
         PluginCommand cmd = getCommand("volleyball");
         if (cmd != null) {
@@ -98,9 +90,7 @@ public final class PowderPassPlugin extends JavaPlugin {
 
     private void loadSettings() {
         settings = new Settings(getConfig(), getLogger());
-        items = new CustomItems();
-        fx = new Fx(this, settings, packs);
-        ballModel = BallModel.build(settings.ball.detail(), settings.ball.style());
+        fx = new Fx(this, settings);
         String prefix = getConfig().getString("prefix");
         if (prefix != null && !prefix.isBlank()) {
             Msg.setPrefix(prefix);
@@ -231,10 +221,6 @@ public final class PowderPassPlugin extends JavaPlugin {
         return settings;
     }
 
-    public CustomItems items() {
-        return items;
-    }
-
     public Fx fx() {
         return fx;
     }
@@ -269,14 +255,6 @@ public final class PowderPassPlugin extends JavaPlugin {
 
     public dev.powderpass.volleyball.pepper.PepperManager pepper() {
         return pepper;
-    }
-
-    public PackManager packs() {
-        return packs;
-    }
-
-    public BallModel ballModel() {
-        return ballModel;
     }
 
     public SnapshotStore snapshots() {

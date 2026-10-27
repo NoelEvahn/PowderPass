@@ -13,6 +13,18 @@ public record SoundSpec(Key key, float volume, float pitch) {
     }
 
     @SuppressWarnings("PatternValidation")
+    static SoundSpec of(String key, float volume, float pitch) {
+        if (key == null || key.isBlank()) {
+            return null;
+        }
+        try {
+            return new SoundSpec(Key.key(key), volume, pitch);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    @SuppressWarnings("PatternValidation")
     static SoundSpec load(ConfigurationSection s, String defKey, float defVolume, float defPitch) {
         String key = s == null ? defKey : s.getString("key", defKey);
         if (key == null || key.isBlank()) {

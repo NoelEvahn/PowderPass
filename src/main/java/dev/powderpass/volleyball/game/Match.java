@@ -8,7 +8,6 @@ import dev.powderpass.volleyball.court.Court;
 import dev.powderpass.volleyball.court.NetRenderer;
 import dev.powderpass.volleyball.hit.HitResult;
 import dev.powderpass.volleyball.hit.HitType;
-import dev.powderpass.volleyball.items.ItemType;
 import dev.powderpass.volleyball.math.CourtFrame;
 import dev.powderpass.volleyball.math.Vec3;
 import dev.powderpass.volleyball.physics.Aabb;
@@ -48,7 +47,6 @@ public final class Match implements BallContext {
     private final Team[] teams = new Team[2];
     private final ScoreKeeper score;
     private final UUID host;
-    private UUID referee;
     private final Deque<ScoreKeeper.Snapshot> undo = new ArrayDeque<>();
 
     private MatchState state = MatchState.COUNTDOWN;
@@ -63,7 +61,6 @@ public final class Match implements BallContext {
     private int teamContacts;
     private boolean serveInFlight;
     private boolean serveCrossed;
-    private boolean serveAuthorized;
     private boolean served;
     private UUID server;
     private int rallyTouches;
@@ -72,17 +69,15 @@ public final class Match implements BallContext {
     private boolean ended;
     private int holdTicks;
 
-    public Match(PowderPassPlugin plugin, Court court, MatchSettings settings, Lineup teamA, Lineup teamB,
+    public Match(PowderPassPlugin plugin, Court court, MatchSettings settings, List<UUID> teamA, List<UUID> teamB,
                  UUID host) {
         this.plugin = plugin;
         this.court = court;
         this.settings = settings;
         this.host = host;
         Settings s = plugin.settings();
-        teams[0] = new Team(TeamId.A, s.teamA, -1);
-        teams[1] = new Team(TeamId.B, s.teamB, 1);
-        teams[0].applyLineup(teamA);
-        teams[1].applyLineup(teamB);
+        teams[0] = new Team(TeamId.A, s.teamA, -1, teamA);
+        teams[1] = new Team(TeamId.B, s.teamB, 1, teamB);
         TeamId first = ThreadLocalRandom.current().nextBoolean() ? TeamId.A : TeamId.B;
         this.score = new ScoreKeeper(settings, first);
     }
@@ -115,14 +110,6 @@ public final class Match implements BallContext {
 
     public UUID host() {
         return host;
-    }
-
-    public UUID referee() {
-        return referee;
-    }
-
-    public void setReferee(UUID referee) {
-        this.referee = referee;
     }
 
     public UUID server() {
@@ -198,16 +185,6 @@ public final class Match implements BallContext {
         return Math.max(teams[0].size(), teams[1].size());
     }
 
-    public Role roleOf(UUID player) {
-        Team t = teamOf(player);
-        return t == null ? Role.ANY : t.role(player);
-    }
-
-    public boolean onCourt(UUID player) {
-        Team t = teamOf(player);
-        return t != null && t.onCourt(player);
-    }
-
     public int positionOf(UUID player) {
         Team t = teamOf(player);
         return t == null ? -1 : t.positionOf(player, score.rotation(t.id()));
@@ -245,21 +222,13 @@ public final class Match implements BallContext {
                 + "<yellow>sneak</yellow> variants · look where you aim. <white>/vb guide</white> for details."));
     }
 
-    /** Fills the hotbar so every slot works: Minecraft sends no right-click packet for an empty hand. */
+    /** Empty hands (everything is played with bare hands) and a team jersey. */
     private void giveKit(Player p, boolean serving) {
         PlayerInventory inv = p.getInventory();
         inv.clear();
-        // bare hands in every slot: nothing is drawn in the hand, and every slot reacts to clicks
-        for (int i = 0; i < 9; i++) {
-            inv.setItem(i, plugin.items().matchHands());
-        }
-        if (p.getUniqueId().equals(referee) || p.getUniqueId().equals(host)) {
-            inv.setItem(8, plugin.items().create(ItemType.WHISTLE));
-        }
         Team t = teamOf(p.getUniqueId());
         if (t != null) {
-            boolean libero = t.isLibero(p.getUniqueId());
-            inv.setArmorContents(plugin.items().jersey(libero ? plugin.settings().liberoColor : t.color()));
+            inv.setArmorContents(dev.powderpass.volleyball.util.Jerseys.of(t.color().value()));
         }
         inv.setHeldItemSlot(0);
     }
@@ -294,14 +263,7 @@ public final class Match implements BallContext {
         if (t == null) {
             return;
         }
-        if (t.isLibero(p.getUniqueId())) {
-            t.clearLibero();
-        } else {
-            t.order().remove(p.getUniqueId());
-            if (p.getUniqueId().equals(t.benched())) {
-                t.setBenched(null);
-            }
-        }
+        t.order().remove(p.getUniqueId());
         if (!quit) {
             release(p);
         } else {
@@ -356,7 +318,7 @@ public final class Match implements BallContext {
                 }
             }
             case PRE_SERVE -> {
-                if (stateTicks >= stateDuration && (!settings.flag(MatchSettings.Option.REFEREE_WHISTLE) || serveAuthorized)) {
+                if (stateTicks >= stateDuration) {
                     whistle();
                     enter(MatchState.SERVE, settings.get(MatchSettings.Option.SERVE_TIME) * 20);
                     serviceZone(true);
@@ -394,14 +356,8 @@ public final class Match implements BallContext {
                     beginRallySetup();
                 }
             }
-            case TIMEOUT -> {
+            case FINISHED -> {
                 if (stateTicks >= stateDuration) {
-                    Msg.send(audience(), "<gray>Timeout over.");
-                    beginRallySetup();
-                }
-            }
-            case PAUSED, FINISHED -> {
-                if (state == MatchState.FINISHED && stateTicks >= stateDuration) {
                     end(null);
                 }
             }
@@ -424,7 +380,6 @@ public final class Match implements BallContext {
         teamContacts = 0;
         serveInFlight = false;
         serveCrossed = false;
-        serveAuthorized = false;
         served = false;
         rallyTouches = 0;
     }
@@ -446,56 +401,7 @@ public final class Match implements BallContext {
             plugin.fx().sound(sp, Settings.SoundId.POINT);
         }
     }
-
-    /** Decides who the libero replaces this rally: a back-row middle blocker if possible (never the server). */
-    private void assignLibero(Team t) {
-        t.setBenched(null);
-        if (t.libero() == null || Bukkit.getPlayer(t.libero()) == null) {
-            return;
-        }
-        int rot = score.rotation(t.id());
-        int n = t.size();
-        UUID best = null;
-        int bestScore = -1;
-        for (int pos = 1; pos <= n; pos++) {
-            if (!Positions.isBackRow(n, pos) || (pos == 1 && t.id() == score.serving())) {
-                continue;
-            }
-            UUID id = t.atPosition(pos, rot);
-            if (id == null || Bukkit.getPlayer(id) == null) {
-                continue;
-            }
-            int sc = (t.role(id) == Role.MIDDLE ? 100 : 0) + pos;
-            if (sc > bestScore) {
-                bestScore = sc;
-                best = id;
-            }
-        }
-        // only swap in for a middle; teams without one use the libero for the deepest back-row spot
-        boolean hasMiddle = t.order().stream().anyMatch(id -> t.role(id) == Role.MIDDLE);
-        if (best != null && (!hasMiddle || t.role(best) == Role.MIDDLE)) {
-            t.setBenched(best);
-        }
-    }
-
     /** A benched player sits down on their team's bench (or stands next to it when it is full). */
-    private void sitOnBench(Player p, Team t, int index) {
-        var v = plugin.courts().visuals(court);
-        var seat = v == null ? null : v.freeBenchSeat(t.side(), index);
-        if (p.isInsideVehicle()) {
-            if (seat != null && p.getVehicle() == seat.entity()) {
-                return;
-            }
-            p.leaveVehicle();
-        }
-        if (seat == null) {
-            p.teleport(benchSpot(t, index));
-            return;
-        }
-        p.teleport(seat.front());
-        seat.entity().addPassenger(p);
-    }
-
     /** Bench spot along the side line, away from the referee stand. */
     private Location benchSpot(Team t, int index) {
         double u = t.side() * (Math.min(court.halfLength() - 1, 2.0 + index * 1.0));
@@ -506,35 +412,20 @@ public final class Match implements BallContext {
     }
 
     private void positionPlayers() {
-        for (Team t : teams) {
-            assignLibero(t);
+        if (!settings.flag(MatchSettings.Option.AUTO_POSITION)) {
+            return;
         }
-        boolean auto = settings.flag(MatchSettings.Option.AUTO_POSITION);
         for (Team t : teams) {
             int rot = score.rotation(t.id());
             int n = t.size();
-            int benchIndex = 0;
-            for (Player p : t.online()) {
-                if (!t.onCourt(p.getUniqueId())) {
-                    sitOnBench(p, t, benchIndex++);
-                } else if (p.isInsideVehicle()) {
-                    p.leaveVehicle();
-                }
-            }
-            if (!auto) {
-                continue;
-            }
             for (int pos = 1; pos <= n; pos++) {
                 UUID id = t.atPosition(pos, rot);
-                if (id == null) {
-                    continue;
-                }
-                if (id.equals(t.benched())) {
-                    id = t.libero();
-                }
-                Player p = Bukkit.getPlayer(id);
+                Player p = id == null ? null : Bukkit.getPlayer(id);
                 if (p == null) {
                     continue;
+                }
+                if (p.isInsideVehicle()) {
+                    p.leaveVehicle();
                 }
                 Location target;
                 if (pos == 1 && t.id() == score.serving()) {
@@ -544,68 +435,11 @@ public final class Match implements BallContext {
                     target = court.facingNet(t.side() * spot[0] * court.halfLength(),
                             -t.side() * spot[1] * (court.halfWidth() - 0.6));
                 }
-                target.add(0, 0.01, 0);
-                p.teleport(target);
+                p.teleport(target.add(0, 0.01, 0));
                 p.setVelocity(new org.bukkit.util.Vector());
             }
         }
     }
-
-    /**
-     * 6v6 positional fault at the moment of the serve: front-row players must be nearer the net than their
-     * back-row counterparts, and each row must keep its left-to-right order. The server is exempt.
-     *
-     * @return the offending positions, or null when everyone is in order
-     */
-    private String rotationFault(Team t) {
-        if (t.size() != 6) {
-            return null;
-        }
-        int rot = score.rotation(t.id());
-        double[] depth = new double[7];
-        double[] lateral = new double[7];
-        boolean[] known = new boolean[7];
-        CourtFrame f = court.frame();
-        for (int pos = 1; pos <= 6; pos++) {
-            UUID id = t.atPosition(pos, rot);
-            if (id != null && id.equals(t.benched())) {
-                id = t.libero();
-            }
-            Player p = id == null ? null : Bukkit.getPlayer(id);
-            if (p == null) {
-                continue;
-            }
-            Location l = p.getLocation();
-            depth[pos] = Math.abs(f.toU(l.getX(), l.getZ()));
-            lateral[pos] = -t.side() * f.toW(l.getX(), l.getZ());
-            known[pos] = true;
-        }
-        boolean serving = t.id() == score.serving();
-        int[][] frontBack = {{4, 5}, {3, 6}, {2, 1}};
-        for (int[] fb : frontBack) {
-            if (fb[1] == 1 && serving) {
-                continue;
-            }
-            if (known[fb[0]] && known[fb[1]] && depth[fb[0]] >= depth[fb[1]]) {
-                return "P" + fb[0] + "/P" + fb[1];
-            }
-        }
-        int[][] rows = {{4, 3, 2}, {5, 6, 1}};
-        for (int[] row : rows) {
-            for (int i = 0; i + 1 < row.length; i++) {
-                int left = row[i];
-                int right = row[i + 1];
-                if (right == 1 && serving) {
-                    continue;
-                }
-                if (known[left] && known[right] && lateral[left] >= lateral[right]) {
-                    return "P" + left + "/P" + right;
-                }
-            }
-        }
-        return null;
-    }
-
     private Location refereeSpot() {
         return court.location(0, court.netHeight() + 1, court.halfWidth() + 1);
     }
@@ -692,15 +526,6 @@ public final class Match implements BallContext {
         ball.markToss(p.getUniqueId());
         plugin.hits().underhand(p, ball);
     }
-
-    /** Referee whistle. */
-    public void refereeWhistle(Player p) {
-        if (state == MatchState.PRE_SERVE) {
-            serveAuthorized = true;
-            stateTicks = Math.max(stateTicks, stateDuration);
-        }
-    }
-
     // ------------------------------------------------------------------------------------------- BallContext
 
     @Override
@@ -714,7 +539,7 @@ public final class Match implements BallContext {
             return false;
         }
         Team t = teamOf(player.getUniqueId());
-        if (t == null || !t.onCourt(player.getUniqueId())) {
+        if (t == null) {
             return false;
         }
         UUID tossedBy = b.tossedBy();
@@ -764,16 +589,6 @@ public final class Match implements BallContext {
 
         int position = t.positionOf(player.getUniqueId(), score.rotation(t.id()));
         boolean backRow = !Positions.isFrontRow(t.size(), position);
-        if (t.isLibero(player.getUniqueId()) && settings.rule(Rule.LIBERO)) {
-            if (r.type() == HitType.BLOCK) {
-                fault(t.id(), Fault.LIBERO_BLOCK, player);
-                return;
-            }
-            if (r.type().attack() && contactY > court.netHeight()) {
-                fault(t.id(), Fault.LIBERO_ATTACK, player);
-                return;
-            }
-        }
         if (r.type() == HitType.BLOCK) {
             if (backRow && settings.rule(Rule.BACK_ROW_ATTACK)) {
                 fault(t.id(), Fault.BACK_ROW_BLOCK, player);
@@ -843,18 +658,7 @@ public final class Match implements BallContext {
                 return;
             }
         }
-        if (settings.rule(Rule.ROTATION_ORDER)) {
-            for (Team team : teams) {
-                String bad = rotationFault(team);
-                if (bad != null) {
-                    lastPointText = "";
-                    Msg.send(audience(), team.displayName().append(Component.text(" out of rotation order (" + bad + ")",
-                            NamedTextColor.GRAY)));
-                    fault(team.id(), Fault.POSITIONAL, null);
-                    return;
-                }
-            }
-        }
+
     }
 
     @Override
@@ -982,7 +786,7 @@ public final class Match implements BallContext {
         CourtFrame f = court.frame();
         NetRenderer net = plugin.courts().netRenderer(court);
         for (Team t : teams) {
-            for (Player p : t.onCourt()) {
+            for (Player p : t.online()) {
                 Location l = p.getLocation();
                 double u = f.toU(l.getX(), l.getZ());
                 double w = f.toW(l.getX(), l.getZ());
@@ -1079,9 +883,6 @@ public final class Match implements BallContext {
             int[] last = score.history().get(score.history().size() - 1);
             Msg.send(audience(), winner.displayName().append(Component.text(" wins set " + score.history().size()
                     + " (" + last[0] + "-" + last[1] + ")", NamedTextColor.WHITE)));
-            for (Team t : teams) {
-                t.resetTimeouts();
-            }
         } else {
             if (score.isMatchPoint(scorer)) {
                 Msg.send(audience(), "<gold><b>Match point</b>");
@@ -1156,58 +957,4 @@ public final class Match implements BallContext {
 
     // ------------------------------------------------------------------------------------------- referee / team actions
 
-    public boolean undoLastPoint() {
-        if (undo.isEmpty() || state == MatchState.FINISHED) {
-            return false;
-        }
-        score.restore(undo.pop());
-        Msg.send(audience(), "<yellow>Referee: last point cancelled.");
-        beginRallySetup();
-        return true;
-    }
-
-    public void replayRally() {
-        if (state == MatchState.FINISHED) {
-            return;
-        }
-        Msg.send(audience(), "<yellow>Referee: replay the rally.");
-        whistle();
-        beginRallySetup();
-    }
-
-    public void togglePause() {
-        if (state == MatchState.FINISHED) {
-            return;
-        }
-        if (state == MatchState.PAUSED) {
-            Msg.send(audience(), "<green>Match resumed.");
-            beginRallySetup();
-        } else {
-            removeBall();
-            enter(MatchState.PAUSED, 0);
-            Msg.send(audience(), "<yellow>Match paused by the referee.");
-        }
-    }
-
-    public boolean callTimeout(Player p) {
-        Team t = teamOf(p.getUniqueId());
-        if (t == null || state == MatchState.RALLY || state == MatchState.SERVE && served
-                || state == MatchState.FINISHED || state == MatchState.TIMEOUT || state == MatchState.PAUSED) {
-            return false;
-        }
-        if (t.timeoutsUsed() >= settings.get(MatchSettings.Option.TIMEOUTS_PER_SET)) {
-            return false;
-        }
-        t.useTimeout();
-        removeBall();
-        longWhistle();
-        enter(MatchState.TIMEOUT, settings.get(MatchSettings.Option.TIMEOUT_SECONDS) * 20);
-        Msg.send(audience(), t.displayName().append(Component.text(" called a timeout (" + t.timeoutsUsed() + "/"
-                + settings.get(MatchSettings.Option.TIMEOUTS_PER_SET) + ")", NamedTextColor.GRAY)));
-        return true;
-    }
-
-    public boolean isOfficial(Player p) {
-        return p.getUniqueId().equals(host) || p.getUniqueId().equals(referee) || p.hasPermission("powderpass.referee");
-    }
 }

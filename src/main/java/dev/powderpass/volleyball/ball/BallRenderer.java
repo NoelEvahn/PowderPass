@@ -1,143 +1,139 @@
 package dev.powderpass.volleyball.ball;
 
+import com.destroystokyo.paper.profile.PlayerProfile;
 import dev.powderpass.volleyball.config.Settings;
 import dev.powderpass.volleyball.util.Displays;
-import io.papermc.paper.entity.TeleportFlag;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
-import org.bukkit.block.data.BlockData;
-import org.bukkit.entity.BlockDisplay;
 import org.bukkit.entity.Display;
-import org.joml.Matrix4f;
+import org.bukkit.entity.ItemDisplay;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.SkullMeta;
+import org.bukkit.inventory.meta.components.CustomModelDataComponent;
+import org.bukkit.profile.PlayerTextures;
+import org.bukkit.util.Transformation;
 import org.joml.Quaternionf;
+import org.joml.Vector3f;
 
-import java.util.ArrayList;
+import java.net.URI;
 import java.util.List;
+import java.util.UUID;
 
 /**
- * Draws a ball as a voxel sphere of block displays. The first part is the root; the others ride it as
- * passengers, so one interpolated teleport moves the whole ball on every client. Spin is applied by rotating
- * every part's transformation around the ball centre.
+ * Draws the ball as a single item display: a volleyball player head, or the 3D model from the optional
+ * resource pack (which replaces heads tagged with the {@value #MODEL} custom model data). One rigid entity:
+ * it cannot come apart while spinning and costs one update per tick.
  */
 public final class BallRenderer {
 
-    private final List<BlockDisplay> parts = new ArrayList<>();
-    private final List<BallModel.Part> model = new ArrayList<>();
+    public static final String MODEL = "powderpass:volleyball";
+    private static final UUID PROFILE_ID = UUID.fromString("7c1f0b52-3f4e-4c8e-9b1a-56d0a1b2c3d4");
+    private static ItemStack template;
+    private static String templateTexture;
+
+    private ItemDisplay display;
     private final Quaternionf shown = new Quaternionf();
-    private float radius;
-    private int rotationInterpolation;
-    /** 0..1 size factor, animated on spawn and removal. */
+    private float size;
     private float scale = 1f;
+    private int rotationInterpolation;
 
-    public void spawn(World world, Location at, BallModel ballModel, Settings.Ball cfg) {
-        remove();
-        radius = (float) cfg.visualSize() / 2f;
-        rotationInterpolation = cfg.rotationInterpolation();
-        Material[] mats = cfg.colors();
-        BlockDisplay root = null;
-        for (BallModel.Part p : ballModel.parts()) {
-            BlockData data = mats[p.color() % mats.length].createBlockData();
-            boolean first = root == null;
-            BlockDisplay d = world.spawn(at, BlockDisplay.class, e -> {
-                e.setBlock(data);
-                e.setTransformationMatrix(matrix(p, shown, 0.05f));
-                e.setViewRange(4f);
-                e.setBillboard(Display.Billboard.FIXED);
-                e.setInterpolationDuration(rotationInterpolation);
-                if (first) {
-                    e.setTeleportDuration(cfg.teleportInterpolation());
-                    if (cfg.shadow()) {
-                        e.setShadowRadius(radius * 0.9f);
-                        e.setShadowStrength(0.9f);
-                    }
+    /** The head item, built once per texture. */
+    static ItemStack ballItem(String texture) {
+        if (template == null || !texture.equals(templateTexture)) {
+            ItemStack item = new ItemStack(Material.PLAYER_HEAD);
+            SkullMeta meta = (SkullMeta) item.getItemMeta();
+            if (!texture.isBlank()) {
+                try {
+                    PlayerProfile profile = Bukkit.createProfile(PROFILE_ID, "Volleyball");
+                    PlayerTextures textures = profile.getTextures();
+                    textures.setSkin(URI.create(texture).toURL());
+                    profile.setTextures(textures);
+                    meta.setPlayerProfile(profile);
+                } catch (Exception e) {
+                    Bukkit.getLogger().warning("[PowderPass] Invalid ball.texture: " + e.getMessage());
                 }
-                Displays.tag(e, "ball");
-            });
-            if (first) {
-                root = d;
-            } else {
-                root.addPassenger(d);
             }
-            parts.add(d);
-            model.add(p);
+            CustomModelDataComponent cmd = meta.getCustomModelDataComponent();
+            cmd.setStrings(List.of(MODEL));
+            meta.setCustomModelDataComponent(cmd);
+            item.setItemMeta(meta);
+            template = item;
+            templateTexture = texture;
         }
+        return template.clone();
     }
 
-    private Matrix4f matrix(BallModel.Part p, Quaternionf rotation, float factor) {
-        float r = radius * factor;
-        return new Matrix4f()
-                .rotate(rotation)
-                .translate((float) p.minX() * r, (float) p.minY() * r, (float) p.minZ() * r)
-                .scale((float) p.sizeX() * r, (float) p.sizeY() * r, (float) p.sizeZ() * r);
+    public void spawn(World world, Location at, Settings.Ball cfg) {
+        remove();
+        // a head is half a block across in the FIXED context
+        size = (float) cfg.visualSize() * 2f;
+        rotationInterpolation = cfg.rotationInterpolation();
+        display = world.spawn(at, ItemDisplay.class, d -> {
+            d.setItemStack(ballItem(cfg.texture()));
+            d.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.FIXED);
+            d.setTransformation(transformation(0.05f));
+            d.setTeleportDuration(cfg.teleportInterpolation());
+            d.setInterpolationDuration(rotationInterpolation);
+            d.setBillboard(Display.Billboard.FIXED);
+            d.setViewRange(4f);
+            if (cfg.shadow()) {
+                d.setShadowRadius((float) cfg.visualSize() * 0.9f);
+                d.setShadowStrength(0.9f);
+            }
+            Displays.tag(d, "ball");
+        });
     }
 
-    /** Animates the ball to a new size over {@code ticks} (spawn pop-in, despawn shrink). */
-    public void resize(float factor, int ticks) {
-        scale = factor;
-        for (int i = 0; i < parts.size(); i++) {
-            BlockDisplay d = parts.get(i);
-            if (d.isValid()) {
-                d.setTransformationMatrix(matrix(model.get(i), shown, scale));
-                Displays.refreshInterpolation(d, ticks);
-            }
-        }
+    private Transformation transformation(float factor) {
+        float s = size * factor;
+        return new Transformation(new Vector3f(), new Quaternionf(shown), new Vector3f(s, s, s), new Quaternionf());
     }
 
     public boolean valid() {
-        if (parts.isEmpty()) {
-            return false;
-        }
-        for (BlockDisplay d : parts) {
-            if (!d.isValid()) {
-                return false;
-            }
-        }
-        return true;
+        return display != null && display.isValid();
     }
 
     public Location location() {
-        return parts.isEmpty() ? null : parts.get(0).getLocation();
+        return display == null ? null : display.getLocation();
     }
 
-    /** Moves the whole ball; passengers follow the root on the client. */
     public void moveTo(Location loc) {
-        if (!parts.isEmpty()) {
-            parts.get(0).teleport(loc, TeleportFlag.EntityState.RETAIN_PASSENGERS);
+        if (display != null) {
+            display.teleport(loc);
         }
     }
 
-    /**
-     * Shows a new orientation. Skips the update when it barely changed, which keeps idle balls packet free.
-     */
+    /** Spin: a pure rotation about the ball centre, so client interpolation keeps it rigid. */
     public void rotate(Quaternionf rotation) {
-        if (shown.equals(rotation, 0.004f)) {
+        if (display == null || shown.equals(rotation, 0.004f)) {
             return;
         }
         shown.set(rotation);
-        for (int i = 0; i < parts.size(); i++) {
-            BlockDisplay d = parts.get(i);
-            d.setTransformationMatrix(matrix(model.get(i), shown, scale));
-            Displays.refreshInterpolation(d, rotationInterpolation + 1);
+        display.setTransformation(transformation(scale));
+        Displays.refreshInterpolation(display, rotationInterpolation);
+    }
+
+    /** Animates the size (spawn pop-in, despawn shrink). */
+    public void resize(float factor, int ticks) {
+        scale = factor;
+        if (display != null && display.isValid()) {
+            display.setTransformation(transformation(scale));
+            Displays.refreshInterpolation(display, ticks);
         }
     }
 
-    /** Movement smoothing of the whole ball (the passengers follow the root). */
     public void setTeleportDuration(int ticks) {
-        if (!parts.isEmpty() && parts.get(0).getTeleportDuration() != ticks) {
-            parts.get(0).setTeleportDuration(ticks);
+        if (display != null && display.getTeleportDuration() != ticks) {
+            display.setTeleportDuration(ticks);
         }
-    }
-
-    public int partCount() {
-        return parts.size();
     }
 
     public void remove() {
-        for (BlockDisplay d : parts) {
-            d.remove();
+        if (display != null) {
+            display.remove();
+            display = null;
         }
-        parts.clear();
-        model.clear();
     }
 }

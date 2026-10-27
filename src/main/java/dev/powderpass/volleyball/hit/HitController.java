@@ -5,8 +5,6 @@ import dev.powderpass.volleyball.ball.Volleyball;
 import dev.powderpass.volleyball.config.AimProfile;
 import dev.powderpass.volleyball.config.Settings;
 import dev.powderpass.volleyball.court.Court;
-import dev.powderpass.volleyball.items.CustomItems;
-import dev.powderpass.volleyball.items.ItemType;
 import dev.powderpass.volleyball.math.CourtFrame;
 import dev.powderpass.volleyball.math.Vec3;
 import dev.powderpass.volleyball.physics.TrajectorySolver;
@@ -90,21 +88,21 @@ public final class HitController {
     /** Left click. */
     public void primary(Player p) {
         PlayerState s = state(p);
-        if (s.lastRightClickTick == tick) {
-            return; // the swing belongs to a right click
-        }
         if (tick - s.lastHitTick < plugin.settings().controls.hitCooldownTicks()) {
             return;
         }
         boolean air = !p.isOnGround();
+        // in the air at the net with an attack coming over: put the hands up instead of swinging
+        if (air && !p.isSneaking() && attackIncoming(p) && tryStartBlock(p, s)) {
+            return;
+        }
         s.primaryUntil = tick + plugin.settings().controls.inputBufferTicks();
         s.primarySneak = p.isSneaking();
         s.primaryAirborne = air;
-        s.secondaryUntil = -1;
         s.clickTick = tick;
         s.clickNearBall = touchableNear(p, 3.5);
-        // dive: commit to a lunge when digging from the ground
-        if (s.primarySneak && !air && tick - s.lastDiveTick > 20 && s.clickNearBall && isPlaying(p)) {
+        // dive: commit to a lunge when digging a low ball from the ground
+        if (s.primarySneak && !air && lowBallNear(p) && tick - s.lastDiveTick > 20 && s.clickNearBall && isPlaying(p)) {
             s.lastDiveTick = tick;
             Vector dir = p.getLocation().getDirection().setY(0);
             if (dir.lengthSquared() > 1e-6) {
@@ -122,25 +120,35 @@ public final class HitController {
         }
         tryResolve(p, s);
     }
+    /** A touchable ball within reach that sits lower than the chest (dig height). */
+    private boolean lowBallNear(Player p) {
+        for (Volleyball b : plugin.balls().near(p.getEyeLocation(), 4)) {
+            if (b.context().canTouch(p, b) && b.position().y - p.getLocation().getY() < 1.3) {
+                return true;
+            }
+        }
+        return false;
+    }
 
-    /** Right click. */
-    public void secondary(Player p) {
-        PlayerState s = state(p);
-        s.lastRightClickTick = tick;
-        if (tick - s.lastHitTick < plugin.settings().controls.hitCooldownTicks()) {
-            return;
+    /** A ball on the other side of the net (or crossing it) travelling toward this player's court. */
+    private boolean attackIncoming(Player p) {
+        Court court = courtFor(p);
+        if (court == null) {
+            return false;
         }
-        boolean air = !p.isOnGround();
-        if (tryStartBlock(p, s)) {
-            return;
+        Location l = p.getLocation();
+        int side = court.frame().toU(l.getX(), l.getZ()) < 0 ? -1 : 1;
+        for (Volleyball b : plugin.balls().near(l, 8)) {
+            if (!b.context().canTouch(p, b) || b.held()) {
+                continue;
+            }
+            double u = court.frame().toU(b.position().x, b.position().z);
+            double vu = court.frame().dirToLocal(b.body().vel, new Vec3()).x;
+            if (u * side < 0.6 && vu * side > 1.0) {
+                return true;
+            }
         }
-        s.secondaryUntil = tick + plugin.settings().controls.inputBufferTicks();
-        s.secondarySneak = p.isSneaking();
-        s.secondaryAirborne = air;
-        s.primaryUntil = -1;
-        s.clickTick = tick;
-        s.clickNearBall = touchableNear(p, 3.5);
-        tryResolve(p, s);
+        return false;
     }
 
     private boolean touchableNear(Player p, double radius) {
@@ -201,16 +209,16 @@ public final class HitController {
         active.addAll(plugin.matches().allPlayers());
         // movement is tracked for players holding volleyball items too, so a run-up before a toss is known
         for (Player p : Bukkit.getOnlinePlayers()) {
-            if (active.contains(p) || CustomItems.typeOf(p.getInventory().getItemInMainHand()) != null) {
+            if (active.contains(p) || plugin.balls().holding(p) != null) {
                 trackMovement(p, state(p));
             }
         }
         for (Player p : active) {
             PlayerState s = state(p);
             s.lastSeenTick = tick;
-            if (tick <= s.primaryUntil || tick <= s.secondaryUntil) {
+            if (tick <= s.primaryUntil) {
                 tryResolve(p, s);
-                if (tick == s.primaryUntil || tick == s.secondaryUntil) {
+                if (tick == s.primaryUntil) {
                     expireIntent(p, s);
                 }
             }
@@ -273,8 +281,7 @@ public final class HitController {
 
     private void tryResolve(Player p, PlayerState s) {
         boolean primary = tick <= s.primaryUntil;
-        boolean secondary = tick <= s.secondaryUntil;
-        if (!primary && !secondary) {
+        if (!primary) {
             return;
         }
         Location eye = p.getEyeLocation();
@@ -311,34 +318,28 @@ public final class HitController {
             return;
         }
         s.primaryUntil = -1;
-        s.secondaryUntil = -1;
         s.lastHitTick = tick;
         execute(p, s, best, bestType, bestContact);
     }
 
     private HitType chooseType(Player p, PlayerState s, Volleyball ball, boolean primary, boolean tossedByMe) {
-        boolean air = primary ? s.primaryAirborne || !p.isOnGround() : s.secondaryAirborne || !p.isOnGround();
-        boolean sneak = primary ? s.primarySneak : s.secondarySneak;
+        boolean air = s.primaryAirborne || !p.isOnGround();
+        boolean sneak = s.primarySneak;
         if (tossedByMe) {
-            if (!primary) {
-                return null;
-            }
             if (air) {
-                return sneak ? HitType.SERVE_JUMP_FLOAT : HitType.SERVE_JUMP;
+                return sneak ? HitType.SERVE_BANANA : HitType.SERVE_JUMP;
             }
             return sneak ? HitType.SERVE_TOPSPIN : HitType.SERVE_FLOAT;
         }
-        if (primary) {
-            if (air) {
-                return sneak ? HitType.TIP : HitType.SPIKE;
-            }
-            if (sneak) {
-                return HitType.DIG;
-            }
-            double above = ball.position().y - p.getLocation().getY();
-            return above > p.getEyeHeight() + 0.25 ? HitType.STANDING_ATTACK : HitType.BUMP;
+        if (air) {
+            return sneak ? HitType.TIP : HitType.SPIKE;
         }
-        return sneak ? HitType.QUICK_SET : HitType.SET;
+        // overhead ball: set it; low ball: bump (sneak: quick set / dive)
+        boolean high = ball.position().y - p.getLocation().getY() > p.getEyeHeight() + 0.1;
+        if (sneak) {
+            return high ? HitType.QUICK_SET : HitType.DIG;
+        }
+        return high ? HitType.SET : HitType.BUMP;
     }
 
     /** A candidate contact. */
@@ -392,7 +393,7 @@ public final class HitController {
         switch (type) {
             case BUMP, DIG -> q *= 1 - clamp((vin - 10) / 35, 0, 0.4);
             case SET, QUICK_SET -> q *= 1 - clamp((vin - 8) / 25, 0, 0.5);
-            case SPIKE, TIP, SERVE_JUMP, SERVE_JUMP_FLOAT -> q *= 1 - Math.min(0.35, Math.abs(s.vy) / 20.0);
+            case SPIKE, TIP, SERVE_JUMP, SERVE_BANANA -> q *= 1 - Math.min(0.35, Math.abs(s.vy) / 20.0);
             default -> {
             }
         }
@@ -420,8 +421,7 @@ public final class HitController {
             case DIG -> feet.addScaled(dir, 0.9).add(0, 0.35, 0);
             case SET, QUICK_SET -> feet.addScaled(dir, 0.25).add(0, eye + 0.45, 0);
             case SPIKE, TIP -> feet.addScaled(dir, 0.45).add(0, eye + 0.7, 0);
-            case STANDING_ATTACK -> feet.addScaled(dir, 0.4).add(0, eye + 0.6, 0);
-            case SERVE_FLOAT, SERVE_TOPSPIN, SERVE_JUMP, SERVE_JUMP_FLOAT -> feet.addScaled(dir, 0.35).add(0, eye + 0.55, 0);
+            case SERVE_FLOAT, SERVE_TOPSPIN, SERVE_JUMP, SERVE_BANANA -> feet.addScaled(dir, 0.35).add(0, eye + 0.55, 0);
             case SERVE_UNDERHAND -> feet.addScaled(dir, 0.5).add(0, 0.8, 0);
             case BLOCK, BODY -> feet.add(0, eye + 0.6, 0);
         };
@@ -435,8 +435,7 @@ public final class HitController {
             case SET, QUICK_SET -> s.set.reach();
             case SPIKE -> s.spike.reach();
             case TIP -> s.tip.reach();
-            case STANDING_ATTACK -> s.standingAttack.reach();
-            case SERVE_FLOAT, SERVE_TOPSPIN, SERVE_JUMP, SERVE_JUMP_FLOAT, SERVE_UNDERHAND -> s.serve.reach();
+            case SERVE_FLOAT, SERVE_TOPSPIN, SERVE_JUMP, SERVE_BANANA, SERVE_UNDERHAND -> s.serve.reach();
             case BLOCK, BODY -> s.block.width();
         };
     }
@@ -515,16 +514,7 @@ public final class HitController {
                 vel = solver.solveDriven(start, target, floorY, speed, sf);
                 spin = sf.spinFor(vel);
             }
-            case STANDING_ATTACK -> {
-                Settings.StandingAttack cfg = st.standingAttack;
-                double speed = Math.min(lerp(cfg.minSpeed(), cfg.maxSpeed(), q), ball.context().speedCap(type));
-                double dist = cfg.aim().distanceFor(l.getPitch());
-                Vec3 target = aim(l, dir, dist, floorY, cfg.maxError() * Math.pow(1 - q, 1.3), rnd, assist);
-                TrajectorySolver.SpinFactory sf = TrajectorySolver.SpinFactory.topspin(cfg.topspin());
-                vel = solver.solveDriven(start, target, floorY, speed, sf);
-                spin = sf.spinFor(vel);
-            }
-            case SERVE_FLOAT, SERVE_TOPSPIN, SERVE_JUMP, SERVE_JUMP_FLOAT, SERVE_UNDERHAND -> {
+            case SERVE_FLOAT, SERVE_TOPSPIN, SERVE_JUMP, SERVE_BANANA, SERVE_UNDERHAND -> {
                 Settings.Serve cfg = st.serve;
                 double dist = cfg.aim().distanceFor(l.getPitch());
                 double err = cfg.maxError() * Math.pow(1 - q, 1.3);
@@ -540,9 +530,14 @@ public final class HitController {
                         speed = lerp(cfg.topspinMinSpeed(), cfg.topspinMaxSpeed(), q);
                         sf = TrajectorySolver.SpinFactory.topspin(cfg.standingTopspin());
                     }
-                    case SERVE_JUMP_FLOAT, SERVE_FLOAT -> {
-                        speed = lerp(cfg.floatMinSpeed(), cfg.floatMaxSpeed(), q)
-                                + (type == HitType.SERVE_JUMP_FLOAT ? 1.0 : 0);
+                    case SERVE_BANANA -> {
+                        // sidespin about the vertical axis: Magnus bends it sideways in flight
+                        speed = lerp(cfg.topspinMinSpeed(), cfg.topspinMaxSpeed(), q);
+                        double rate = cfg.standingTopspin() * 1.2;
+                        sf = v -> new Vec3(0, -rate, 0);
+                    }
+                    case SERVE_FLOAT -> {
+                        speed = lerp(cfg.floatMinSpeed(), cfg.floatMaxSpeed(), q);
                         sf = TrajectorySolver.SpinFactory.topspin(rnd.nextGaussian() * 0.4);
                         knuckle = true;
                     }
@@ -555,6 +550,10 @@ public final class HitController {
                     vel = solver.solveArc(start, target, floorY, cfg.underhandApex(), new Vec3());
                 } else {
                     vel = solver.solveDriven(start, target, floorY, speed, sf);
+                    if (type == HitType.SERVE_BANANA) {
+                        // aim off to the other side so the curve brings it back onto the target
+                        vel = bananaAim(start, target, floorY, speed, sf, vel);
+                    }
                     spin = sf.spinFor(vel);
                 }
             }
@@ -571,6 +570,18 @@ public final class HitController {
         HitResult result = new HitResult(type, q, Grade.of(q), start, feet, vel.length(), airborne);
         effects(p, ball, result);
         ball.context().onHit(p, ball, result);
+    }
+
+    /** Re-aims a curving serve: rotate the launch until the sideways drift lands it on the target. */
+    private Vec3 bananaAim(Vec3 start, Vec3 target, double floorY, double speed, TrajectorySolver.SpinFactory sf, Vec3 vel) {
+        Vec3 aimAt = target.copy();
+        for (int i = 0; i < 3; i++) {
+            Vec3 landing = solver.predictLanding(start, vel, sf.spinFor(vel), floorY);
+            aimAt.x += target.x - landing.x;
+            aimAt.z += target.z - landing.z;
+            vel = solver.solveDriven(start, aimAt, floorY, speed, sf);
+        }
+        return vel;
     }
 
     /** Free aim, or the assisted target when the ball's context offers one; both get the quality error. */
@@ -608,10 +619,9 @@ public final class HitController {
         Location at = ball.location();
         var fx = plugin.fx();
         switch (r.type()) {
-            case SPIKE, STANDING_ATTACK -> {
+            case SPIKE -> {
                 p.swingMainHand();
-                fx.sound(at, r.grade() == Grade.PERFECT ? Settings.SoundId.SPIKE_PERFECT : Settings.SoundId.SPIKE,
-                        r.type() == HitType.STANDING_ATTACK ? 0.75f : 1f);
+                fx.sound(at, r.grade() == Grade.PERFECT ? Settings.SoundId.SPIKE_PERFECT : Settings.SoundId.SPIKE);
                 fx.particle(at, Particle.CRIT, 12 + (int) (r.quality() * 14), 0.15, 0.35);
                 if (r.grade() == Grade.PERFECT) {
                     fx.particle(at, Particle.SWEEP_ATTACK, 1, 0, 0);
@@ -643,7 +653,7 @@ public final class HitController {
             case BODY -> fx.sound(at, Settings.SoundId.BODY);
             default -> {
                 p.swingMainHand();
-                boolean jump = r.type() == HitType.SERVE_JUMP || r.type() == HitType.SERVE_JUMP_FLOAT;
+                boolean jump = r.type() == HitType.SERVE_JUMP || r.type() == HitType.SERVE_BANANA;
                 fx.sound(at, jump ? Settings.SoundId.SERVE_JUMP : Settings.SoundId.SERVE);
                 fx.particle(at, Particle.CRIT, 8, 0.1, 0.25);
             }
@@ -680,7 +690,7 @@ public final class HitController {
                 continue;
             }
             PlayerState st = states.get(p.getUniqueId());
-            if (st != null && (tick <= st.primaryUntil || tick <= st.secondaryUntil || st.blocking(tick))) {
+            if (st != null && (tick <= st.primaryUntil || st.blocking(tick))) {
                 continue;
             }
             var box = p.getBoundingBox();
@@ -865,21 +875,6 @@ public final class HitController {
     }
 
     // ------------------------------------------------------------------------------------------------ serve
-
-    /**
-     * Right click with the volleyball item: toss for a serve. Sprinting tosses higher and further in front for a
-     * jump serve.
-     */
-    public Volleyball toss(Player p, boolean practice) {
-        Vec3[] st = tossState(p);
-        Volleyball ball = practice ? plugin.balls().spawnPractice(p, st[0]) : null;
-        if (ball == null) {
-            return null;
-        }
-        prepareToss(p, ball, st[1]);
-        return ball;
-    }
-
     /**
      * A run-up for a jump serve. The sprint flag alone is unreliable (some clients only send the sprint key), so
      * the key state and the measured ground speed count as well.
@@ -941,7 +936,7 @@ public final class HitController {
     private void drawReticle(Player p, PlayerState s) {
         ItemStack hand = p.getInventory().getItemInMainHand();
         var match = plugin.matches().byPlayer(p);
-        boolean holdingBall = CustomItems.is(hand, ItemType.VOLLEYBALL) || (match != null && match.holdsServeBall(p));
+        boolean holdingBall = plugin.balls().holding(p) != null || (match != null && match.holdsServeBall(p));
         AimProfile profile = null;
         Color color = null;
         Settings st = plugin.settings();

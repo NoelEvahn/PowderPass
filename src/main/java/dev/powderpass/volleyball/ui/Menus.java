@@ -170,56 +170,6 @@ public final class Menus implements Listener {
 
     // ------------------------------------------------------------------------------------------- referee
 
-    public void openReferee(Player p, Match m) {
-        Menu menu = new Menu();
-        menu.inventory = Bukkit.createInventory(menu, 27, Msg.mm("<dark_gray>Referee · " + Msg.escape(m.court().name())));
-        menu.refresh = () -> fillReferee(p, menu, m);
-        menu.refresh.run();
-        p.openInventory(menu.inventory);
-    }
-
-    private void fillReferee(Player p, Menu menu, Match m) {
-        Inventory inv = menu.inventory;
-        inv.clear();
-        menu.actions.clear();
-        boolean paused = m.state() == dev.powderpass.volleyball.game.MatchState.PAUSED;
-        inv.setItem(10, icon(paused ? Material.LIME_DYE : Material.ORANGE_DYE, paused ? "<green>Resume" : "<gold>Pause",
-                false, List.of("<gray>Freeze the match.")));
-        menu.actions.put(10, c -> {
-            m.togglePause();
-            menu.refresh.run();
-        });
-        inv.setItem(11, icon(Material.CLOCK, "<yellow>Replay rally", false, List.of("<gray>No point, serve again.")));
-        menu.actions.put(11, c -> {
-            m.replayRally();
-            p.closeInventory();
-        });
-        for (TeamId id : TeamId.values()) {
-            int slot = id == TeamId.A ? 12 : 14;
-            var t = m.team(id);
-            inv.setItem(slot, icon(id == TeamId.A ? Material.RED_BANNER : Material.BLUE_BANNER,
-                    "<white>Point to <b>" + Msg.escape(t.name()) + "</b>", false, List.of("<gray>Referee decision.")));
-            menu.actions.put(slot, c -> {
-                m.awardPoint(id, Fault.REFEREE, null);
-                p.closeInventory();
-            });
-        }
-        inv.setItem(13, icon(Material.ARROW, "<yellow>Undo last point", false, List.of("<gray>Restore the previous score.")));
-        menu.actions.put(13, c -> {
-            if (!m.undoLastPoint()) {
-                Msg.error(p, "Nothing to undo.");
-            }
-            p.closeInventory();
-        });
-        inv.setItem(15, icon(Material.WRITABLE_BOOK, "<aqua>Rules of this match", false, List.of("<gray>Change rules live.")));
-        menu.actions.put(15, c -> openRules(p, null, m.settings(), m.court().name() + " (live)"));
-        inv.setItem(16, icon(Material.BARRIER, "<red>End match", false, List.of("<gray>Stops the match, no winner.")));
-        menu.actions.put(16, c -> {
-            plugin.matches().stop(m.court(), "The referee ended the match.");
-            p.closeInventory();
-        });
-    }
-
     // ------------------------------------------------------------------------------------------- events
 
     @EventHandler

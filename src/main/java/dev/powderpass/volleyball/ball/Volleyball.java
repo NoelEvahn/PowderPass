@@ -24,7 +24,7 @@ import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * A live volleyball: server-authoritative physics rendered as a block-display voxel sphere.
+ * A live volleyball: server-authoritative physics rendered by a single interpolated item display.
  */
 public final class Volleyball implements SimulationListener {
 
@@ -79,7 +79,7 @@ public final class Volleyball implements SimulationListener {
 
     private void spawnDisplay() {
         Location at = new Location(world, body.pos.x, body.pos.y, body.pos.z);
-        renderer.spawn(world, at, plugin.ballModel(), plugin.settings().ball);
+        renderer.spawn(world, at, plugin.settings().ball);
         grown = false;
     }
 
@@ -268,10 +268,7 @@ public final class Volleyball implements SimulationListener {
             Quaternionf dq = new Quaternionf().fromAxisAngleRad(
                     (float) (body.spin.x / w), (float) (body.spin.y / w), (float) (body.spin.z / w), (float) angle);
             rotation.premul(dq).normalize();
-            // the ball is several displays: refresh the pose every other tick and let the client interpolate
-            if (tick % 2 == 0) {
-                renderer.rotate(rotation);
-            }
+            renderer.rotate(rotation);
         }
         // speed trail
         double speed = body.speed();
@@ -389,7 +386,4 @@ public final class Volleyball implements SimulationListener {
         plugin.getServer().getScheduler().runTaskLater(plugin, renderer::remove, 5);
     }
 
-    public int partCount() {
-        return renderer.partCount();
-    }
 }

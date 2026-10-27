@@ -19,11 +19,8 @@ public final class MatchSettings {
         POINT_CAP("point-cap", "Point cap (0 = none)", 0, 99, 1),
         SERVE_TIME("serve-time-seconds", "Serve time (s)", 3, 60, 1),
         RALLY_END_DELAY("rally-end-delay-seconds", "Pause between rallies (s)", 1, 15, 1),
-        TIMEOUTS_PER_SET("timeouts-per-set", "Timeouts per set", 0, 5, 1),
-        TIMEOUT_SECONDS("timeout-seconds", "Timeout length (s)", 10, 120, 5),
         SWITCH_SIDES("switch-sides", "Switch sides", 0, 1, 1),
-        AUTO_POSITION("auto-position", "Auto positioning", 0, 1, 1),
-        REFEREE_WHISTLE("referee-whistle", "Referee whistle required", 0, 1, 1);
+        AUTO_POSITION("auto-position", "Auto positioning", 0, 1, 1);
 
         public final String key;
         public final String label;
@@ -65,14 +62,9 @@ public final class MatchSettings {
         s.set(Option.POINT_CAP, 0);
         s.set(Option.SERVE_TIME, 8);
         s.set(Option.RALLY_END_DELAY, 3);
-        s.set(Option.TIMEOUTS_PER_SET, 2);
-        s.set(Option.TIMEOUT_SECONDS, 30);
         s.set(Option.SWITCH_SIDES, 1);
         s.set(Option.AUTO_POSITION, 1);
-        s.set(Option.REFEREE_WHISTLE, 0);
         s.rules.addAll(EnumSet.allOf(Rule.class));
-        // positional faults surprise casual players: opt in (the official preset turns it on)
-        s.rules.remove(Rule.ROTATION_ORDER);
         return s;
     }
 

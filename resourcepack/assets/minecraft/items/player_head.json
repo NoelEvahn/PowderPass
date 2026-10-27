@@ -5,16 +5,19 @@
     "index": 0,
     "cases": [
       {
-        "when": "powderpass:hands",
+        "when": "powderpass:volleyball",
         "model": {
           "type": "minecraft:model",
-          "model": "powderpass:item/hands"
+          "model": "powderpass:item/volleyball"
         }
       }
     ],
     "fallback": {
-      "type": "minecraft:model",
-      "model": "minecraft:item/leather"
+      "type": "minecraft:special",
+      "base": "minecraft:item/template_skull",
+      "model": {
+        "type": "minecraft:player_head"
+      }
     }
   }
 }
